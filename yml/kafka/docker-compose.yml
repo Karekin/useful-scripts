@@ -1,0 +1,27 @@
+version: '3.7'
+services:
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    container_name: learn-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: learn-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      - KAFKA_BROKER_ID=0
+      - KAFKA_ZOOKEEPER_CONNECT=192.168.1.7:2181/kafka
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://192.168.1.7:9092
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.cd0:9092
+    volumes:
+      - /etc/localtime:/etc/localtime
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "2"

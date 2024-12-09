@@ -1,0 +1,101 @@
+version: "3.9"
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.10.1.2812
+    platform: linux/arm64  # 显式声明 ARM 架构
+    container_name: clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - ./data/clickhouse:/var/lib/clickhouse
+    environment:
+      - CLICKHOUSE_DB=streamRuleDB
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=
+    networks:
+      my_network:
+        ipv4_address: 172.19.0.4
+
+  redis:
+    image: redis:6.2  # Redis 镜像
+    container_name: redis
+    ports:
+      - "6379:6379"  # Redis 端口
+    command: ["redis-server", "--appendonly", "yes"]
+    networks:
+      my_network:
+        ipv4_address: 172.19.0.5
+
+#  zookeeper:
+#    image: confluentinc/cp-zookeeper:7.3.0  # Zookeeper 镜像
+#    container_name: zookeeper
+#    ports:
+#      - "2181:2181"  # Zookeeper 端口
+#    environment:
+#      ZOOKEEPER_CLIENT_PORT: 2181
+#      ZOOKEEPER_TICK_TIME: 2000  # 调整心跳时间
+#      ZOOKEEPER_MAX_SESSION_TIMEOUT: 60000  # 最大会话超时时间
+#    volumes:
+#      - ./data/zookeeper/data:/var/lib/zookeeper/data  # 挂载数据目录
+#      - ./data/zookeeper/log:/var/lib/zookeeper/log    # 挂载日志目录
+#    networks:
+#      my_network:
+#        ipv4_address: 172.19.0.2
+
+
+  kafka:
+    image: bitnami/kafka:3.3.2
+    container_name: kafka
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - ./data/kafka:/bitnami/kafka:rw
+    environment:
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_ENABLE_KRAFT=yes
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_KRAFT_CLUSTER_ID=manongdashu66666666666
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://192.168.1.10:9092
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@192.168.1.10:9093
+    networks:
+      my_network:
+        ipv4_address: 172.19.0.3
+
+
+  hbase:
+    image: harisekhon/hbase:latest
+    container_name: hbase
+    hostname: docker-hbase
+    ports:
+      - "2181:2181"
+      - "8080:8080"
+      - "16010:16010"
+      - "16020:16020"
+    volumes:
+      - ./data/hbase:/hbase-data  # 数据挂载目录
+#      - ./scripts/start_hbase.sh:/opt/start_hbase.sh
+#      - ./conf/hbase-env.sh:/hbase/conf/hbase-env.sh:ro  # 挂载 hbase-env.sh
+#      - ./conf/hbase-site.xml:/hbase/conf/hbase-site.xml:ro  # 挂载 hbase-site.xml
+#    command: >
+#      bash -c "
+#      start-hbase.sh && /opt/start_hbase.sh"
+    restart: always
+    networks:
+      my_network:
+        ipv4_address: 172.19.0.6
+
+networks:
+  my_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.0.0/16
