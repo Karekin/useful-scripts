@@ -7,6 +7,8 @@ services:
       - "2181:2181"
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
+    volumes:
+      - ./data/zookeeper:/bitnami/zookeeper  # 持久化 Zookeeper 数据
 
   kafka:
     image: bitnami/kafka:latest
@@ -17,8 +19,9 @@ services:
       - KAFKA_BROKER_ID=0
       - KAFKA_ZOOKEEPER_CONNECT=192.168.1.7:2181/kafka
       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://192.168.1.7:9092
-      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.cd0:9092
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092
     volumes:
+      - ./data/kafka:/bitnami/kafka        # 持久化 Kafka 数据
       - /etc/localtime:/etc/localtime
     logging:
       driver: json-file
