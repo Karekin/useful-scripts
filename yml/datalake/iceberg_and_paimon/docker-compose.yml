@@ -153,28 +153,31 @@ services:
       replicas: 2
 
   doris:
-    image: mysql:8.0.30
+    image: yagagagaga/doris-standalone:2.1.5
     platform: linux/arm64
     container_name: doris-iceberg-paimon-doris
+    ports:
+      - "8030:8030"
+      - "8040:8040"
+      - "9030:9030"
+    volumes:
+      - ./doris/doris_fe_meta:/opt/doris/fe/meta
+      - ./doris/doris_be_storage:/opt/doris/be/storage
     networks:
       - demo-iceberg
-    hostname: doris
-    ports:
-      - ${DORIS_QUERY_PORT}:9030
+
+  mysql:
+    image: mysql:8.0.32
+    platform: linux/arm64
+    container_name: mysql
     environment:
-      - AWS_ACCESS_KEY_ID=admin
-      - AWS_SECRET_ACCESS_KEY=password
-      - AWS_REGION=us-east-1
-      - LD_LIBRARY_PATH=/opt/doris/be/lib
-      - JAVA_HOME=/opt/jdk8
-      - bootstrap.system_call_filter=false
-      - DISABLE_SWAP=true
-    volumes:
-      - ./packages/jdk1.8.0_421:/opt/jdk8  # 更新JDK路径
-      - ./packages/doris-bin:/opt/doris-bin
-      - ./sql/init_doris.sql:/opt/doris-bin/init_doris.sql
-      - ./scripts:/opt/scripts
-    command: /bin/bash -c "microdnf install util-linux vim procps-ng && chmod +x /opt/scripts/start_doris.sh && /opt/scripts/start_doris.sh"
+      - MYSQL_ROOT_PASSWORD=666666
+    ports:
+      - "3306:3306"
+    restart: always
+    networks:
+      - demo-iceberg
+
 
 networks:
   demo-iceberg:

@@ -181,6 +181,7 @@ Flink SQL> select * from customer order by c_custkey limit 4;
 
 **04 数据查询**
 
+！！！由于简化了docker脚本，所以这里需要手动执行init_doris.sql
 如下所示，Doris 集群中已经创建了名为`paimon`​的 Catalog（可通过`SHOW CATALOGS`​查看）。以下为该 Catalog 的创建语句： 
 
 ```
