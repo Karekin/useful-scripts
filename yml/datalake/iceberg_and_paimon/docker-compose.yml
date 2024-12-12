@@ -21,7 +21,7 @@ services:
   spark:
     image: tabulario/spark-iceberg
     platform: linux/arm64
-    container_name: doris-iceberg-paimon-spark
+    container_name: data-warehouse-spark
     hostname: demo-spark-iceberg
     build: spark/
     volumes:
@@ -43,7 +43,7 @@ services:
   rest:
     image: tabulario/iceberg-rest
     platform: linux/arm64
-    container_name: doris-iceberg-paimon-iceberg-rest
+    container_name: data-warehouse-iceberg-rest
     ports:
       - ${REST_CATALOG_PORT}:8181
     environment:
@@ -63,7 +63,7 @@ services:
   minio:
     image: minio/minio
     platform: linux/arm64
-    container_name: doris-iceberg-paimon-minio
+    container_name: data-warehouse-minio
     ports:
       - ${MINIO_API_PORT}:9000
       - ${MINIO_UI_PORT}:9001
@@ -82,7 +82,7 @@ services:
       - minio
     image: minio/mc:RELEASE.2024-10-02T08-27-28Z-cpuv1
     platform: linux/arm64
-    container_name: doris-iceberg-paimon-mc
+    container_name: data-warehouse-mc
     environment:
       - AWS_ACCESS_KEY_ID=admin
       - AWS_SECRET_ACCESS_KEY=password
@@ -101,7 +101,7 @@ services:
   jobmanager:
     image: flink:1.18.0
     platform: linux/arm64
-    container_name: doris-iceberg-paimon-jobmanager
+    container_name: data-warehouse-jobmanager
     environment:
       - JOB_MANAGER_RPC_ADDRESS=jobmanager
       - AWS_ACCESS_KEY_ID=admin
@@ -155,7 +155,7 @@ services:
   doris:
     image: yagagagaga/doris-standalone:2.1.5
     platform: linux/arm64
-    container_name: doris-iceberg-paimon-doris
+    container_name: data-warehouse-doris
     ports:
       - "8030:8030"
       - "8040:8040"
@@ -169,12 +169,11 @@ services:
   mysql:
     image: mysql:8.0.32
     platform: linux/arm64
-    container_name: mysql
+    container_name: data-warehouse-mysql
     environment:
       - MYSQL_ROOT_PASSWORD=666666
     ports:
       - "3306:3306"
-    restart: always
     networks:
       - demo-iceberg
 

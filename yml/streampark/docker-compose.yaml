@@ -1,0 +1,70 @@
+version: '3.8'
+services:
+  ## streampark-console容器
+  streampark-console:
+    ## streampark的镜像
+    image: apache/streampark:latest
+    ## streampark的镜像启动命令
+    command: ${RUN_COMMAND}
+    ports:
+      - 10000:10000
+    ## 环境配置文件
+    env_file: .env
+    environment:
+      ## 声明环境变量
+      HADOOP_HOME: ${HADOOP_HOME}
+    volumes:
+      - flink:/streampark/flink/${FLINK}
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/hosts:/etc/hosts:ro
+      - ~/.kube:/root/.kube:ro
+    privileged: true
+    restart: unless-stopped
+    networks:
+      - streampark
+
+  ## flink-jobmanager容器
+  flink-jobmanager:
+    image: ${FLINK_IMAGE}
+    ports:
+      - "8081:8081"
+    command: jobmanager
+    volumes:
+      - flink:/opt/flink
+    env_file: .env
+    restart: unless-stopped
+    privileged: true
+    networks:
+      - streampark
+
+  ## streampark-taskmanager容器
+  flink-taskmanager:
+    image: ${FLINK_IMAGE}
+    depends_on:
+      - flink-jobmanager
+    command: taskmanager
+    deploy:
+      replicas: 1
+    env_file: .env
+    restart: unless-stopped
+    privileged: true
+    networks:
+      - streampark
+
+  mysql:
+    image: mysql:8.0.32
+    platform: linux/arm64
+    container_name: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=666666
+    ports:
+      - "3306:3306"
+    networks:
+      - streampark
+
+networks:
+  streampark:
+    driver: bridge
+
+volumes:
+  flink:
