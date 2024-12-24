@@ -1,24 +1,54 @@
-version: '2.1'
+version: "2"
 services:
-  zookeeper:
-    container_name: zookeeper
-    image: wurstmeister/zookeeper:3.4.6
+  namenode:
+    image: apache/hadoop:3.3.6
+    hostname: namenode
+    command: ["hdfs", "namenode"]
     ports:
-      - "2181:2181"
-
+      - 9870:9870
+      - 8020:8020
+    env_file:
+      - ./config
+    environment:
+      ENSURE_NAMENODE_DIR: "/tmp/hadoop-root/dfs/name"
+  datanode:
+    image: apache/hadoop:3.3.6
+    command: ["hdfs", "datanode"]
+    env_file:
+      - ./config
+  resourcemanager:
+    image: apache/hadoop:3.3.6
+    hostname: resourcemanager
+    command: ["yarn", "resourcemanager"]
+    ports:
+      - 8088:8088
+    env_file:
+      - ./config
+    volumes:
+      - ./test.sh:/opt/test.sh
+  nodemanager:
+    image: apache/hadoop:3.3.6
+    command: ["yarn", "nodemanager"]
+    env_file:
+      - ./config
+  zoo1:
+    image: zookeeper:3.9.2
+    restart: always
+    hostname: zoo1
+    ports:
+      - 2181:2181
+      - 2888:2888
+      - 3888:3888
+    environment:
+      ZOO_MY_ID: 1
   hbase:
-    container_name: hbase
-    hostname: docker-linux
     image: hbase-pseudo:latest
-    links:
-      - zookeeper
-    depends_on:
-      - zookeeper
+    hostname: docker-linux
     ports:
-      - "16010:16010"
-      - "8080:8080"
-      - "9090:9090"
-      - "16000:16000"
-      - "16020:16020"
-      - "16030:16030"
-    command: ["/wait-for-it.sh", "zookeeper:2181", "-t", "10", "--", "/usr/bin/supervisord"]
+      - 60010:60010
+      - 16010:16010
+      - 16000:16000
+      - 16020:16020
+      - 16030:16030
+    volumes:
+      - ./logs/hbase:/opt/hbase/logs

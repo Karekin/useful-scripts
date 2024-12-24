@@ -1,51 +1,34 @@
-FROM openjdk:8
+# 使用基础镜像，这里以Ubuntu为例
+FROM ubuntu:20.04
 
-RUN apt-get update
-RUN apt-get -y install supervisor python3 python3-pip net-tools vim
-RUN mkdir -p /var/log/supervisor
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# 更新apt源并安装基本软件包
+RUN apt-get update && apt-get install -y  openjdk-8-jdk telnet vim && rm -rf /var/lib/apt/lists/*
 
-ENV VERSION 1.5.0
-ENV DESTINATION /opt/hbase
+# 这里是设置了jdk的环境
+ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-arm64
+ENV PATH="$JAVA_HOME/bin:$PATH"
 
-COPY hbase-${VERSION}-bin.tar.gz /
-RUN tar -xvf hbase-${VERSION}-bin.tar.gz
-RUN mv /hbase-${VERSION} ${DESTINATION}
-ADD hbase-site.xml /${DESTINATION}/conf/hbase-site.xml
-ADD hbase-env.sh /${DESTINATION}/conf/hbase-env.sh
+# 下载HBase的二进制包，这里以HBase 2.6.0为例
+ARG HBASE_VERSION=2.6.0
+COPY hbase-${HBASE_VERSION}-hadoop3-bin.tar.gz /tmp/
 
-# Folder for data
-RUN mkdir -p /data/hbase
-RUN mkdir -p /data/zookeeper
+# 解压HBase到/opt/hbase目录
+RUN tar xzf /tmp/hbase-${HBASE_VERSION}-hadoop3-bin.tar.gz -C /opt/ \
+    && mv /opt/hbase-${HBASE_VERSION}-hadoop3 /opt/hbase \
+    && rm -f /tmp/hbase-${HBASE_VERSION}-hadoop3-bin.tar.gz
 
-ENV JAVA_HOME /usr/local/openjdk-8
-ENV PATH $PATH:/${DESTINATION}/bin
+# 设置HBase的环境变量
+ENV PATH="/opt/hbase/bin:$PATH"
+ENV HBASE_HOME="/opt/hbase"
+ENV HBASE_MANAGES_ZK=false
 
-# Getting web-for-it
-RUN wget https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh -O /wait-for-it.sh
-RUN chmod +x /wait-for-it.sh
-
-# REST API
-EXPOSE 8080
-# Thrift API
-EXPOSE 9090
-
-# Zookeeper port
-EXPOSE 2181
-
-# Master port
-EXPOSE 16000
-# Master info port
-EXPOSE 16010
-
-# Regionserver port
-EXPOSE 16020
-# Regionserver info port
-EXPOSE 16030
-
-VOLUME /data/hbase
-VOLUME /data/zookeeper
-WORKDIR ${DESTINATION}
+# 暴露HBase的端口
+EXPOSE 60010 16010
 
 
-CMD ["/usr/bin/supervisord"]
+# 复制模板配置文件
+COPY hbase-site.xml /opt/hbase/conf/hbase-site.xml
+
+# 在容器启动时生成配置文件
+
+CMD ["tail", "-f", "/dev/null"]

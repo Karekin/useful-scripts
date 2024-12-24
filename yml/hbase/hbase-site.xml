@@ -1,30 +1,88 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!-- HBase Configuration Template -->
+
 <configuration>
-  <property>
-    <name>hbase.rootdir</name>
-    <value>file:///data2/hbase</value>
-  </property>
-  <property>
-    <name>hbase.zookeeper.property.dataDir</name>
-    <value>/data2/zookeeper</value>
-  </property>
-     <property>
-     <name>hbase.zookeeper.quorum</name>
-     <value>zookeeper</value>
-   </property>
-   <property>
-     <name>hbase.zookeeper.property.ClientPort</name>
-     <value>2181</value>
-   </property>
-  <property> 
-      <name>hbase.cluster.distributed</name> 
-      <value>true</value> 
-  </property> 
-  <property> 
-      <name>hbase.regionserver.ipc.address</name> 
-      <value>0.0.0.0</value> 
-  </property> 
-  <property> 
-      <name>hbase.master.ipc.address</name> 
-      <value>0.0.0.0</value> 
-  </property> 
+
+	<!-- ZooKeeper quorum -->
+	<property>
+		<name>hbase.zookeeper.quorum</name>
+		<value>zoo1:2181</value>
+		<!-- Optional ZooKeeper client port -->
+		<description>
+			A comma-separated list of host:port pairs pointing to the ZooKeeper Quorum.
+			The port defaults to 2181 if not specified.
+		</description>
+	</property>
+
+	<!-- ZooKeeper client port -->
+	<property>
+		<name>hbase.zookeeper.property.clientPort</name>
+		<value>2181</value>
+		<description>
+			The port at which the clients will connect.
+		</description>
+	</property>
+
+	<!-- ZooKeeper session timeout -->
+	<property>
+		<name>hbase.zookeeper.session.timeout.upper.limit</name>
+		<value>60000</value>
+		<description>
+			The maximum value for the ZooKeeper session timeout, in milliseconds.
+		</description>
+	</property>
+
+	<!-- HBase root directory -->
+	<property>
+		<name>hbase.rootdir</name>
+		<value>hdfs://namenode:8020/hbase</value>
+		<description>
+			The root directory where HBase stores its data.
+		</description>
+	</property>
+
+	<!-- HFile block cache size -->
+	<property>
+		<name>hfile.block.cache.size</name>
+		<value>0.4</value>
+		<description>
+			The fraction of heap space to use for the HFile block cache.
+		</description>
+	</property>
+
+	<!-- RPC timeout -->
+	<property>
+		<name>hbase.rpc.timeout</name>
+		<value>30000</value>
+		<description>
+			The default timeout for RPC calls, in milliseconds.
+		</description>
+	</property>
+
+	<!-- HBase master address -->
+
+
+	<!-- HBase region server handler count -->
+	<property>
+		<name>hbase.regionserver.handler.count</name>
+		<value>60</value>
+		<description>
+			The number of request handlers per region server.
+		</description>
+	</property>
+	<property>
+		<name>hbase.cluster.distributed</name>
+		<value>true</value>
+	</property>
+	<property>
+		<name>hbase.tmp.dir</name>
+		<value>./tmp</value>
+	</property>
+	<property>
+		<name>hbase.unsafe.stream.capability.enforce</name>
+		<value>false</value>
+	</property>
+	<!-- More properties can be added as needed -->
+
 </configuration>

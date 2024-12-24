@@ -1,3 +1,6 @@
+完善注释：参考https://blog.csdn.net/weixin_42486564/article/details/140694787，真不错
+
+
 # Hbase-Pseudo-Docker
 伪分布式 Hbase Docker 容器，容器搭建过程参考 -> [使用Docker搭建伪分布式Hbase(外置Zookeeper)](<https://xinze.fun/2019/11/20/%E4%BD%BF%E7%94%A8Docker%E6%90%AD%E5%BB%BA%E4%BC%AA%E5%88%86%E5%B8%83%E5%BC%8FHbase-%E5%A4%96%E7%BD%AEZookeeper/>)
 
