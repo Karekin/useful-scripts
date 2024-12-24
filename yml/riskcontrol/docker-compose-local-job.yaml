@@ -1,42 +1,38 @@
-version: "2.2"
+version: "3.9"
 services:
 
-  ### Zookeeper ###
-
   zookeeper:
-    image: confluentinc/cp-zookeeper:5.5.0
-    hostname: zookeeper
+    image: bitnami/zookeeper:latest
     container_name: zookeeper
+    ports:
+      - "2181:2181"
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      - ALLOW_ANONYMOUS_LOGIN=yes
     volumes:
-      - ./zookeeper-data:/var/lib/zookeeper/data
-      - ./zookeeper-log:/var/lib/zookeeper/log
+      - ./data/zookeeper:/bitnami/zookeeper  # 持久化 Zookeeper 数据
+    networks:
+      - app_network
 
   kafka-cp-kafka-headless:
-    image: confluentinc/cp-kafka:5.0.0
-    hostname: kafka-cp-kafka-headless
+    image: bitnami/kafka:latest
+    container_name: kafka-cp-kafka-headless
     ports:
       - "9092:9092"
     environment:
-      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka-cp-kafka-headless:9092,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:19092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
-      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
-      KAFKA_BROKER_ID: 1
-
-      # 修改复制因子配置为单节点模式
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-    depends_on:
-      - zookeeper
-    healthcheck:
-      test: [ "CMD", "nc", "-z", "localhost", "9092" ]
-      interval: 10s
-      timeout: 10s
-      retries: 5
+      - KAFKA_BROKER_ID=0
+      - KAFKA_ZOOKEEPER_CONNECT=192.168.1.7:2181/kafka
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://192.168.1.7:9092
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092
+    volumes:
+      - ./data/kafka:/bitnami/kafka        # 持久化 Kafka 数据
+      - /etc/localtime:/etc/localtime
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "2"
+    networks:
+      - app_network
 
   ### Schema Registry ###
 
@@ -51,45 +47,58 @@ services:
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:18081
     depends_on:
       - kafka-cp-kafka-headless
+    networks:
+      - app_network
 
   ### Schema Registry UI ###
 
   schema-registry-ui:
     image: landoop/schema-registry-ui:0.9.4
     hostname: schema-registry-ui
-    platform: linux/amd64
     ports:
       - "8001:8000"
     environment:
       SCHEMAREGISTRY_URL: http://schema-registry:18081/
     depends_on:
       - schema-registry
+    networks:
+      - app_network
 
-  ### Flink Job Cluster ###
+#  hbase:
+#    image: harisekhon/hbase:latest # 或指定版本，例如 harisekhon/hbase:1.4
+#    container_name: hbase
+#    hostname: docker-hbase
+#    ports:
+#      - "2181:2181"   # Zookeeper
+#      - "8080:8080"   # HBase REST
+#      - "8085:8085"   # REST backup
+#      - "9090:9090"   # Thrift API
+#      - "9000:9000"   # HBase Master WebUI
+#      - "9095:9095"   # Thrift backup
+#      - "16000:16000" # HBase Master
+#      - "16010:16010" # HBase Master Web UI
+#      - "16201:16201" # HBase RegionServer Web UI
+#      - "16301:16301" # HBase RegionServer backup
+#      - "16020:16020" # HBase RegionServer
 
-  flink-master:
-    image: flink-job-fraud-demo:latest
-    ports:
-      - "8081:8081"
-    command: job-cluster --job-classname com.ververica.field.dynamicrules.Main -Djobmanager.rpc.address=flink-master -Dparallelism.default=2 --data-source kafka --rules-source kafka --alerts-sink kafka --rules-export-sink kafka --latency-sink kafka --kafka-host kafka-cp-kafka-headless --kafka-port 9092
-    depends_on:
-      - kafka-cp-kafka-headless
-
-  flink-task-manager:
-    image: flink-job-fraud-demo:latest
-    command: task-manager -Djobmanager.rpc.address=flink-master
-    deploy:
-      replicas: ${DEFAULT_PARALLELISM:-2}
-    depends_on:
-      - kafka-cp-kafka-headless
-
-  ### Spring Boot Demo###
-
-  demo:
-    image: demo-fraud-webapp:latest
-    hostname: demo
-    ports:
-      - "5656:5656"
+  hbase:
+    container_name: hbase
+    image: xinze0803/hbase
+    links:
+      - zookeeper
     depends_on:
       - zookeeper
-      - kafka-cp-kafka-headless
+    ports:
+      - "16010:16010"
+      - "8080:8080"
+      - "9090:9090"
+      - "16000:16000"
+      - "16020:16020"
+      - "16030:16030"
+    command: [ "/wait-for-it.sh", "zookeeper:2181", "-t", "10", "--", "/usr/bin/supervisord" ]
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
