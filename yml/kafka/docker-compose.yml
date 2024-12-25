@@ -1,14 +1,14 @@
 version: '3.7'
 services:
-  zookeeper:
-    image: bitnami/zookeeper:latest
-    container_name: learn-zookeeper
-    ports:
-      - "2181:2181"
-    environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
-    volumes:
-      - ./data/zookeeper:/bitnami/zookeeper  # 持久化 Zookeeper 数据
+#  zookeeper:
+#    image: bitnami/zookeeper:latest
+#    container_name: learn-zookeeper
+#    ports:
+#      - "2181:2181"
+#    environment:
+#      - ALLOW_ANONYMOUS_LOGIN=yes
+#    volumes:
+#      - ./data/zookeeper:/bitnami/zookeeper  # 持久化 Zookeeper 数据
 
   kafka:
     image: bitnami/kafka:latest

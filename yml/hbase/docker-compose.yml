@@ -52,3 +52,28 @@ services:
       - 16030:16030
     volumes:
       - ./logs/hbase:/opt/hbase/logs
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: kafka
+    ports:
+      - "9092:9092"        # PLAINTEXT 外部端口
+      - "29092:29092"      # PLAINTEXT_EXTERNAL 外部端口
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=zoo1:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_EXTERNAL://localhost:29092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_EXTERNAL:PLAINTEXT
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,PLAINTEXT_EXTERNAL://0.0.0.0:29092
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+    volumes:
+      - ./data/kafka:/bitnami/kafka
+      - /etc/localtime:/etc/localtime
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "2"
+
+
+networks:
+  default:
+    driver: bridge
