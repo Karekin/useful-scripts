@@ -11,11 +11,13 @@ services:
       - ./config
     environment:
       ENSURE_NAMENODE_DIR: "/tmp/hadoop-root/dfs/name"
+
   datanode:
     image: apache/hadoop:3.3.6
     command: ["hdfs", "datanode"]
     env_file:
       - ./config
+
   resourcemanager:
     image: apache/hadoop:3.3.6
     hostname: resourcemanager
@@ -26,21 +28,25 @@ services:
       - ./config
     volumes:
       - ./test.sh:/opt/test.sh
+
   nodemanager:
     image: apache/hadoop:3.3.6
     command: ["yarn", "nodemanager"]
     env_file:
       - ./config
+
   zoo1:
-    image: zookeeper:3.9.2
-    restart: always
-    hostname: zoo1
+    image: bitnami/zookeeper:latest
+    container_name: zoo1
     ports:
-      - 2181:2181
-      - 2888:2888
-      - 3888:3888
+      - "2181:2181"
+      - "2888:2888"
+      - "3888:3888"
     environment:
-      ZOO_MY_ID: 1
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    volumes:
+      - ./data/zookeeper:/bitnami/zookeeper
+
   hbase:
     image: hbase-pseudo:latest
     hostname: docker-linux
@@ -51,7 +57,9 @@ services:
       - 16020:16020
       - 16030:16030
     volumes:
-      - ./logs/hbase:/opt/hbase/logs
+      - ./data/hbase:/opt/hbase/data
+      - ./data/logs/hbase:/opt/hbase/logs
+
   kafka:
     image: bitnami/kafka:latest
     container_name: kafka
@@ -72,6 +80,15 @@ services:
       options:
         max-size: "100m"
         max-file: "2"
+
+  redis:
+    image: redis:6.2  # Redis 镜像
+    container_name: redis
+    ports:
+      - "6379:6379"  # Redis 端口
+    command: [ "redis-server", "--appendonly", "yes" ]
+    volumes:
+      - ./data/redis:/data
 
 
 networks:
