@@ -1,30 +1,40 @@
 version: '3.7'
 services:
-#  zookeeper:
-#    image: bitnami/zookeeper:latest
-#    container_name: learn-zookeeper
-#    ports:
-#      - "2181:2181"
-#    environment:
-#      - ALLOW_ANONYMOUS_LOGIN=yes
-#    volumes:
-#      - ./data/zookeeper:/bitnami/zookeeper  # 持久化 Zookeeper 数据
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    volumes:
+      - ./data/zookeeper:/bitnami/zookeeper  # 持久化 Zookeeper 数据
 
   kafka:
     image: bitnami/kafka:latest
-    container_name: learn-kafka
+    container_name: kafka
     ports:
-      - "9092:9092"
+      - "9092:9092"        # PLAINTEXT 外部端口
+      - "29092:29092"      # PLAINTEXT_EXTERNAL 外部端口
     environment:
-      - KAFKA_BROKER_ID=0
-      - KAFKA_ZOOKEEPER_CONNECT=192.168.1.7:2181/kafka
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://192.168.1.7:9092
-      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_EXTERNAL://localhost:29092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_EXTERNAL:PLAINTEXT
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,PLAINTEXT_EXTERNAL://0.0.0.0:29092
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
     volumes:
-      - ./data/kafka:/bitnami/kafka        # 持久化 Kafka 数据
+      - ./data/kafka:/bitnami/kafka
       - /etc/localtime:/etc/localtime
     logging:
       driver: json-file
       options:
         max-size: "100m"
         max-file: "2"
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    environment:
+      DYNAMIC_CONFIG_ENABLED: "true"
