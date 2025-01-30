@@ -156,6 +156,7 @@ services:
     image: yagagagaga/doris-standalone:2.1.5
     platform: linux/arm64
     container_name: data-warehouse-doris
+    hostname: doris
     ports:
       - "8030:8030"
       - "8040:8040"
@@ -170,10 +171,29 @@ services:
     image: mysql:8.0.32
     platform: linux/arm64
     container_name: data-warehouse-mysql
+    hostname: mysql
     environment:
       - MYSQL_ROOT_PASSWORD=666666
     ports:
       - "3306:3306"
+    networks:
+      - demo-iceberg
+
+  superset:
+    image: selectdb/superset_3.0.1-cloud_3.0.3:latest
+    user: "root"
+    environment:
+      SUPERSET_SECRET_KEY: "doris"
+    command:
+      - "sh"
+      - "-c"
+      - |
+        superset db upgrade
+        superset fab create-admin --username admin --password doris --firstname Superset --lastname Admin --email admin@superset.com
+        superset init
+        /bin/sh -c /usr/bin/run-server.sh
+    ports:
+      - "8088:8088"
     networks:
       - demo-iceberg
 
