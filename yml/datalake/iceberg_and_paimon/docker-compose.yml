@@ -117,6 +117,7 @@ services:
       - ./packages/jars/flink-connector-jdbc-3.1.2-1.18.jar:/opt/flink/lib/flink-connector-jdbc-3.1.2-1.18.jar
       - ./packages/jars/flink-shaded-hadoop-2-uber-2.8.3-10.0.jar:/opt/flink/lib/flink-shaded-hadoop-2-uber-2.8.3-10.0.jar
       - ./packages/jars/flink-s3-fs-hadoop-1.18.0.jar:/opt/flink/plugins/s3-fs-hadoop/flink-s3-fs-hadoop-1.18.0.jar
+      - ./packages/jars/flink-sql-connector-kafka-3.1.0-1.18.jar:/opt/flink/lib/flink-sql-connector-kafka-3.1.0-1.18.jar
       - ./packages/jars/iceberg-flink-runtime-1.18-1.5.2.jar:/opt/flink/lib/iceberg-flink-runtime-1.18-1.5.2.jar
       - ./packages/jars/iceberg-aws-bundle-1.5.2.jar:/opt/flink/lib/iceberg-aws-bundle-1.5.2.jar
       - ./packages/jars/paimon-flink-1.18-0.8.0.jar:/opt/flink/lib/paimon-flink-1.18-0.8.0.jar
@@ -143,6 +144,7 @@ services:
       - ./packages/jars/flink-connector-jdbc-3.1.2-1.18.jar:/opt/flink/lib/flink-connector-jdbc-3.1.2-1.18.jar
       - ./packages/jars/flink-shaded-hadoop-2-uber-2.8.3-10.0.jar:/opt/flink/lib/flink-shaded-hadoop-2-uber-2.8.3-10.0.jar
       - ./packages/jars/flink-s3-fs-hadoop-1.18.0.jar:/opt/flink/plugins/s3-fs-hadoop/flink-s3-fs-hadoop-1.18.0.jar
+      - ./packages/jars/flink-sql-connector-kafka-3.1.0-1.18.jar:/opt/flink/lib/flink-sql-connector-kafka-3.1.0-1.18.jar
       - ./packages/jars/iceberg-flink-runtime-1.18-1.5.2.jar:/opt/flink/lib/iceberg-flink-runtime-1.18-1.5.2.jar
       - ./packages/jars/iceberg-aws-bundle-1.5.2.jar:/opt/flink/lib/iceberg-aws-bundle-1.5.2.jar
       - ./packages/jars/paimon-flink-1.18-0.8.0.jar:/opt/flink/lib/paimon-flink-1.18-0.8.0.jar
@@ -179,8 +181,17 @@ services:
     networks:
       - demo-iceberg
 
+  dinky:
+    image: dinkydocker/dinky:1.1.0-flink1.18
+    container_name: dinky
+    ports:
+      - "8888:8888"
+    networks:
+      - demo-iceberg
+
   superset:
     image: selectdb/superset_3.0.1-cloud_3.0.3:latest
+    container_name: data-warehouse-superset
     user: "root"
     environment:
       SUPERSET_SECRET_KEY: "doris"
