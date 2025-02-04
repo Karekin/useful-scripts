@@ -24,6 +24,9 @@ services:
 
   dolphinscheduler-zookeeper:
     image: bitnami/zookeeper:3.6.2
+    container_name: dolphinscheduler-zookeeper
+#    ports:
+#      - "2181:2181"
     profiles: ["all"]
     environment:
       ALLOW_ANONYMOUS_LOGIN: "yes"
@@ -35,6 +38,39 @@ services:
       interval: 5s
       timeout: 60s
       retries: 120
+    networks:
+      - dolphinscheduler
+
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: kafka
+    ports:
+      - "9092:9092"        # PLAINTEXT 外部端口
+      - "29092:29092"      # PLAINTEXT_EXTERNAL 外部端口
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=dolphinscheduler-zookeeper:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_EXTERNAL://localhost:29092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_EXTERNAL:PLAINTEXT
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,PLAINTEXT_EXTERNAL://0.0.0.0:29092
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+    volumes:
+      - ./data/kafka:/bitnami/kafka
+      - /etc/localtime:/etc/localtime
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "2"
+    networks:
+      - dolphinscheduler
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    environment:
+      DYNAMIC_CONFIG_ENABLED: "true"
     networks:
       - dolphinscheduler
 
@@ -159,50 +195,50 @@ services:
     networks:
       - dolphinscheduler
 
-  seatunnel-master:
-    image: apache/seatunnel
-    container_name: seatunnel_master
-    profiles: ["all"]
-#    environment:
-#      - ST_DOCKER_MEMBER_LIST=172.16.0.2,172.16.0.3,172.16.0.4
-    entrypoint: >
-      /bin/sh -c "
-      /opt/seatunnel/bin/seatunnel-cluster.sh -r master
-      "
-    ports:
-      - "5801:5801"
-    networks:
-      - dolphinscheduler
-
-  seatunnel-worker1:
-    image: apache/seatunnel
-    container_name: seatunnel_worker_1
-    profiles: ["all"]
-#    environment:
-#      - ST_DOCKER_MEMBER_LIST=172.16.0.2,172.16.0.3,172.16.0.4
-    entrypoint: >
-      /bin/sh -c "
-      /opt/seatunnel/bin/seatunnel-cluster.sh -r worker
-      "
-    depends_on:
-      - seatunnel-master
-    networks:
-      - dolphinscheduler
-
-  seatunnel-worker2:
-    image: apache/seatunnel
-    container_name: seatunnel_worker_2
-    profiles: ["all"]
-#    environment:
-#      - ST_DOCKER_MEMBER_LIST=172.16.0.2,172.16.0.3,172.16.0.4
-    entrypoint: >
-      /bin/sh -c "
-      /opt/seatunnel/bin/seatunnel-cluster.sh -r worker
-      "
-    depends_on:
-      - seatunnel-master
-    networks:
-      - dolphinscheduler
+#  seatunnel-master:
+#    image: apache/seatunnel
+#    container_name: seatunnel_master
+#    profiles: ["all"]
+##    environment:
+##      - ST_DOCKER_MEMBER_LIST=172.16.0.2,172.16.0.3,172.16.0.4
+#    entrypoint: >
+#      /bin/sh -c "
+#      /opt/seatunnel/bin/seatunnel-cluster.sh -r master
+#      "
+#    ports:
+#      - "5801:5801"
+#    networks:
+#      - dolphinscheduler
+#
+#  seatunnel-worker1:
+#    image: apache/seatunnel
+#    container_name: seatunnel_worker_1
+#    profiles: ["all"]
+##    environment:
+##      - ST_DOCKER_MEMBER_LIST=172.16.0.2,172.16.0.3,172.16.0.4
+#    entrypoint: >
+#      /bin/sh -c "
+#      /opt/seatunnel/bin/seatunnel-cluster.sh -r worker
+#      "
+#    depends_on:
+#      - seatunnel-master
+#    networks:
+#      - dolphinscheduler
+#
+#  seatunnel-worker2:
+#    image: apache/seatunnel
+#    container_name: seatunnel_worker_2
+#    profiles: ["all"]
+##    environment:
+##      - ST_DOCKER_MEMBER_LIST=172.16.0.2,172.16.0.3,172.16.0.4
+#    entrypoint: >
+#      /bin/sh -c "
+#      /opt/seatunnel/bin/seatunnel-cluster.sh -r worker
+#      "
+#    depends_on:
+#      - seatunnel-master
+#    networks:
+#      - dolphinscheduler
 
 networks:
   dolphinscheduler:
@@ -215,6 +251,6 @@ volumes:
   dolphinscheduler-logs:
   dolphinscheduler-shared-local:
   dolphinscheduler-resource-local:
-  seatunnel-master:
-  seatunnel-worker1:
-  seatunnel-worker2:
+#  seatunnel-master:
+#  seatunnel-worker1:
+#  seatunnel-worker2:
