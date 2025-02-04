@@ -12,8 +12,8 @@ services:
       MYSQL_ROOT_PASSWORD: 123456
       MYSQL_DATABASE: dolphinscheduler
       MYSQL_ROOT_HOST: "%"
-    #    volumes:
-    ##      - mysql-test:/var/lib/mysql
+    volumes:
+      - ./data/mysql:/var/lib/mysql
     healthcheck:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       interval: 5s
@@ -24,9 +24,10 @@ services:
 
   dolphinscheduler-zookeeper:
     image: bitnami/zookeeper:3.6.2
+    platform: linux/arm64
     container_name: dolphinscheduler-zookeeper
-#    ports:
-#      - "2181:2181"
+    ports:
+      - "2181:2181"
     profiles: ["all"]
     environment:
       ALLOW_ANONYMOUS_LOGIN: "yes"
@@ -50,7 +51,7 @@ services:
       - "29092:29092"      # PLAINTEXT_EXTERNAL 外部端口
     environment:
       - KAFKA_ZOOKEEPER_CONNECT=dolphinscheduler-zookeeper:2181
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_EXTERNAL://localhost:29092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_EXTERNAL://192.168.0.105:29092
 #      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://192.168.0.105:9092,PLAINTEXT_EXTERNAL://localhost:29092
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_EXTERNAL:PLAINTEXT
       - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,PLAINTEXT_EXTERNAL://0.0.0.0:29092
@@ -90,8 +91,8 @@ services:
     volumes:
       - ./data/doris/doris_fe_meta:/opt/doris/fe/meta
       - ./data/doris/doris_be_storage:/opt/doris/be/storage
-    environment:
-      - DORIS_FE_IP=192.168.0.105
+#    environment:
+#      - DORIS_FE_IP=192.168.0.105
     networks:
       - dolphinscheduler
     command: >
@@ -106,7 +107,8 @@ services:
     profiles: ["schema"]
     command: [ tools/bin/upgrade-schema.sh ]
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     volumes:
       - ./data/dolphinscheduler-schema-initializer/dolphinscheduler-logs:/opt/dolphinscheduler/logs
       - ./data/dolphinscheduler-schema-initializer/dolphinscheduler-shared-local:/opt/soft
@@ -199,7 +201,7 @@ services:
     container_name: data-warehouse-spark
     profiles: ["all"]
     hostname: demo-spark-iceberg
-    build: spark/
+#    build: spark/
     volumes:
       - ./jars/paimon-spark-3.5-0.8.0.jar:/opt/spark/jars/paimon-spark-3.5-0.8.0.jar
       - ./jars/paimon-s3-0.8.0.jar:/opt/spark/jars/paimon-s3-0.8.0.jar
@@ -250,14 +252,13 @@ services:
       - MINIO_ROOT_PASSWORD=password
       - MINIO_DOMAIN=minio
     networks:
-      dolphinscheduler:
-        aliases:
-          - warehouse.minio
+      - dolphinscheduler
     command: [ "server", "/data", "--console-address", ":9001" ]
 
   mc:
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
     image: minio/mc:RELEASE.2024-10-02T08-27-28Z-cpuv1
     platform: linux/arm64
     container_name: data-warehouse-mc
@@ -343,7 +344,7 @@ services:
       - "8888:8888"
     environment:
       #      DB_ACTIVE: mysql
-      MYSQL_ADDR: 192.168.0.105:3306
+      MYSQL_ADDR: mysql:3306
       MYSQL_DATABASE: dinky
       MYSQL_USERNAME: root
       MYSQL_PASSWORD: 123456
@@ -354,7 +355,7 @@ services:
     image: selectdb/superset_3.0.1-cloud_3.0.3:latest
     container_name: data-warehouse-superset
     profiles: ["all"]
-    user: "root"
+#    user: "root"
     environment:
       SUPERSET_SECRET_KEY: "doris"
     command:
