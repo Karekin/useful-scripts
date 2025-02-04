@@ -196,50 +196,174 @@ services:
     networks:
       - dolphinscheduler
 
-#  seatunnel-master:
-#    image: apache/seatunnel
-#    container_name: seatunnel_master
-#    profiles: ["all"]
-##    environment:
-##      - ST_DOCKER_MEMBER_LIST=172.16.0.2,172.16.0.3,172.16.0.4
-#    entrypoint: >
-#      /bin/sh -c "
-#      /opt/seatunnel/bin/seatunnel-cluster.sh -r master
-#      "
-#    ports:
-#      - "5801:5801"
-#    networks:
-#      - dolphinscheduler
-#
-#  seatunnel-worker1:
-#    image: apache/seatunnel
-#    container_name: seatunnel_worker_1
-#    profiles: ["all"]
-##    environment:
-##      - ST_DOCKER_MEMBER_LIST=172.16.0.2,172.16.0.3,172.16.0.4
-#    entrypoint: >
-#      /bin/sh -c "
-#      /opt/seatunnel/bin/seatunnel-cluster.sh -r worker
-#      "
-#    depends_on:
-#      - seatunnel-master
-#    networks:
-#      - dolphinscheduler
-#
-#  seatunnel-worker2:
-#    image: apache/seatunnel
-#    container_name: seatunnel_worker_2
-#    profiles: ["all"]
-##    environment:
-##      - ST_DOCKER_MEMBER_LIST=172.16.0.2,172.16.0.3,172.16.0.4
-#    entrypoint: >
-#      /bin/sh -c "
-#      /opt/seatunnel/bin/seatunnel-cluster.sh -r worker
-#      "
-#    depends_on:
-#      - seatunnel-master
-#    networks:
-#      - dolphinscheduler
+  spark:
+    image: tabulario/spark-iceberg
+    platform: linux/arm64
+    container_name: data-warehouse-spark
+    hostname: demo-spark-iceberg
+    build: spark/
+    volumes:
+      - ./packages/jars/paimon-spark-3.5-0.8.0.jar:/opt/spark/jars/paimon-spark-3.5-0.8.0.jar
+      - ./packages/jars/paimon-s3-0.8.0.jar:/opt/spark/jars/paimon-s3-0.8.0.jar
+      - ./data/table:/opt/data
+      - ./data/spark-conf:/opt/spark/conf
+      - ./sql/prepare_data.sql:/opt/sql/prepare_data.sql
+    depends_on:
+      - rest
+      - minio
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+    networks:
+      - dolphinscheduler
+
+  rest:
+    image: tabulario/iceberg-rest
+    platform: linux/arm64
+    container_name: data-warehouse-iceberg-rest
+    ports:
+      - ${REST_CATALOG_PORT}:8181
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+      - CATALOG_WAREHOUSE=s3://warehouse/wh/
+      - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
+      - CATALOG_S3_ENDPOINT=http://minio:9000
+    networks:
+      - dolphinscheduler
+    volumes:
+      - './packages/jdk1.8.0_421:/opt/jdk1.8.0_421'
+      - './packages/doris-bin:/opt/doris-bin'
+      - './scripts:/opt/scripts'
+
+  minio:
+    image: minio/minio
+    platform: linux/arm64
+    container_name: data-warehouse-minio
+    ports:
+      - ${MINIO_API_PORT}:9000
+      - ${MINIO_UI_PORT}:9001
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=password
+      - MINIO_DOMAIN=minio
+    networks:
+      dolphinscheduler:
+        aliases:
+          - warehouse.minio
+    command: [ "server", "/data", "--console-address", ":9001" ]
+
+  mc:
+    depends_on:
+      - minio
+    image: minio/mc:RELEASE.2024-10-02T08-27-28Z-cpuv1
+    platform: linux/arm64
+    container_name: data-warehouse-mc
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+    networks:
+      - dolphinscheduler
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc config host add minio http://minio:9000 admin password) do echo '...waiting...' && sleep 1; done;
+      /usr/bin/mc rm -r --force minio/warehouse;
+      /usr/bin/mc mb minio/warehouse;
+      /usr/bin/mc policy set public minio/warehouse;
+      tail -f /dev/null
+      "
+
+  jobmanager:
+    image: flink:1.18.0
+    platform: linux/arm64
+    container_name: data-warehouse-jobmanager
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=jobmanager
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+    ports:
+      - "8082:8081"
+    command: jobmanager
+    depends_on:
+      - rest
+      - minio
+    volumes:
+      - ./packages/jars/flink-connector-jdbc-3.1.2-1.18.jar:/opt/flink/lib/flink-connector-jdbc-3.1.2-1.18.jar
+      - ./packages/jars/flink-shaded-hadoop-2-uber-2.8.3-10.0.jar:/opt/flink/lib/flink-shaded-hadoop-2-uber-2.8.3-10.0.jar
+      - ./packages/jars/flink-s3-fs-hadoop-1.18.0.jar:/opt/flink/plugins/s3-fs-hadoop/flink-s3-fs-hadoop-1.18.0.jar
+      - ./packages/jars/flink-sql-connector-kafka-3.1.0-1.18.jar:/opt/flink/lib/flink-sql-connector-kafka-3.1.0-1.18.jar
+      - ./packages/jars/iceberg-flink-runtime-1.18-1.5.2.jar:/opt/flink/lib/iceberg-flink-runtime-1.18-1.5.2.jar
+      - ./packages/jars/iceberg-aws-bundle-1.5.2.jar:/opt/flink/lib/iceberg-aws-bundle-1.5.2.jar
+      - ./packages/jars/paimon-flink-1.18-0.8.0.jar:/opt/flink/lib/paimon-flink-1.18-0.8.0.jar
+      - ./packages/jars/paimon-s3-0.8.0.jar:/opt/flink/lib/paimon-s3-0.8.0.jar
+      - ./sql/init_tables.sql:/opt/flink/sql/init_tables.sql
+      - ./data/flink-conf:/opt/flink/conf
+    networks:
+      - dolphinscheduler
+    deploy:
+      replicas: 1
+
+  taskmanager:
+    image: flink:1.18.0
+    platform: linux/arm64
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=jobmanager
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    volumes:
+      - ./packages/jars/flink-connector-jdbc-3.1.2-1.18.jar:/opt/flink/lib/flink-connector-jdbc-3.1.2-1.18.jar
+      - ./packages/jars/flink-shaded-hadoop-2-uber-2.8.3-10.0.jar:/opt/flink/lib/flink-shaded-hadoop-2-uber-2.8.3-10.0.jar
+      - ./packages/jars/flink-s3-fs-hadoop-1.18.0.jar:/opt/flink/plugins/s3-fs-hadoop/flink-s3-fs-hadoop-1.18.0.jar
+      - ./packages/jars/flink-sql-connector-kafka-3.1.0-1.18.jar:/opt/flink/lib/flink-sql-connector-kafka-3.1.0-1.18.jar
+      - ./packages/jars/iceberg-flink-runtime-1.18-1.5.2.jar:/opt/flink/lib/iceberg-flink-runtime-1.18-1.5.2.jar
+      - ./packages/jars/iceberg-aws-bundle-1.5.2.jar:/opt/flink/lib/iceberg-aws-bundle-1.5.2.jar
+      - ./packages/jars/paimon-flink-1.18-0.8.0.jar:/opt/flink/lib/paimon-flink-1.18-0.8.0.jar
+      - ./packages/jars/paimon-s3-0.8.0.jar:/opt/flink/lib/paimon-s3-0.8.0.jar
+    networks:
+      - dolphinscheduler
+    deploy:
+      replicas: 2
+
+  dinky:
+    image: dinkydocker/dinky-standalone-server:1.2-flink1.18
+    container_name: dinky
+    ports:
+      - "8888:8888"
+    environment:
+      #      DB_ACTIVE: mysql
+      MYSQL_ADDR: 192.168.0.105:3306
+      MYSQL_DATABASE: dinky
+      MYSQL_USERNAME: root
+      MYSQL_PASSWORD: 123456
+    networks:
+      - dolphinscheduler
+
+  superset:
+    image: selectdb/superset_3.0.1-cloud_3.0.3:latest
+    container_name: data-warehouse-superset
+    user: "root"
+    environment:
+      SUPERSET_SECRET_KEY: "doris"
+    command:
+      - "sh"
+      - "-c"
+      - |
+        superset db upgrade
+        superset fab create-admin --username admin --password doris --firstname Superset --lastname Admin --email admin@superset.com
+        superset init
+        /bin/sh -c /usr/bin/run-server.sh
+    ports:
+      - "8088:8088"
+    networks:
+      - dolphinscheduler
 
 networks:
   dolphinscheduler:
@@ -252,6 +376,3 @@ volumes:
   dolphinscheduler-logs:
   dolphinscheduler-shared-local:
   dolphinscheduler-resource-local:
-#  seatunnel-master:
-#  seatunnel-worker1:
-#  seatunnel-worker2:

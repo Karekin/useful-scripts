@@ -154,38 +154,44 @@ services:
     deploy:
       replicas: 2
 
-  doris:
-    image: yagagagaga/doris-standalone:2.1.5
-    platform: linux/arm64
-    container_name: data-warehouse-doris
-    hostname: doris
-    ports:
-      - "8030:8030"
-      - "8040:8040"
-      - "9030:9030"
-    volumes:
-      - ./doris/doris_fe_meta:/opt/doris/fe/meta
-      - ./doris/doris_be_storage:/opt/doris/be/storage
-    networks:
-      - demo-iceberg
-
-  mysql:
-    image: mysql:8.0.32
-    platform: linux/arm64
-    container_name: data-warehouse-mysql
-    hostname: mysql
-    environment:
-      - MYSQL_ROOT_PASSWORD=666666
-    ports:
-      - "3306:3306"
-    networks:
-      - demo-iceberg
+#  doris:
+#    image: yagagagaga/doris-standalone:2.1.5
+#    platform: linux/arm64
+#    container_name: data-warehouse-doris
+#    hostname: doris
+#    ports:
+#      - "8030:8030"
+#      - "8040:8040"
+#      - "9030:9030"
+#    volumes:
+#      - ./doris/doris_fe_meta:/opt/doris/fe/meta
+#      - ./doris/doris_be_storage:/opt/doris/be/storage
+#    networks:
+#      - demo-iceberg
+#
+#  mysql:
+#    image: mysql:8.0.32
+#    platform: linux/arm64
+#    container_name: data-warehouse-mysql
+#    hostname: mysql
+#    environment:
+#      - MYSQL_ROOT_PASSWORD=666666
+#    ports:
+#      - "3306:3306"
+#    networks:
+#      - demo-iceberg
 
   dinky:
-    image: dinkydocker/dinky:1.1.0-flink1.18
+    image: dinkydocker/dinky-standalone-server:1.2-flink1.18
     container_name: dinky
     ports:
       - "8888:8888"
+    environment:
+#      DB_ACTIVE: mysql
+      MYSQL_ADDR: 192.168.0.105:3306
+      MYSQL_DATABASE: dinky
+      MYSQL_USERNAME: root
+      MYSQL_PASSWORD: 123456
     networks:
       - demo-iceberg
 
