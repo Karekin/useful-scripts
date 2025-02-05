@@ -24,7 +24,7 @@ services:
 
   dolphinscheduler-zookeeper:
     image: bitnami/zookeeper:3.6.2
-    platform: linux/arm64
+#    platform: linux/arm64
     container_name: dolphinscheduler-zookeeper
     ports:
       - "2181:2181"
@@ -49,16 +49,26 @@ services:
     ports:
       - "9092:9092"        # PLAINTEXT 外部端口
       - "29092:29092"      # PLAINTEXT_EXTERNAL 外部端口
+#    environment:
+#      - KAFKA_ZOOKEEPER_CONNECT=dolphinscheduler-zookeeper:2181
+#      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,PLAINTEXT_EXTERNAL://0.0.0.0:29092
+#      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_EXTERNAL://192.168.0.105:29092
+#      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_EXTERNAL:PLAINTEXT
+#      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+
     environment:
-      - KAFKA_ZOOKEEPER_CONNECT=dolphinscheduler-zookeeper:2181
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_EXTERNAL://192.168.0.105:29092
-#      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://192.168.0.105:9092,PLAINTEXT_EXTERNAL://localhost:29092
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_EXTERNAL:PLAINTEXT
-      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,PLAINTEXT_EXTERNAL://0.0.0.0:29092
-      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_ZOOKEEPER_CONNECT=dolphinscheduler-zookeeper:2181  # 指定 Zookeeper 地址
+      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092  # 监听所有网络接口上的 9092 端口
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092  # 只对 Kafka 客户端返回容器内部的地址
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT  # 仅支持 PLAINTEXT，无需 EXTERNAL
+      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT  # 让 Kafka 内部通信使用 PLAINTEXT 监听器
+#      - KAFKA_LOG_RETENTION_HOURS=168  # 设置日志保留 7 天（可选优化）
+#      - KAFKA_LOG_SEGMENT_BYTES=1073741824  # 每个日志分片 1GB（可选优化）
+#      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true  # 允许自动创建主题（可选）
+
     volumes:
       - ./data/kafka:/bitnami/kafka
-      - ./data/etc/localtime:/etc/localtime
+#      - ./data/etc/localtime:/etc/localtime
     logging:
       driver: json-file
       options:
@@ -201,11 +211,11 @@ services:
     container_name: data-warehouse-spark
     profiles: ["all"]
     hostname: demo-spark-iceberg
-#    build: spark/
+    build: spark/
     volumes:
       - ./jars/paimon-spark-3.5-0.8.0.jar:/opt/spark/jars/paimon-spark-3.5-0.8.0.jar
       - ./jars/paimon-s3-0.8.0.jar:/opt/spark/jars/paimon-s3-0.8.0.jar
-      - ./data/spark-table:/opt/data
+      - ./data/table:/opt/data
       - ./data/spark-conf:/opt/spark/conf
       - ./sql/prepare_data.sql:/opt/sql/prepare_data.sql
     depends_on:
@@ -252,13 +262,14 @@ services:
       - MINIO_ROOT_PASSWORD=password
       - MINIO_DOMAIN=minio
     networks:
-      - dolphinscheduler
+      dolphinscheduler:
+        aliases:
+          - warehouse.minio
     command: [ "server", "/data", "--console-address", ":9001" ]
 
   mc:
     depends_on:
-      minio:
-        condition: service_healthy
+      - minio
     image: minio/mc:RELEASE.2024-10-02T08-27-28Z-cpuv1
     platform: linux/arm64
     container_name: data-warehouse-mc

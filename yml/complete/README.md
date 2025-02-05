@@ -35,4 +35,8 @@ docker cp seatunnel-hadoop3-3.1.4-uber-2.3.3-optional.jar dolphinscheduler-dolph
 登录界面：http://localhost:12345/dolphinscheduler/ui/login
 DolphinScheduler 默认的用户和密码分别为 admin 和 dolphinscheduler123
 
+dinky 默认的用户和密码：admin  dinky123!@#
+
+minio 默认的用户和密码：admin  password
+
 生成数据
