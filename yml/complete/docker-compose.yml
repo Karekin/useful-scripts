@@ -382,6 +382,19 @@ services:
     networks:
       - dolphinscheduler
 
+  python-producer:
+    image: python:3.9
+    container_name: python-producer
+    working_dir: /app
+    volumes:
+      - ./scripts/datageneration:/app
+    command: bash -c "pip install -r requirements.txt && python main_batch_run.py"
+    networks:
+      - dolphinscheduler
+
+
+
+
 networks:
   dolphinscheduler:
     driver: bridge
