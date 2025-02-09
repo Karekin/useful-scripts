@@ -1,0 +1,8 @@
+# Kafka 相关
+confluent-kafka
+
+# MySQL 相关
+mysql-connector-python
+
+faker
+datetime
