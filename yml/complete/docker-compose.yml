@@ -1,121 +1,243 @@
 version: "3.8"
+
+# Define common environment variables
+x-common-env: &common-env
+  AWS_ACCESS_KEY_ID: admin
+  AWS_SECRET_ACCESS_KEY: password
+  AWS_REGION: us-east-1
+
+# Define common logging configuration
+x-common-logging: &common-logging
+  driver: json-file
+  options:
+    max-size: "100m"
+    max-file: "3"
+
+# Define common health check configuration
+x-common-healthcheck: &common-healthcheck
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+
 services:
+  # ==================== Database Services ====================
   mysql:
     image: mysql:8.0
     container_name: mysql
     hostname: mysql
     profiles: ["all", "schema"]
-    command: --max_allowed_packet=209715200
+    restart: unless-stopped
+    command: >
+      --max_allowed_packet=209715200
+      --innodb_buffer_pool_size=1G
+      --innodb_log_file_size=256M
+      --innodb_flush_log_at_trx_commit=2
+      --innodb_flush_method=O_DIRECT
     ports:
       - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: 123456
       MYSQL_DATABASE: dolphinscheduler
       MYSQL_ROOT_HOST: "%"
+      TZ: Asia/Shanghai
     volumes:
       - ./data/mysql:/var/lib/mysql
+      - ./data/mysql/conf:/etc/mysql/conf.d
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
-      interval: 5s
-      timeout: 60s
-      retries: 120
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - dolphinscheduler
+    logging: *common-logging
 
+  # ==================== Coordination Services ====================
   dolphinscheduler-zookeeper:
     image: bitnami/zookeeper:3.6.2
-#    platform: linux/arm64
     container_name: dolphinscheduler-zookeeper
+    restart: unless-stopped
+    profiles: ["all"]
     ports:
       - "2181:2181"
-    profiles: ["all"]
     environment:
       ALLOW_ANONYMOUS_LOGIN: "yes"
       ZOO_4LW_COMMANDS_WHITELIST: srvr,ruok,wchs,cons
+      ZOO_HEAP_SIZE: 512
+      ZOO_MAX_CLIENT_CNXNS: 60
+      TZ: Asia/Shanghai
     volumes:
       - ./data/dolphinscheduler-zookeeper:/bitnami/zookeeper
     healthcheck:
-      test: ["CMD", "bash", "-c", "cat < /dev/null > /dev/tcp/127.0.0.1/2181"]
-      interval: 5s
-      timeout: 60s
-      retries: 120
+      test: ["CMD", "bash", "-c", "echo ruok | nc localhost 2181 | grep imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - dolphinscheduler
+    logging: *common-logging
 
+  # ==================== Message Queue Services ====================
   kafka:
-    image: bitnami/kafka:latest
+    image: bitnami/kafka:3.6.1
     container_name: kafka
+    restart: unless-stopped
     profiles: ["all"]
     ports:
-      - "9092:9092"        # PLAINTEXT 外部端口
-      - "29092:29092"      # PLAINTEXT_EXTERNAL 外部端口
-#    environment:
-#      - KAFKA_ZOOKEEPER_CONNECT=dolphinscheduler-zookeeper:2181
-#      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092,PLAINTEXT_EXTERNAL://0.0.0.0:29092
-#      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_EXTERNAL://192.168.0.105:29092
-#      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_EXTERNAL:PLAINTEXT
-#      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
-
+      - "9092:9092"
+      - "29092:29092"
     environment:
-      - KAFKA_ZOOKEEPER_CONNECT=dolphinscheduler-zookeeper:2181  # 指定 Zookeeper 地址
-      - KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092  # 监听所有网络接口上的 9092 端口
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092  # 只对 Kafka 客户端返回容器内部的地址
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT  # 仅支持 PLAINTEXT，无需 EXTERNAL
-      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT  # 让 Kafka 内部通信使用 PLAINTEXT 监听器
-#      - KAFKA_LOG_RETENTION_HOURS=168  # 设置日志保留 7 天（可选优化）
-#      - KAFKA_LOG_SEGMENT_BYTES=1073741824  # 每个日志分片 1GB（可选优化）
-#      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true  # 允许自动创建主题（可选）
-
+      KAFKA_ZOOKEEPER_CONNECT: dolphinscheduler-zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_EXTERNAL://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_EXTERNAL://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      TZ: Asia/Shanghai
     volumes:
       - ./data/kafka:/bitnami/kafka
-#      - ./data/etc/localtime:/etc/localtime
-    logging:
-      driver: json-file
-      options:
-        max-size: "100m"
-        max-file: "2"
+    depends_on:
+      dolphinscheduler-zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     networks:
       - dolphinscheduler
+    logging: *common-logging
 
   kafka-ui:
-    image: provectuslabs/kafka-ui
+    image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
+    restart: unless-stopped
     profiles: ["all"]
     ports:
       - "8080:8080"
     environment:
       DYNAMIC_CONFIG_ENABLED: "true"
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: dolphinscheduler-zookeeper:2181
+      TZ: Asia/Shanghai
+    depends_on:
+      kafka:
+        condition: service_healthy
     networks:
       - dolphinscheduler
+    logging: *common-logging
 
+  # ==================== Doris Services ====================
+  doris-manager:
+    image: yagagagaga/doris-manager:latest
+    container_name: doris-manager
+    restart: unless-stopped
+    profiles: ["all", "doris-manager"]
+    privileged: true
+    ports:
+      - "8004:8004"  # Manager web service
+      - "8010:8010"  # Manager API
+      - "8972:8972"  # Agent port
+      - "9090:9090"  # Prometheus
+      - "9093:9093"  # AlertManager
+      - "3000:3000"  # Grafana
+    volumes:
+      - ./data/doris-manager/doris:/opt/downloads/doris
+      - ./data/doris-manager/manager:/opt/downloads/doris_manager
+      - ./data/doris-manager/deploy:/opt/doris
+    environment:
+      TZ: Asia/Shanghai
+    networks:
+      - dolphinscheduler
+    logging: *common-logging
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  doris-agent1:
+    image: yagagagaga/doris-manager-agent:latest
+    container_name: doris-agent1
+    restart: unless-stopped
+    profiles: ["doris-manager"]
+    privileged: true
+    volumes:
+      - ./data/doris-agent1:/opt/doris
+    depends_on:
+      - doris-manager
+    networks:
+      - dolphinscheduler
+    logging: *common-logging
+
+  doris-agent2:
+    image: yagagagaga/doris-manager-agent:latest
+    container_name: doris-agent2
+    restart: unless-stopped
+    profiles: ["doris-manager"]
+    privileged: true
+    volumes:
+      - ./data/doris-agent2:/opt/doris
+    depends_on:
+      - doris-manager
+    networks:
+      - dolphinscheduler
+    logging: *common-logging
+
+  # Legacy standalone Doris (kept for compatibility)
   doris:
     image: yagagagaga/doris-standalone:2.1.5
     platform: linux/arm64
     container_name: doris
+    restart: unless-stopped
     profiles: ["all"]
     hostname: doris
     ports:
-      - "8030:8030"  # HTTP 服务
-      - "8040:8040"  # BE 端口
-      - "9030:9030"  # MySQL 访问端口
+      - "8030:8030"  # HTTP service
+      - "8040:8040"  # BE port
+      - "9030:9030"  # MySQL access port
     volumes:
       - ./data/doris/doris_fe_meta:/opt/doris/fe/meta
       - ./data/doris/doris_be_storage:/opt/doris/be/storage
-#    environment:
-#      - DORIS_FE_IP=192.168.0.105
+    environment:
+      TZ: Asia/Shanghai
     networks:
       - dolphinscheduler
     command: >
-      bash -c "sed -i 's/^priority_networks=.*/priority_networks=192.168.0.105\/24/' /opt/doris/fe/conf/fe.conf &&
-               sed -i 's/^frontend_address=.*/frontend_address=192.168.0.105/' /opt/doris/fe/conf/fe.conf &&
-               /opt/doris/bin/start_doris.sh --daemon &&
-               tail -f /opt/doris/fe/log/fe.log"
+      bash -c "
+        sed -i 's/^priority_networks=.*/priority_networks=192.168.0.105\/24/' /opt/doris/fe/conf/fe.conf &&
+        sed -i 's/^frontend_address=.*/frontend_address=192.168.0.105/' /opt/doris/fe/conf/fe.conf &&
+        /opt/doris/bin/start_doris.sh --daemon &&
+        tail -f /opt/doris/fe/log/fe.log
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8030/api/bootstrap"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    logging: *common-logging
 
+  # ==================== DolphinScheduler Services ====================
   dolphinscheduler-schema-initializer:
     image: apache/dolphinscheduler-tools:3.1.9
-    env_file: .env
+    container_name: dolphinscheduler-schema-initializer
     profiles: ["schema"]
-    command: [ tools/bin/upgrade-schema.sh ]
+    env_file: .env
+    command: [tools/bin/upgrade-schema.sh]
     depends_on:
       mysql:
         condition: service_healthy
@@ -126,21 +248,24 @@ services:
       - ./jars/mysql-connector-java-8.0.16.jar:/opt/dolphinscheduler/tools/libs/mysql-connector-java-8.0.16.jar
     networks:
       - dolphinscheduler
+    logging: *common-logging
 
   dolphinscheduler-api:
     image: apache/dolphinscheduler-api:3.1.9
+    container_name: dolphinscheduler-api
+    restart: unless-stopped
+    profiles: ["all"]
     ports:
       - "12345:12345"
       - "25333:25333"
-    profiles: ["all"]
     env_file: .env
     healthcheck:
-      test: [ "CMD", "curl", "http://localhost:12345/dolphinscheduler/actuator/health" ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+      test: ["CMD", "curl", "-f", "http://localhost:12345/dolphinscheduler/actuator/health"]
+      <<: *common-healthcheck
     depends_on:
       dolphinscheduler-zookeeper:
+        condition: service_healthy
+      mysql:
         condition: service_healthy
     volumes:
       - ./data/dolphinscheduler-api/dolphinscheduler-logs:/opt/dolphinscheduler/logs
@@ -149,33 +274,40 @@ services:
       - ./jars/mysql-connector-java-8.0.16.jar:/opt/dolphinscheduler/libs/mysql-connector-java-8.0.16.jar
     networks:
       - dolphinscheduler
+    logging: *common-logging
 
   dolphinscheduler-alert:
     image: apache/dolphinscheduler-alert-server:3.1.9
+    container_name: dolphinscheduler-alert
+    restart: unless-stopped
     profiles: ["all"]
     env_file: .env
     healthcheck:
-      test: [ "CMD", "curl", "http://localhost:50053/actuator/health" ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+      test: ["CMD", "curl", "-f", "http://localhost:50053/actuator/health"]
+      <<: *common-healthcheck
+    depends_on:
+      mysql:
+        condition: service_healthy
     volumes:
       - ./data/dolphinscheduler-alert/dolphinscheduler-logs:/opt/dolphinscheduler/logs
       - ./jars/mysql-connector-java-8.0.16.jar:/opt/dolphinscheduler/libs/mysql-connector-java-8.0.16.jar
     networks:
       - dolphinscheduler
+    logging: *common-logging
 
   dolphinscheduler-master:
     image: apache/dolphinscheduler-master:3.1.9
+    container_name: dolphinscheduler-master
+    restart: unless-stopped
     profiles: ["all"]
     env_file: .env
     healthcheck:
-      test: [ "CMD", "curl", "http://localhost:5679/actuator/health" ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+      test: ["CMD", "curl", "-f", "http://localhost:5679/actuator/health"]
+      <<: *common-healthcheck
     depends_on:
       dolphinscheduler-zookeeper:
+        condition: service_healthy
+      dolphinscheduler-api:
         condition: service_healthy
     volumes:
       - ./data/dolphinscheduler-master/dolphinscheduler-logs:/opt/dolphinscheduler/logs
@@ -183,18 +315,21 @@ services:
       - ./jars/mysql-connector-java-8.0.16.jar:/opt/dolphinscheduler/libs/mysql-connector-java-8.0.16.jar
     networks:
       - dolphinscheduler
+    logging: *common-logging
 
   dolphinscheduler-worker:
     image: apache/dolphinscheduler-worker:3.1.9
+    container_name: dolphinscheduler-worker
+    restart: unless-stopped
     profiles: ["all"]
     env_file: .env
     healthcheck:
-      test: [ "CMD", "curl", "http://localhost:1235/actuator/health" ]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+      test: ["CMD", "curl", "-f", "http://localhost:1235/actuator/health"]
+      <<: *common-healthcheck
     depends_on:
       dolphinscheduler-zookeeper:
+        condition: service_healthy
+      dolphinscheduler-master:
         condition: service_healthy
     volumes:
       - ./data/dolphinscheduler-worker/dolphinscheduler-worker-data:/tmp/dolphinscheduler
@@ -204,11 +339,96 @@ services:
       - ./jars/mysql-connector-java-8.0.16.jar:/opt/dolphinscheduler/libs/mysql-connector-java-8.0.16.jar
     networks:
       - dolphinscheduler
+    logging: *common-logging
 
+  # ==================== Data Lake Services ====================
+  minio:
+    image: minio/minio:latest
+    platform: linux/arm64
+    container_name: data-warehouse-minio
+    restart: unless-stopped
+    profiles: ["all"]
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password
+      MINIO_DOMAIN: minio
+      TZ: Asia/Shanghai
+    networks:
+      dolphinscheduler:
+        aliases:
+          - warehouse.minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging: *common-logging
+
+  mc:
+    image: minio/mc:latest
+    platform: linux/arm64
+    container_name: data-warehouse-mc
+    restart: unless-stopped
+    profiles: ["all"]
+    environment:
+      <<: *common-env
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks:
+      - dolphinscheduler
+    entrypoint: >
+      /bin/sh -c "
+        until (/usr/bin/mc config host add minio http://minio:9000 admin password) do echo '...waiting...' && sleep 1; done;
+        /usr/bin/mc rm -r --force minio/warehouse || true;
+        /usr/bin/mc mb minio/warehouse;
+        /usr/bin/mc policy set public minio/warehouse;
+        tail -f /dev/null
+      "
+    logging: *common-logging
+
+  rest:
+    image: tabulario/iceberg-rest:latest
+    platform: linux/arm64
+    container_name: data-warehouse-iceberg-rest
+    restart: unless-stopped
+    profiles: ["all"]
+    ports:
+      - "8181:8181"
+    environment:
+      <<: *common-env
+      CATALOG_WAREHOUSE: s3://warehouse/wh/
+      CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
+      CATALOG_S3_ENDPOINT: http://minio:9000
+      TZ: Asia/Shanghai
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks:
+      - dolphinscheduler
+    volumes:
+      - ./jars/jdk1.8.0_421:/opt/jdk1.8.0_421
+      - ./data/doris-bin:/opt/doris-bin
+      - ./scripts:/opt/scripts
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8181/v1/config"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging: *common-logging
+
+  # ==================== Processing Services ====================
   spark:
-    image: tabulario/spark-iceberg
+    image: tabulario/spark-iceberg:latest
     platform: linux/arm64
     container_name: data-warehouse-spark
+    restart: unless-stopped
     profiles: ["all"]
     hostname: demo-spark-iceberg
     build: spark/
@@ -219,92 +439,35 @@ services:
       - ./data/spark-conf:/opt/spark/conf
       - ./sql/prepare_data.sql:/opt/sql/prepare_data.sql
     depends_on:
-      - rest
-      - minio
+      rest:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     environment:
-      - AWS_ACCESS_KEY_ID=admin
-      - AWS_SECRET_ACCESS_KEY=password
-      - AWS_REGION=us-east-1
+      <<: *common-env
+      TZ: Asia/Shanghai
     networks:
       - dolphinscheduler
-
-  rest:
-    image: tabulario/iceberg-rest
-    platform: linux/arm64
-    container_name: data-warehouse-iceberg-rest
-    profiles: ["all"]
-    ports:
-      - 8181:8181
-    environment:
-      - AWS_ACCESS_KEY_ID=admin
-      - AWS_SECRET_ACCESS_KEY=password
-      - AWS_REGION=us-east-1
-      - CATALOG_WAREHOUSE=s3://warehouse/wh/
-      - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
-      - CATALOG_S3_ENDPOINT=http://minio:9000
-    networks:
-      - dolphinscheduler
-    volumes:
-      - ./jars/jdk1.8.0_421:/opt/jdk1.8.0_421
-      - ./data/doris-bin:/opt/doris-bin
-      - ./scripts:/opt/scripts
-
-  minio:
-    image: minio/minio
-    platform: linux/arm64
-    container_name: data-warehouse-minio
-    profiles: ["all"]
-    ports:
-      - 9000:9000
-      - 9001:9001
-    environment:
-      - MINIO_ROOT_USER=admin
-      - MINIO_ROOT_PASSWORD=password
-      - MINIO_DOMAIN=minio
-    networks:
-      dolphinscheduler:
-        aliases:
-          - warehouse.minio
-    command: [ "server", "/data", "--console-address", ":9001" ]
-
-  mc:
-    depends_on:
-      - minio
-    image: minio/mc:RELEASE.2024-10-02T08-27-28Z-cpuv1
-    platform: linux/arm64
-    container_name: data-warehouse-mc
-    profiles: ["all"]
-    environment:
-      - AWS_ACCESS_KEY_ID=admin
-      - AWS_SECRET_ACCESS_KEY=password
-      - AWS_REGION=us-east-1
-    networks:
-      - dolphinscheduler
-    entrypoint: >
-      /bin/sh -c "
-      until (/usr/bin/mc config host add minio http://minio:9000 admin password) do echo '...waiting...' && sleep 1; done;
-      /usr/bin/mc rm -r --force minio/warehouse;
-      /usr/bin/mc mb minio/warehouse;
-      /usr/bin/mc policy set public minio/warehouse;
-      tail -f /dev/null
-      "
+    logging: *common-logging
 
   jobmanager:
     image: flink:1.18.0
     platform: linux/arm64
     container_name: data-warehouse-jobmanager
+    restart: unless-stopped
     profiles: ["all"]
     environment:
-      - JOB_MANAGER_RPC_ADDRESS=jobmanager
-      - AWS_ACCESS_KEY_ID=admin
-      - AWS_SECRET_ACCESS_KEY=password
-      - AWS_REGION=us-east-1
+      JOB_MANAGER_RPC_ADDRESS: jobmanager
+      <<: *common-env
+      TZ: Asia/Shanghai
     ports:
       - "8082:8081"
     command: jobmanager
     depends_on:
-      - rest
-      - minio
+      rest:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     volumes:
       - ./jars/flink-connector-jdbc-3.1.2-1.18.jar:/opt/flink/lib/flink-connector-jdbc-3.1.2-1.18.jar
       - ./jars/flink-shaded-hadoop-2-uber-2.8.3-10.0.jar:/opt/flink/lib/flink-shaded-hadoop-2-uber-2.8.3-10.0.jar
@@ -318,20 +481,28 @@ services:
       - ./data/flink-conf:/opt/flink/conf
     networks:
       - dolphinscheduler
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/overview"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging: *common-logging
     deploy:
       replicas: 1
 
   taskmanager:
     image: flink:1.18.0
     platform: linux/arm64
+    restart: unless-stopped
     profiles: ["all"]
     environment:
-      - JOB_MANAGER_RPC_ADDRESS=jobmanager
-      - AWS_ACCESS_KEY_ID=admin
-      - AWS_SECRET_ACCESS_KEY=password
-      - AWS_REGION=us-east-1
+      JOB_MANAGER_RPC_ADDRESS: jobmanager
+      <<: *common-env
+      TZ: Asia/Shanghai
     depends_on:
-      - jobmanager
+      jobmanager:
+        condition: service_healthy
     command: taskmanager
     volumes:
       - ./jars/flink-connector-jdbc-3.1.2-1.18.jar:/opt/flink/lib/flink-connector-jdbc-3.1.2-1.18.jar
@@ -344,31 +515,47 @@ services:
       - ./jars/paimon-s3-0.8.0.jar:/opt/flink/lib/paimon-s3-0.8.0.jar
     networks:
       - dolphinscheduler
+    logging: *common-logging
     deploy:
       replicas: 2
 
+  # ==================== Development & Management Tools ====================
   dinky:
     image: dinkydocker/dinky-standalone-server:1.2-flink1.18
     container_name: dinky
+    restart: unless-stopped
     profiles: ["all"]
     ports:
       - "8888:8888"
     environment:
-      #      DB_ACTIVE: mysql
       MYSQL_ADDR: mysql:3306
       MYSQL_DATABASE: dinky
       MYSQL_USERNAME: root
       MYSQL_PASSWORD: 123456
+      TZ: Asia/Shanghai
+    depends_on:
+      mysql:
+        condition: service_healthy
+      jobmanager:
+        condition: service_healthy
     networks:
       - dolphinscheduler
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging: *common-logging
 
   superset:
     image: selectdb/superset_3.0.1-cloud_3.0.3:latest
     container_name: data-warehouse-superset
+    restart: unless-stopped
     profiles: ["all"]
-#    user: "root"
     environment:
       SUPERSET_SECRET_KEY: "doris"
+      TZ: Asia/Shanghai
     command:
       - "sh"
       - "-c"
@@ -379,33 +566,66 @@ services:
         /bin/sh -c /usr/bin/run-server.sh
     ports:
       - "8088:8088"
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - dolphinscheduler
-
-  python-producer:
-    image: python:3.9
-    container_name: python-producer
-    working_dir: /app
-    volumes:
-      - ./scripts/datageneration:/app
-    command: bash -c "pip install -r requirements.txt && python main_batch_run.py"
-    networks:
-      - dolphinscheduler
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    logging: *common-logging
 
   nocodb:
     image: nocodb/nocodb:latest
     container_name: nocodb
+    restart: unless-stopped
+    profiles: ["all"]
     ports:
-      - "8080:8080"
+      - "8089:8080"  # Changed from 8080 to avoid conflict with kafka-ui
     volumes:
       - ./data/nocodb:/usr/app/data
+    environment:
+      TZ: Asia/Shanghai
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - dolphinscheduler
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging: *common-logging
 
+  # ==================== Data Generation ====================
+  python-producer:
+    image: python:3.9
+    container_name: python-producer
+    restart: unless-stopped
+    profiles: ["all"]
+    working_dir: /app
+    volumes:
+      - ./scripts/datageneration:/app
+    command: bash -c "pip install -r requirements.txt && python main_batch_run.py"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - dolphinscheduler
+    logging: *common-logging
 
 networks:
   dolphinscheduler:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
 
 volumes:
   mysql:
@@ -414,3 +634,6 @@ volumes:
   dolphinscheduler-logs:
   dolphinscheduler-shared-local:
   dolphinscheduler-resource-local:
+  doris-manager-data:
+  doris-agent1-data:
+  doris-agent2-data:
