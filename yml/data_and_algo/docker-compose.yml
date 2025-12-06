@@ -1,0 +1,156 @@
+version: "3"
+
+services:
+  # ---------- 对象存储：MinIO ----------
+  minio:
+    image: minio/minio
+    container_name: minio
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=password
+      - MINIO_DOMAIN=minio
+    networks:
+      amoro_network:
+        aliases:
+          - warehouse.minio
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # MinIO Console
+    volumes:
+      - minio_data:/data
+    command: ["server", "/data", "--console-address", ":9001"]
+
+  # ---------- Iceberg REST Catalog ----------
+  rest:
+    image: tabulario/iceberg-rest
+    container_name: iceberg-rest
+    networks:
+      amoro_network:
+        aliases:
+          - warehouse.rest
+    ports:
+      - "8181:8181"
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+      - CATALOG_WAREHOUSE=s3://warehouse/
+      - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
+      - CATALOG_S3_ENDPOINT=http://minio:9000
+
+  # ---------- MinIO 初始化工具：mc ----------
+  mc:
+    image: minio/mc
+    container_name: mc
+    depends_on:
+      - minio
+    networks:
+      amoro_network:
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc alias set minio http://minio:9000 admin password) do
+        echo '...waiting for minio...' && sleep 1;
+      done;
+      /usr/bin/mc rm -r --force minio/warehouse || true;
+      /usr/bin/mc mb minio/warehouse;
+      /usr/bin/mc anonymous set public minio/warehouse;
+      tail -f /dev/null
+      "
+
+  # ---------- Lakehouse 管理：Amoro ----------
+  amoro:
+    image: apache/amoro
+    container_name: amoro
+    depends_on:
+      - minio
+    ports:
+      - "8081:8081" # Amoro Web UI
+      - "1630:1630" # Optimizer Dashboard
+      - "1260:1260" # RPC / Client 端口
+    environment:
+      - JVM_XMS=1024
+    networks:
+      amoro_network:
+    volumes:
+      # demo 仓库路径，方便你在本机看到生成的元数据
+      - ./amoro:/tmp/warehouse
+    command: ["/entrypoint.sh", "ams"]
+    tty: true
+    stdin_open: true
+
+  # ---------- 查询引擎：Trino ----------
+  trino:
+    image: trinodb/trino:419
+    container_name: trino
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+    volumes:
+      - ./trino-conf/demo_catalog.properties:/etc/trino/catalog/demo_catalog.properties
+    networks:
+      amoro_network:
+        aliases:
+          - warehouse.trino
+    ports:
+      - "8080:8080"
+
+  # ---------- 计算：Spark（Iceberg-ready） ----------
+  spark:
+    image: tabulario/spark-iceberg
+    container_name: spark
+    depends_on:
+      - minio
+      - amoro
+    networks:
+      amoro_network:
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+    ports:
+      - "8888:8888" # Jupyter Notebook
+      - "4040:4040" # Spark Web UI（第一个应用）
+    volumes:
+      # Spark 里的 Iceberg warehouse & notebooks
+      - ./warehouse:/home/iceberg/warehouse
+      - ./notebooks:/home/iceberg/notebooks/notebooks
+      - ./spark-conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+
+  # ---------- 实验管理：MLflow ----------
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    container_name: mlflow
+    depends_on:
+      - minio
+    networks:
+      amoro_network:
+    environment:
+      # 告诉 MLflow 使用 MinIO 作为 S3 Artifact Store
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+    ports:
+      - "5001:5000" # MLflow Tracking UI
+    volumes:
+      # 本地持久化 MLflow 元数据（SQLite + mlruns）
+      - ./mlflow:/mlflow
+    working_dir: /mlflow
+    command: >
+      mlflow server
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --default-artifact-root s3://warehouse/mlflow
+      --host 0.0.0.0
+      --port 5000
+
+networks:
+  amoro_network:
+    driver: bridge
+
+volumes:
+  minio_data:

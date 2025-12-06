@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:15
+    # ARM 机器（Apple Silicon/树莓派等）建议显式声明平台
+    platform: linux/arm64/v8
+    container_name: odoo-db
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+    volumes:
+      - odoo-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odoo -d postgres || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  odoo:
+    image: odoo:19.0
+    # 若你想固定到 17/18 也可以改成 odoo:17.0 / odoo:18.0
+    platform: linux/arm64/v8
+    container_name: odoo-web
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8069:8069"
+    environment:
+      # 这些变量告知 Odoo 如何连接 Postgres
+      HOST: db
+      PORT: "5432"
+      USER: odoo
+      PASSWORD: odoo
+      # 可选：设置时区（Odoo 会从系统继承，这里仅作示例）
+      TZ: Asia/Tokyo
+    # 如需自定义配置或第三方/企业插件，按需解注下面的 volumes
+    volumes:
+      - odoo-web-data:/var/lib/odoo           # Odoo 文件存储（filestore）持久化
+      - ./config:/etc/odoo                    # 可选：自定义配置目录（把 odoo.conf 放这里）
+      - ./addons:/mnt/extra-addons            # 可选：自定义/企业版插件目录
+    # 可选：使用自定义配置时也可以通过命令行追加参数（示例：数据库过滤）
+    # command: ["--", "--db-filter=^mydb_.*"]
+    restart: unless-stopped
+
+volumes:
+  odoo-db-data:
+  odoo-web-data:

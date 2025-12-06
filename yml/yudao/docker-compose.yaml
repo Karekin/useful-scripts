@@ -1,9 +1,8 @@
-version: '3.8'
 services:
   # 部署nacos，参考：https://www.cnblogs.com/studyjobs/p/18014237
-  nacos:
+  yudao-nacos:
     image: nacos/nacos-server:latest
-    container_name: nacos
+    container_name: yudao-nacos
     ports:
       # web 界面访问端口
       - 8848:8848
@@ -13,3 +12,185 @@ services:
       - MODE=standalone
     volumes:
       - ./data/nacos-single1/logs:/home/nacos/logs
+
+  yudao-redis:
+    image: redis:6.2
+    container_name: yudao-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: [ "redis-server", "--appendonly", "yes" ]
+    volumes:
+      - redis_data:/data
+    networks:
+      - yudao_network
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "2"
+
+  yudao-mysql:
+    image: mysql:8.0
+    container_name: yudao-mysql
+    restart: unless-stopped
+    command: >
+      --max_allowed_packet=209715200
+      --innodb_buffer_pool_size=1G
+      --innodb_log_file_size=256M
+      --innodb_flush_log_at_trx_commit=2
+      --innodb_flush_method=O_DIRECT
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: ruoyi-vue-pro
+      MYSQL_ROOT_HOST: "%"
+      TZ: Asia/Shanghai
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - yudao_network
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "2"
+
+  yudao-starrocks:
+    image: starrocks.docker.scarf.sh/starrocks/allin1-ubuntu
+    container_name: yudao-starrocks
+    restart: unless-stopped
+    ports:
+      - "9030:9030"  # FE query port
+      - "8030:8030"  # FE http port
+      - "8040:8040"  # BE http port
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./data/starrocks:/opt/starrocks/data
+    networks:
+      - yudao_network
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "2"
+
+  # N8N 工作流自动化工具
+  yudao-n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: yudao-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"  # N8N web界面端口
+    environment:
+      # 基础配置
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Asia/Shanghai
+      - TZ=Asia/Shanghai
+
+      # 数据库配置 - 使用SQLite (默认)
+      # N8N默认使用SQLite，无需额外配置
+
+      # 执行配置
+      - EXECUTIONS_PROCESS=main
+      - EXECUTIONS_MODE=regular
+      - EXECUTIONS_TIMEOUT=3600
+      - EXECUTIONS_TIMEOUT_MAX=14400
+
+      # 安全配置
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=n8n123456
+
+      # 日志配置
+      - N8N_LOG_LEVEL=info
+      - N8N_LOG_OUTPUT=console
+
+      # 其他配置
+      - N8N_METRICS=false
+      - N8N_DISABLE_UI=false
+      - N8N_ENCRYPTION_KEY=n8n-encryption-key-yudao-2024
+    volumes:
+      - ./data/n8n:/home/node/.n8n
+    networks:
+      - yudao_network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "2"
+
+  # NocoDB 低代码平台
+  yudao-nocodb:
+    image: nocodb/nocodb:latest
+    container_name: yudao-nocodb
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data/nocodb:/usr/app/data
+    networks:
+      - yudao_network
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "2"
+
+  # PostgreSQL 数据库
+  yudao-postgres:
+    image: postgres:15
+    container_name: yudao-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: yudao_postgres
+      POSTGRES_USER: yudao
+      POSTGRES_PASSWORD: yudao123456
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+      TZ: Asia/Shanghai
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/postgres:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yudao -d yudao_postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - yudao_network
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "2"
+
+volumes:
+  redis_data:
+  postgres_data:
+
+networks:
+  yudao_network:
+    driver: bridge
+
+

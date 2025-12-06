@@ -1,0 +1,24 @@
+# 忽略MySQL数据目录
+/data/mysql/
+
+# 忽略N8N数据目录
+/data/n8n/
+
+/data/nocodb
+
+# 忽略SQL备份目录
+/sql_backup/
+
+# 忽略临时脚本（可选择性忽略）
+# /start-n8n.sh  # 取消注释来忽略启动脚本
+
+# 忽略日志和临时文件
+*.log
+*.tmp
+
+# 忽略IDE配置
+.idea/
+.vscode/
+
+# 忽略macOS系统文件
+.DS_Store
