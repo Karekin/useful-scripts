@@ -78,6 +78,7 @@ services:
     volumes:
       # demo 仓库路径，方便你在本机看到生成的元数据
       - ./amoro:/tmp/warehouse
+      - ./amoro-meta:/opt/amoro/derby # 存储元数据
     command: ["/entrypoint.sh", "ams"]
     tty: true
     stdin_open: true
