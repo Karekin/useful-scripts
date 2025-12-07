@@ -155,6 +155,101 @@ services:
       --host 0.0.0.0
       --port 5000
 
+  # ---------- Airflow 元数据库 ----------
+  airflow-postgres:
+    image: postgres:14
+    container_name: airflow-postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    networks:
+      amoro_network:
+    volumes:
+      - ./airflow/postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 公共 Airflow 环境变量
+  airflow-init:
+    image: apache/airflow:2.10.2
+    container_name: airflow-init
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    networks:
+      amoro_network:
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      AIRFLOW__CORE__FERNET_KEY: "this_is_a_demo_fernet_key_change_me"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__WEBSERVER__SECRET_KEY: "this_is_a_demo_web_secret_change_me"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/jobs:/opt/airflow/jobs
+    entrypoint: >
+      bash -c "
+      airflow db migrate &&
+      airflow users create \
+        --username admin \
+        --password admin \
+        --firstname Admin \
+        --lastname User \
+        --role Admin \
+        --email admin@example.com;
+      echo 'Airflow init done';
+      "
+
+  airflow-webserver:
+    image: apache/airflow:2.10.2
+    container_name: airflow-webserver
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    networks:
+      amoro_network:
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      AIRFLOW__CORE__FERNET_KEY: "this_is_a_demo_fernet_key_change_me"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__WEBSERVER__SECRET_KEY: "this_is_a_demo_web_secret_change_me"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/jobs:/opt/airflow/jobs
+    command: webserver
+    ports:
+      - "8082:8080" # Airflow Web UI
+
+  airflow-scheduler:
+    image: apache/airflow:2.10.2
+    container_name: airflow-scheduler
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    networks:
+      amoro_network:
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      AIRFLOW__CORE__FERNET_KEY: "this_is_a_demo_fernet_key_change_me"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__WEBSERVER__SECRET_KEY: "this_is_a_demo_web_secret_change_me"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/jobs:/opt/airflow/jobs
+    command: scheduler
+
 networks:
   amoro_network:
     driver: bridge
