@@ -229,6 +229,7 @@ services:
   airflow-scheduler:
     build:
       context: ./airflow
+    user: "0:0"
     container_name: airflow-scheduler
     depends_on:
       airflow-postgres:

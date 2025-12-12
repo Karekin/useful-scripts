@@ -10,14 +10,13 @@ def run_build_features(execution_date: str):
         .getOrCreate()
     )
 
-    spark.sql("USE demo_catalog.amoro_db")
+    # 使用已存在的数据库
+    spark.sql("USE demo.demo_db2")
 
     # 1）从原始表读取
     try:
-        # 确保数据库存在
-        spark.sql("CREATE DATABASE IF NOT EXISTS demo_catalog.amoro_db")
         # 尝试读取，如果不存在则创建假数据供测试
-        src = spark.table("demo_catalog.amoro_db.order_wide")
+        src = spark.table("demo.demo_db2.order_wide")
     except Exception as e:
         print(f"Source table not found ({e}), creating dummy data for testing...")
         src = spark.createDataFrame([
@@ -37,7 +36,7 @@ def run_build_features(execution_date: str):
     )
 
     # 3）写入 Iceberg 特征表
-    target_table = "demo_catalog.amoro_db.store_item_features"
+    target_table = "demo.demo_db2.store_item_features"
 
     try:
         (

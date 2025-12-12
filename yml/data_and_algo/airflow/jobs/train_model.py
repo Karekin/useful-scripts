@@ -9,14 +9,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 from pyspark.sql import SparkSession
 
-FEATURE_TABLE = "demo_catalog.amoro_db.store_item_features"
+FEATURE_TABLE = "demo.demo_db2.store_item_features"
 FEATURE_COLS = ["dayofweek", "month", "lag_1", "lag_7", "lag_14", "rolling_7_mean"]
 TARGET_COL = "sales"
 
 def run_train_model(execution_date: str):
     print(f"Running train_model for date: {execution_date}")
     spark = SparkSession.builder.appName("store-replenishment-train").getOrCreate()
-    spark.sql("USE demo_catalog.amoro_db")
+    spark.sql("USE demo.demo_db2")
 
     try:
         pdf = spark.table(FEATURE_TABLE).toPandas()
@@ -50,7 +50,17 @@ def run_train_model(execution_date: str):
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    mlflow.set_experiment("/store_replenishment")
+    # 打印调试信息，确认环境变量注入情况
+    uri = os.environ.get('MLFLOW_TRACKING_URI', "http://mlflow:5000")
+    print(f"DEBUG: MLFLOW_TRACKING_URI: {uri}")
+    mlflow.set_tracking_uri(uri) # 强制设置，确保生效
+
+    print(f"DEBUG: MLFLOW_S3_ENDPOINT_URL: {os.environ.get('MLFLOW_S3_ENDPOINT_URL')}")
+
+    # 统一 Experiment 名称，方便在 UI 查找
+    experiment_name = "StoreReplenishment_Pipeline"
+    print(f"Setting experiment to: {experiment_name}")
+    mlflow.set_experiment(experiment_name)
 
     with mlflow.start_run() as run:
         model = RandomForestRegressor(n_estimators=10, max_depth=5, random_state=42) # 减少参数加快演示
@@ -64,18 +74,18 @@ def run_train_model(execution_date: str):
         mlflow.log_metric("rmse", rmse)
 
         mlflow.sklearn.log_model(model, "model", input_example=X_train.iloc[:5])
-        
+
         # 注册模型以便 batch_predict 使用
         model_uri = f"runs:/{run.info.run_id}/model"
         mlflow.register_model(model_uri, "store_replenishment_rf")
 
         print("train_model done, run_id =", run.info.run_id)
-    
+
     spark.stop()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", required=True, help="Execution date (YYYY-MM-DD)")
     args = parser.parse_args()
-    
+
     run_train_model(args.date)

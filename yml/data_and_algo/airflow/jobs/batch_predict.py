@@ -3,16 +3,21 @@ import os
 import mlflow
 from pyspark.sql import SparkSession, functions as F
 
-FEATURE_TABLE = "demo_catalog.amoro_db.store_item_features" # 复用
-TARGET_TABLE  = "demo_catalog.amoro_db.store_item_scores"
+FEATURE_TABLE = "demo.demo_db2.store_item_features" # 复用
+TARGET_TABLE  = "demo.demo_db2.store_item_scores"
 MODEL_NAME    = "store_replenishment_rf"
 
 def run_batch_predict(execution_date: str):
     print(f"Running batch_predict for date: {execution_date}")
     spark = SparkSession.builder.appName("store-replenishment-predict").getOrCreate()
-    spark.sql("USE demo_catalog.amoro_db")
+    spark.sql("USE demo.demo_db2")
 
     try:
+        # 0) 调试信息
+        uri = os.environ.get('MLFLOW_TRACKING_URI', "http://mlflow:5000")
+        print(f"DEBUG: MLFLOW_TRACKING_URI: {uri}")
+        mlflow.set_tracking_uri(uri)
+
         # 1) 读数据
         try:
             feature_df = spark.table(FEATURE_TABLE)

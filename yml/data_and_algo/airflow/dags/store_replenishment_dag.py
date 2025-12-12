@@ -13,6 +13,10 @@ default_args = {
 HOST_JOBS_DIR = "/Volumes/karekinSSD1/project/useful-scripts/yml/data_and_algo/airflow/jobs"
 CONTAINER_JOBS_DIR = "/opt/jobs"
 
+# 宿主机上 spark-conf 目录的绝对路径
+HOST_SPARK_CONF_DIR = "/Volumes/karekinSSD1/project/useful-scripts/yml/data_and_algo/spark-conf"
+CONTAINER_SPARK_CONF_DIR = "/opt/spark/conf"
+
 SPARK_IMAGE = "tabulario/spark-iceberg"
 NETWORK_NAME = "data_and_algo_amoro_network"
 
@@ -40,15 +44,13 @@ with DAG(
         auto_remove=True,
         docker_url="unix:///var/run/docker.sock",
         network_mode=NETWORK_NAME,
+        mount_tmp_dir=False,
         mounts=[
             Mount(source=HOST_JOBS_DIR, target=CONTAINER_JOBS_DIR, type="bind"),
+            Mount(source=HOST_SPARK_CONF_DIR, target=CONTAINER_SPARK_CONF_DIR, type="bind"),
         ],
-        command="""
-        /opt/spark/bin/spark-submit
-          --master local[*]
-          /opt/jobs/build_features.py
-          --date {{ ds }}
-        """,
+        entrypoint="/bin/bash",
+        command=["-c", "ls -l /opt/spark/conf && /opt/spark/bin/spark-submit --properties-file /opt/spark/conf/spark-defaults.conf --master local[*] /opt/jobs/build_features.py --date {{ ds }}"],
         environment=spark_env,
     )
 
@@ -59,15 +61,13 @@ with DAG(
         auto_remove=True,
         docker_url="unix:///var/run/docker.sock",
         network_mode=NETWORK_NAME,
+        mount_tmp_dir=False,
         mounts=[
             Mount(source=HOST_JOBS_DIR, target=CONTAINER_JOBS_DIR, type="bind"),
+            Mount(source=HOST_SPARK_CONF_DIR, target=CONTAINER_SPARK_CONF_DIR, type="bind"),
         ],
-        command="""
-        /opt/spark/bin/spark-submit
-          --master local[*]
-          /opt/jobs/train_model.py
-          --date {{ ds }}
-        """,
+        entrypoint="/bin/bash",
+        command=["-c", "pip install -q 'mlflow<2.17' scikit-learn boto3 && /opt/spark/bin/spark-submit --properties-file /opt/spark/conf/spark-defaults.conf --master local[*] /opt/jobs/train_model.py --date {{ ds }}"],
         environment=spark_env,
     )
 
@@ -78,15 +78,13 @@ with DAG(
         auto_remove=True,
         docker_url="unix:///var/run/docker.sock",
         network_mode=NETWORK_NAME,
+        mount_tmp_dir=False,
         mounts=[
             Mount(source=HOST_JOBS_DIR, target=CONTAINER_JOBS_DIR, type="bind"),
+            Mount(source=HOST_SPARK_CONF_DIR, target=CONTAINER_SPARK_CONF_DIR, type="bind"),
         ],
-        command="""
-        /opt/spark/bin/spark-submit
-          --master local[*]
-          /opt/jobs/batch_predict.py
-          --date {{ ds }}
-        """,
+        entrypoint="/bin/bash",
+        command=["-c", "pip install -q 'mlflow<2.17' boto3 && /opt/spark/bin/spark-submit --properties-file /opt/spark/conf/spark-defaults.conf --master local[*] /opt/jobs/batch_predict.py --date {{ ds }}"],
         environment=spark_env,
     )
 
