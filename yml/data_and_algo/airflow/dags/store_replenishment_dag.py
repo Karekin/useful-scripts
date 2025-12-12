@@ -1,25 +1,7 @@
-# dags/store_replenishment_dag.py
-
 from datetime import datetime, timedelta
-
 from airflow import DAG
-from airflow.operators.python import PythonOperator
-
-# 把 jobs 目录加到 PYTHONPATH（也可以在 docker-compose 里设置）
-
-import os
-import sys
-
-DAG_DIR = os.path.dirname(os.path.abspath(__file__))          # /opt/project/airflow/dags
-AIRFLOW_DIR = os.path.dirname(DAG_DIR)                        # /opt/project/airflow
-JOBS_DIR = os.path.join(AIRFLOW_DIR, "jobs")                  # /opt/project/airflow/jobs
-
-sys.path.insert(0, JOBS_DIR)
-
-
-from build_features import run_build_features
-from train_model import run_train_model
-from batch_predict import run_batch_predict
+from airflow.providers.docker.operators.docker import DockerOperator
+from docker.types import Mount
 
 default_args = {
     "owner": "data_team",
@@ -27,32 +9,85 @@ default_args = {
     "retry_delay": timedelta(minutes=5),
 }
 
+# 宿主机上 jobs 目录的绝对路径 (请确认此路径是否正确)
+HOST_JOBS_DIR = "/Volumes/karekinSSD1/project/useful-scripts/yml/data_and_algo/airflow/jobs"
+CONTAINER_JOBS_DIR = "/opt/jobs"
+
+SPARK_IMAGE = "tabulario/spark-iceberg"
+NETWORK_NAME = "data_and_algo_amoro_network"
+
 with DAG(
     dag_id="store_replenishment_pipeline",
     default_args=default_args,
-    schedule_interval="@daily",   # 按需要调度
+    schedule_interval="@daily",
     start_date=datetime(2025, 1, 1),
     catchup=False,
-    tags=["lakehouse", "store_replenishment"],
+    tags=["lakehouse", "spark", "docker"],
 ) as dag:
 
-    build_features_task = PythonOperator(
+    spark_env = {
+        "AWS_ACCESS_KEY_ID": "admin",
+        "AWS_SECRET_ACCESS_KEY": "password",
+        "AWS_REGION": "us-east-1",
+        "MLFLOW_TRACKING_URI": "http://mlflow:5000",
+        "MLFLOW_S3_ENDPOINT_URL": "http://minio:9000",
+    }
+
+    build_features = DockerOperator(
         task_id="build_features",
-        python_callable=run_build_features,
-        op_kwargs={"execution_date": "{{ ds }}"},
+        image=SPARK_IMAGE,
+        api_version="auto",
+        auto_remove=True,
+        docker_url="unix:///var/run/docker.sock",
+        network_mode=NETWORK_NAME,
+        mounts=[
+            Mount(source=HOST_JOBS_DIR, target=CONTAINER_JOBS_DIR, type="bind"),
+        ],
+        command="""
+        /opt/spark/bin/spark-submit
+          --master local[*]
+          /opt/jobs/build_features.py
+          --date {{ ds }}
+        """,
+        environment=spark_env,
     )
 
-    train_model_task = PythonOperator(
+    train_model = DockerOperator(
         task_id="train_model",
-        python_callable=run_train_model,
-        op_kwargs={"execution_date": "{{ ds }}"},
+        image=SPARK_IMAGE,
+        api_version="auto",
+        auto_remove=True,
+        docker_url="unix:///var/run/docker.sock",
+        network_mode=NETWORK_NAME,
+        mounts=[
+            Mount(source=HOST_JOBS_DIR, target=CONTAINER_JOBS_DIR, type="bind"),
+        ],
+        command="""
+        /opt/spark/bin/spark-submit
+          --master local[*]
+          /opt/jobs/train_model.py
+          --date {{ ds }}
+        """,
+        environment=spark_env,
     )
 
-    batch_predict_task = PythonOperator(
+    batch_predict = DockerOperator(
         task_id="batch_predict",
-        python_callable=run_batch_predict,
-        op_kwargs={"execution_date": "{{ ds }}"},
+        image=SPARK_IMAGE,
+        api_version="auto",
+        auto_remove=True,
+        docker_url="unix:///var/run/docker.sock",
+        network_mode=NETWORK_NAME,
+        mounts=[
+            Mount(source=HOST_JOBS_DIR, target=CONTAINER_JOBS_DIR, type="bind"),
+        ],
+        command="""
+        /opt/spark/bin/spark-submit
+          --master local[*]
+          /opt/jobs/batch_predict.py
+          --date {{ ds }}
+        """,
+        environment=spark_env,
     )
 
-    # 串行依赖
-    build_features_task >> train_model_task >> batch_predict_task
+    build_features >> train_model >> batch_predict

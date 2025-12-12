@@ -127,6 +127,7 @@ services:
       - ./warehouse:/home/iceberg/warehouse
       - ./notebooks:/home/iceberg/notebooks/notebooks
       - ./spark-conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+      - ./airflow/jobs:/opt/jobs # ⭐ 新增：让 spark-submit 能看到脚本
 
   # ---------- 实验管理：MLflow ----------
   mlflow:
@@ -175,7 +176,8 @@ services:
 
   # 公共 Airflow 环境变量
   airflow-init:
-    image: apache/airflow:2.10.2
+    build:
+      context: ./airflow
     container_name: airflow-init
     depends_on:
       airflow-postgres:
@@ -201,7 +203,8 @@ services:
       "
 
   airflow-webserver:
-    image: apache/airflow:2.10.2
+    build:
+      context: ./airflow
     container_name: airflow-webserver
     depends_on:
       airflow-postgres:
@@ -224,7 +227,8 @@ services:
       - "8082:8080" # Airflow Web UI
 
   airflow-scheduler:
-    image: apache/airflow:2.10.2
+    build:
+      context: ./airflow
     container_name: airflow-scheduler
     depends_on:
       airflow-postgres:
@@ -238,6 +242,7 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       AIRFLOW__WEBSERVER__SECRET_KEY: "this_is_a_demo_web_secret_change_me"
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
