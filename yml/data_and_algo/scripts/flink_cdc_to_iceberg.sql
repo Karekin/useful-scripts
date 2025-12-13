@@ -11,11 +11,12 @@
 -- ============================================================
 
 -- 1. 创建 Iceberg Catalog（连接到 Amoro）
-CREATE CATALOG iceberg_catalog WITH (
+-- warehouse 参数为 Amoro 中的 Catalog 名称，不是 S3 路径
+CREATE CATALOG amoro_catalog WITH (
   'type' = 'iceberg',
   'catalog-impl' = 'org.apache.iceberg.rest.RESTCatalog',
   'uri' = 'http://amoro:1630/api/iceberg/rest',
-  'warehouse' = 'demo'
+  'warehouse' = 'amoro_catalog'
 );
 
 -- 2. 创建 MySQL CDC Source（连接到业务数据库）
@@ -37,7 +38,7 @@ CREATE TABLE mysql_orders (
 );
 
 -- 3. 在 Iceberg 中创建目标表
-USE CATALOG iceberg_catalog;
+USE CATALOG amoro_catalog;
 CREATE DATABASE IF NOT EXISTS ods;
 
 CREATE TABLE IF NOT EXISTS ods.orders (
@@ -53,7 +54,7 @@ CREATE TABLE IF NOT EXISTS ods.orders (
 );
 
 -- 4. 启动 CDC 同步作业
-INSERT INTO iceberg_catalog.ods.orders
+INSERT INTO amoro_catalog.ods.orders
 SELECT * FROM default_catalog.default_database.mysql_orders;
 
 -- ============================================================

@@ -146,7 +146,7 @@ services:
       - AWS_SECRET_ACCESS_KEY=password
       - AWS_REGION=us-east-1
     volumes:
-      - ./trino-conf/demo_catalog.properties:/etc/trino/catalog/demo_catalog.properties
+      - ./trino-conf/amoro_catalog.properties:/etc/trino/catalog/amoro_catalog.properties
     networks:
       amoro_network:
         aliases:
