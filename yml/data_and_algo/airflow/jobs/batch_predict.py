@@ -2,14 +2,15 @@ from utils.common_job_utils import SparkJob
 import mlflow
 from pyspark.sql import functions as F
 
-FEATURE_TABLE = "demo.demo_db2.store_item_features" # 复用
-TARGET_TABLE  = "demo.demo_db2.store_item_scores"
+FEATURE_TABLE = "amoro_catalog.amoro_db.store_item_features"  # 复用
+TARGET_TABLE  = "amoro_catalog.amoro_db.store_item_scores"
 MODEL_NAME    = "store_replenishment_rf"
 
 if __name__ == "__main__":
     with SparkJob("batch_predict", enable_mlflow=True) as job:
         spark = job.spark
-        spark.sql("USE demo.demo_db2")
+        # 使用 amoro_catalog.amoro_db（与 Amoro UI 中创建的 Catalog/Database 一致）
+        spark.sql("USE amoro_catalog.amoro_db")
 
         try:
             # 1) 读数据
@@ -48,15 +49,12 @@ if __name__ == "__main__":
                     .withColumn("model_version", F.lit(latest_version))
                 )
 
-                (
-                    scored
-                    .select(
-                        "store_id", "item_id", "ds",
-                        "score", "predict_time", "model_name", "model_version"
-                    )
-                    .writeTo(TARGET_TABLE)
-                    .createOrReplace() # 演示用 replace，生产用 append
+                result_df = scored.select(
+                    "store_id", "item_id", "ds",
+                    "score", "predict_time", "model_name", "model_version"
                 )
+                # Amoro REST Catalog 不支持 createOrReplace，改用 overwrite 模式
+                result_df.write.format("iceberg").mode("overwrite").save(TARGET_TABLE)
                 print("batch_predict done, rows =", scored.count())
 
         except Exception as e:

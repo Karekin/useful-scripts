@@ -4,12 +4,13 @@ from pyspark.sql import functions as F
 if __name__ == "__main__":
     with SparkJob("build_features") as job:
         spark = job.spark
-        spark.sql("USE demo.demo_db2")
+        # 使用 amoro_catalog.amoro_db（与 Amoro UI 中创建的 Catalog/Database 一致）
+        spark.sql("USE amoro_catalog.amoro_db")
 
         # 1）从原始表读取
         try:
             # 尝试读取，如果不存在则创建假数据供测试
-            src = spark.table("demo.demo_db2.order_wide")
+            src = spark.table("amoro_catalog.amoro_db.order_wide")
         except Exception as e:
             print(f"Source table not found ({e}), creating dummy data...")
             src = spark.createDataFrame([
@@ -29,14 +30,10 @@ if __name__ == "__main__":
         )
 
         # 3）写入 Iceberg 特征表
-        target_table = "demo.demo_db2.store_item_features"
+        target_table = "amoro_catalog.amoro_db.store_item_features"
         try:
-            (
-                feature_df
-                .writeTo(target_table)
-                .option("fanout-enabled", "true")
-                .createOrReplace()
-            )
+            # Amoro REST Catalog 不支持 createOrReplace，改用 overwrite 模式
+            feature_df.write.format("iceberg").mode("overwrite").save(target_table)
             print("build_features done:", feature_df.count())
         except Exception as e:
             print(f"Error writing to table: {e}")

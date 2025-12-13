@@ -7,14 +7,15 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 
-FEATURE_TABLE = "demo.demo_db2.store_item_features"
+FEATURE_TABLE = "amoro_catalog.amoro_db.store_item_features"
 FEATURE_COLS = ["dayofweek", "month", "lag_1", "lag_7", "lag_14", "rolling_7_mean"]
 TARGET_COL = "sales"
 
 if __name__ == "__main__":
     with SparkJob("train_model", enable_mlflow=True) as job:
         spark = job.spark
-        spark.sql("USE demo.demo_db2")
+        # 使用 amoro_catalog.amoro_db（与 Amoro UI 中创建的 Catalog/Database 一致）
+        spark.sql("USE amoro_catalog.amoro_db")
 
         try:
             pdf = spark.table(FEATURE_TABLE).toPandas()
@@ -61,7 +62,7 @@ if __name__ == "__main__":
             mlflow.log_metric("rmse", rmse)
 
             mlflow.sklearn.log_model(model, "model", input_example=X_train.iloc[:5])
-            
+
             # 注册模型以便 batch_predict 使用
             model_uri = f"runs:/{run.info.run_id}/model"
             mlflow.register_model(model_uri, "store_replenishment_rf")

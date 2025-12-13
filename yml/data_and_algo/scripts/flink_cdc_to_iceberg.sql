@@ -1,10 +1,10 @@
 -- ============================================================
 -- Flink CDC to Iceberg 示例
--- 
+--
 -- 前置条件：
 -- 1. 在 Amoro UI 中已创建 Internal Catalog 'demo'
 -- 2. MySQL 中有业务数据表
--- 
+--
 -- 使用方式：
 -- 进入 Flink SQL Client：
 --   docker exec -it flink-jobmanager /opt/flink/bin/sql-client.sh
