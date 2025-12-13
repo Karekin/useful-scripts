@@ -90,7 +90,7 @@ services:
     networks:
       amoro_network:
     volumes:
-      - ./warehouse:/opt/flink/warehouse
+      # - ./warehouse:/opt/flink/warehouse
       - ../datalake/iceberg_and_paimon/packages/jars:/opt/flink/lib-ext
 
   # ---------- 实时计算：Flink TaskManager ----------
@@ -110,7 +110,7 @@ services:
     networks:
       amoro_network:
     volumes:
-      - ./warehouse:/opt/flink/warehouse
+      # - ./warehouse:/opt/flink/warehouse
       - ../datalake/iceberg_and_paimon/packages/jars:/opt/flink/lib-ext
 
   # ---------- 分析引擎：StarRocks (All-in-One) ----------
@@ -174,7 +174,7 @@ services:
       - "4040:4040" # Spark Web UI（第一个应用）
     volumes:
       # Spark 里的 Iceberg warehouse & notebooks
-      - ./warehouse:/home/iceberg/warehouse
+      # - ./warehouse:/home/iceberg/warehouse
       - ./notebooks:/home/iceberg/notebooks/notebooks
       - ./spark-conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
       - ./airflow/jobs:/opt/jobs # ⭐ 新增：让 spark-submit 能看到脚本
