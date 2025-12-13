@@ -20,30 +20,6 @@ services:
       - minio_data:/data
     command: ["server", "/data", "--console-address", ":9001"]
 
-  # ---------- Iceberg REST Catalog ----------
-  rest:
-    image: tabulario/iceberg-rest
-    container_name: iceberg-rest
-    networks:
-      amoro_network:
-        aliases:
-          - warehouse.rest
-    ports:
-      - "8181:8181"
-    environment:
-      - AWS_ACCESS_KEY_ID=admin
-      - AWS_SECRET_ACCESS_KEY=password
-      - AWS_REGION=us-east-1
-      - CATALOG_WAREHOUSE=s3://warehouse/
-      - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
-      - CATALOG_S3_ENDPOINT=http://minio:9000
-      # ⭐ 关键：把元数据 sqlite 文件挪到挂载卷里，而不是默认的 /tmp/memory
-      - CATALOG_URI=jdbc:sqlite:/var/lib/iceberg/iceberg_catalog.db
-      #（不再设置 CATALOG_CATALOG__IMPL，沿用默认 JdbcCatalog 即可）
-    volumes:
-      # ⭐ 给 /var/lib/iceberg 挂一个 named volume
-      - ./rest_data:/var/lib/iceberg
-
   # ---------- MinIO 初始化工具：mc ----------
   mc:
     image: minio/mc
@@ -67,7 +43,7 @@ services:
       tail -f /dev/null
       "
 
-  # ---------- Lakehouse 管理：Amoro ----------
+  # ---------- Lakehouse 管理：Amoro (Unified Catalog) ----------
   amoro:
     image: apache/amoro
     container_name: amoro
@@ -75,17 +51,91 @@ services:
       - minio
     ports:
       - "8081:8081" # Amoro Web UI
-      - "1630:1630" # Optimizer Dashboard
+      - "1630:1630" # Optimizer Dashboard / REST API
       - "1260:1260" # RPC / Client 端口
     environment:
       - JVM_XMS=1024
     networks:
       amoro_network:
     volumes:
-      - ./amoro-meta:/tmp/amoro # 存储元数据 (修正为实际数据路径)
+      - ./amoro-meta:/tmp/amoro
     command: ["/entrypoint.sh", "ams"]
     tty: true
     stdin_open: true
+
+  # ---------- 业务数据库：MySQL ----------
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=mydb
+    networks:
+      amoro_network:
+    ports:
+      - "3306:3306"
+
+  # ---------- 实时计算：Flink JobManager ----------
+  flink-jobmanager:
+    image: flink:1.18.0-java8
+    container_name: flink-jobmanager
+    ports:
+      - "8083:8081"
+    command: >
+      bash -c "cp -n /opt/flink/lib-ext/* /opt/flink/lib/ 2>/dev/null || true && /opt/flink/bin/jobmanager.sh start-foreground"
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+    networks:
+      amoro_network:
+    volumes:
+      - ./warehouse:/opt/flink/warehouse
+      - ../datalake/iceberg_and_paimon/packages/jars:/opt/flink/lib-ext
+
+  # ---------- 实时计算：Flink TaskManager ----------
+  flink-taskmanager:
+    image: flink:1.18.0-java8
+    container_name: flink-taskmanager
+    depends_on:
+      - flink-jobmanager
+    command: >
+      bash -c "cp -n /opt/flink/lib-ext/* /opt/flink/lib/ 2>/dev/null || true && /opt/flink/bin/taskmanager.sh start-foreground"
+    scale: 1
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 2
+    networks:
+      amoro_network:
+    volumes:
+      - ./warehouse:/opt/flink/warehouse
+      - ../datalake/iceberg_and_paimon/packages/jars:/opt/flink/lib-ext
+
+  # ---------- 分析引擎：StarRocks (All-in-One) ----------
+  starrocks:
+    image: starrocks/allin1-ubuntu:latest
+    container_name: starrocks
+    ports:
+      - "8030:8030" # FE HTTP
+      - "9020:9020" # FE RPC
+      - "9030:9030" # FE MySQL
+      - "8040:8040" # BE HTTP
+    networks:
+      amoro_network:
+
+  # ---------- 服务接口：API ----------
+  api:
+    build: ./api
+    container_name: web-api
+    ports:
+      - "8000:8000"
+    networks:
+      amoro_network:
+    depends_on:
+      - trino
+      - starrocks
 
   # ---------- 查询引擎：Trino ----------
   trino:
@@ -103,6 +153,8 @@ services:
           - warehouse.trino
     ports:
       - "8080:8080"
+    depends_on:
+      - amoro
 
   # ---------- 计算：Spark（Iceberg-ready） ----------
   spark:
