@@ -36,19 +36,19 @@ class SparkDockerOperator(DockerOperator):
         :param requirements: 需要运行时 pip 安装的依赖列表，例如 ["mlflow", "boto3"]
         :param script_args: 传递给 python 脚本的参数字符串
         """
-        
+
         # 1. 构造 pip install 命令部分
         pip_cmd = ""
         if requirements:
             # quote 包名以防特殊字符，但在 bash -c 中简单的空格分隔通常足够
             req_str = " ".join(requirements)
             pip_cmd = f"pip install -q {req_str} && "
-            
+
         # 2. 构造 spark-submit 命令部分
         # 强制指定 properties-file 以连接 Catalog
         props_file = f"{CONTAINER_SPARK_CONF_DIR}/spark-defaults.conf"
         script_path = f"{CONTAINER_JOBS_DIR}/{python_script}"
-        
+
         submit_cmd = (
             f"/opt/spark/bin/spark-submit "
             f"--properties-file {props_file} "
@@ -56,7 +56,7 @@ class SparkDockerOperator(DockerOperator):
             f"{script_path} "
             f"{script_args}"
         )
-        
+
         # 拼接完整命令：["-c", "pip install ... && spark-submit ..."]
         full_command = ["-c", f"{pip_cmd}{submit_cmd}"]
 
