@@ -7,6 +7,7 @@ ARG FLINK_VERSION=1.20.3
 ARG ICEBERG_VERSION=1.7.1
 ARG FLINK_CDC_VERSION=3.3.0
 ARG KAFKA_CONN_VERSION=3.4.0-1.20
+ARG FLINK_SHADED_HADOOP_VERSION=2.8.3-10.0
 
 # --------------------------------------------------------------------------------
 # 2. 创建插件目录
@@ -48,6 +49,10 @@ RUN wget -P /opt/flink/lib/ \
 # 4.5 Kafka Connector (可选，作为 MQ 接入储备)
 RUN wget -P /opt/flink/lib/ \
     https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/${KAFKA_CONN_VERSION}/flink-sql-connector-kafka-${KAFKA_CONN_VERSION}.jar
+
+# 4.6 Flink Shaded Hadoop (解决 ClassNotFoundException: org.apache.hadoop.conf.Configuration)
+RUN wget -P /opt/flink/lib/ \
+    https://repo.maven.apache.org/maven2/org/apache/flink/flink-shaded-hadoop-2-uber/${FLINK_SHADED_HADOOP_VERSION}/flink-shaded-hadoop-2-uber-${FLINK_SHADED_HADOOP_VERSION}.jar
 
 # --------------------------------------------------------------------------------
 # 5. 配置与权限
