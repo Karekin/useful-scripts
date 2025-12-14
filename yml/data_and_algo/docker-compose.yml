@@ -67,9 +67,15 @@ services:
   mysql:
     image: mysql:8.0
     container_name: mysql
+    command:
+      - --server-id=1
+      - --log-bin=mysql-bin
+      - --binlog-format=ROW
+      - --binlog-row-image=FULL
     environment:
       - MYSQL_ROOT_PASSWORD=password
       - MYSQL_DATABASE=mydb
+      - MYSQL_ROOT_HOST=%
     networks:
       amoro_network:
     ports:
@@ -89,10 +95,14 @@ services:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: flink-jobmanager
+        execution.checkpointing.interval: 10s
+        state.checkpoints.dir: s3://warehouse/flink/checkpoints
+        state.savepoints.dir: s3://warehouse/flink/savepoints
         s3.endpoint: http://minio:9000
-        s3.path.style.access: true
+        s3.path-style-access: true
         s3.access-key: admin
         s3.secret-key: password
+        s3.endpoint.region: us-east-1
     networks:
       amoro_network:
 
@@ -109,10 +119,14 @@ services:
         FLINK_PROPERTIES=
         jobmanager.rpc.address: flink-jobmanager
         taskmanager.numberOfTaskSlots: 2
+        execution.checkpointing.interval: 10s
+        state.checkpoints.dir: s3://warehouse/flink/checkpoints
+        state.savepoints.dir: s3://warehouse/flink/savepoints
         s3.endpoint: http://minio:9000
-        s3.path.style.access: true
+        s3.path-style-access: true
         s3.access-key: admin
         s3.secret-key: password
+        s3.endpoint.region: us-east-1
     networks:
       amoro_network:
 
