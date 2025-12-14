@@ -75,43 +75,46 @@ services:
     ports:
       - "3306:3306"
 
-  # ---------- 实时计算：Flink JobManager ----------
+  # ---------- 实时计算：Flink JobManager (Custom Image) ----------
   flink-jobmanager:
-    image: flink:1.18.0-java8
+    build:
+      context: ./flink-cluster
+      dockerfile: Dockerfile
+    image: custom-flink:1.20.3-iceberg
     container_name: flink-jobmanager
     ports:
       - "8083:8081"
-    command: >
-      bash -c "cp -n /opt/flink/lib-ext/* /opt/flink/lib/ 2>/dev/null || true && /opt/flink/bin/jobmanager.sh start-foreground"
+    command: jobmanager
     environment:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: flink-jobmanager
+        s3.endpoint: http://minio:9000
+        s3.path.style.access: true
+        s3.access-key: admin
+        s3.secret-key: password
     networks:
       amoro_network:
-    volumes:
-      # - ./warehouse:/opt/flink/warehouse
-      - ../datalake/iceberg_and_paimon/packages/jars:/opt/flink/lib-ext
 
-  # ---------- 实时计算：Flink TaskManager ----------
+  # ---------- 实时计算：Flink TaskManager (Custom Image) ----------
   flink-taskmanager:
-    image: flink:1.18.0-java8
+    image: custom-flink:1.20.3-iceberg
     container_name: flink-taskmanager
     depends_on:
       - flink-jobmanager
-    command: >
-      bash -c "cp -n /opt/flink/lib-ext/* /opt/flink/lib/ 2>/dev/null || true && /opt/flink/bin/taskmanager.sh start-foreground"
+    command: taskmanager
     scale: 1
     environment:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: flink-jobmanager
         taskmanager.numberOfTaskSlots: 2
+        s3.endpoint: http://minio:9000
+        s3.path.style.access: true
+        s3.access-key: admin
+        s3.secret-key: password
     networks:
       amoro_network:
-    volumes:
-      # - ./warehouse:/opt/flink/warehouse
-      - ../datalake/iceberg_and_paimon/packages/jars:/opt/flink/lib-ext
 
   # ---------- 分析引擎：StarRocks (All-in-One) ----------
   starrocks:
