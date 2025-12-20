@@ -3,33 +3,125 @@
 ## 架构概览
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    Amoro (统一控制面 + Iceberg REST Catalog)          │
-│                     http://amoro:1630/api/iceberg/rest               │
-│                         Catalog: amoro_catalog                       │
-└──────────────┬──────────────┬──────────────┬──────────────┬─────────┘
-               │              │              │              │
-         ┌─────▼─────┐  ┌─────▼─────┐  ┌─────▼─────┐  ┌─────▼─────┐
-         │   Spark   │  │   Trino   │  │   Flink   │  │ StarRocks │
-         │  :8888    │  │  :8080    │  │  :8083    │  │  :9030    │
-         └───────────┘  └───────────┘  └───────────┘  └───────────┘
-               │              │              │              │
-               └──────────────┴──────────────┴──────────────┘
-                                    │
-                            ┌───────▼───────┐
-                            │  MinIO (S3)   │
-                            │ s3://warehouse │
-                            └───────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         GitHub (Single Source of Truth)                      │
+│                   CloudMold/data-ml-platform-assets (private)                │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │ git-sync (30s)
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            codebase_volume:/code                             │
+│  ├── airflow/dags/    ├── dbt/          ├── flink/sql/     ├── notebooks/  │
+│  ├── airflow/jobs/    ├── python/       ├── flink/udf/                      │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │ 只读挂载 (:ro)
+         ┌─────────────────────────┼─────────────────────────┐
+         ▼                         ▼                         ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│     Airflow     │    │      Spark      │    │      Flink      │
+│    :8082 (UI)   │    │   :8888 (JNB)   │    │   :8083 (UI)    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                         │                         │
+         └─────────────────────────┼─────────────────────────┘
+                                   │
+                    ┌──────────────┴──────────────┐
+                    ▼                             ▼
+         ┌─────────────────┐           ┌─────────────────┐
+         │  Amoro Catalog  │           │   StarRocks     │
+         │ (Iceberg REST)  │           │    :9030        │
+         │     :1630       │           └─────────────────┘
+         └────────┬────────┘
+                  │
+                  ▼
+         ┌─────────────────┐
+         │  MinIO (S3)     │
+         │ s3://warehouse  │
+         │  :9000 / :9001  │
+         └─────────────────┘
+```
+
+## Git-Sync 架构说明
+
+本平台采用 **Git 作为单一事实源 (SSOT)** 的架构，代码资产通过 git-sync 机制自动同步：
+
+### 核心组件
+
+| 组件 | 职责 | 刷新周期 |
+|------|------|----------|
+| **token-fetcher** | 生成 GitHub App Installation Token | 50 分钟 |
+| **git-sync** | 同步私有仓库到 codebase_volume | 30 秒 |
+
+### 安全机制
+
+- **GitHub App 认证**：使用 `cloudmold-git-sync` App（ID: 2505691）
+- **最小权限原则**：仅 Contents: Read-only 权限
+- **短期 Token**：Installation Token 有效期约 1 小时
+- **Secret 管理**：私钥通过 Docker Compose secrets 注入
+
+### 仓库目录结构
+
+```
+data-ml-platform-assets/
+├── airflow/
+│   ├── dags/           # Airflow DAGs
+│   └── jobs/           # Python 脚本 (特征工程、训练、预测)
+├── dbt/                # dbt 项目
+├── flink/
+│   ├── sql/            # Flink SQL 脚本
+│   └── udf/            # Flink UDF JARs
+├── notebooks/          # Jupyter Notebooks
+└── python/             # 通用 Python 脚本
 ```
 
 ## 快速启动
 
+### 前置条件
+
+1. **放置 GitHub App 私钥**
+
 ```bash
-cd yml/data_and_algo
-docker-compose up -d
+# 将私钥文件放入 secrets 目录
+cp /path/to/your/private-key.pem ./secrets/cloudmold-git-sync.2025-12-19.private-key.pem
+
+# 设置安全权限
+chmod 0400 ./secrets/*.pem
 ```
 
-## 首次配置：在 Amoro 中创建 Internal Catalog（一次性操作）
+2. **确认网络连通性**
+
+```bash
+# 需要能够访问 GitHub
+curl -I https://github.com
+curl -I https://api.github.com
+```
+
+### 启动服务
+
+```bash
+cd yml/data_and_algo
+
+# 构建自定义镜像 (首次需要)
+docker-compose build
+
+# 启动所有服务
+docker-compose up -d
+
+# 查看 git-sync 状态
+docker-compose logs -f git-sync
+docker-compose logs -f token-fetcher
+```
+
+### 验证同步状态
+
+```bash
+# 检查 codebase 是否同步成功
+docker exec git-sync ls -la /code/current/
+
+# 检查 Airflow DAGs 是否可见
+docker exec airflow-webserver ls -la /code/current/airflow/dags/
+```
+
+## 首次配置：在 Amoro 中创建 Internal Catalog
 
 由于 Amoro 元数据已持久化（`./amoro-meta`），此步骤只需执行一次。
 
@@ -83,6 +175,23 @@ docker-compose up -d
 spark.sql("SHOW NAMESPACES IN amoro_catalog").show()
 spark.sql("SHOW TABLES IN amoro_catalog.amoro_db").show()
 spark.sql("SELECT * FROM amoro_catalog.amoro_db.tb_users LIMIT 10").show()
+
+# 访问 git-sync 同步的脚本
+# 脚本位置: /code/current/airflow/jobs/
+```
+
+### Airflow (@ http://localhost:8082)
+
+DAGs 自动从 git-sync 共享卷加载：
+
+```python
+# DAGs 路径: /code/current/airflow/dags/
+# Jobs 路径: /code/current/airflow/jobs/
+
+# 在 DAG 中引用 jobs:
+from airflow.operators.python import PythonOperator
+
+# Python 脚本位于 /code/current/airflow/jobs/
 ```
 
 ### Flink SQL (@ http://localhost:8083)
@@ -100,6 +209,8 @@ CREATE CATALOG amoro_catalog WITH (
 -- 使用 catalog
 USE CATALOG amoro_catalog;
 SHOW DATABASES;
+
+-- Flink SQL 脚本位于 /code/current/flink/sql/
 ```
 
 ### Trino (@ localhost:8080)
@@ -150,16 +261,83 @@ SELECT * FROM amoro_catalog.amoro_db.tb_users;
 | Airflow         | 8082 | 工作流编排                        |
 | API Service     | 8000 | FastAPI 服务                      |
 
+## 故障排查
+
+### Git-Sync 同步失败
+
+```bash
+# 查看 token-fetcher 日志
+docker-compose logs token-fetcher
+
+# 查看 git-sync 日志
+docker-compose logs git-sync
+
+# 检查 token 文件是否存在
+docker exec token-fetcher cat /run/git-token/token 2>/dev/null && echo "Token exists"
+
+# 手动触发同步 (重启 git-sync)
+docker-compose restart git-sync
+```
+
+### Airflow DAGs 未发现
+
+```bash
+# 检查 DAGs 目录
+docker exec airflow-webserver ls -la /code/current/airflow/dags/
+
+# 检查 Airflow 配置
+docker exec airflow-webserver printenv | grep DAGS_FOLDER
+
+# 重启 Scheduler
+docker-compose restart airflow-scheduler
+```
+
+### Token 生成失败
+
+常见原因：
+1. 私钥文件不存在或权限错误
+2. GitHub App 未安装到目标仓库
+3. Installation ID 错误
+4. 网络无法访问 api.github.com
+
+```bash
+# 检查私钥文件
+ls -la ./secrets/*.pem
+
+# 测试 GitHub API 连通性
+curl -I https://api.github.com
+```
+
 ## 重要说明
 
 ### warehouse 参数的含义
 
 在使用 Amoro REST Catalog 时，各引擎配置中的 `warehouse` 参数 **不是 S3 路径**，而是 **Amoro 中的 Catalog 名称**：
 
--   ✅ 正确：`warehouse = amoro_catalog`
--   ❌ 错误：`warehouse = s3://warehouse/wh/`
+- ✅ 正确：`warehouse = amoro_catalog`
+- ❌ 错误：`warehouse = s3://warehouse/wh/`
 
 这是因为 Amoro 内部管理了 Catalog 到存储路径的映射。
+
+### 代码资产路径约定
+
+所有服务统一从 `/code/current/` 读取代码资产：
+
+| 资产类型 | 容器内路径 |
+|----------|-----------|
+| Airflow DAGs | `/code/current/airflow/dags/` |
+| Airflow Jobs | `/code/current/airflow/jobs/` |
+| Flink SQL | `/code/current/flink/sql/` |
+| Flink UDF | `/code/current/flink/udf/` |
+| Notebooks | `/code/current/notebooks/` |
+| dbt Project | `/code/current/dbt/` |
+| Python Scripts | `/code/current/python/` |
+
+### 安全注意事项
+
+1. **私钥保护**：`secrets/` 目录下的 `.pem` 文件绝不能提交到 Git
+2. **Token 不持久化**：Token 仅存在于内存卷，重启后重新生成
+3. **最小权限**：GitHub App 仅有 Contents: Read-only 权限
 
 ## 后续：自动化 Catalog 创建（可选）
 

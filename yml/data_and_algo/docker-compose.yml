@@ -1,6 +1,94 @@
-version: "3"
+version: "3.8"
+
+# ============================================================================
+# Git-Sync 机制配置说明
+# ============================================================================
+# 本 compose 文件实现了「以 Git 为单一事实源」的协作平台架构：
+#
+# 1. token-fetcher: 周期性生成 GitHub App Installation Token (50min刷新)
+# 2. git-sync: 使用 token 同步私有仓库到 codebase_volume
+# 3. 各服务 (Airflow/Spark/Flink) 从 codebase_volume:/code 只读挂载
+#
+# 仓库目录结构约定：
+#   /code/airflow/dags   - Airflow DAGs
+#   /code/airflow/jobs   - Python 脚本
+#   /code/dbt            - dbt project
+#   /code/flink/sql      - Flink SQL
+#   /code/flink/udf      - Flink UDF jars
+#   /code/python         - Python scripts
+#   /code/notebooks      - Jupyter notebooks
+# ============================================================================
 
 services:
+  # ==========================================================================
+  # Git Sync 基础设施
+  # ==========================================================================
+
+  # ---------- Token Fetcher: 生成 GitHub Installation Token ----------
+  token-fetcher:
+    build:
+      context: ./token-fetcher
+      dockerfile: Dockerfile
+    container_name: token-fetcher
+    restart: unless-stopped
+    environment:
+      - GITHUB_APP_ID=2505691
+      - GITHUB_INSTALLATION_ID=100416609
+      - PRIVATE_KEY_PATH=/run/secrets/github_app_private_key
+      - TOKEN_OUTPUT_PATH=/run/git-token/token
+      - REFRESH_INTERVAL_SECONDS=3000  # 50 minutes
+    secrets:
+      - github_app_private_key
+    volumes:
+      - git_token_volume:/run/git-token
+    networks:
+      amoro_network:
+    healthcheck:
+      test: ["CMD", "test", "-f", "/run/git-token/token"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ---------- Git Sync: 同步私有仓库到共享卷 ----------
+  git-sync:
+    image: registry.k8s.io/git-sync/git-sync:v4.4.0
+    container_name: git-sync
+    restart: unless-stopped
+    depends_on:
+      token-fetcher:
+        condition: service_healthy
+    environment:
+      # 仓库配置
+      - GITSYNC_REPO=https://github.com/CloudMold/data-ml-platform-assets.git
+      - GITSYNC_REF=master
+      - GITSYNC_ROOT=/code
+      - GITSYNC_LINK=current
+      # 同步间隔 (秒)
+      - GITSYNC_PERIOD=30s
+      # Token 文件路径 (由 token-fetcher 写入)
+      - GITSYNC_USERNAME=x-access-token
+      - GITSYNC_PASSWORD_FILE=/run/git-token/token
+      # 其他配置
+      - GITSYNC_ONE_TIME=false
+      - GITSYNC_DEPTH=1
+      - GITSYNC_ADD_USER=true
+    volumes:
+      - codebase_volume:/code
+      - git_token_volume:/run/git-token:ro
+    networks:
+      amoro_network:
+    healthcheck:
+      test: ["CMD", "test", "-d", "/code/current/.git"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # ==========================================================================
+  # 对象存储 & 数据湖
+  # ==========================================================================
+
   # ---------- 对象存储：MinIO ----------
   minio:
     image: minio/minio
@@ -37,7 +125,6 @@ services:
       until (/usr/bin/mc alias set minio http://minio:9000 admin password) do
         echo '...waiting for minio...' && sleep 1;
       done;
-      # /usr/bin/mc rm -r --force minio/warehouse || true;
       /usr/bin/mc mb minio/warehouse || true;
       /usr/bin/mc anonymous set public minio/warehouse;
       tail -f /dev/null
@@ -63,6 +150,10 @@ services:
     tty: true
     stdin_open: true
 
+  # ==========================================================================
+  # 业务数据库
+  # ==========================================================================
+
   # ---------- 业务数据库：MySQL ----------
   mysql:
     image: mysql:8.0
@@ -81,6 +172,10 @@ services:
     ports:
       - "3306:3306"
 
+  # ==========================================================================
+  # 实时计算：Flink
+  # ==========================================================================
+
   # ---------- 实时计算：Flink JobManager (Custom Image) ----------
   flink-jobmanager:
     build:
@@ -88,6 +183,9 @@ services:
       dockerfile: Dockerfile
     image: custom-flink:1.20.3-iceberg
     container_name: flink-jobmanager
+    depends_on:
+      git-sync:
+        condition: service_healthy
     ports:
       - "8083:8081"
     command: jobmanager
@@ -103,6 +201,9 @@ services:
         s3.access-key: admin
         s3.secret-key: password
         s3.endpoint.region: us-east-1
+    volumes:
+      # Git-sync codebase (read-only)
+      - codebase_volume:/code:ro
     networks:
       amoro_network:
 
@@ -127,8 +228,15 @@ services:
         s3.access-key: admin
         s3.secret-key: password
         s3.endpoint.region: us-east-1
+    volumes:
+      # Git-sync codebase (read-only)
+      - codebase_volume:/code:ro
     networks:
       amoro_network:
+
+  # ==========================================================================
+  # 分析 & 查询引擎
+  # ==========================================================================
 
   # ---------- 分析引擎：StarRocks (All-in-One) ----------
   starrocks:
@@ -141,18 +249,6 @@ services:
       - "8040:8040" # BE HTTP
     networks:
       amoro_network:
-
-  # ---------- 服务接口：API ----------
-  api:
-    build: ./api
-    container_name: web-api
-    ports:
-      - "8000:8000"
-    networks:
-      amoro_network:
-    depends_on:
-      - trino
-      - starrocks
 
   # ---------- 查询引擎：Trino ----------
   trino:
@@ -173,6 +269,26 @@ services:
     depends_on:
       - amoro
 
+  # ==========================================================================
+  # 服务接口
+  # ==========================================================================
+
+  # ---------- 服务接口：API ----------
+  api:
+    build: ./api
+    container_name: web-api
+    ports:
+      - "8000:8000"
+    networks:
+      amoro_network:
+    depends_on:
+      - trino
+      - starrocks
+
+  # ==========================================================================
+  # 计算 & ML
+  # ==========================================================================
+
   # ---------- 计算：Spark（Iceberg-ready） ----------
   spark:
     image: tabulario/spark-iceberg
@@ -180,6 +296,8 @@ services:
     depends_on:
       - minio
       - amoro
+      git-sync:
+        condition: service_healthy
     networks:
       amoro_network:
     environment:
@@ -190,11 +308,10 @@ services:
       - "8888:8888" # Jupyter Notebook
       - "4040:4040" # Spark Web UI（第一个应用）
     volumes:
-      # Spark 里的 Iceberg warehouse & notebooks
-      # - ./warehouse:/home/iceberg/warehouse
-      - ./notebooks:/home/iceberg/notebooks/notebooks
+      # Spark 配置
       - ./spark-conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
-      - ./airflow/jobs:/opt/jobs # ⭐ 新增：让 spark-submit 能看到脚本
+      # Git-sync codebase (read-only)
+      - codebase_volume:/code:ro
 
   # ---------- 实验管理：MLflow ----------
   mlflow:
@@ -223,6 +340,10 @@ services:
       --host 0.0.0.0
       --port 5000
 
+  # ==========================================================================
+  # 工作流编排：Airflow
+  # ==========================================================================
+
   # ---------- Airflow 元数据库 ----------
   airflow-postgres:
     image: postgres:14
@@ -241,13 +362,15 @@ services:
       timeout: 5s
       retries: 5
 
-  # 公共 Airflow 环境变量
+  # Airflow 初始化
   airflow-init:
     build:
       context: ./airflow
     container_name: airflow-init
     depends_on:
       airflow-postgres:
+        condition: service_healthy
+      git-sync:
         condition: service_healthy
     networks:
       amoro_network:
@@ -257,11 +380,13 @@ services:
       AIRFLOW__CORE__FERNET_KEY: "this_is_a_demo_fernet_key_change_me"
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       AIRFLOW__WEBSERVER__SECRET_KEY: "this_is_a_demo_web_secret_change_me"
+      # DAGs 路径指向 git-sync 共享卷
+      AIRFLOW__CORE__DAGS_FOLDER: /code/current/airflow/dags
     volumes:
-      - ./airflow/dags:/opt/airflow/dags
+      # Git-sync codebase (read-only for dags/jobs)
+      - codebase_volume:/code:ro
+      # Logs 仍然使用本地卷 (需要写入)
       - ./airflow/logs:/opt/airflow/logs
-      - ./airflow/plugins:/opt/airflow/plugins
-      - ./airflow/jobs:/opt/airflow/jobs
     entrypoint: >
       bash -c "
       airflow db migrate &&
@@ -276,6 +401,8 @@ services:
     depends_on:
       airflow-postgres:
         condition: service_healthy
+      git-sync:
+        condition: service_healthy
     networks:
       amoro_network:
     environment:
@@ -284,11 +411,13 @@ services:
       AIRFLOW__CORE__FERNET_KEY: "this_is_a_demo_fernet_key_change_me"
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       AIRFLOW__WEBSERVER__SECRET_KEY: "this_is_a_demo_web_secret_change_me"
+      # DAGs 路径指向 git-sync 共享卷
+      AIRFLOW__CORE__DAGS_FOLDER: /code/current/airflow/dags
     volumes:
-      - ./airflow/dags:/opt/airflow/dags
+      # Git-sync codebase (read-only for dags/jobs)
+      - codebase_volume:/code:ro
+      # Logs 仍然使用本地卷 (需要写入)
       - ./airflow/logs:/opt/airflow/logs
-      - ./airflow/plugins:/opt/airflow/plugins
-      - ./airflow/jobs:/opt/airflow/jobs
     command: webserver
     ports:
       - "8082:8080" # Airflow Web UI
@@ -301,6 +430,8 @@ services:
     depends_on:
       airflow-postgres:
         condition: service_healthy
+      git-sync:
+        condition: service_healthy
     networks:
       amoro_network:
     environment:
@@ -309,17 +440,42 @@ services:
       AIRFLOW__CORE__FERNET_KEY: "this_is_a_demo_fernet_key_change_me"
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       AIRFLOW__WEBSERVER__SECRET_KEY: "this_is_a_demo_web_secret_change_me"
+      # DAGs 路径指向 git-sync 共享卷
+      AIRFLOW__CORE__DAGS_FOLDER: /code/current/airflow/dags
     volumes:
+      # Docker socket for DockerOperator
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./airflow/dags:/opt/airflow/dags
+      # Git-sync codebase (read-only for dags/jobs)
+      - codebase_volume:/code:ro
+      # Logs 仍然使用本地卷 (需要写入)
       - ./airflow/logs:/opt/airflow/logs
-      - ./airflow/plugins:/opt/airflow/plugins
-      - ./airflow/jobs:/opt/airflow/jobs
     command: scheduler
 
+# ============================================================================
+# Networks
+# ============================================================================
 networks:
   amoro_network:
     driver: bridge
 
+# ============================================================================
+# Volumes
+# ============================================================================
 volumes:
+  # MinIO 数据持久化
   minio_data:
+
+  # Git-sync 代码库共享卷
+  # 所有服务从这里读取代码资产
+  codebase_volume:
+
+  # GitHub Token 共享卷
+  # token-fetcher 写入，git-sync 读取
+  git_token_volume:
+
+# ============================================================================
+# Secrets (Docker Compose Secrets)
+# ============================================================================
+secrets:
+  github_app_private_key:
+    file: ./secrets/cloudmold-git-sync.2025-12-19.private-key.pem
