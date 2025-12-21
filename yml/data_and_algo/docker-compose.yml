@@ -30,13 +30,13 @@ services:
       context: ./token-fetcher
       dockerfile: Dockerfile
     container_name: token-fetcher
-    restart: unless-stopped
+    # restart: unless-stopped
     environment:
       - GITHUB_APP_ID=2505691
       - GITHUB_INSTALLATION_ID=100416609
       - PRIVATE_KEY_PATH=/run/secrets/github_app_private_key
       - TOKEN_OUTPUT_PATH=/run/git-token/token
-      - REFRESH_INTERVAL_SECONDS=3000  # 50 minutes
+      - REFRESH_INTERVAL_SECONDS=3000 # 50 minutes
     secrets:
       - github_app_private_key
     volumes:
@@ -54,6 +54,7 @@ services:
   git-sync:
     image: registry.k8s.io/git-sync/git-sync:v4.4.0
     container_name: git-sync
+    user: "0:0" # Run as root to avoid permission issues
     restart: unless-stopped
     depends_on:
       token-fetcher:
@@ -73,6 +74,7 @@ services:
       - GITSYNC_ONE_TIME=false
       - GITSYNC_DEPTH=1
       - GITSYNC_ADD_USER=true
+      - GITSYNC_MAX_FAILURES=10
     volumes:
       - codebase_volume:/code
       - git_token_volume:/run/git-token:ro
@@ -294,8 +296,10 @@ services:
     image: tabulario/spark-iceberg
     container_name: spark
     depends_on:
-      - minio
-      - amoro
+      minio:
+        condition: service_started
+      amoro:
+        condition: service_started
       git-sync:
         condition: service_healthy
     networks:
