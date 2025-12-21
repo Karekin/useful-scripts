@@ -81,11 +81,11 @@ services:
     networks:
       amoro_network:
     healthcheck:
-      test: ["CMD", "test", "-d", "/code/current/.git"]
-      interval: 60s
-      timeout: 10s
+      test: ["CMD", "test", "-L", "/code/current"]
+      interval: 10s
+      timeout: 5s
       retries: 3
-      start_period: 120s
+      start_period: 30s
 
   # ==========================================================================
   # 对象存储 & 数据湖
@@ -386,8 +386,10 @@ services:
       AIRFLOW__WEBSERVER__SECRET_KEY: "this_is_a_demo_web_secret_change_me"
       # DAGs 路径指向 git-sync 共享卷
       AIRFLOW__CORE__DAGS_FOLDER: /code/current/airflow/dags
+      # 添加 Python 路径以支持自定义模块导入
+      PYTHONPATH: /code/current/airflow
     volumes:
-      # Git-sync codebase (read-only for dags/jobs)
+      # Git-sync codebase (read-only for dags/jobs/plugins)
       - codebase_volume:/code:ro
       # Logs 仍然使用本地卷 (需要写入)
       - ./airflow/logs:/opt/airflow/logs
@@ -417,8 +419,10 @@ services:
       AIRFLOW__WEBSERVER__SECRET_KEY: "this_is_a_demo_web_secret_change_me"
       # DAGs 路径指向 git-sync 共享卷
       AIRFLOW__CORE__DAGS_FOLDER: /code/current/airflow/dags
+      # 添加 Python 路径以支持自定义模块导入
+      PYTHONPATH: /code/current/airflow
     volumes:
-      # Git-sync codebase (read-only for dags/jobs)
+      # Git-sync codebase (read-only for dags/jobs/plugins)
       - codebase_volume:/code:ro
       # Logs 仍然使用本地卷 (需要写入)
       - ./airflow/logs:/opt/airflow/logs
@@ -446,10 +450,12 @@ services:
       AIRFLOW__WEBSERVER__SECRET_KEY: "this_is_a_demo_web_secret_change_me"
       # DAGs 路径指向 git-sync 共享卷
       AIRFLOW__CORE__DAGS_FOLDER: /code/current/airflow/dags
+      # 添加 Python 路径以支持自定义模块导入
+      PYTHONPATH: /code/current/airflow
     volumes:
       # Docker socket for DockerOperator
       - /var/run/docker.sock:/var/run/docker.sock
-      # Git-sync codebase (read-only for dags/jobs)
+      # Git-sync codebase (read-only for dags/jobs/plugins)
       - codebase_volume:/code:ro
       # Logs 仍然使用本地卷 (需要写入)
       - ./airflow/logs:/opt/airflow/logs
