@@ -206,6 +206,8 @@ services:
     volumes:
       # Git-sync codebase (read-only)
       - codebase_volume:/code:ro
+      # 额外 JAR 包目录 (挂载本地目录到 lib 以便动态添加依赖)
+      - ./flink-libs:/opt/flink/lib/extra:ro
     networks:
       amoro_network:
 
@@ -233,6 +235,8 @@ services:
     volumes:
       # Git-sync codebase (read-only)
       - codebase_volume:/code:ro
+      # 额外 JAR 包目录 (挂载本地目录到 lib 以便动态添加依赖)
+      - ./flink-libs:/opt/flink/lib/extra:ro
     networks:
       amoro_network:
 

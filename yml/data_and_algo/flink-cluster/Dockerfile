@@ -6,6 +6,7 @@ FROM flink:1.20.3-java17
 ARG FLINK_VERSION=1.20.3
 ARG ICEBERG_VERSION=1.7.1
 ARG FLINK_CDC_VERSION=3.3.0
+ARG AMORO_VERSION=0.7.0-incubating
 ARG KAFKA_CONN_VERSION=3.4.0-1.20
 ARG FLINK_SHADED_HADOOP_VERSION=2.8.3-10.0
 
@@ -53,6 +54,11 @@ RUN wget -P /opt/flink/lib/ \
 # 4.6 Flink Shaded Hadoop (解决 ClassNotFoundException: org.apache.hadoop.conf.Configuration)
 RUN wget -P /opt/flink/lib/ \
     https://repo.maven.apache.org/maven2/org/apache/flink/flink-shaded-hadoop-2-uber/${FLINK_SHADED_HADOOP_VERSION}/flink-shaded-hadoop-2-uber-${FLINK_SHADED_HADOOP_VERSION}.jar
+
+# 4.7 Amoro Flink Runtime (支持 type='amoro' 的 Catalog)
+# 注意：目前使用 1.18 版本的 Runtime，通常可以兼容 Flink 1.20
+RUN wget -P /opt/flink/lib/ \
+    https://repo.maven.apache.org/maven2/org/apache/amoro/amoro-flink-runtime-1.18/${AMORO_VERSION}/amoro-flink-runtime-1.18-${AMORO_VERSION}.jar
 
 # --------------------------------------------------------------------------------
 # 5. 配置与权限
