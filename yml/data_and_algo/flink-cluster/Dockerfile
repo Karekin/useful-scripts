@@ -25,9 +25,13 @@ RUN wget -P /opt/flink/plugins/s3-fs-presto/ \
 # 4. 下载连接器 JARs (放 lib 目录)
 # --------------------------------------------------------------------------------
 
-# 4.1 Iceberg 相关 - 全部移除，完全依赖 Amoro Runtime 提供的 shaded 版本
-# 注意：Amoro Runtime 已经包含了完整的 Iceberg 功能（shaded 方式）
-# 添加任何独立的 Iceberg JAR 都会导致类冲突和序列化问题
+# 4.1 Iceberg Flink Runtime (必须保留，提供核心 Iceberg 类)
+RUN wget -P /opt/flink/lib/ \
+    https://repo.maven.apache.org/maven2/org/apache/iceberg/iceberg-flink-runtime-1.17/${ICEBERG_VERSION}/iceberg-flink-runtime-1.17-${ICEBERG_VERSION}.jar
+
+# 4.2 Iceberg AWS Bundle (用于 S3 FileIO)
+RUN wget -P /opt/flink/lib/ \
+    https://repo.maven.apache.org/maven2/org/apache/iceberg/iceberg-aws-bundle/${ICEBERG_VERSION}/iceberg-aws-bundle-${ICEBERG_VERSION}.jar
 
 # 4.3 Flink MySQL CDC (适配 Flink 1.17 的稳定版本)
 # 注意：2.4.x 及以前版本 GroupId 为 com.ververica
