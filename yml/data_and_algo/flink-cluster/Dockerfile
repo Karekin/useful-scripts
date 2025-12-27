@@ -54,6 +54,10 @@ RUN wget -P /opt/flink/lib/ \
 RUN wget -P /opt/flink/lib/ \
     https://repo.maven.apache.org/maven2/org/apache/amoro/amoro-mixed-format-flink-runtime-1.17/${AMORO_VERSION}/amoro-mixed-format-flink-runtime-1.17-${AMORO_VERSION}.jar
 
+# 4.8 Amoro Core (补齐 org.apache.amoro.TableFormat 等核心类)
+RUN wget -P /opt/flink/lib/ \
+    https://repo.maven.apache.org/maven2/org/apache/amoro/amoro-core/${AMORO_VERSION}/amoro-core-${AMORO_VERSION}.jar
+
 # --------------------------------------------------------------------------------
 # 5. 配置与权限
 # --------------------------------------------------------------------------------
