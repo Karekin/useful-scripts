@@ -58,6 +58,10 @@ RUN wget -P /opt/flink/lib/ \
 RUN wget -P /opt/flink/lib/ \
     https://repo.maven.apache.org/maven2/org/apache/amoro/amoro-core/${AMORO_VERSION}/amoro-core-${AMORO_VERSION}.jar
 
+# 4.9 Amoro Shade Guava (补齐 org.apache.amoro.shade.guava32.* 类)
+RUN wget -P /opt/flink/lib/ \
+    https://repo.maven.apache.org/maven2/org/apache/amoro/amoro-shade-guava-32/${AMORO_VERSION}/amoro-shade-guava-32-${AMORO_VERSION}.jar
+
 # --------------------------------------------------------------------------------
 # 5. 配置与权限
 # --------------------------------------------------------------------------------
