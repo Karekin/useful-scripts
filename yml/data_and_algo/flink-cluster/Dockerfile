@@ -5,6 +5,7 @@ ARG FLINK_VERSION=1.17.2
 ARG ICEBERG_VERSION=1.4.3
 ARG FLINK_CDC_VERSION=2.4.2
 ARG AMORO_VERSION=0.7.0-incubating
+ARG FLINK_SHADED_HADOOP_VERSION=2.8.3-10.0
 
 # 2. 创建插件目录
 RUN mkdir -p /opt/flink/plugins/s3-fs-presto
@@ -30,6 +31,10 @@ RUN wget -P /opt/flink/lib/ \
 # 4.4 MySQL JDBC Driver
 RUN wget -P /opt/flink/lib/ \
     https://repo.maven.apache.org/maven2/mysql/mysql-connector-java/8.0.27/mysql-connector-java-8.0.27.jar
+
+# 4.5 Flink Shaded Hadoop (必须保留，提供 Hadoop 核心类支持)
+RUN wget -P /opt/flink/lib/ \
+    https://repo.maven.apache.org/maven2/org/apache/flink/flink-shaded-hadoop-2-uber/${FLINK_SHADED_HADOOP_VERSION}/flink-shaded-hadoop-2-uber-${FLINK_SHADED_HADOOP_VERSION}.jar
 
 # --------------------------------------------------------------------------------
 # 5. 配置与权限
