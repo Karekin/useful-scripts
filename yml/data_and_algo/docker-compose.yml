@@ -183,7 +183,7 @@ services:
     build:
       context: ./flink-cluster
       dockerfile: Dockerfile
-    image: custom-flink:1.20.3-iceberg
+    image: custom-flink:1.17.2-amoro
     container_name: flink-jobmanager
     depends_on:
       git-sync:
@@ -213,7 +213,7 @@ services:
 
   # ---------- 实时计算：Flink TaskManager (Custom Image) ----------
   flink-taskmanager:
-    image: custom-flink:1.20.3-iceberg
+    image: custom-flink:1.17.2-amoro
     container_name: flink-taskmanager
     depends_on:
       - flink-jobmanager
