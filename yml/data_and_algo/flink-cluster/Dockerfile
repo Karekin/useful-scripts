@@ -1,83 +1,35 @@
 FROM flink:1.17.2-java11
 
-# --------------------------------------------------------------------------------
-# 1. 定义版本变量 (针对 Flink 1.17 进行优化)
-# --------------------------------------------------------------------------------
+# 1. 定义版本变量
 ARG FLINK_VERSION=1.17.2
 ARG ICEBERG_VERSION=1.4.3
 ARG FLINK_CDC_VERSION=2.4.2
 ARG AMORO_VERSION=0.7.0-incubating
-ARG KAFKA_CONN_VERSION=3.0.1-1.17
-ARG FLINK_SHADED_HADOOP_VERSION=2.8.3-10.0
 
-# --------------------------------------------------------------------------------
 # 2. 创建插件目录
-# --------------------------------------------------------------------------------
 RUN mkdir -p /opt/flink/plugins/s3-fs-presto
 
-# --------------------------------------------------------------------------------
 # 3. 下载 S3 文件系统插件
-# --------------------------------------------------------------------------------
 RUN wget -P /opt/flink/plugins/s3-fs-presto/ \
     https://repo.maven.apache.org/maven2/org/apache/flink/flink-s3-fs-presto/${FLINK_VERSION}/flink-s3-fs-presto-${FLINK_VERSION}.jar
 
-# --------------------------------------------------------------------------------
-# 4. 下载连接器 JARs (放 lib 目录)
-# --------------------------------------------------------------------------------
+# 4. 下载连接器 JARs (精简版：仅保留 Uber JAR 和必需驱动)
 
-# 4.1 Iceberg Flink Runtime (必须保留，提供核心 Iceberg 类)
+# 4.1 Amoro Flink Runtime (核心胖包，已包含 Shaded Iceberg/Guava/Jackson/Thrift 等)
 RUN wget -P /opt/flink/lib/ \
-    https://repo.maven.apache.org/maven2/org/apache/iceberg/iceberg-flink-runtime-1.17/${ICEBERG_VERSION}/iceberg-flink-runtime-1.17-${ICEBERG_VERSION}.jar
+    https://repo.maven.apache.org/maven2/org/apache/amoro/amoro-mixed-format-flink-runtime-1.17/${AMORO_VERSION}/amoro-mixed-format-flink-runtime-1.17-${AMORO_VERSION}.jar
 
-# 4.2 Iceberg AWS Bundle (用于 S3 FileIO)
+# 4.2 Iceberg AWS Bundle (用于 S3 FileIO 支持)
 RUN wget -P /opt/flink/lib/ \
     https://repo.maven.apache.org/maven2/org/apache/iceberg/iceberg-aws-bundle/${ICEBERG_VERSION}/iceberg-aws-bundle-${ICEBERG_VERSION}.jar
 
-# 4.3 Flink MySQL CDC (适配 Flink 1.17 的稳定版本)
-# 注意：2.4.x 及以前版本 GroupId 为 com.ververica
+# 4.3 Flink MySQL CDC (适配 Flink 1.17)
 RUN wget -P /opt/flink/lib/ \
     https://repo.maven.apache.org/maven2/com/ververica/flink-sql-connector-mysql-cdc/${FLINK_CDC_VERSION}/flink-sql-connector-mysql-cdc-${FLINK_CDC_VERSION}.jar
 
 # 4.4 MySQL JDBC Driver
 RUN wget -P /opt/flink/lib/ \
     https://repo.maven.apache.org/maven2/mysql/mysql-connector-java/8.0.27/mysql-connector-java-8.0.27.jar
-
-# 4.5 Kafka Connector (适配 Flink 1.17)
-RUN wget -P /opt/flink/lib/ \
-    https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-kafka/${KAFKA_CONN_VERSION}/flink-sql-connector-kafka-${KAFKA_CONN_VERSION}.jar
-
-# 4.6 Flink Shaded Hadoop
-RUN wget -P /opt/flink/lib/ \
-    https://repo.maven.apache.org/maven2/org/apache/flink/flink-shaded-hadoop-2-uber/${FLINK_SHADED_HADOOP_VERSION}/flink-shaded-hadoop-2-uber-${FLINK_SHADED_HADOOP_VERSION}.jar
-
-# 4.7 Amoro Flink Runtime (完美适配 Flink 1.17)
-RUN wget -P /opt/flink/lib/ \
-    https://repo.maven.apache.org/maven2/org/apache/amoro/amoro-mixed-format-flink-runtime-1.17/${AMORO_VERSION}/amoro-mixed-format-flink-runtime-1.17-${AMORO_VERSION}.jar
-
-# 4.8 Amoro Core (补齐 org.apache.amoro.TableFormat 等核心类)
-RUN wget -P /opt/flink/lib/ \
-    https://repo.maven.apache.org/maven2/org/apache/amoro/amoro-core/${AMORO_VERSION}/amoro-core-${AMORO_VERSION}.jar
-
-# 4.9 Amoro Shade Guava (补齐 org.apache.amoro.shade.guava32.* 类)
-# 注意：该包的版本号与主项目版本号不完全一致
-RUN wget -P /opt/flink/lib/ \
-    https://repo.maven.apache.org/maven2/org/apache/amoro/amoro-shade-guava-32/32.1.1-jre-0.7.0-incubating/amoro-shade-guava-32-32.1.1-jre-0.7.0-incubating.jar
-
-# 4.10 Caffeine Cache (Amoro Unified Catalog 缓存依赖)
-RUN wget -P /opt/flink/lib/ \
-    https://repo.maven.apache.org/maven2/com/github/ben-manes/caffeine/caffeine/3.1.8/caffeine-3.1.8.jar
-
-# 4.11 Amoro Shade Jackson (处理 JSON 序列化)
-RUN wget -P /opt/flink/lib/ \
-    https://repo.maven.apache.org/maven2/org/apache/amoro/amoro-shade-jackson-2/2.14.2-0.7.0-incubating/amoro-shade-jackson-2-2.14.2-0.7.0-incubating.jar
-
-# 4.12 Amoro Shade Thrift (Thrift 协议依赖)
-RUN wget -P /opt/flink/lib/ \
-    https://repo.maven.apache.org/maven2/org/apache/amoro/amoro-shade-thrift/0.20.0-0.7.0-incubating/amoro-shade-thrift-0.20.0-0.7.0-incubating.jar
-
-# 4.13 Apache Commons Pool 2 (Thrift 连接池管理)
-RUN wget -P /opt/flink/lib/ \
-    https://repo.maven.apache.org/maven2/org/apache/commons/commons-pool2/2.11.1/commons-pool2-2.11.1.jar
 
 # --------------------------------------------------------------------------------
 # 5. 配置与权限
