@@ -30,6 +30,7 @@ services:
       context: ./token-fetcher
       dockerfile: Dockerfile
     container_name: token-fetcher
+    user: "0:0" # Run as root to write to shared volume
     # restart: unless-stopped
     environment:
       - GITHUB_APP_ID=2505691

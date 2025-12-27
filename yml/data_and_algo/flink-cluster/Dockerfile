@@ -6,7 +6,7 @@ FROM flink:1.17.2-java11
 ARG FLINK_VERSION=1.17.2
 ARG ICEBERG_VERSION=1.4.3
 ARG FLINK_CDC_VERSION=2.4.2
-ARG AMORO_VERSION=0.7.1-incubating
+ARG AMORO_VERSION=0.7.0-incubating
 ARG KAFKA_CONN_VERSION=3.0.1-1.17
 ARG FLINK_SHADED_HADOOP_VERSION=2.8.3-10.0
 
@@ -59,8 +59,25 @@ RUN wget -P /opt/flink/lib/ \
     https://repo.maven.apache.org/maven2/org/apache/amoro/amoro-core/${AMORO_VERSION}/amoro-core-${AMORO_VERSION}.jar
 
 # 4.9 Amoro Shade Guava (补齐 org.apache.amoro.shade.guava32.* 类)
+# 注意：该包的版本号与主项目版本号不完全一致
 RUN wget -P /opt/flink/lib/ \
-    https://repo.maven.apache.org/maven2/org/apache/amoro/amoro-shade-guava-32/${AMORO_VERSION}/amoro-shade-guava-32-${AMORO_VERSION}.jar
+    https://repo.maven.apache.org/maven2/org/apache/amoro/amoro-shade-guava-32/32.1.1-jre-0.7.0-incubating/amoro-shade-guava-32-32.1.1-jre-0.7.0-incubating.jar
+
+# 4.10 Caffeine Cache (Amoro Unified Catalog 缓存依赖)
+RUN wget -P /opt/flink/lib/ \
+    https://repo.maven.apache.org/maven2/com/github/ben-manes/caffeine/caffeine/3.1.8/caffeine-3.1.8.jar
+
+# 4.11 Amoro Shade Jackson (处理 JSON 序列化)
+RUN wget -P /opt/flink/lib/ \
+    https://repo.maven.apache.org/maven2/org/apache/amoro/amoro-shade-jackson-2/2.14.2-0.7.0-incubating/amoro-shade-jackson-2-2.14.2-0.7.0-incubating.jar
+
+# 4.12 Amoro Shade Thrift (Thrift 协议依赖)
+RUN wget -P /opt/flink/lib/ \
+    https://repo.maven.apache.org/maven2/org/apache/amoro/amoro-shade-thrift/0.20.0-0.7.0-incubating/amoro-shade-thrift-0.20.0-0.7.0-incubating.jar
+
+# 4.13 Apache Commons Pool 2 (Thrift 连接池管理)
+RUN wget -P /opt/flink/lib/ \
+    https://repo.maven.apache.org/maven2/org/apache/commons/commons-pool2/2.11.1/commons-pool2-2.11.1.jar
 
 # --------------------------------------------------------------------------------
 # 5. 配置与权限
