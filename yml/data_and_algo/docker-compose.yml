@@ -150,7 +150,7 @@ services:
       - "9000:9000" # S3 API
       - "9001:9001" # MinIO Console
     volumes:
-      - minio_data:/data
+      - ./minio/data:/data # 挂载到本地目录
     command: ["server", "/data", "--console-address", ":9001"]
 
   # ---------- MinIO 初始化工具：mc ----------
@@ -317,7 +317,8 @@ services:
       - AWS_SECRET_ACCESS_KEY=password
       - AWS_REGION=us-east-1
     volumes:
-      - ./trino-conf/amoro_catalog.properties:/etc/trino/catalog/amoro_catalog.properties
+      # 挂载整个 catalog 配置目录，方便添加新的 catalog
+      - ./trino-conf:/etc/trino/catalog
     networks:
       amoro_network:
         aliases:
@@ -499,9 +500,6 @@ networks:
 # Volumes
 # ============================================================================
 volumes:
-  # MinIO 数据持久化
-  minio_data:
-
   # Git-sync 代码库共享卷
   # 所有服务从这里读取代码资产
   codebase_volume:
