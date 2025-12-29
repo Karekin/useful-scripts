@@ -1,6 +1,45 @@
 version: "3.8"
 
 # ============================================================================
+# YAML 锚点定义区：复用公共配置
+# ============================================================================
+
+# Airflow 公共环境变量（从 .env 文件读取值）
+x-airflow-common-env: &airflow-common-env
+  TZ: ${TZ:-Asia/Shanghai}
+  AIRFLOW__CORE__EXECUTOR: ${AIRFLOW__CORE__EXECUTOR:-LocalExecutor}
+  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW__DATABASE__SQL_ALCHEMY_CONN}
+  AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
+  AIRFLOW__CORE__LOAD_EXAMPLES: ${AIRFLOW__CORE__LOAD_EXAMPLES:-False}
+  AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
+  AIRFLOW__CORE__DAGS_FOLDER: ${AIRFLOW__CORE__DAGS_FOLDER:-/code/current/airflow/dags}
+  PYTHONPATH: ${PYTHONPATH:-/code/current/airflow}
+  # SMTP 配置 (从 .env 读取)
+  AIRFLOW__SMTP__SMTP_HOST: ${AIRFLOW__SMTP__SMTP_HOST:-smtp.qq.com}
+  AIRFLOW__SMTP__SMTP_STARTTLS: ${AIRFLOW__SMTP__SMTP_STARTTLS:-True}
+  AIRFLOW__SMTP__SMTP_SSL: ${AIRFLOW__SMTP__SMTP_SSL:-False}
+  AIRFLOW__SMTP__SMTP_USER: ${AIRFLOW__SMTP__SMTP_USER}
+  # 注意：Airflow 不支持 SMTP_PASSWORD_FILE，需要从文件读取并设置到 SMTP_PASSWORD
+  # 密码文件路径（用于启动脚本读取）
+  SMTP_PASSWORD_FILE: ${AIRFLOW__SMTP__SMTP_PASSWORD_FILE:-/run/secrets/qq_smtp_password}
+  AIRFLOW__SMTP__SMTP_PORT: ${AIRFLOW__SMTP__SMTP_PORT:-587}
+  AIRFLOW__SMTP__SMTP_MAIL_FROM: ${AIRFLOW__SMTP__SMTP_MAIL_FROM}
+  AIRFLOW__SMTP__SMTP_TIMEOUT: ${AIRFLOW__SMTP__SMTP_TIMEOUT:-30}
+  AIRFLOW__SMTP__SMTP_RETRY_LIMIT: ${AIRFLOW__SMTP__SMTP_RETRY_LIMIT:-5}
+
+# Airflow 公共卷挂载
+x-airflow-common-volumes: &airflow-common-volumes
+  - codebase_volume:/code:ro
+  - ./airflow/logs:/opt/airflow/logs
+
+# Airflow 公共依赖
+x-airflow-common-depends-on: &airflow-common-depends-on
+  airflow-postgres:
+    condition: service_healthy
+  git-sync:
+    condition: service_healthy
+
+# ============================================================================
 # Git-Sync 机制配置说明
 # ============================================================================
 # 本 compose 文件实现了「以 Git 为单一事实源」的协作平台架构：
@@ -393,29 +432,13 @@ services:
     build:
       context: ./airflow
     container_name: airflow-init
-    depends_on:
-      airflow-postgres:
-        condition: service_healthy
-      git-sync:
-        condition: service_healthy
+    depends_on: *airflow-common-depends-on
     networks:
       amoro_network:
-    environment:
-      TZ: Asia/Shanghai
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: "this_is_a_demo_fernet_key_change_me"
-      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
-      AIRFLOW__WEBSERVER__SECRET_KEY: "this_is_a_demo_web_secret_change_me"
-      # DAGs 路径指向 git-sync 共享卷
-      AIRFLOW__CORE__DAGS_FOLDER: /code/current/airflow/dags
-      # 添加 Python 路径以支持自定义模块导入
-      PYTHONPATH: /code/current/airflow
-    volumes:
-      # Git-sync codebase (read-only for dags/jobs/plugins)
-      - codebase_volume:/code:ro
-      # Logs 仍然使用本地卷 (需要写入)
-      - ./airflow/logs:/opt/airflow/logs
+    environment: *airflow-common-env
+    volumes: *airflow-common-volumes
+    secrets:
+      - qq_smtp_password
     entrypoint: >
       bash -c "
       airflow db migrate &&
@@ -427,30 +450,18 @@ services:
     build:
       context: ./airflow
     container_name: airflow-webserver
-    depends_on:
-      airflow-postgres:
-        condition: service_healthy
-      git-sync:
-        condition: service_healthy
+    depends_on: *airflow-common-depends-on
     networks:
       amoro_network:
-    environment:
-      TZ: Asia/Shanghai
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: "this_is_a_demo_fernet_key_change_me"
-      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
-      AIRFLOW__WEBSERVER__SECRET_KEY: "this_is_a_demo_web_secret_change_me"
-      # DAGs 路径指向 git-sync 共享卷
-      AIRFLOW__CORE__DAGS_FOLDER: /code/current/airflow/dags
-      # 添加 Python 路径以支持自定义模块导入
-      PYTHONPATH: /code/current/airflow
-    volumes:
-      # Git-sync codebase (read-only for dags/jobs/plugins)
-      - codebase_volume:/code:ro
-      # Logs 仍然使用本地卷 (需要写入)
-      - ./airflow/logs:/opt/airflow/logs
-    command: webserver
+    environment: *airflow-common-env
+    volumes: *airflow-common-volumes
+    secrets:
+      - qq_smtp_password
+    command: >
+      bash -c "
+      export AIRFLOW__SMTP__SMTP_PASSWORD=\$(cat /run/secrets/qq_smtp_password) &&
+      exec airflow webserver
+      "
     ports:
       - "8082:8080" # Airflow Web UI
 
@@ -459,32 +470,23 @@ services:
       context: ./airflow
     user: "0:0"
     container_name: airflow-scheduler
-    depends_on:
-      airflow-postgres:
-        condition: service_healthy
-      git-sync:
-        condition: service_healthy
+    depends_on: *airflow-common-depends-on
     networks:
       amoro_network:
-    environment:
-      TZ: Asia/Shanghai
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: "this_is_a_demo_fernet_key_change_me"
-      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
-      AIRFLOW__WEBSERVER__SECRET_KEY: "this_is_a_demo_web_secret_change_me"
-      # DAGs 路径指向 git-sync 共享卷
-      AIRFLOW__CORE__DAGS_FOLDER: /code/current/airflow/dags
-      # 添加 Python 路径以支持自定义模块导入
-      PYTHONPATH: /code/current/airflow
+    environment: *airflow-common-env
     volumes:
-      # Docker socket for DockerOperator
+      # Docker socket for DockerOperator (scheduler 特有)
       - /var/run/docker.sock:/var/run/docker.sock
-      # Git-sync codebase (read-only for dags/jobs/plugins)
+      # 其他公共卷
       - codebase_volume:/code:ro
-      # Logs 仍然使用本地卷 (需要写入)
       - ./airflow/logs:/opt/airflow/logs
-    command: scheduler
+    secrets:
+      - qq_smtp_password
+    command: >
+      bash -c "
+      export AIRFLOW__SMTP__SMTP_PASSWORD=\$(cat /run/secrets/qq_smtp_password) &&
+      exec airflow scheduler
+      "
 
 # ============================================================================
 # Networks
@@ -514,3 +516,5 @@ volumes:
 secrets:
   github_app_private_key:
     file: ./secrets/cloudmold-git-sync.2025-12-19.private-key.pem
+  qq_smtp_password:
+    file: ./secrets/qq_smtp_password.txt
