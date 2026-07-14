@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/inventory-stock-changed-v1.schema.json",
+  "title": "inventory.stock.changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["canonical_sku_id", "warehouse_id", "owner_id", "quality_status", "delta_quantity", "after_on_hand_quantity", "after_reserved_quantity", "after_available_quantity", "uom_code", "movement_type", "business_type", "business_id", "business_item_id", "business_no"],
+  "properties": {
+    "canonical_sku_id": {"type": "string", "minLength": 1},
+    "warehouse_id": {"type": "string", "minLength": 1},
+    "owner_id": {"type": "string", "minLength": 1},
+    "location_id": {"type": ["string", "null"]},
+    "lot_no": {"type": ["string", "null"]},
+    "quality_status": {"type": "string", "enum": ["QUALIFIED", "PENDING", "DAMAGED", "FROZEN"]},
+    "delta_quantity": {"type": "string", "pattern": "^-?[0-9]+(\\.[0-9]{1,6})?$"},
+    "after_on_hand_quantity": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]{1,6})?$"},
+    "after_reserved_quantity": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]{1,6})?$"},
+    "after_available_quantity": {"type": "string", "pattern": "^-?[0-9]+(\\.[0-9]{1,6})?$"},
+    "uom_code": {"type": "string", "minLength": 1},
+    "movement_type": {"type": "string", "enum": ["PURCHASE_RECEIPT", "PURCHASE_RECEIPT_REVERSED", "SALE_SHIPMENT", "SALE_RETURN", "RESERVATION", "RESERVATION_RELEASE", "ADJUSTMENT", "TRANSFER_IN", "TRANSFER_OUT"]},
+    "business_type": {"type": "string", "minLength": 1},
+    "business_id": {"type": "string", "minLength": 1},
+    "business_item_id": {"type": "string", "minLength": 1},
+    "business_no": {"type": "string", "minLength": 1},
+    "reservation_id": {"type": ["string", "null"]}
+  }
+}

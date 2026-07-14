@@ -1,0 +1,28 @@
+source:
+  type: mysql
+  hostname: yudao-mysql
+  port: 3306
+  username: "${CDC_MYSQL_USER}"
+  password: "${CDC_MYSQL_PASSWORD}"
+  tables: ruoyi-vue-pro.cloudmold_event_outbox
+  server-id: 5600-5604
+  server-time-zone: Asia/Shanghai
+
+sink:
+  type: starrocks
+  name: CloudMold Domain Event ODS
+  jdbc-url: jdbc:mysql://starrocks:9030
+  load-url: starrocks:8030
+  username: "${STARROCKS_USER}"
+  password: "${STARROCKS_PASSWORD}"
+  table.create.properties.replication_num: 1
+
+route:
+  - source-table: ruoyi-vue-pro.cloudmold_event_outbox
+    sink-table: yshopping_ods.cloudmold_event_outbox
+    description: Preserve versioned domain events as the lakehouse business-fact boundary
+
+pipeline:
+  name: CloudMold Domain Event Outbox to StarRocks ODS
+  parallelism: ${FLINK_PARALLELISM}
+  schema.change.behavior: EVOLVE

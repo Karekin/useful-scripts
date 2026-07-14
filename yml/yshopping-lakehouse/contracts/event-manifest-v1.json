@@ -1,0 +1,152 @@
+{
+  "manifest_version": 1,
+  "envelope": "events/domain-event-envelope-v1.schema.json",
+  "events": {
+    "catalog.sku.defined": {
+      "schema_version": 1,
+      "aggregate_type": "catalog_sku",
+      "payload_schema": "events/catalog-sku-defined-v1.schema.json",
+      "example": "examples/catalog-sku-defined-v1.json"
+    },
+    "catalog.entity.status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "catalog_entity",
+      "payload_schema": "events/catalog-entity-status-changed-v1.schema.json",
+      "example": "examples/catalog-entity-status-changed-v1.json"
+    },
+    "catalog.sku.upserted": {
+      "schema_version": 1,
+      "aggregate_type": "catalog_sku",
+      "payload_schema": "events/catalog-sku-upserted-v1.schema.json",
+      "example": "examples/catalog-sku-upserted-v1.json"
+    },
+    "inventory.stock.changed": {
+      "aggregate_type": "inventory_balance",
+      "versions": [
+        {
+          "schema_version": 1,
+          "payload_schema": "events/inventory-stock-changed-v1.schema.json",
+          "example": "examples/inventory-stock-changed-v1.json"
+        },
+        {
+          "schema_version": 2,
+          "payload_schema": "events/inventory-stock-changed-v2.schema.json",
+          "example": "examples/inventory-stock-changed-v2.json"
+        }
+      ]
+    },
+    "order.status.changed": {
+      "aggregate_type": "order",
+      "versions": [
+        {
+          "schema_version": 1,
+          "payload_schema": "events/order-status-changed-v1.schema.json",
+          "example": "examples/order-status-changed-v1.json"
+        },
+        {
+          "schema_version": 2,
+          "payload_schema": "events/order-status-changed-v2.schema.json",
+          "example": "examples/order-status-changed-v2.json"
+        },
+        {
+          "schema_version": 3,
+          "payload_schema": "events/order-status-changed-v3.schema.json",
+          "example": "examples/order-status-changed-v3.json"
+        }
+      ]
+    },
+    "order.cancellation_saga.status_changed": {
+      "aggregate_type": "order_cancellation_saga",
+      "versions": [
+        {
+          "schema_version": 1,
+          "payload_schema": "events/order-cancellation-saga-status-changed-v1.schema.json",
+          "example": "examples/order-cancellation-saga-status-changed-v1.json"
+        },
+        {
+          "schema_version": 2,
+          "payload_schema": "events/order-cancellation-saga-status-changed-v2.schema.json",
+          "example": "examples/order-cancellation-saga-status-changed-v2.json"
+        }
+      ]
+    },
+    "after_sale.status.changed": {
+      "schema_version": 1,
+      "aggregate_type": "after_sale",
+      "payload_schema": "events/after-sale-status-changed-v1.schema.json",
+      "example": "examples/after-sale-status-changed-v1.json"
+    },
+    "after_sale.refund.status.changed": {
+      "schema_version": 1,
+      "aggregate_type": "after_sale_refund",
+      "payload_schema": "events/after-sale-refund-status-changed-v1.schema.json",
+      "example": "examples/after-sale-refund-status-changed-v1.json"
+    },
+    "return_fulfillment.status.changed": {
+      "schema_version": 1,
+      "aggregate_type": "return_fulfillment",
+      "payload_schema": "events/return-fulfillment-status-changed-v1.schema.json",
+      "example": "examples/return-fulfillment-status-changed-v1.json"
+    },
+    "return_fulfillment.inspection.decided": {
+      "schema_version": 1,
+      "aggregate_type": "return_fulfillment_inspection",
+      "payload_schema": "events/return-fulfillment-inspection-decided-v1.schema.json",
+      "example": "examples/return-fulfillment-inspection-decided-v1.json"
+    },
+    "after_sale.resolution_saga.status.changed": {
+      "schema_version": 1,
+      "aggregate_type": "after_sale_resolution_saga",
+      "payload_schema": "events/after-sale-resolution-saga-status-changed-v1.schema.json",
+      "example": "examples/after-sale-resolution-saga-status-changed-v1.json"
+    },
+    "listing.status.changed": {
+      "schema_version": 1,
+      "aggregate_type": "listing",
+      "payload_schema": "events/listing-status-changed-v1.schema.json",
+      "example": "examples/listing-status-changed-v1.json"
+    },
+    "listing.review.decided": {
+      "schema_version": 1,
+      "aggregate_type": "listing",
+      "payload_schema": "events/listing-review-decided-v1.schema.json",
+      "example": "examples/listing-review-decided-v1.json"
+    },
+    "fulfillment.status.changed": {
+      "aggregate_type": "fulfillment_order",
+      "versions": [
+        {
+          "schema_version": 1,
+          "payload_schema": "events/fulfillment-status-changed-v1.schema.json",
+          "example": "examples/fulfillment-status-changed-v1.json"
+        },
+        {
+          "schema_version": 2,
+          "payload_schema": "events/fulfillment-status-changed-v2.schema.json",
+          "example": "examples/fulfillment-status-changed-v2.json"
+        }
+      ]
+    },
+    "payment.status.changed": {
+      "aggregate_type": "payment",
+      "versions": [
+        {
+          "schema_version": 1,
+          "payload_schema": "events/payment-status-changed-v1.schema.json",
+          "example": "examples/payment-status-changed-v1.json"
+        },
+        {
+          "schema_version": 2,
+          "payload_schema": "events/payment-status-changed-v2.schema.json",
+          "example": "examples/payment-status-changed-v2.json"
+        }
+      ]
+    },
+    "procurement.receipt.approved": {
+      "schema_version": 1,
+      "aggregate_type": "purchase_receipt",
+      "payload_schema": "events/purchase-receipt-approved-v1.schema.json",
+      "example": "examples/purchase-receipt-approved-v1.json"
+    }
+  }
+}

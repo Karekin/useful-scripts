@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/catalog-sku-upserted-v1.schema.json",
+  "title": "catalog.sku.upserted payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["canonical_sku_id", "canonical_spu_id", "name", "category_id", "variant_attributes", "sale_price_amount_minor", "cost_price_amount_minor", "currency", "status", "source_table", "source_id"],
+  "properties": {
+    "canonical_sku_id": {"type": "string", "pattern": "^yudao-mall:[1-9][0-9]*:sku:[1-9][0-9]*$"},
+    "canonical_spu_id": {"type": "integer", "minimum": 1},
+    "name": {"type": "string", "minLength": 1},
+    "bar_code": {"type": ["string", "null"]},
+    "category_id": {"type": "integer", "minimum": 1},
+    "brand_id": {"type": ["integer", "null"]},
+    "variant_attributes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["attribute_id", "attribute_name", "value_id", "value_name"],
+        "properties": {
+          "attribute_id": {"type": "integer", "minimum": 1},
+          "attribute_name": {"type": "string", "minLength": 1},
+          "value_id": {"type": "integer", "minimum": 1},
+          "value_name": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "sale_price_amount_minor": {"type": "integer", "minimum": 0},
+    "cost_price_amount_minor": {"type": "integer", "minimum": 0},
+    "currency": {"type": "string", "enum": ["CNY"]},
+    "status": {"type": "string", "enum": ["DRAFT", "ACTIVE", "INACTIVE", "ARCHIVED"]},
+    "source_table": {"type": "string", "enum": ["product_sku"]},
+    "source_id": {"type": "integer", "minimum": 1}
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "event_id": "20000000-0000-4000-8000-000000000001",
+  "event_type": "listing.review.decided",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "listing",
+  "aggregate_id": "10000000-0000-4000-8000-000000000002",
+  "aggregate_version": 5,
+  "event_sequence": 2,
+  "idempotency_key": "commerce-v2-listing-risk-review",
+  "correlation_id": "10000000-0000-4000-8000-000000000003",
+  "causation_id": null,
+  "occurred_at": "2026-07-12T12:05:00.000Z",
+  "recorded_at": "2026-07-12T12:05:00.100Z",
+  "source_system": "cloudmold-listing",
+  "payload": {
+    "run_id": "commerce-v2-example",
+    "listing_id": "10000000-0000-4000-8000-000000000002",
+    "listing_no": "CML10000000000040008000",
+    "revision": 1,
+    "stage": "RISK",
+    "decision": "PASSED",
+    "reason": null
+  }
+}

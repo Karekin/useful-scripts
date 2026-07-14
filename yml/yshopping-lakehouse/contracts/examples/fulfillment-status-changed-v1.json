@@ -1,0 +1,41 @@
+{
+  "event_id": "30000000-0000-4000-8000-000000000001",
+  "event_type": "fulfillment.status.changed",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "fulfillment_order",
+  "aggregate_id": "30000000-0000-4000-8000-000000000002",
+  "aggregate_version": 4,
+  "event_sequence": 1,
+  "idempotency_key": "commerce-v2-fulfillment-deliver",
+  "correlation_id": "10000000-0000-4000-8000-000000000003",
+  "causation_id": null,
+  "occurred_at": "2026-07-12T13:03:00.000Z",
+  "recorded_at": "2026-07-12T13:03:00.100Z",
+  "source_system": "cloudmold-fulfillment",
+  "payload": {
+    "run_id": "commerce-v2-example",
+    "fulfillment_id": "30000000-0000-4000-8000-000000000002",
+    "fulfillment_no": "CMF30000000000040008000",
+    "order_id": "40000000-0000-4000-8000-000000000001",
+    "order_no": "CMO40000000000040008000",
+    "seller_id": "internal-seller",
+    "warehouse_id": "internal-warehouse",
+    "previous_status": "IN_TRANSIT",
+    "current_status": "DELIVERED",
+    "shipment_id": "30000000-0000-4000-8000-000000000003",
+    "carrier_code": "INTERNAL_TEST",
+    "waybill_no": "TEST-WAYBILL-1",
+    "shipped_at": "2026-07-12T13:01:00.000Z",
+    "in_transit_at": "2026-07-12T13:02:00.000Z",
+    "delivered_at": "2026-07-12T13:03:00.000Z",
+    "reason": "delivered by internal test carrier",
+    "items": [{
+      "fulfillment_item_id": "30000000-0000-4000-8000-000000000004",
+      "order_item_id": "40000000-0000-4000-8000-000000000002",
+      "canonical_sku_id": "10000000-0000-4000-8000-000000000006",
+      "quantity": "2",
+      "reservation_id": "40000000-0000-4000-8000-000000000003"
+    }]
+  }
+}

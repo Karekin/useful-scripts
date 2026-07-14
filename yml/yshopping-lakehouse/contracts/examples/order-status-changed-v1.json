@@ -1,0 +1,39 @@
+{
+  "event_id": "44444444-4444-4444-8444-444444444444",
+  "event_type": "order.status.changed",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "order",
+  "aggregate_id": "55555555-5555-4555-8555-555555555555",
+  "aggregate_version": 2,
+  "idempotency_key": "commerce-example-order-reserved",
+  "correlation_id": "66666666-6666-4666-8666-666666666666",
+  "causation_id": null,
+  "occurred_at": "2026-07-12T12:01:00.000Z",
+  "recorded_at": "2026-07-12T12:01:00.100Z",
+  "source_system": "cloudmold-order",
+  "payload": {
+    "run_id": "commerce-example",
+    "order_id": "55555555-5555-4555-8555-555555555555",
+    "order_no": "CMO55555555555545558555",
+    "buyer_id": "internal-buyer",
+    "previous_status": "PLACED",
+    "current_status": "INVENTORY_RESERVED",
+    "product_amount_minor": 39800,
+    "shipping_amount_minor": 0,
+    "discount_amount_minor": 0,
+    "payable_amount_minor": 39800,
+    "currency_code": "CNY",
+    "payment_id": null,
+    "refund_id": null,
+    "reason": "inventory reserved",
+    "items": [{
+      "order_item_id": "77777777-7777-4777-8777-777777777777",
+      "canonical_sku_id": "88888888-8888-4888-8888-888888888888",
+      "quantity": "2",
+      "unit_price_minor": 19900,
+      "line_amount_minor": 39800,
+      "reservation_id": "99999999-9999-4999-8999-999999999999"
+    }]
+  }
+}

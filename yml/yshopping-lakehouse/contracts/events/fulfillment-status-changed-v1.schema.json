@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/fulfillment-status-changed-v1.schema.json",
+  "title": "fulfillment.status.changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id", "fulfillment_id", "fulfillment_no", "order_id", "order_no", "seller_id",
+    "warehouse_id", "previous_status", "current_status", "shipment_id", "carrier_code",
+    "waybill_no", "shipped_at", "in_transit_at", "delivered_at", "reason", "items"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "fulfillment_id": {"type": "string", "format": "uuid"},
+    "fulfillment_no": {"type": "string", "minLength": 1, "maxLength": 32},
+    "order_id": {"type": "string", "format": "uuid"},
+    "order_no": {"type": "string", "minLength": 1, "maxLength": 32},
+    "seller_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "warehouse_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "CREATED", "SHIPPED", "IN_TRANSIT"]},
+    "current_status": {"type": "string", "enum": ["CREATED", "SHIPPED", "IN_TRANSIT", "DELIVERED"]},
+    "shipment_id": {"type": ["string", "null"], "format": "uuid"},
+    "carrier_code": {"type": ["string", "null"], "maxLength": 64},
+    "waybill_no": {"type": ["string", "null"], "maxLength": 128},
+    "shipped_at": {"type": ["string", "null"], "format": "date-time"},
+    "in_transit_at": {"type": ["string", "null"], "format": "date-time"},
+    "delivered_at": {"type": ["string", "null"], "format": "date-time"},
+    "reason": {"type": ["string", "null"], "maxLength": 256},
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["fulfillment_item_id", "order_item_id", "canonical_sku_id", "quantity", "reservation_id"],
+        "properties": {
+          "fulfillment_item_id": {"type": "string", "format": "uuid"},
+          "order_item_id": {"type": "string", "format": "uuid"},
+          "canonical_sku_id": {"type": "string", "format": "uuid"},
+          "quantity": {"type": "string", "pattern": "^[1-9][0-9]*(\\.0{1,6})?$"},
+          "reservation_id": {"type": "string", "format": "uuid"}
+        }
+      }
+    }
+  }
+}

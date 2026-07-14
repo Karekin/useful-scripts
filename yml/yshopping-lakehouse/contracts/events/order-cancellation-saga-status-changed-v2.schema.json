@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/order-cancellation-saga-status-changed-v2.schema.json",
+  "title": "order.cancellation_saga.status_changed payload v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id", "saga_id", "order_id", "order_no", "cancellation_mode", "payment_id",
+    "payment_refund_transaction_id", "payment_status", "expected_fulfillment_count",
+    "cancelled_fulfillment_count", "fulfillments", "previous_status", "current_status", "active_step",
+    "step_ordinal", "attempt", "reason", "expected_reservation_count",
+    "released_reservation_count", "reservations", "error_code", "error_message", "next_retry_at"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "saga_id": {"type": "string", "format": "uuid"},
+    "order_id": {"type": "string", "format": "uuid"},
+    "order_no": {"type": "string", "minLength": 1, "maxLength": 32},
+    "cancellation_mode": {"type": "string", "const": "PAID_UNSHIPPED"},
+    "payment_id": {"type": "string", "format": "uuid"},
+    "payment_refund_transaction_id": {"type": ["integer", "null"], "minimum": 1},
+    "payment_status": {"type": "string", "enum": ["CAPTURED", "REFUNDED"]},
+    "expected_fulfillment_count": {"type": "integer", "minimum": 1},
+    "cancelled_fulfillment_count": {"type": "integer", "minimum": 0},
+    "fulfillments": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["fulfillment_id", "status"],
+        "properties": {
+          "fulfillment_id": {"type": "string", "format": "uuid"},
+          "status": {"type": "string", "enum": ["CREATED", "CANCELLATION_PENDING", "CANCELLED"]}
+        }
+      }
+    },
+    "previous_status": {
+      "type": ["string", "null"],
+      "enum": [null, "REQUESTED", "CANCELLING_FULFILLMENT", "FULFILLMENT_CANCELLED",
+        "REFUNDING_PAYMENT", "PAYMENT_REFUNDED", "RELEASING_RESERVATIONS",
+        "RESERVATIONS_RELEASED", "CANCELLING_ORDER", "RETRY_SCHEDULED", "MANUAL_REVIEW", "COMPLETED"]
+    },
+    "current_status": {
+      "type": "string",
+      "enum": ["REQUESTED", "CANCELLING_FULFILLMENT", "FULFILLMENT_CANCELLED",
+        "REFUNDING_PAYMENT", "PAYMENT_REFUNDED", "RELEASING_RESERVATIONS",
+        "RESERVATIONS_RELEASED", "CANCELLING_ORDER", "RETRY_SCHEDULED", "MANUAL_REVIEW", "COMPLETED"]
+    },
+    "active_step": {
+      "type": "string",
+      "enum": ["NONE", "CANCEL_FULFILLMENT", "REFUND_PAYMENT", "RELEASE_RESERVATIONS", "CANCEL_ORDER"]
+    },
+    "step_ordinal": {"type": "integer", "minimum": 0},
+    "attempt": {"type": "integer", "minimum": 0},
+    "reason": {"type": "string", "minLength": 1, "maxLength": 256},
+    "expected_reservation_count": {"type": "integer", "minimum": 1},
+    "released_reservation_count": {"type": "integer", "minimum": 0},
+    "reservations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["order_item_id", "reservation_id", "quantity"],
+        "properties": {
+          "order_item_id": {"type": "string", "format": "uuid"},
+          "reservation_id": {"type": "string", "format": "uuid"},
+          "quantity": {"type": "string", "pattern": "^[1-9][0-9]*(\\.0{1,6})?$"}
+        }
+      }
+    },
+    "error_code": {"type": ["string", "null"], "maxLength": 64},
+    "error_message": {"type": ["string", "null"], "maxLength": 256},
+    "next_retry_at": {"type": ["string", "null"], "format": "date-time"}
+  }
+}

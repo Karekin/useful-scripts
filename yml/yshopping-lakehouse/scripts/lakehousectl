@@ -1,0 +1,374 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
+STARROCKS_CONTAINER=${STARROCKS_CONTAINER:-yshopping-starrocks}
+
+usage() {
+  echo "usage: lakehousectl {config-check|contract-test|start|submit-cdc|submit-catalog-cdc|submit-event-cdc|apply-models|health|test|reconcile|reconcile-canonical-inventory|reconcile-canonical-catalog|reconcile-canonical-commerce|reconcile-canonical-commerce-v2|reconcile-canonical-cancellation-saga|reconcile-canonical-paid-cancellation-saga|reconcile-canonical-aftersales} [--tenant ID] [--run-id ID]"
+}
+
+sql() {
+  docker exec -i "$STARROCKS_CONTAINER" mysql -h127.0.0.1 -P9030 -uroot --batch --raw \
+    --init-command="SET new_planner_optimize_timeout=30000" "$@"
+}
+
+require_running() {
+  docker inspect -f '{{.State.Health.Status}}' "$STARROCKS_CONTAINER" 2>/dev/null | grep -qx healthy || {
+    echo "StarRocks is not healthy" >&2
+    exit 1
+  }
+}
+
+apply_models() {
+  require_running
+  local relative_file
+  python3 "$ROOT_DIR/scripts/modelctl" validate
+  while IFS= read -r relative_file; do
+    echo "apply $relative_file"
+    sql < "$ROOT_DIR/$relative_file"
+  done < <(python3 "$ROOT_DIR/scripts/modelctl" emit)
+}
+
+require_single_row() {
+  local result=$1 label=$2
+  [[ -n "${result//[[:space:]]/}" && "$result" != *$'\n'* ]] || {
+    echo "$label must return exactly one row" >&2
+    exit 1
+  }
+}
+
+run_tests() {
+  require_running
+  local failures=0
+  python3 -m unittest discover -s "$ROOT_DIR/tests/python" -v
+  while IFS= read -r file; do
+    local result
+    result=$(sql --skip-column-names < "$file")
+    echo "$result"
+    if [[ -z "${result//[[:space:]]/}" ]] || ! awk '
+      NF == 0 { next }
+      $NF !~ /^[0-9]+$/ || $NF != 0 { failed = 1 }
+      END { exit failed }
+    ' <<< "$result"; then
+      failures=$((failures + 1))
+    fi
+  done < <(find "$ROOT_DIR/tests/sql" -type f -name '*.sql' | sort)
+  if (( failures != 0 )); then
+    echo "$failures data quality checks failed" >&2
+    exit 1
+  fi
+}
+
+TENANT_ID=""
+RUN_ID=""
+COMMAND=${1:-}
+shift || true
+while (( $# )); do
+  case "$1" in
+    --tenant) TENANT_ID=${2:?missing tenant}; shift 2 ;;
+    --run-id) RUN_ID=${2:?missing run id}; shift 2 ;;
+    *) echo "unknown argument: $1" >&2; usage; exit 2 ;;
+  esac
+done
+
+if [[ -n "$TENANT_ID" && ! "$TENANT_ID" =~ ^[1-9][0-9]*$ ]]; then
+  echo "--tenant must be a positive integer" >&2
+  exit 2
+fi
+
+case "$COMMAND" in
+  config-check)
+    docker compose -f "$COMPOSE_FILE" config --quiet
+    test -f "$ROOT_DIR/contracts/erp-procurement-inventory-v1.yaml"
+    test -f "$ROOT_DIR/contracts/canonical-listing-fulfillment-commerce-v2.yaml"
+    test -f "$ROOT_DIR/contracts/canonical-order-cancellation-saga-v1.yaml"
+    test -f "$ROOT_DIR/contracts/canonical-paid-order-cancellation-saga-v2.yaml"
+    test -f "$ROOT_DIR/contracts/canonical-aftersales-return-refund-v1.yaml"
+    find "$ROOT_DIR/models" "$ROOT_DIR/tests/sql" -type f -name '*.sql' -size 0 | grep . && exit 1 || true
+    "$ROOT_DIR/scripts/contractctl" validate
+    python3 "$ROOT_DIR/scripts/modelctl" validate
+    echo "configuration valid"
+    ;;
+  contract-test)
+    "$ROOT_DIR/scripts/contractctl" validate
+    ;;
+  start)
+    docker compose -f "$COMPOSE_FILE" up -d --build starrocks jobmanager taskmanager
+    ;;
+  submit-cdc)
+    test -f "$ROOT_DIR/.env" || { echo "missing $ROOT_DIR/.env" >&2; exit 1; }
+    docker compose -f "$COMPOSE_FILE" --profile tools run --rm cdc-cli
+    ;;
+  submit-catalog-cdc)
+    test -f "$ROOT_DIR/.env" || { echo "missing $ROOT_DIR/.env" >&2; exit 1; }
+    docker compose -f "$COMPOSE_FILE" --profile tools run --rm catalog-cdc-cli
+    ;;
+  submit-event-cdc)
+    test -f "$ROOT_DIR/.env" || { echo "missing $ROOT_DIR/.env" >&2; exit 1; }
+    docker compose -f "$COMPOSE_FILE" --profile tools run --rm event-cdc-cli
+    ;;
+  apply-models)
+    apply_models
+    ;;
+  health)
+    require_running
+    docker ps --filter "name=yshopping-" --format 'table {{.Names}}\t{{.Status}}'
+    sql -e "SHOW DATABASES LIKE 'yshopping_%';"
+    ;;
+  test)
+    run_tests
+    ;;
+  reconcile)
+    test -n "$TENANT_ID" || { echo "--tenant is required" >&2; exit 2; }
+    test -n "$RUN_ID" || { echo "--run-id is required" >&2; exit 2; }
+    require_running
+    safe_run_id=${RUN_ID//\'/\'\'}
+    sql -e "
+      SELECT 'purchase_order_lines' metric, COUNT(*) value
+        FROM yshopping_dwd.dwd_purchase_order_line WHERE tenant_id=$TENANT_ID AND run_id='$safe_run_id'
+      UNION ALL
+      SELECT 'purchase_receipt_lines', COUNT(*)
+        FROM yshopping_dwd.dwd_purchase_receipt_line WHERE tenant_id=$TENANT_ID AND run_id='$safe_run_id'
+      UNION ALL
+      SELECT 'inventory_movements', COUNT(*)
+        FROM yshopping_dwd.dwd_inventory_movement m
+        JOIN yshopping_dwd.dwd_purchase_receipt_line r
+          ON r.tenant_id=m.tenant_id AND r.receipt_id=m.biz_id AND r.receipt_line_id=m.biz_item_id
+       WHERE r.tenant_id=$TENANT_ID AND r.run_id='$safe_run_id';"
+    run_tests
+    ;;
+  reconcile-canonical-inventory)
+    test -n "$TENANT_ID" || { echo "--tenant is required" >&2; exit 2; }
+    test -n "$RUN_ID" || { echo "--run-id is required" >&2; exit 2; }
+    require_running
+    safe_run_id=${RUN_ID//\'/\'\'}
+    result=$(sql --skip-column-names -e "
+      SELECT COUNT(*) events,
+             MAX(aggregate_version) max_version,
+             MAX(IF(aggregate_version=6, after_on_hand_quantity, NULL)) final_on_hand,
+             MAX(IF(aggregate_version=6, after_reserved_quantity, NULL)) final_reserved,
+             MAX(IF(aggregate_version=6, after_available_quantity, NULL)) final_available
+      FROM yshopping_dwd.dwd_canonical_inventory_movement
+      WHERE tenant_id=$TENANT_ID AND business_id='$safe_run_id';")
+    require_single_row "$result" "canonical inventory reconciliation"
+    echo -e "events\tmax_version\tfinal_on_hand\tfinal_reserved\tfinal_available"
+    echo "$result"
+    read -r events max_version final_on_hand final_reserved final_available <<< "$result"
+    [[ "$events" == "6" && "$max_version" == "6" && "$final_on_hand" == "8.000000" \
+       && "$final_reserved" == "0.000000" && "$final_available" == "8.000000" ]] || {
+      echo "canonical inventory reconciliation failed" >&2
+      exit 1
+    }
+    run_tests
+    ;;
+  reconcile-canonical-catalog)
+    test -n "$TENANT_ID" || { echo "--tenant is required" >&2; exit 2; }
+    test -n "$RUN_ID" || { echo "--run-id is required" >&2; exit 2; }
+    require_running
+    safe_run_id=${RUN_ID//\'/\'\'}
+    style_code="YS-$(printf '%s' "$RUN_ID" | shasum -a 256 | awk '{print toupper(substr($1,1,8))}')"
+    safe_style_code=${style_code//\'/\'\'}
+    safe_reason="canonical-catalog-first-slice-v1:${safe_run_id}"
+    result=$(sql --skip-column-names -e "
+      SELECT COUNT(*) sku_count,
+             COUNT(DISTINCT color_id) color_count,
+             COUNT(DISTINCT size_id) size_count,
+             COUNT(DISTINCT canonical_spu_id) spu_count,
+             COUNT(DISTINCT IF(catalog_status='ACTIVE', canonical_sku_id, NULL)) active_sku_count
+      FROM yshopping_dim.dim_canonical_catalog_sku_current
+      WHERE tenant_id=$TENANT_ID AND style_code='$safe_style_code';")
+    readiness=$(sql --skip-column-names -e "
+      SELECT readiness_status
+      FROM yshopping_ads.ads_canonical_catalog_readiness
+      WHERE tenant_id=$TENANT_ID AND style_code='$safe_style_code';")
+    lifecycle_events=$(sql --skip-column-names -e "
+      SELECT COUNT(*)
+      FROM yshopping_dwd.dwd_canonical_catalog_status_change
+      WHERE tenant_id=$TENANT_ID AND reason='$safe_reason';")
+    require_single_row "$result" "canonical Catalog aggregate"
+    require_single_row "$readiness" "canonical Catalog readiness"
+    require_single_row "$lifecycle_events" "canonical Catalog lifecycle"
+    echo -e "sku_count\tcolor_count\tsize_count\tspu_count\tactive_sku_count\tlifecycle_events\treadiness_status"
+    read -r sku_count color_count size_count spu_count active_sku_count <<< "$result"
+    echo -e "$result\t$lifecycle_events\t$readiness"
+    if [[ "$sku_count" != "6" || "$color_count" != "2" || "$size_count" != "3" || "$spu_count" != "1" \
+       || "$active_sku_count" != "6" || "$readiness" != "CATALOG_ACTIVE" ]] \
+       || ! [[ "$lifecycle_events" =~ ^[0-9]+$ ]] \
+       || (( lifecycle_events < 10 || lifecycle_events > 16 )); then
+      echo "canonical Catalog reconciliation failed" >&2
+      exit 1
+    fi
+    run_tests
+    ;;
+  reconcile-canonical-commerce)
+    test -n "$TENANT_ID" || { echo "--tenant is required" >&2; exit 2; }
+    test -n "$RUN_ID" || { echo "--run-id is required" >&2; exit 2; }
+    require_running
+    safe_run_id=${RUN_ID//\'/\'\'}
+    result=$(sql --skip-column-names -e "
+      SELECT order_event_count, payment_event_count, order_status, payment_status,
+             payable_amount_minor, captured_amount_minor, refunded_amount_minor,
+             commerce_inventory_event_count, readiness_status
+      FROM yshopping_ads.ads_canonical_commerce_readiness
+      WHERE tenant_id=$TENANT_ID AND run_id='$safe_run_id';")
+    require_single_row "$result" "canonical commerce reconciliation"
+    echo -e "order_events\tpayment_events\torder_status\tpayment_status\tpayable\tcaptured\trefunded\tinventory_events\treadiness"
+    echo "$result"
+    read -r order_events payment_events order_status payment_status payable captured refunded inventory_events readiness <<< "$result"
+    [[ "$order_events" == "7" && "$payment_events" == "2" && "$order_status" == "RETURNED" \
+       && "$payment_status" == "REFUNDED" && "$payable" == "$captured" && "$captured" == "$refunded" \
+       && "$inventory_events" == "3" && "$readiness" == "RECONCILED" ]] || {
+      echo "canonical commerce reconciliation failed" >&2
+      exit 1
+    }
+    run_tests
+    ;;
+  reconcile-canonical-commerce-v2)
+    test -n "$TENANT_ID" || { echo "--tenant is required" >&2; exit 2; }
+    test -n "$RUN_ID" || { echo "--run-id is required" >&2; exit 2; }
+    require_running
+    safe_run_id=${RUN_ID//\'/\'\'}
+    result=$(sql --skip-column-names -e "
+      SELECT order_event_count, payment_event_count, listing_event_count, listing_review_event_count,
+             fulfillment_event_count, order_status, payment_status, fulfillment_status,
+             payable_amount_minor, captured_amount_minor, refunded_amount_minor,
+             item_count, exact_listing_offer_link_count, listing_count, ready_listing_count,
+             fulfillment_item_count, valid_fulfillment_item_link_count,
+             commerce_inventory_event_count, readiness_status
+      FROM yshopping_ads.ads_canonical_commerce_v2_readiness
+      WHERE tenant_id=$TENANT_ID AND run_id='$safe_run_id';")
+    require_single_row "$result" "canonical commerce v2 reconciliation"
+    echo -e "order_events\tpayment_events\tlisting_events\tlisting_reviews\tfulfillment_events\torder_status\tpayment_status\tfulfillment_status\tpayable\tcaptured\trefunded\titems\toffer_links\tlistings\tready_listings\tfulfillment_items\tfulfillment_links\tinventory_events\treadiness"
+    echo "$result"
+    read -r order_events payment_events listing_events listing_reviews fulfillment_events \
+      order_status payment_status fulfillment_status payable captured refunded items offer_links \
+      listings ready_listings fulfillment_items fulfillment_links inventory_events readiness <<< "$result"
+    [[ "$order_events" == "7" && "$payment_events" == "2" && "$listing_events" == "6" \
+       && "$listing_reviews" == "3" && "$fulfillment_events" == "4" \
+       && "$order_status" == "RETURNED" && "$payment_status" == "REFUNDED" \
+       && "$fulfillment_status" == "DELIVERED" && "$payable" == "$captured" \
+       && "$captured" == "$refunded" && "$items" == "$offer_links" \
+       && "$listings" == "$ready_listings" && "$listings" != "0" \
+       && "$fulfillment_items" == "$items" && "$fulfillment_links" == "$items" \
+       && "$inventory_events" == "4" && "$readiness" == "RECONCILED" ]] || {
+      echo "canonical commerce v2 reconciliation failed" >&2
+      exit 1
+    }
+    run_tests
+    ;;
+  reconcile-canonical-cancellation-saga)
+    test -n "$TENANT_ID" || { echo "--tenant is required" >&2; exit 2; }
+    test -n "$RUN_ID" || { echo "--run-id is required" >&2; exit 2; }
+    require_running
+    safe_run_id=${RUN_ID//\'/\'\'}
+    result=$(sql --skip-column-names -e "
+      SELECT saga_event_count, saga_status, saga_id, order_previous_status, order_pre_cancellation_status,
+             order_status, order_cancellation_saga_id,
+             expected_reservation_count, declared_reservation_count,
+             matched_order_item_reservation_count, exact_reservation_fact_count,
+             exact_release_fact_count, order_reservation_fact_count, order_release_fact_count,
+             all_releases_before_cancel, payment_fact_count, fulfillment_fact_count,
+             readiness_status, recovery_status
+      FROM yshopping_ads.ads_canonical_order_cancellation_saga_readiness
+      WHERE tenant_id=$TENANT_ID AND run_id='$safe_run_id';")
+    require_single_row "$result" "canonical cancellation Saga reconciliation"
+    echo -e "saga_events\tsaga_status\tsaga_id\torder_previous\torder_pre_cancellation\torder_status\torder_saga_id\texpected_reservations\tdeclared_reservations\tmatched_order_items\treservation_facts\trelease_facts\torder_reservation_facts\torder_release_facts\trelease_before_cancel\tpayment_facts\tfulfillment_facts\treadiness\trecovery"
+    echo "$result"
+    read -r saga_events saga_status saga_id order_previous order_pre_cancellation order_status order_saga_id expected declared matched \
+      reservation_facts release_facts order_reservation_facts order_release_facts release_before_cancel payment_facts \
+      fulfillment_facts readiness recovery <<< "$result"
+    [[ "$saga_events" =~ ^[0-9]+$ ]] && (( saga_events >= 5 )) \
+      && [[ "$saga_status" == "COMPLETED" \
+         && "$order_previous" == "CANCELLATION_PENDING" \
+         && "$order_pre_cancellation" == "INVENTORY_RESERVED" \
+         && "$order_status" == "CANCELLED" && "$order_saga_id" == "$saga_id" \
+         && "$expected" =~ ^[1-9][0-9]*$ \
+         && "$declared" == "$expected" && "$matched" == "$expected" \
+         && "$reservation_facts" == "$expected" && "$release_facts" == "$expected" \
+         && "$order_reservation_facts" == "$expected" && "$order_release_facts" == "$expected" \
+         && "$release_before_cancel" == "1" \
+         && "$payment_facts" == "0" && "$fulfillment_facts" == "0" \
+         && "$readiness" == "RECONCILED" ]] || {
+      echo "canonical cancellation Saga reconciliation failed" >&2
+      exit 1
+    }
+    run_tests
+    ;;
+  reconcile-canonical-paid-cancellation-saga)
+    test -n "$TENANT_ID" || { echo "--tenant is required" >&2; exit 2; }
+    test -n "$RUN_ID" || { echo "--run-id is required" >&2; exit 2; }
+    require_running
+    safe_run_id=${RUN_ID//\'/\'\'}
+    result=$(sql --skip-column-names -e "
+      SELECT saga_event_count, saga_status, saga_id,
+             order_pre_cancellation_status, order_status, order_cancellation_saga_id,
+             payment_status, payable_amount_minor, captured_amount_minor, refunded_amount_minor,
+             expected_fulfillment_count, exact_cancelled_fulfillment_count, fulfillment_event_count,
+             expected_reservation_count, exact_release_fact_count,
+             shipment_fact_count, sale_shipment_fact_count,
+             order_fenced_recorded_at, fulfillment_cancelled_recorded_at,
+             payment_refunded_recorded_at, last_release_recorded_at,
+             order_cancelled_recorded_at, saga_completed_recorded_at,
+             recorded_order_valid, readiness_status, recovery_status
+      FROM yshopping_ads.ads_canonical_paid_order_cancellation_saga_readiness
+      WHERE tenant_id=$TENANT_ID AND run_id='$safe_run_id';")
+    require_single_row "$result" "canonical paid cancellation Saga reconciliation"
+    echo -e "saga_events\tsaga_status\tsaga_id\torder_pre_cancellation\torder_status\torder_saga_id\tpayment_status\tpayable\tcaptured\trefunded\texpected_fulfillments\tcancelled_fulfillments\tfulfillment_events\texpected_reservations\trelease_facts\tshipment_facts\tsale_shipment_facts\torder_fenced_at\tfulfillment_cancelled_at\tpayment_refunded_at\tlast_release_at\torder_cancelled_at\tsaga_completed_at\trecorded_order_valid\treadiness\trecovery"
+    echo "$result"
+    IFS=$'\t' read -r saga_events saga_status saga_id order_pre_cancellation order_status order_saga_id \
+      payment_status payable captured refunded expected_fulfillments cancelled_fulfillments fulfillment_events \
+      expected_reservations release_facts shipment_facts sale_shipment_facts order_fenced_at \
+      fulfillment_cancelled_at payment_refunded_at last_release_at order_cancelled_at saga_completed_at \
+      recorded_order_valid readiness recovery <<< "$result"
+    [[ "$saga_events" == "9" && "$saga_status" == "COMPLETED" \
+       && "$order_pre_cancellation" == "PAYMENT_CONFIRMED" \
+       && "$order_status" == "CANCELLED" && "$order_saga_id" == "$saga_id" \
+       && "$payment_status" == "REFUNDED" && "$payable" == "$captured" && "$captured" == "$refunded" \
+       && "$expected_fulfillments" == "1" && "$cancelled_fulfillments" == "1" \
+       && "$fulfillment_events" == "3" && "$expected_reservations" =~ ^[1-9][0-9]*$ \
+       && "$release_facts" == "$expected_reservations" \
+       && "$shipment_facts" == "0" && "$sale_shipment_facts" == "0" \
+       && "$recorded_order_valid" == "1" && "$readiness" == "RECONCILED" ]] || {
+      echo "canonical paid cancellation Saga reconciliation failed" >&2
+      exit 1
+    }
+    run_tests
+    ;;
+  reconcile-canonical-aftersales)
+    test -n "$TENANT_ID" || { echo "--tenant is required" >&2; exit 2; }
+    test -n "$RUN_ID" || { echo "--run-id is required" >&2; exit 2; }
+    require_running
+    safe_run_id=${RUN_ID//\'/\'\'}
+    result=$(sql --skip-column-names -e "
+      SELECT saga_event_count, saga_status, after_sale_status, refund_status,
+             return_fulfillment_status, inspection_result,
+             requested_quantity, accepted_quantity, inventory_return_quantity,
+             approved_amount_minor, refunded_amount_minor, payment_refunded_amount_minor,
+             order_status, payment_status, recorded_order_valid, readiness_status, recovery_status
+      FROM yshopping_ads.ads_canonical_after_sale_readiness
+      WHERE tenant_id=$TENANT_ID AND run_id='$safe_run_id';")
+    require_single_row "$result" "canonical after-sales reconciliation"
+    echo -e "saga_events\tsaga_status\tafter_sale_status\trefund_status\treturn_status\tinspection\trequested_qty\taccepted_qty\tinventory_return_qty\tapproved\trefunded\tpayment_refunded\torder_status\tpayment_status\trecorded_order_valid\treadiness\trecovery"
+    echo "$result"
+    IFS=$'\t' read -r saga_events saga_status after_sale_status refund_status return_status inspection \
+      requested_qty accepted_qty inventory_return_qty approved refunded payment_refunded order_status \
+      payment_status recorded_order_valid readiness recovery <<< "$result"
+    [[ "$saga_events" == "10" && "$saga_status" == "COMPLETED" \
+       && "$after_sale_status" == "COMPLETED" && "$refund_status" == "SUCCEEDED" \
+       && "$return_status" == "INSPECTION_ACCEPTED" && "$inspection" == "ACCEPTED" \
+       && "$requested_qty" == "$accepted_qty" && "$accepted_qty" == "$inventory_return_qty" \
+       && "$approved" == "$refunded" && "$refunded" == "$payment_refunded" \
+       && "$order_status" == "RETURNED" && "$payment_status" == "REFUNDED" \
+       && "$recorded_order_valid" == "1" && "$readiness" == "RECONCILED" ]] || {
+      echo "canonical after-sales reconciliation failed" >&2
+      exit 1
+    }
+    run_tests
+    ;;
+  *)
+    usage
+    exit 2
+    ;;
+esac

@@ -1,0 +1,41 @@
+{
+  "event_id": "10000000-0000-4000-8000-000000000001",
+  "event_type": "listing.status.changed",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "listing",
+  "aggregate_id": "10000000-0000-4000-8000-000000000002",
+  "aggregate_version": 6,
+  "event_sequence": 1,
+  "idempotency_key": "commerce-v2-listing-publish",
+  "correlation_id": "10000000-0000-4000-8000-000000000003",
+  "causation_id": null,
+  "occurred_at": "2026-07-12T12:06:00.000Z",
+  "recorded_at": "2026-07-12T12:06:00.100Z",
+  "source_system": "cloudmold-listing",
+  "payload": {
+    "run_id": "commerce-v2-example",
+    "listing_id": "10000000-0000-4000-8000-000000000002",
+    "listing_no": "CML10000000000040008000",
+    "merchant_id": "internal-merchant",
+    "channel_code": "YSHOPPING_INTERNAL",
+    "shop_id": "internal-shop",
+    "canonical_spu_id": "10000000-0000-4000-8000-000000000004",
+    "revision": 1,
+    "previous_status": "RISK_APPROVED",
+    "current_status": "PUBLISHED",
+    "completion_passed": true,
+    "business_approved": true,
+    "risk_approved": true,
+    "reason": null,
+    "offers": [{
+      "listing_offer_id": "10000000-0000-4000-8000-000000000005",
+      "canonical_sku_id": "10000000-0000-4000-8000-000000000006",
+      "revision": 1,
+      "price_minor": 19900,
+      "currency_code": "CNY",
+      "enabled": true,
+      "external_offer_id": "internal-offer-1"
+    }]
+  }
+}

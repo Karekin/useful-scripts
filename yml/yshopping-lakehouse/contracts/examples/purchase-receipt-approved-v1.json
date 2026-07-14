@@ -1,0 +1,38 @@
+{
+  "event_id": "33333333-3333-4333-8333-333333333333",
+  "event_type": "procurement.receipt.approved",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "purchase_receipt",
+  "aggregate_id": "1",
+  "aggregate_version": 1,
+  "idempotency_key": "purchase-receipt-1-approved-v1",
+  "correlation_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "causation_id": null,
+  "occurred_at": "2026-07-12T10:10:00.000Z",
+  "recorded_at": "2026-07-12T10:10:00.100Z",
+  "source_system": "yudao-erp",
+  "payload": {
+    "receipt_id": "1",
+    "receipt_no": "CGRK20260712000001",
+    "purchase_order_id": "1",
+    "purchase_order_no": "CGDD20260712000001",
+    "supplier_id": "3",
+    "account_id": "3",
+    "received_at": "2026-07-12T10:10:00.000Z",
+    "currency": "CNY",
+    "lines": [
+      {
+        "receipt_line_id": "1",
+        "purchase_order_line_id": "1",
+        "canonical_sku_id": "yudao-mall:1:sku:1",
+        "warehouse_id": "3",
+        "quantity": "10.000000",
+        "uom_code": "PIECE",
+        "unit_price_amount_minor": 10000,
+        "product_amount_minor": 100000,
+        "tax_amount_minor": 0
+      }
+    ]
+  }
+}

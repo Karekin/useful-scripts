@@ -1,0 +1,49 @@
+{
+  "event_id": "80000000-0000-4000-8000-000000000011",
+  "event_type": "order.cancellation_saga.status_changed",
+  "schema_version": 2,
+  "tenant_id": 1,
+  "aggregate_type": "order_cancellation_saga",
+  "aggregate_id": "80000000-0000-4000-8000-000000000001",
+  "aggregate_version": 9,
+  "event_sequence": 1,
+  "idempotency_key": "paid-cancel-saga-example-completed",
+  "correlation_id": "80000000-0000-4000-8000-000000000001",
+  "causation_id": "80000000-0000-4000-8000-000000000010",
+  "occurred_at": "2026-07-13T01:00:09.000Z",
+  "recorded_at": "2026-07-13T01:00:09.100Z",
+  "source_system": "cloudmold-order",
+  "destination": "lakehouse",
+  "payload": {
+    "run_id": "paid-cancel-saga-example",
+    "saga_id": "80000000-0000-4000-8000-000000000001",
+    "order_id": "80000000-0000-4000-8000-000000000002",
+    "order_no": "CMO80000000000040008000",
+    "cancellation_mode": "PAID_UNSHIPPED",
+    "payment_id": "80000000-0000-4000-8000-000000000003",
+    "payment_refund_transaction_id": 2,
+    "payment_status": "REFUNDED",
+    "expected_fulfillment_count": 1,
+    "cancelled_fulfillment_count": 1,
+    "fulfillments": [{
+      "fulfillment_id": "80000000-0000-4000-8000-000000000004",
+      "status": "CANCELLED"
+    }],
+    "previous_status": "CANCELLING_ORDER",
+    "current_status": "COMPLETED",
+    "active_step": "NONE",
+    "step_ordinal": 5,
+    "attempt": 1,
+    "reason": "buyer cancelled after payment before shipment",
+    "expected_reservation_count": 1,
+    "released_reservation_count": 1,
+    "reservations": [{
+      "order_item_id": "80000000-0000-4000-8000-000000000005",
+      "reservation_id": "80000000-0000-4000-8000-000000000006",
+      "quantity": "2"
+    }],
+    "error_code": null,
+    "error_message": null,
+    "next_retry_at": null
+  }
+}

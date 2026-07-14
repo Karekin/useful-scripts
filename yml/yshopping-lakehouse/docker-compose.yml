@@ -1,0 +1,180 @@
+name: yshopping-lakehouse
+
+services:
+  starrocks:
+    image: starrocks/allin1-ubuntu:4.0.12
+    container_name: yshopping-starrocks
+    restart: unless-stopped
+    ports:
+      - "8030:8030"
+      - "8040:8040"
+      - "9030:9030"
+      - "8081:8081"
+    volumes:
+      - starrocks_fe_meta:/opt/starrocks/fe/meta
+      - starrocks_be_storage:/opt/starrocks/be/storage
+    networks:
+      - yudao_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://127.0.0.1:8030/api/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+
+  jobmanager:
+    build:
+      context: ./docker/flink-cdc
+    image: cloudmold/flink-cdc:2.2.1-3.6.0
+    container_name: yshopping-flink-jobmanager
+    restart: unless-stopped
+    command: jobmanager
+    depends_on:
+      starrocks:
+        condition: service_started
+      flink-storage-init:
+        condition: service_completed_successfully
+    network_mode: service:starrocks
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: 127.0.0.1
+        rest.address: 0.0.0.0
+        execution.checkpointing.interval: 10s
+        execution.checkpointing.mode: EXACTLY_ONCE
+        state.checkpoints.dir: file:///opt/flink/checkpoints
+        state.savepoints.dir: file:///opt/flink/savepoints
+    volumes:
+      - flink_checkpoints:/opt/flink/checkpoints
+      - flink_savepoints:/opt/flink/savepoints
+
+  flink-storage-init:
+    image: cloudmold/flink-cdc:2.2.1-3.6.0
+    user: "0:0"
+    entrypoint: ["sh", "-c"]
+    command: ["chown -R flink:flink /opt/flink/checkpoints /opt/flink/savepoints"]
+    volumes:
+      - flink_checkpoints:/opt/flink/checkpoints
+      - flink_savepoints:/opt/flink/savepoints
+
+  taskmanager:
+    image: cloudmold/flink-cdc:2.2.1-3.6.0
+    container_name: yshopping-flink-taskmanager
+    restart: unless-stopped
+    command: taskmanager
+    depends_on:
+      - jobmanager
+    network_mode: service:starrocks
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: 127.0.0.1
+        taskmanager.numberOfTaskSlots: 4
+    volumes:
+      - flink_checkpoints:/opt/flink/checkpoints
+      - flink_savepoints:/opt/flink/savepoints
+
+  cdc-cli:
+    image: cloudmold/flink-cdc:2.2.1-3.6.0
+    container_name: yshopping-cdc-cli
+    profiles: ["tools"]
+    depends_on:
+      - jobmanager
+      - taskmanager
+      - starrocks
+    network_mode: service:starrocks
+    environment:
+      CDC_MYSQL_USER: ${CDC_MYSQL_USER}
+      CDC_MYSQL_PASSWORD: ${CDC_MYSQL_PASSWORD}
+      STARROCKS_USER: ${STARROCKS_USER:-root}
+      STARROCKS_PASSWORD: ${STARROCKS_PASSWORD:-}
+      FLINK_PARALLELISM: ${FLINK_PARALLELISM:-1}
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: 127.0.0.1
+        rest.address: 127.0.0.1
+        execution.checkpointing.interval: 10s
+        execution.checkpointing.mode: EXACTLY_ONCE
+        state.checkpoints.dir: file:///opt/flink/checkpoints
+        state.savepoints.dir: file:///opt/flink/savepoints
+    volumes:
+      - ./pipelines:/opt/pipelines:ro
+    command:
+      - bash
+      - -lc
+      - >-
+        envsubst < /opt/pipelines/erp-mysql-to-starrocks.yaml
+        > /tmp/erp-mysql-to-starrocks.yaml &&
+        /opt/flink-cdc/bin/flink-cdc.sh /tmp/erp-mysql-to-starrocks.yaml
+
+  catalog-cdc-cli:
+    image: cloudmold/flink-cdc:2.2.1-3.6.0
+    container_name: yshopping-catalog-cdc-cli
+    profiles: ["tools"]
+    depends_on:
+      - jobmanager
+      - taskmanager
+      - starrocks
+    network_mode: service:starrocks
+    environment:
+      CDC_MYSQL_USER: ${CDC_MYSQL_USER}
+      CDC_MYSQL_PASSWORD: ${CDC_MYSQL_PASSWORD}
+      STARROCKS_USER: ${STARROCKS_USER:-root}
+      STARROCKS_PASSWORD: ${STARROCKS_PASSWORD:-}
+      FLINK_PARALLELISM: ${FLINK_PARALLELISM:-1}
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: 127.0.0.1
+        rest.address: 127.0.0.1
+        execution.checkpointing.interval: 10s
+        execution.checkpointing.mode: EXACTLY_ONCE
+        state.checkpoints.dir: file:///opt/flink/checkpoints
+        state.savepoints.dir: file:///opt/flink/savepoints
+    volumes:
+      - ./pipelines:/opt/pipelines:ro
+    command:
+      - bash
+      - -lc
+      - >-
+        envsubst < /opt/pipelines/catalog-mysql-to-starrocks.yaml
+        > /tmp/catalog-mysql-to-starrocks.yaml &&
+        /opt/flink-cdc/bin/flink-cdc.sh /tmp/catalog-mysql-to-starrocks.yaml
+
+  event-cdc-cli:
+    image: cloudmold/flink-cdc:2.2.1-3.6.0
+    container_name: yshopping-event-cdc-cli
+    profiles: ["tools"]
+    depends_on:
+      - jobmanager
+      - taskmanager
+      - starrocks
+    network_mode: service:starrocks
+    environment:
+      CDC_MYSQL_USER: ${CDC_MYSQL_USER}
+      CDC_MYSQL_PASSWORD: ${CDC_MYSQL_PASSWORD}
+      STARROCKS_USER: ${STARROCKS_USER:-root}
+      STARROCKS_PASSWORD: ${STARROCKS_PASSWORD:-}
+      FLINK_PARALLELISM: ${FLINK_PARALLELISM:-1}
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: 127.0.0.1
+        rest.address: 127.0.0.1
+        execution.checkpointing.interval: 10s
+        execution.checkpointing.mode: EXACTLY_ONCE
+        state.checkpoints.dir: file:///opt/flink/checkpoints
+        state.savepoints.dir: file:///opt/flink/savepoints
+    volumes:
+      - ./pipelines:/opt/pipelines:ro
+    command:
+      - bash
+      - -lc
+      - >-
+        envsubst < /opt/pipelines/event-outbox-mysql-to-starrocks.yaml
+        > /tmp/event-outbox-mysql-to-starrocks.yaml &&
+        /opt/flink-cdc/bin/flink-cdc.sh /tmp/event-outbox-mysql-to-starrocks.yaml
+
+volumes:
+  starrocks_fe_meta:
+  starrocks_be_storage:
+  flink_checkpoints:
+  flink_savepoints:
+
+networks:
+  yudao_network:
+    external: true
+    name: yudao_yudao_network

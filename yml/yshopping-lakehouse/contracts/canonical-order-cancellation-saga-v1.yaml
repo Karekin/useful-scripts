@@ -1,0 +1,60 @@
+name: canonical-order-cancellation-saga
+version: 1
+owner: CloudMold
+scope: unpaid-order-durable-cancellation
+
+identity:
+  tenant_key: tenant_id
+  saga_key: [tenant_id, saga_id]
+  order_key: [tenant_id, order_id]
+  reservation_key: [tenant_id, order_id, order_item_id, reservation_id]
+
+event:
+  type: order.cancellation_saga.status_changed
+  schema_version: 1
+  source_system: cloudmold-order
+  destination: lakehouse
+  aggregate_type: order_cancellation_saga
+  published_status_code: 20
+
+state_machine:
+  states:
+    - REQUESTED
+    - RELEASING_RESERVATIONS
+    - RESERVATIONS_RELEASED
+    - CANCELLING_ORDER
+    - RETRY_SCHEDULED
+    - MANUAL_REVIEW
+    - COMPLETED
+  happy_path:
+    - REQUESTED
+    - RELEASING_RESERVATIONS
+    - RESERVATIONS_RELEASED
+    - CANCELLING_ORDER
+    - COMPLETED
+  retry_policy:
+    - RETRY_SCHEDULED must retain the failed active_step, error and next_retry_at
+    - MANUAL_REVIEW must retain the failed active_step and redacted error
+    - retry or manual recovery may resume only the retained active_step
+    - COMPLETED is terminal
+
+exact_links:
+  - every event carries the same complete reservation snapshot
+  - every declared reservation matches one current Order item by order_item_id, reservation_id and quantity
+  - every declared reservation has one canonical RESERVATION and one RESERVATION_RELEASE fact
+  - every release precedes the Order CANCELLED event
+  - Order transitions from INVENTORY_RESERVED through CANCELLATION_PENDING to CANCELLED before Saga COMPLETED
+  - Order cancellation_saga_id equals the durable Saga aggregate identity
+  - no Payment or Fulfillment fact exists for the cancelled order
+
+readiness:
+  success: RECONCILED
+  retry_wait: RECOVERY_PENDING
+  manual_intervention: RECOVERY_REQUIRED
+  impossible_or_unsafe_shape: INCONSISTENT
+
+compatibility:
+  - Order v2 and Inventory v1 remain unchanged
+  - legacy synchronous cancellations without a Saga event remain outside this Saga read model
+  - failed and retrying Sagas are operational evidence, not business completion
+  - only relay-confirmed Outbox status 20 enters business DWD

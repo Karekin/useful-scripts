@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/listing-status-changed-v1.schema.json",
+  "title": "listing.status.changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id", "listing_id", "listing_no", "merchant_id", "channel_code", "shop_id",
+    "canonical_spu_id", "revision", "previous_status", "current_status",
+    "completion_passed", "business_approved", "risk_approved", "reason", "offers"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "listing_id": {"type": "string", "format": "uuid"},
+    "listing_no": {"type": "string", "minLength": 1, "maxLength": 32},
+    "merchant_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "channel_code": {"type": "string", "enum": ["INTERNAL_COMPANY", "YSHOPPING_INTERNAL", "YSHOPPING"]},
+    "shop_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "canonical_spu_id": {"type": "string", "format": "uuid"},
+    "revision": {"type": "integer", "minimum": 1},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "DRAFT", "SUBMITTED", "COMPLETION_PASSED", "BUSINESS_APPROVED", "RISK_APPROVED", "PUBLISHED", "UNPUBLISHED", "SUSPENDED", "REJECTED"]},
+    "current_status": {"type": "string", "enum": ["DRAFT", "SUBMITTED", "COMPLETION_PASSED", "BUSINESS_APPROVED", "RISK_APPROVED", "PUBLISHED", "UNPUBLISHED", "SUSPENDED", "REJECTED", "ARCHIVED"]},
+    "completion_passed": {"type": "boolean"},
+    "business_approved": {"type": "boolean"},
+    "risk_approved": {"type": "boolean"},
+    "reason": {"type": ["string", "null"], "maxLength": 256},
+    "offers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["listing_offer_id", "canonical_sku_id", "revision", "price_minor", "currency_code", "enabled", "external_offer_id"],
+        "properties": {
+          "listing_offer_id": {"type": "string", "format": "uuid"},
+          "canonical_sku_id": {"type": "string", "format": "uuid"},
+          "revision": {"type": "integer", "minimum": 1},
+          "price_minor": {"type": "integer", "minimum": 0},
+          "currency_code": {"type": "string", "enum": ["CNY"]},
+          "enabled": {"type": "boolean"},
+          "external_offer_id": {"type": ["string", "null"], "maxLength": 128}
+        }
+      }
+    }
+  }
+}

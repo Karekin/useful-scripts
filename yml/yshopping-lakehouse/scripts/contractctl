@@ -1,0 +1,198 @@
+#!/usr/bin/env python3
+"""Validate CloudMold event contracts without third-party dependencies."""
+
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import json
+import re
+import sys
+import uuid
+from pathlib import Path
+from typing import Any
+
+
+ROOT = Path(__file__).resolve().parents[1]
+CONTRACTS = ROOT / "contracts"
+
+
+class ContractError(RuntimeError):
+    pass
+
+
+def load(path: Path) -> Any:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ContractError(f"cannot load {path}: {exc}") from exc
+
+
+def type_matches(value: Any, expected: str) -> bool:
+    return {
+        "object": isinstance(value, dict),
+        "array": isinstance(value, list),
+        "string": isinstance(value, str),
+        "integer": isinstance(value, int) and not isinstance(value, bool),
+        "number": isinstance(value, (int, float)) and not isinstance(value, bool),
+        "boolean": isinstance(value, bool),
+        "null": value is None,
+    }.get(expected, False)
+
+
+def validate_instance(value: Any, schema: dict[str, Any], path: str = "$") -> list[str]:
+    errors: list[str] = []
+    expected = schema.get("type")
+    allowed_types = expected if isinstance(expected, list) else [expected] if expected else []
+    if allowed_types and not any(type_matches(value, item) for item in allowed_types):
+        return [f"{path}: expected {allowed_types}, got {type(value).__name__}"]
+    if "const" in schema and value != schema["const"]:
+        errors.append(f"{path}: expected constant {schema['const']!r}")
+    if "enum" in schema and value not in schema["enum"]:
+        errors.append(f"{path}: value {value!r} not in enum")
+    if isinstance(value, dict):
+        required = schema.get("required", [])
+        errors.extend(f"{path}.{key}: required" for key in required if key not in value)
+        properties = schema.get("properties", {})
+        if schema.get("additionalProperties") is False:
+            errors.extend(f"{path}.{key}: additional property" for key in value if key not in properties)
+        for key, child in value.items():
+            if key in properties:
+                errors.extend(validate_instance(child, properties[key], f"{path}.{key}"))
+    elif isinstance(value, list):
+        if len(value) < schema.get("minItems", 0):
+            errors.append(f"{path}: requires at least {schema['minItems']} items")
+        item_schema = schema.get("items")
+        if item_schema:
+            for index, item in enumerate(value):
+                errors.extend(validate_instance(item, item_schema, f"{path}[{index}]"))
+    elif isinstance(value, str):
+        if len(value) < schema.get("minLength", 0):
+            errors.append(f"{path}: shorter than minLength")
+        if len(value) > schema.get("maxLength", sys.maxsize):
+            errors.append(f"{path}: longer than maxLength")
+        if schema.get("pattern") and not re.fullmatch(schema["pattern"], value):
+            errors.append(f"{path}: does not match {schema['pattern']}")
+        if schema.get("format") == "uuid":
+            try:
+                uuid.UUID(value)
+            except ValueError:
+                errors.append(f"{path}: invalid UUID")
+        if schema.get("format") == "date-time":
+            try:
+                parsed = dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+                if parsed.tzinfo is None or parsed.utcoffset() != dt.timedelta(0):
+                    errors.append(f"{path}: date-time must include UTC offset")
+            except ValueError:
+                errors.append(f"{path}: invalid date-time")
+    elif isinstance(value, (int, float)) and not isinstance(value, bool):
+        if "minimum" in schema and value < schema["minimum"]:
+            errors.append(f"{path}: below minimum {schema['minimum']}")
+    return errors
+
+
+def validate_schema_shape(schema: dict[str, Any], path: Path) -> list[str]:
+    errors: list[str] = []
+    if schema.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
+        errors.append(f"{path}: must use JSON Schema 2020-12")
+    if schema.get("type") != "object":
+        errors.append(f"{path}: root type must be object")
+    if schema.get("additionalProperties") is not False:
+        errors.append(f"{path}: root additionalProperties must be false")
+    required = set(schema.get("required", []))
+    properties = set(schema.get("properties", {}))
+    if not required <= properties:
+        errors.append(f"{path}: required fields missing property definitions: {sorted(required - properties)}")
+    return errors
+
+
+def validate_all() -> None:
+    manifest_path = CONTRACTS / "event-manifest-v1.json"
+    manifest = load(manifest_path)
+    envelope_path = CONTRACTS / manifest["envelope"]
+    envelope = load(envelope_path)
+    errors = validate_schema_shape(envelope, envelope_path)
+    seen_examples: set[Path] = set()
+    contract_count = 0
+    for event_type, event_config in manifest["events"].items():
+        versions = event_config.get("versions", [event_config])
+        seen_versions: set[int] = set()
+        for config in versions:
+            payload_path = CONTRACTS / config["payload_schema"]
+            example_path = CONTRACTS / config["example"]
+            payload_schema = load(payload_path)
+            example = load(example_path)
+            schema_version = config["schema_version"]
+            if schema_version in seen_versions:
+                errors.append(f"{manifest_path}: duplicate {event_type} schema version {schema_version}")
+            seen_versions.add(schema_version)
+            errors.extend(validate_schema_shape(payload_schema, payload_path))
+            errors.extend(validate_instance(example, envelope, str(example_path)))
+            errors.extend(validate_instance(example.get("payload"), payload_schema, f"{example_path}.payload"))
+            if example.get("event_type") != event_type:
+                errors.append(f"{example_path}: event_type does not match manifest")
+            if example.get("schema_version") != schema_version:
+                errors.append(f"{example_path}: schema_version does not match manifest")
+            if example.get("aggregate_type") != event_config["aggregate_type"]:
+                errors.append(f"{example_path}: aggregate_type does not match manifest")
+            seen_examples.add(example_path)
+            contract_count += 1
+    unknown = set((CONTRACTS / "examples").glob("*.json")) - seen_examples
+    errors.extend(f"{path}: example is not registered in manifest" for path in sorted(unknown))
+    if errors:
+        raise ContractError("\n".join(errors))
+    print(f"contracts valid: {len(manifest['events'])} event types, {contract_count} schema versions")
+
+
+def normalized_types(schema: dict[str, Any]) -> set[str]:
+    value = schema.get("type", [])
+    return set(value if isinstance(value, list) else [value])
+
+
+def compatibility_errors(old: dict[str, Any], new: dict[str, Any], path: str = "$") -> list[str]:
+    errors: list[str] = []
+    if normalized_types(old) != normalized_types(new):
+        errors.append(f"{path}: type changed from {old.get('type')} to {new.get('type')}")
+    old_props, new_props = old.get("properties", {}), new.get("properties", {})
+    for name in old_props.keys() - new_props.keys():
+        errors.append(f"{path}.{name}: property removed")
+    old_required, new_required = set(old.get("required", [])), set(new.get("required", []))
+    if old_required != new_required:
+        errors.append(f"{path}: required fields changed from {sorted(old_required)} to {sorted(new_required)}")
+    if "enum" in old and not set(old["enum"]) <= set(new.get("enum", [])):
+        errors.append(f"{path}: enum values were removed")
+    for name in old_props.keys() & new_props.keys():
+        errors.extend(compatibility_errors(old_props[name], new_props[name], f"{path}.{name}"))
+    if "items" in old and "items" in new:
+        errors.extend(compatibility_errors(old["items"], new["items"], f"{path}[]"))
+    return errors
+
+
+def check_compatibility(baseline: Path, candidate: Path) -> None:
+    errors = compatibility_errors(load(baseline), load(candidate))
+    if errors:
+        raise ContractError("breaking schema change:\n" + "\n".join(errors))
+    print("schema is backward compatible")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("validate")
+    compatible = sub.add_parser("compatibility")
+    compatible.add_argument("--baseline", type=Path, required=True)
+    compatible.add_argument("--candidate", type=Path, required=True)
+    args = parser.parse_args()
+    if args.command == "validate":
+        validate_all()
+    else:
+        check_compatibility(args.baseline, args.candidate)
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except ContractError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        raise SystemExit(1)

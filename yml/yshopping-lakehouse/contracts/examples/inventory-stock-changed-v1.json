@@ -1,0 +1,33 @@
+{
+  "event_id": "22222222-2222-4222-8222-222222222222",
+  "event_type": "inventory.stock.changed",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "inventory_balance",
+  "aggregate_id": "sku-1:warehouse-3:owner-1:qualified",
+  "aggregate_version": 1,
+  "idempotency_key": "receipt-CGRK20260712000001-line-1",
+  "correlation_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "causation_id": "33333333-3333-4333-8333-333333333333",
+  "occurred_at": "2026-07-12T10:10:00.000Z",
+  "recorded_at": "2026-07-12T10:10:00.100Z",
+  "source_system": "yudao-erp",
+  "payload": {
+    "canonical_sku_id": "yudao-mall:1:sku:1",
+    "warehouse_id": "3",
+    "owner_id": "1",
+    "location_id": null,
+    "lot_no": null,
+    "quality_status": "QUALIFIED",
+    "delta_quantity": "10.000000",
+    "after_on_hand_quantity": "10.000000",
+    "after_reserved_quantity": "0.000000",
+    "after_available_quantity": "10.000000",
+    "uom_code": "PIECE",
+    "movement_type": "PURCHASE_RECEIPT",
+    "business_type": "PURCHASE_RECEIPT",
+    "business_id": "1",
+    "business_item_id": "1",
+    "business_no": "CGRK20260712000001"
+  }
+}

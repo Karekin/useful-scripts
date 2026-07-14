@@ -1,0 +1,58 @@
+name: canonical-paid-order-cancellation-saga
+version: 2
+owner: CloudMold
+scope: paid-unshipped-durable-cancellation
+
+identity:
+  tenant_key: tenant_id
+  saga_key: [tenant_id, saga_id]
+  order_key: [tenant_id, order_id]
+  payment_key: [tenant_id, payment_id]
+  fulfillment_key: [tenant_id, fulfillment_id]
+  reservation_key: [tenant_id, order_id, order_item_id, reservation_id]
+
+event:
+  type: order.cancellation_saga.status_changed
+  schema_version: 2
+  cancellation_mode: PAID_UNSHIPPED
+  source_system: cloudmold-order
+  destination: lakehouse
+  aggregate_type: order_cancellation_saga
+  published_status_code: 20
+
+state_machine:
+  happy_path:
+    - REQUESTED
+    - CANCELLING_FULFILLMENT
+    - FULFILLMENT_CANCELLED
+    - REFUNDING_PAYMENT
+    - PAYMENT_REFUNDED
+    - RELEASING_RESERVATIONS
+    - RESERVATIONS_RELEASED
+    - CANCELLING_ORDER
+    - COMPLETED
+  recovery_states: [RETRY_SCHEDULED, MANUAL_REVIEW]
+  active_steps: [NONE, CANCEL_FULFILLMENT, REFUND_PAYMENT, RELEASE_RESERVATIONS, CANCEL_ORDER]
+
+effect_order:
+  - ORDER_FENCED
+  - FULFILLMENT_CANCELLED
+  - PAYMENT_REFUNDED
+  - RESERVATIONS_RELEASED
+  - ORDER_CANCELLED
+  - SAGA_COMPLETED
+
+invariants:
+  - Order transitions PAYMENT_CONFIRMED through CANCELLATION_PENDING to CANCELLED
+  - Fulfillment transitions CREATED through CANCELLATION_PENDING to CANCELLED without a shipment
+  - Payment transitions CAPTURED to REFUNDED with payable equal to captured equal to refunded
+  - every exact TRADE_ORDER reservation is released once and no SALE_SHIPMENT exists
+  - all effects carry the same cancellation Saga identity and their stable step ordinal
+  - recorded effect times are nondecreasing in effect_order and causation proves happened-before
+  - retry or restart resumes only the retained active step and creates no duplicate business fact
+
+readiness:
+  success: RECONCILED
+  retry_wait: RECOVERY_PENDING
+  manual_intervention: RECOVERY_REQUIRED
+  impossible_or_unsafe_shape: INCONSISTENT

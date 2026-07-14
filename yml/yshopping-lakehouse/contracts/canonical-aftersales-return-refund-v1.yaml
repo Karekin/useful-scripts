@@ -1,0 +1,46 @@
+name: canonical-aftersales-return-refund
+version: 1
+owner: CloudMold
+scope: delivered-order-full-return-and-refund
+
+identity:
+  tenant_key: tenant_id
+  after_sale_key: [tenant_id, after_sale_id]
+  after_sale_item_key: [tenant_id, after_sale_item_id]
+  refund_key: [tenant_id, refund_id]
+  return_fulfillment_key: [tenant_id, return_fulfillment_id]
+  inspection_key: [tenant_id, inspection_id]
+  resolution_saga_key: [tenant_id, saga_id]
+
+events:
+  - {type: after_sale.status.changed, schema_version: 1, source_system: cloudmold-aftersales}
+  - {type: after_sale.refund.status.changed, schema_version: 1, source_system: cloudmold-aftersales}
+  - {type: return_fulfillment.status.changed, schema_version: 1, source_system: cloudmold-fulfillment}
+  - {type: return_fulfillment.inspection.decided, schema_version: 1, source_system: cloudmold-fulfillment}
+  - {type: after_sale.resolution_saga.status.changed, schema_version: 1, source_system: cloudmold-aftersales}
+
+effect_order:
+  - RETURN_ACCEPTED
+  - INVENTORY_RETURNED
+  - PAYMENT_REFUNDED
+  - ORDER_RETURNED
+  - AFTER_SALE_COMPLETED
+
+invariants:
+  - all participant references are exact tenant-scoped identifiers rather than inferred from run_id
+  - after_sale_item_id identifies the return fact while order_item_id only links back to the original sale line
+  - received quantity equals accepted quantity plus rejected quantity
+  - a completed full return has accepted quantity equal to returned quantity equal to requested quantity
+  - refunded minor amount never exceeds the approved entitlement and currency is stable
+  - inventory return is recorded only after an accepted inspection
+  - payment refund is recorded only after inventory return and before order return
+  - cancellation and after-sale return events never share the same resolution Saga
+  - every idempotency key creates at most one published event per tenant and event type
+  - return shipping money uses integer minor units and the same three-letter currency code
+  - raw buyer contact and address fields never enter governed after-sales DWD DIM DWS or ADS
+
+readiness:
+  success: RECONCILED
+  retry_wait: RECOVERY_PENDING
+  manual_intervention: RECOVERY_REQUIRED
+  impossible_or_unsafe_shape: INCONSISTENT

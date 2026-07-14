@@ -1,0 +1,26 @@
+CREATE OR REPLACE VIEW yshopping_dwd.dwd_canonical_order_item_event AS
+SELECT
+    event.event_id,
+    event.schema_version,
+    event.tenant_id,
+    event.order_id,
+    event.order_no,
+    event.run_id,
+    event.aggregate_version,
+    event.current_status AS order_status,
+    event.occurred_at,
+    event.recorded_at,
+    get_json_string(item.`value`, '$.order_item_id') AS order_item_id,
+    get_json_string(item.`value`, '$.canonical_sku_id') AS canonical_sku_id,
+    CAST(get_json_string(item.`value`, '$.quantity') AS DECIMAL(24,6)) AS quantity,
+    CAST(get_json_string(item.`value`, '$.unit_price_minor') AS BIGINT) AS unit_price_minor,
+    CAST(get_json_string(item.`value`, '$.line_amount_minor') AS BIGINT) AS line_amount_minor,
+    get_json_string(item.`value`, '$.reservation_id') AS reservation_id,
+    get_json_string(item.`value`, '$.listing_id') AS listing_id,
+    get_json_string(item.`value`, '$.listing_offer_id') AS listing_offer_id,
+    CAST(get_json_string(item.`value`, '$.listing_revision') AS INT) AS listing_revision,
+    CAST(get_json_string(item.`value`, '$.listing_version') AS BIGINT) AS listing_version,
+    get_json_string(item.`value`, '$.channel_code') AS channel_code,
+    get_json_string(item.`value`, '$.shop_id') AS shop_id
+FROM yshopping_dwd.dwd_canonical_order_status_event event,
+     LATERAL json_each(event.items) item;

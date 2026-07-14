@@ -40,6 +40,11 @@ services:
       --innodb_log_file_size=256M
       --innodb_flush_log_at_trx_commit=2
       --innodb_flush_method=O_DIRECT
+      --server-id=1001
+      --log-bin=mysql-bin
+      --binlog-format=ROW
+      --binlog-row-image=FULL
+      --binlog-expire-logs-seconds=604800
     ports:
       - "3306:3306"
     environment:
@@ -192,5 +197,4 @@ volumes:
 networks:
   yudao_network:
     driver: bridge
-
 

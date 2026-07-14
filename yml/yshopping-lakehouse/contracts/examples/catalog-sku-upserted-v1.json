@@ -1,0 +1,33 @@
+{
+  "event_id": "11111111-1111-4111-8111-111111111111",
+  "event_type": "catalog.sku.upserted",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "catalog_sku",
+  "aggregate_id": "yudao-mall:1:sku:1",
+  "aggregate_version": 1,
+  "idempotency_key": "catalog-sku-1-v1",
+  "correlation_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  "causation_id": null,
+  "occurred_at": "2026-07-12T10:00:00.000Z",
+  "recorded_at": "2026-07-12T10:00:00.100Z",
+  "source_system": "yudao-mall",
+  "payload": {
+    "canonical_sku_id": "yudao-mall:1:sku:1",
+    "canonical_spu_id": 633,
+    "name": "服饰样例 SKU",
+    "bar_code": "CM-APPAREL-BLACK-M",
+    "category_id": 1,
+    "brand_id": 1,
+    "variant_attributes": [
+      {"attribute_id": 1, "attribute_name": "颜色", "value_id": 1, "value_name": "黑色"},
+      {"attribute_id": 2, "attribute_name": "尺码", "value_id": 2, "value_name": "M"}
+    ],
+    "sale_price_amount_minor": 15900,
+    "cost_price_amount_minor": 10000,
+    "currency": "CNY",
+    "status": "ACTIVE",
+    "source_table": "product_sku",
+    "source_id": 1
+  }
+}

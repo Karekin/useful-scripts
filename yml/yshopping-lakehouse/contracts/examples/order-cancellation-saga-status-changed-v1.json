@@ -1,0 +1,38 @@
+{
+  "event_id": "70000000-0000-4000-8000-000000000005",
+  "event_type": "order.cancellation_saga.status_changed",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "order_cancellation_saga",
+  "aggregate_id": "70000000-0000-4000-8000-000000000001",
+  "aggregate_version": 5,
+  "event_sequence": 1,
+  "idempotency_key": "cancel-saga-example-completed",
+  "correlation_id": "70000000-0000-4000-8000-000000000001",
+  "causation_id": "70000000-0000-4000-8000-000000000004",
+  "occurred_at": "2026-07-12T15:00:04.000Z",
+  "recorded_at": "2026-07-12T15:00:04.100Z",
+  "source_system": "cloudmold-order",
+  "destination": "lakehouse",
+  "payload": {
+    "run_id": "cancel-saga-example",
+    "saga_id": "70000000-0000-4000-8000-000000000001",
+    "order_id": "70000000-0000-4000-8000-000000000002",
+    "order_no": "CMO70000000000040008000",
+    "previous_status": "CANCELLING_ORDER",
+    "current_status": "COMPLETED",
+    "active_step": "NONE",
+    "attempt": 1,
+    "reason": "buyer cancelled before payment",
+    "expected_reservation_count": 1,
+    "released_reservation_count": 1,
+    "reservations": [{
+      "order_item_id": "70000000-0000-4000-8000-000000000003",
+      "reservation_id": "70000000-0000-4000-8000-000000000004",
+      "quantity": "2"
+    }],
+    "error_code": null,
+    "error_message": null,
+    "next_retry_at": null
+  }
+}

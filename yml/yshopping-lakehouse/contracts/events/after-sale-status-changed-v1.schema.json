@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/after-sale-status-changed-v1.schema.json",
+  "title": "after_sale.status.changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id", "after_sale_id", "after_sale_no", "after_sale_item_id", "after_sale_type",
+    "reason_code", "responsibility", "reason", "order_id", "order_item_id", "canonical_sku_id",
+    "quantity", "listing_id", "listing_offer_id", "buyer_id", "approved_amount_minor", "currency_code", "payment_id",
+    "forward_fulfillment_id", "forward_shipment_id", "return_fulfillment_id", "return_shipment_id",
+    "inspection_id", "resolution_saga_id", "refund_status", "previous_status", "current_status"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "after_sale_id": {"type": "string", "format": "uuid"},
+    "after_sale_no": {"type": "string", "minLength": 1, "maxLength": 32},
+    "after_sale_item_id": {"type": "string", "format": "uuid"},
+    "after_sale_type": {"type": "string", "const": "RETURN_AND_REFUND"},
+    "reason_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "responsibility": {"type": "string", "enum": ["BUYER", "SELLER", "CARRIER", "PLATFORM", "UNDETERMINED"]},
+    "reason": {"type": "string", "minLength": 1, "maxLength": 256},
+    "order_id": {"type": "string", "format": "uuid"},
+    "order_item_id": {"type": "string", "format": "uuid"},
+    "canonical_sku_id": {"type": "string", "format": "uuid"},
+    "quantity": {"type": "string", "pattern": "^[1-9][0-9]*(\\.0{1,6})?$"},
+    "listing_id": {"type": "string", "format": "uuid"},
+    "listing_offer_id": {"type": "string", "format": "uuid"},
+    "buyer_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "approved_amount_minor": {"type": "integer", "minimum": 0},
+    "currency_code": {"type": "string", "const": "CNY"},
+    "payment_id": {"type": "string", "format": "uuid"},
+    "forward_fulfillment_id": {"type": "string", "format": "uuid"},
+    "forward_shipment_id": {"type": "string", "format": "uuid"},
+    "return_fulfillment_id": {"type": ["string", "null"], "format": "uuid"},
+    "return_shipment_id": {"type": ["string", "null"], "format": "uuid"},
+    "inspection_id": {"type": ["string", "null"], "format": "uuid"},
+    "resolution_saga_id": {"type": ["string", "null"], "format": "uuid"},
+    "refund_status": {"type": "string", "enum": ["NOT_REQUESTED", "REQUESTED", "SUCCEEDED"]},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "REQUESTED", "APPROVED", "RESOLUTION_PENDING", "COMPLETED"]},
+    "current_status": {"type": "string", "enum": ["REQUESTED", "APPROVED", "RESOLUTION_PENDING", "COMPLETED"]}
+  }
+}

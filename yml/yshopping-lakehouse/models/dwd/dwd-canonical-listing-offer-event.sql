@@ -1,0 +1,24 @@
+CREATE OR REPLACE VIEW yshopping_dwd.dwd_canonical_listing_offer_event AS
+SELECT
+    event.event_id,
+    event.tenant_id,
+    event.listing_id,
+    event.listing_no,
+    event.run_id,
+    event.aggregate_version AS listing_version,
+    event.revision AS listing_revision,
+    event.current_status AS listing_status,
+    event.channel_code,
+    event.shop_id,
+    event.canonical_spu_id,
+    event.occurred_at,
+    event.recorded_at,
+    get_json_string(offer.`value`, '$.listing_offer_id') AS listing_offer_id,
+    get_json_string(offer.`value`, '$.canonical_sku_id') AS canonical_sku_id,
+    CAST(get_json_string(offer.`value`, '$.revision') AS INT) AS offer_revision,
+    CAST(get_json_string(offer.`value`, '$.price_minor') AS BIGINT) AS price_minor,
+    get_json_string(offer.`value`, '$.currency_code') AS currency_code,
+    CAST(get_json_string(offer.`value`, '$.enabled') AS BOOLEAN) AS enabled,
+    get_json_string(offer.`value`, '$.external_offer_id') AS external_offer_id
+FROM yshopping_dwd.dwd_canonical_listing_status_event event,
+     LATERAL json_each(event.offers) offer;

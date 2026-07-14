@@ -1,0 +1,29 @@
+source:
+  type: mysql
+  hostname: yudao-mysql
+  port: 3306
+  username: "${CDC_MYSQL_USER}"
+  password: "${CDC_MYSQL_PASSWORD}"
+  tables: ruoyi-vue-pro.erp_\.*
+  server-id: 5400-5404
+  server-time-zone: Asia/Shanghai
+
+sink:
+  type: starrocks
+  name: Y Shopping StarRocks ODS
+  jdbc-url: jdbc:mysql://starrocks:9030
+  load-url: starrocks:8030
+  username: "${STARROCKS_USER}"
+  password: "${STARROCKS_PASSWORD}"
+  table.create.properties.replication_num: 1
+
+route:
+  - source-table: ruoyi-vue-pro.erp_\.*
+    sink-table: yshopping_ods.<>
+    replace-symbol: <>
+    description: Route ERP source tables into the Y Shopping ODS database
+
+pipeline:
+  name: Y Shopping ERP MySQL to StarRocks ODS
+  parallelism: ${FLINK_PARALLELISM}
+  schema.change.behavior: EVOLVE

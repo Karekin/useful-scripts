@@ -1,0 +1,33 @@
+{
+  "event_id": "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa",
+  "event_type": "payment.status.changed",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "payment",
+  "aggregate_id": "bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb",
+  "aggregate_version": 1,
+  "idempotency_key": "commerce-example-payment-capture",
+  "correlation_id": "cccccccc-3333-4333-8333-cccccccccccc",
+  "causation_id": null,
+  "occurred_at": "2026-07-12T12:02:00.000Z",
+  "recorded_at": "2026-07-12T12:02:00.100Z",
+  "source_system": "cloudmold-payment",
+  "payload": {
+    "run_id": "commerce-example",
+    "payment_id": "bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb",
+    "payment_no": "CMPBBBBBBBB222242228222",
+    "order_id": "55555555-5555-4555-8555-555555555555",
+    "transaction_id": 1,
+    "transaction_type": "CAPTURE",
+    "previous_status": null,
+    "current_status": "CAPTURED",
+    "payable_amount_minor": 39800,
+    "captured_amount_minor": 39800,
+    "refunded_amount_minor": 0,
+    "currency_code": "CNY",
+    "provider_code": "INTERNAL_TEST",
+    "provider_transaction_id": "provider-capture-commerce-example",
+    "test_mode": true,
+    "reason": "deterministic test capture"
+  }
+}

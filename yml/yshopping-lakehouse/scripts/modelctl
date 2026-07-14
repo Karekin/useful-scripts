@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+"""Validate and emit the dependency-safe StarRocks model apply order."""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_MANIFEST = ROOT / "models" / "apply-order-v1.txt"
+
+
+class ModelManifestError(RuntimeError):
+    pass
+
+
+def load_order(manifest: Path = DEFAULT_MANIFEST, root: Path = ROOT) -> list[str]:
+    try:
+        entries = [
+            line.strip()
+            for line in manifest.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
+    except OSError as exc:
+        raise ModelManifestError(f"cannot load model order manifest {manifest}: {exc}") from exc
+
+    duplicate_entries = sorted({entry for entry in entries if entries.count(entry) > 1})
+    if duplicate_entries:
+        raise ModelManifestError(f"duplicate model entries: {duplicate_entries}")
+
+    invalid = [
+        entry for entry in entries
+        if Path(entry).is_absolute()
+        or ".." in Path(entry).parts
+        or not entry.startswith("models/")
+        or not entry.endswith(".sql")
+    ]
+    if invalid:
+        raise ModelManifestError(f"invalid model entries: {invalid}")
+
+    actual = {
+        path.relative_to(root).as_posix()
+        for path in (root / "models").rglob("*.sql")
+        if path.is_file()
+    }
+    declared = set(entries)
+    missing = sorted(actual - declared)
+    unknown = sorted(declared - actual)
+    if missing or unknown:
+        raise ModelManifestError(f"model order mismatch; missing={missing}, unknown={unknown}")
+    return entries
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("command", choices=("validate", "emit"))
+    parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    args = parser.parse_args()
+    entries = load_order(args.manifest)
+    if args.command == "emit":
+        print("\n".join(entries))
+    else:
+        print(f"model order valid: {len(entries)} SQL files")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except ModelManifestError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        raise SystemExit(1)

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/purchase-receipt-approved-v1.schema.json",
+  "title": "procurement.receipt.approved payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["receipt_id", "receipt_no", "purchase_order_id", "purchase_order_no", "supplier_id", "account_id", "received_at", "currency", "lines"],
+  "properties": {
+    "receipt_id": {"type": "string", "minLength": 1},
+    "receipt_no": {"type": "string", "minLength": 1},
+    "purchase_order_id": {"type": "string", "minLength": 1},
+    "purchase_order_no": {"type": "string", "minLength": 1},
+    "supplier_id": {"type": "string", "minLength": 1},
+    "account_id": {"type": "string", "minLength": 1},
+    "received_at": {"type": "string", "format": "date-time"},
+    "currency": {"type": "string", "enum": ["CNY"]},
+    "lines": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["receipt_line_id", "purchase_order_line_id", "canonical_sku_id", "warehouse_id", "quantity", "uom_code", "unit_price_amount_minor", "product_amount_minor", "tax_amount_minor"],
+        "properties": {
+          "receipt_line_id": {"type": "string", "minLength": 1},
+          "purchase_order_line_id": {"type": "string", "minLength": 1},
+          "canonical_sku_id": {"type": "string", "minLength": 1},
+          "warehouse_id": {"type": "string", "minLength": 1},
+          "quantity": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]{1,6})?$"},
+          "uom_code": {"type": "string", "minLength": 1},
+          "unit_price_amount_minor": {"type": "integer", "minimum": 0},
+          "product_amount_minor": {"type": "integer", "minimum": 0},
+          "tax_amount_minor": {"type": "integer", "minimum": 0}
+        }
+      }
+    }
+  }
+}

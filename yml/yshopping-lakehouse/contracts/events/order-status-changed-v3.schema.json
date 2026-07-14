@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/order-status-changed-v3.schema.json",
+  "title": "order.status.changed payload v3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id", "order_id", "order_no", "buyer_id", "previous_status", "current_status",
+    "product_amount_minor", "shipping_amount_minor", "discount_amount_minor", "payable_amount_minor",
+    "currency_code", "payment_id", "cancellation_saga_id", "cancellation_mode",
+    "pre_cancellation_status", "step_ordinal", "fulfillment_id", "shipment_id",
+    "refund_id", "reason", "items"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "order_id": {"type": "string", "format": "uuid"},
+    "order_no": {"type": "string", "minLength": 1, "maxLength": 32},
+    "buyer_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "PLACED", "INVENTORY_RESERVED", "PAYMENT_CONFIRMED", "CANCELLATION_PENDING"]},
+    "current_status": {"type": "string", "enum": ["PLACED", "INVENTORY_RESERVED", "PAYMENT_CONFIRMED", "CANCELLATION_PENDING", "CANCELLED"]},
+    "product_amount_minor": {"type": "integer", "minimum": 0},
+    "shipping_amount_minor": {"type": "integer", "minimum": 0},
+    "discount_amount_minor": {"type": "integer", "minimum": 0},
+    "payable_amount_minor": {"type": "integer", "minimum": 0},
+    "currency_code": {"type": "string", "enum": ["CNY"]},
+    "payment_id": {"type": ["string", "null"]},
+    "cancellation_saga_id": {"type": ["string", "null"], "format": "uuid"},
+    "cancellation_mode": {"type": ["string", "null"], "enum": [null, "PAID_UNSHIPPED"]},
+    "pre_cancellation_status": {"type": ["string", "null"], "enum": [null, "PAYMENT_CONFIRMED"]},
+    "step_ordinal": {"type": ["integer", "null"], "minimum": 0},
+    "fulfillment_id": {"type": ["string", "null"]},
+    "shipment_id": {"type": ["string", "null"]},
+    "refund_id": {"type": ["string", "null"]},
+    "reason": {"type": ["string", "null"], "maxLength": 256},
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["order_item_id", "canonical_sku_id", "quantity", "unit_price_minor",
+          "line_amount_minor", "reservation_id", "listing_id", "listing_offer_id",
+          "listing_revision", "listing_version", "channel_code", "shop_id"],
+        "properties": {
+          "order_item_id": {"type": "string", "format": "uuid"},
+          "canonical_sku_id": {"type": "string", "format": "uuid"},
+          "quantity": {"type": "string", "pattern": "^[1-9][0-9]*(\\.0{1,6})?$"},
+          "unit_price_minor": {"type": "integer", "minimum": 0},
+          "line_amount_minor": {"type": "integer", "minimum": 0},
+          "reservation_id": {"type": ["string", "null"]},
+          "listing_id": {"type": "string", "format": "uuid"},
+          "listing_offer_id": {"type": "string", "format": "uuid"},
+          "listing_revision": {"type": "integer", "minimum": 1},
+          "listing_version": {"type": "integer", "minimum": 1},
+          "channel_code": {"type": "string", "enum": ["INTERNAL_COMPANY", "YSHOPPING_INTERNAL", "YSHOPPING"]},
+          "shop_id": {"type": "string", "minLength": 1, "maxLength": 128}
+        }
+      }
+    }
+  }
+}

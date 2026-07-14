@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/domain-event-envelope-v1.schema.json",
+  "title": "CloudMold domain event envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id", "event_type", "schema_version", "tenant_id", "aggregate_type",
+    "aggregate_id", "aggregate_version", "idempotency_key", "correlation_id",
+    "occurred_at", "recorded_at", "source_system", "payload"
+  ],
+  "properties": {
+    "event_id": {"type": "string", "format": "uuid"},
+    "event_type": {"type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"},
+    "schema_version": {"type": "integer", "minimum": 1},
+    "tenant_id": {"type": "integer", "minimum": 1},
+    "aggregate_type": {"type": "string", "minLength": 1},
+    "aggregate_id": {"type": "string", "minLength": 1},
+    "aggregate_version": {"type": "integer", "minimum": 1},
+    "event_sequence": {"type": "integer", "minimum": 1},
+    "idempotency_key": {"type": "string", "minLength": 8, "maxLength": 200},
+    "correlation_id": {"type": "string", "format": "uuid"},
+    "causation_id": {"type": ["string", "null"], "format": "uuid"},
+    "occurred_at": {"type": "string", "format": "date-time"},
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "trace_id": {"type": ["string", "null"], "maxLength": 64},
+    "source_system": {"type": "string", "enum": ["yudao-mall", "yudao-erp", "yudao-wms", "cloudmold", "cloudmold-catalog", "cloudmold-inventory", "cloudmold-order", "cloudmold-payment", "cloudmold-listing", "cloudmold-fulfillment", "cloudmold-aftersales"]},
+    "payload": {"type": "object"},
+    "headers": {"type": ["object", "null"]},
+    "payload_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "destination": {"type": "string", "minLength": 1, "maxLength": 128}
+  }
+}

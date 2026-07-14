@@ -1,0 +1,54 @@
+name: erp-procurement-inventory
+version: 1
+owner: CloudMold
+scope: procurement-receipt-inventory
+
+identity:
+  technical_key: [source_system, tenant_id, source_id]
+  business_key: [tenant_id, business_no]
+  source_system: yudao-erp
+
+required_fields:
+  tenant_id: BIGINT NOT NULL
+  source_id: BIGINT NOT NULL
+  source_deleted: BOOLEAN NOT NULL
+  occurred_at: DATETIME
+  recorded_at: DATETIME
+
+measures:
+  quantity: DECIMAL(24,6)
+  unit_price_amount_yuan: DECIMAL(24,6)
+  total_amount_yuan: DECIMAL(24,6)
+  currency: CNY
+  future_cross_domain_money: amount_minor BIGINT with explicit HALF_UP conversion
+
+models:
+  dimensions:
+    - dim_erp_product_current
+    - dim_warehouse_current
+    - dim_supplier_current
+  facts:
+    - dwd_purchase_order_line
+    - dwd_purchase_receipt_line
+    - dwd_inventory_movement
+  summaries:
+    - dws_product_warehouse_inventory
+    - dws_purchase_receipt_daily
+  applications:
+    - ads_inventory_health
+    - ads_purchase_fulfillment
+
+invariants:
+  - joins must include tenant_id
+  - purchase header totals equal active line totals
+  - approved receipt quantity equals biz_type 70 movement quantity
+  - biz_type 71 reverses a prior receipt movement
+  - current stock equals cumulative inventory movement quantity
+  - latest movement total_count equals current stock count
+  - deleted source rows do not enter current dimensions or business summaries
+
+known_limits:
+  - ODS is a current-state primary-key mirror and cannot preserve hard-delete tombstones
+  - dimensions are current views, not SCD2, until a changelog-capable ODS is introduced
+  - erp_product is an ERP projection and is not the canonical apparel SKU authority
+  - warehouse location, owner, lot, reservation and quality-status grains are not yet present in ERP

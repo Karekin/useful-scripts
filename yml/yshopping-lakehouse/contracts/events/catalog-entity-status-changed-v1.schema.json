@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/catalog-entity-status-changed-v1.schema.json",
+  "title": "catalog.entity.status_changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["entity_type", "entity_id", "business_code", "previous_status", "current_status", "action", "reason", "effective_at", "version"],
+  "properties": {
+    "entity_type": {"type": "string", "enum": ["STYLE", "SPU", "SKU", "COLOR", "SIZE_GROUP", "SIZE"]},
+    "entity_id": {"type": "string", "format": "uuid"},
+    "business_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "previous_status": {"type": "string", "enum": ["DRAFT", "SUBMITTED", "APPROVED", "ACTIVE", "INACTIVE", "REJECTED"]},
+    "current_status": {"type": "string", "enum": ["DRAFT", "SUBMITTED", "APPROVED", "ACTIVE", "INACTIVE", "REJECTED", "ARCHIVED"]},
+    "action": {"type": "string", "enum": ["SUBMIT", "APPROVE", "REJECT", "RESET_DRAFT", "ACTIVATE", "DEACTIVATE", "ARCHIVE"]},
+    "reason": {"type": "string", "minLength": 1, "maxLength": 512},
+    "effective_at": {"type": "string", "format": "date-time"},
+    "version": {"type": "integer", "minimum": 2}
+  }
+}
