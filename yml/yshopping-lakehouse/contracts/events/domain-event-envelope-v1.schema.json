@@ -24,7 +24,7 @@
     "occurred_at": {"type": "string", "format": "date-time"},
     "recorded_at": {"type": "string", "format": "date-time"},
     "trace_id": {"type": ["string", "null"], "maxLength": 64},
-    "source_system": {"type": "string", "enum": ["yudao-mall", "yudao-erp", "yudao-wms", "cloudmold", "cloudmold-catalog", "cloudmold-inventory", "cloudmold-order", "cloudmold-payment", "cloudmold-listing", "cloudmold-fulfillment", "cloudmold-aftersales", "cloudmold-identity", "cloudmold-merchant", "cloudmold-warehouse", "cloudmold-promotion", "cloudmold-engagement", "cloudmold-customer-service"]},
+    "source_system": {"type": "string", "enum": ["yudao-mall", "yudao-erp", "yudao-wms", "cloudmold", "cloudmold-catalog", "cloudmold-inventory", "cloudmold-order", "cloudmold-payment", "cloudmold-listing", "cloudmold-fulfillment", "cloudmold-aftersales", "cloudmold-identity", "cloudmold-merchant", "cloudmold-warehouse", "cloudmold-promotion", "cloudmold-engagement", "cloudmold-customer-service", "cloudmold-ai-operations", "cloudmold-token-platform", "cloudmold-risk"]},
     "payload": {"type": "object"},
     "headers": {"type": ["object", "null"]},
     "payload_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},

@@ -1,0 +1,7 @@
+{
+  "event_id": "83000000-0000-4000-8000-000000000061", "event_type": "risk.feedback.recorded", "schema_version": 1, "tenant_id": 1,
+  "aggregate_type": "risk_feedback", "aggregate_id": "83000000-0000-4000-8000-000000000062", "aggregate_version": 1, "event_sequence": 1,
+  "idempotency_key": "risk-feedback-example-1:event", "correlation_id": "83000000-0000-4000-8000-000000000003", "causation_id": "83000000-0000-4000-8000-000000000051",
+  "occurred_at": "2026-07-16T04:06:00.000Z", "recorded_at": "2026-07-16T04:06:00.100Z", "source_system": "cloudmold-risk",
+  "payload": {"feedback_id": "83000000-0000-4000-8000-000000000062", "decision_id": "83000000-0000-4000-8000-000000000052", "case_id": "83000000-0000-4000-8000-000000000042", "feedback_type": "CONFIRMED", "reason_code": "MANUAL_CONFIRMED", "recorded_by_principal_id": "83000000-0000-4000-8000-000000000004", "occurred_at": "2026-07-16T04:06:00.000Z"}
+}

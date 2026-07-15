@@ -1,0 +1,7 @@
+{
+  "event_id": "83000000-0000-4000-8000-000000000031", "event_type": "risk.cluster.status_changed", "schema_version": 1, "tenant_id": 1,
+  "aggregate_type": "risk_cluster", "aggregate_id": "83000000-0000-4000-8000-000000000032", "aggregate_version": 1, "event_sequence": 1,
+  "idempotency_key": "risk-cluster-example-1:event", "correlation_id": "83000000-0000-4000-8000-000000000003", "causation_id": "83000000-0000-4000-8000-000000000021",
+  "occurred_at": "2026-07-16T04:03:00.000Z", "recorded_at": "2026-07-16T04:03:00.100Z", "source_system": "cloudmold-risk",
+  "payload": {"cluster_id": "83000000-0000-4000-8000-000000000032", "cluster_code": "RISK_CLUSTER_001", "previous_status": null, "current_status": "OPEN", "risk_level": "HIGH", "member_count": 0, "edge_count": 0, "operation": "CREATE_CLUSTER"}
+}

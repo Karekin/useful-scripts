@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/token-platform-model-offering-status-changed-v1.schema.json",
+  "title": "token_platform.model_offering.status_changed payload v1", "type": "object", "additionalProperties": false,
+  "required": ["offering_id", "offering_code", "provider_code", "model_code", "current_status", "operation"],
+  "properties": {
+    "offering_id": {"type": "string", "minLength": 1, "maxLength": 64}, "offering_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "provider_code": {"type": "string", "minLength": 1, "maxLength": 64}, "model_code": {"type": "string", "minLength": 1, "maxLength": 128},
+    "previous_status": {"type": ["string", "null"], "enum": ["DRAFT", "ACTIVE", "SUSPENDED", "RETIRED", null]}, "current_status": {"type": "string", "enum": ["DRAFT", "ACTIVE", "SUSPENDED", "RETIRED"]},
+    "operation": {"type": "string", "enum": ["CREATE_MODEL_OFFERING", "ADD_PRICING_VERSION", "ACTIVATE_MODEL_OFFERING", "SUSPEND_MODEL_OFFERING", "RETIRE_MODEL_OFFERING"]}
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/risk-decision-recorded-v1.schema.json",
+  "title": "risk.decision.recorded payload v1", "type": "object", "additionalProperties": false,
+  "required": ["decision_id", "case_id", "cluster_id", "decision_type", "reason_code", "decided_by_principal_id", "occurred_at"],
+  "properties": {
+    "decision_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "case_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "cluster_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "decision_type": {"type": "string", "enum": ["DISMISS", "MONITOR", "ESCALATE", "CONFIRM_RISK"]}, "reason_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_-]{1,63}$"},
+    "decided_by_principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "occurred_at": {"type": "string", "format": "date-time"}
+  }
+}

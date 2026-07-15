@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/ai-workflow-version-published-v1.schema.json",
+  "title": "ai.workflow.version.published payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["workflow_id", "workflow_code", "application_id", "workflow_version", "definition_sha256", "published_at", "operation"],
+  "properties": {
+    "workflow_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,63}$"},
+    "workflow_code": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"},
+    "application_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,63}$"},
+    "workflow_version": {"type": "integer", "minimum": 1},
+    "definition_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "published_at": {"type": "string", "format": "date-time"},
+    "operation": {"type": "string", "const": "PUBLISH_WORKFLOW_VERSION"}
+  }
+}

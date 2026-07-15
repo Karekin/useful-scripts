@@ -1,0 +1,7 @@
+{
+  "event_id": "82000000-0000-4000-8000-000000000021", "event_type": "token_platform.quota.ledger_posted", "schema_version": 1, "tenant_id": 1,
+  "aggregate_type": "token_platform_quota_account", "aggregate_id": "82000000-0000-4000-8000-000000000022", "aggregate_version": 1, "event_sequence": 1,
+  "idempotency_key": "token-quota-example-1:event", "correlation_id": "82000000-0000-4000-8000-000000000003", "causation_id": null,
+  "occurred_at": "2026-07-16T03:02:00.000Z", "recorded_at": "2026-07-16T03:02:00.100Z", "source_system": "cloudmold-token-platform",
+  "payload": {"account_id": "82000000-0000-4000-8000-000000000022", "ledger_entry_id": "82000000-0000-4000-8000-000000000023", "principal_id": "82000000-0000-4000-8000-000000000013", "entry_type": "ALLOCATION", "signed_delta_microunits": 1000000, "balance_after_microunits": 1000000, "reference_type": "INTERNAL_GRANT", "reference_id": "GRANT-001", "occurred_at": "2026-07-16T03:02:00.000Z"}
+}

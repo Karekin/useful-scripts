@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/ai-outcome-feedback-recorded-v1.schema.json",
+  "title": "ai.outcome.feedback.recorded payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["feedback_id", "run_id", "feedback_type", "outcome_code", "evaluator_type", "occurred_at"],
+  "properties": {
+    "feedback_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,63}$"},
+    "run_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,63}$"},
+    "feedback_type": {"type": "string", "enum": ["QUALITY", "CORRECTNESS", "BUSINESS_OUTCOME", "SAFETY"]},
+    "outcome_code": {"type": "string", "enum": ["POSITIVE", "NEGATIVE", "NEUTRAL", "UNKNOWN"]},
+    "evaluator_type": {"type": "string", "enum": ["HUMAN", "AUTOMATED", "BUSINESS_SYSTEM"]},
+    "occurred_at": {"type": "string", "format": "date-time"}
+  }
+}

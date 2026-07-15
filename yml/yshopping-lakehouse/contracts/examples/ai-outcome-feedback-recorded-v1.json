@@ -1,0 +1,7 @@
+{
+  "event_id": "81000000-0000-4000-8000-000000000041", "event_type": "ai.outcome.feedback.recorded", "schema_version": 1, "tenant_id": 1,
+  "aggregate_type": "ai_outcome_feedback", "aggregate_id": "81000000-0000-4000-8000-000000000042", "aggregate_version": 1, "event_sequence": 1,
+  "idempotency_key": "ai-feedback-example-1:event", "correlation_id": "81000000-0000-4000-8000-000000000003", "causation_id": "81000000-0000-4000-8000-000000000021",
+  "occurred_at": "2026-07-16T02:03:00.000Z", "recorded_at": "2026-07-16T02:03:00.100Z", "source_system": "cloudmold-ai-operations",
+  "payload": {"feedback_id": "81000000-0000-4000-8000-000000000042", "run_id": "81000000-0000-4000-8000-000000000022", "feedback_type": "CORRECTNESS", "outcome_code": "POSITIVE", "evaluator_type": "HUMAN", "occurred_at": "2026-07-16T02:03:00.000Z"}
+}

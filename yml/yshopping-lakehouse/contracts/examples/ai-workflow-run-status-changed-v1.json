@@ -1,0 +1,7 @@
+{
+  "event_id": "81000000-0000-4000-8000-000000000021", "event_type": "ai.workflow.run.status_changed", "schema_version": 1, "tenant_id": 1,
+  "aggregate_type": "ai_workflow_run", "aggregate_id": "81000000-0000-4000-8000-000000000022", "aggregate_version": 1, "event_sequence": 1,
+  "idempotency_key": "ai-run-example-1:event", "correlation_id": "81000000-0000-4000-8000-000000000003", "causation_id": null,
+  "occurred_at": "2026-07-16T02:02:00.000Z", "recorded_at": "2026-07-16T02:02:00.100Z", "source_system": "cloudmold-ai-operations",
+  "payload": {"run_id": "81000000-0000-4000-8000-000000000022", "application_id": "81000000-0000-4000-8000-000000000002", "workflow_id": "81000000-0000-4000-8000-000000000012", "workflow_version": 1, "trigger_type": "SCHEDULED", "current_status": "RUNNING", "expected_invocation_count": 1, "started_at": "2026-07-16T02:02:00.000Z", "operation": "START_WORKFLOW_RUN"}
+}

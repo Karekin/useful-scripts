@@ -1,0 +1,7 @@
+{
+  "event_id": "81000000-0000-4000-8000-000000000011", "event_type": "ai.workflow.version.published", "schema_version": 1, "tenant_id": 1,
+  "aggregate_type": "ai_workflow", "aggregate_id": "81000000-0000-4000-8000-000000000012", "aggregate_version": 1, "event_sequence": 1,
+  "idempotency_key": "ai-workflow-example-1:event", "correlation_id": "81000000-0000-4000-8000-000000000003", "causation_id": null,
+  "occurred_at": "2026-07-16T02:01:00.000Z", "recorded_at": "2026-07-16T02:01:00.100Z", "source_system": "cloudmold-ai-operations",
+  "payload": {"workflow_id": "81000000-0000-4000-8000-000000000012", "workflow_code": "RISK_REVIEW", "application_id": "81000000-0000-4000-8000-000000000002", "workflow_version": 1, "definition_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "published_at": "2026-07-16T02:01:00.000Z", "operation": "PUBLISH_WORKFLOW_VERSION"}
+}

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/risk-feedback-recorded-v1.schema.json",
+  "title": "risk.feedback.recorded payload v1", "type": "object", "additionalProperties": false,
+  "required": ["feedback_id", "decision_id", "case_id", "feedback_type", "reason_code", "recorded_by_principal_id", "occurred_at"],
+  "properties": {
+    "feedback_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "decision_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "case_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "feedback_type": {"type": "string", "enum": ["CONFIRMED", "CORRECTED", "NOT_ACTIONABLE", "NEEDS_REVIEW"]}, "reason_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_-]{1,63}$"},
+    "recorded_by_principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "occurred_at": {"type": "string", "format": "date-time"}
+  }
+}

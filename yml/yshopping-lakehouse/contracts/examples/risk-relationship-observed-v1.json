@@ -1,0 +1,7 @@
+{
+  "event_id": "83000000-0000-4000-8000-000000000021", "event_type": "risk.relationship.observed", "schema_version": 1, "tenant_id": 1,
+  "aggregate_type": "risk_relationship", "aggregate_id": "83000000-0000-4000-8000-000000000022", "aggregate_version": 1, "event_sequence": 1,
+  "idempotency_key": "risk-relationship-example-1:event", "correlation_id": "83000000-0000-4000-8000-000000000003", "causation_id": "83000000-0000-4000-8000-000000000011",
+  "occurred_at": "2026-07-16T04:02:00.000Z", "recorded_at": "2026-07-16T04:02:00.100Z", "source_system": "cloudmold-risk",
+  "payload": {"relation_id": "83000000-0000-4000-8000-000000000022", "subject_principal_id": "83000000-0000-4000-8000-000000000013", "related_principal_id": "83000000-0000-4000-8000-000000000014", "medium_type": "DEVICE", "medium_token": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "key_version": 1, "first_seen_at": "2026-07-15T04:00:00.000Z", "last_seen_at": "2026-07-16T04:02:00.000Z", "confidence_basis_points": 9000}
+}

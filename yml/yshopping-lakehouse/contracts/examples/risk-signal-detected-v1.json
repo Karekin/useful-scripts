@@ -1,0 +1,7 @@
+{
+  "event_id": "83000000-0000-4000-8000-000000000011", "event_type": "risk.signal.detected", "schema_version": 1, "tenant_id": 1,
+  "aggregate_type": "risk_signal", "aggregate_id": "83000000-0000-4000-8000-000000000012", "aggregate_version": 1, "event_sequence": 1,
+  "idempotency_key": "risk-signal-example-1:event", "correlation_id": "83000000-0000-4000-8000-000000000003", "causation_id": null,
+  "occurred_at": "2026-07-16T04:01:00.000Z", "recorded_at": "2026-07-16T04:01:00.100Z", "source_system": "cloudmold-risk",
+  "payload": {"signal_id": "83000000-0000-4000-8000-000000000012", "subject_principal_id": "83000000-0000-4000-8000-000000000013", "policy_id": "83000000-0000-4000-8000-000000000002", "policy_version": 1, "signal_type": "DEVICE_IP_SWITCH", "severity": "HIGH", "evidence_ref": "restricted:feature_snapshot_001", "occurred_at": "2026-07-16T04:01:00.000Z"}
+}

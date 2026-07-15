@@ -1,0 +1,7 @@
+{
+  "event_id": "83000000-0000-4000-8000-000000000051", "event_type": "risk.decision.recorded", "schema_version": 1, "tenant_id": 1,
+  "aggregate_type": "risk_decision", "aggregate_id": "83000000-0000-4000-8000-000000000052", "aggregate_version": 1, "event_sequence": 1,
+  "idempotency_key": "risk-decision-example-1:event", "correlation_id": "83000000-0000-4000-8000-000000000003", "causation_id": "83000000-0000-4000-8000-000000000041",
+  "occurred_at": "2026-07-16T04:05:00.000Z", "recorded_at": "2026-07-16T04:05:00.100Z", "source_system": "cloudmold-risk",
+  "payload": {"decision_id": "83000000-0000-4000-8000-000000000052", "case_id": "83000000-0000-4000-8000-000000000042", "cluster_id": "83000000-0000-4000-8000-000000000032", "decision_type": "ESCALATE", "reason_code": "NEEDS_MANUAL_EVIDENCE", "decided_by_principal_id": "83000000-0000-4000-8000-000000000004", "occurred_at": "2026-07-16T04:05:00.000Z"}
+}

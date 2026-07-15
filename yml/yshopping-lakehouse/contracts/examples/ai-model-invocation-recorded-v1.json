@@ -1,0 +1,7 @@
+{
+  "event_id": "81000000-0000-4000-8000-000000000031", "event_type": "ai.model.invocation.recorded", "schema_version": 1, "tenant_id": 1,
+  "aggregate_type": "ai_model_invocation", "aggregate_id": "81000000-0000-4000-8000-000000000032", "aggregate_version": 1, "event_sequence": 1,
+  "idempotency_key": "ai-invocation-example-1:event", "correlation_id": "81000000-0000-4000-8000-000000000003", "causation_id": "81000000-0000-4000-8000-000000000021",
+  "occurred_at": "2026-07-16T02:02:01.000Z", "recorded_at": "2026-07-16T02:02:01.100Z", "source_system": "cloudmold-ai-operations",
+  "payload": {"attempt_id": "81000000-0000-4000-8000-000000000032", "run_id": "81000000-0000-4000-8000-000000000022", "application_id": "81000000-0000-4000-8000-000000000002", "workflow_id": "81000000-0000-4000-8000-000000000012", "provider_code": "INTERNAL_TEST", "model_code": "TEST_MODEL", "attempt_no": 1, "outcome": "SUCCEEDED", "input_tokens": 100, "cached_input_tokens": 20, "output_tokens": 25, "total_tokens": 125, "latency_millis": 800, "cost_amount_minor": 2, "currency_code": "CNY", "pricing_version_ref": "TEST_PRICE_V1", "occurred_at": "2026-07-16T02:02:01.000Z"}
+}

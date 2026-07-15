@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/risk-signal-detected-v1.schema.json",
+  "title": "risk.signal.detected payload v1", "type": "object", "additionalProperties": false,
+  "required": ["signal_id", "subject_principal_id", "policy_id", "policy_version", "signal_type", "severity", "evidence_ref", "occurred_at"],
+  "properties": {
+    "signal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "subject_principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "policy_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "policy_version": {"type": "integer", "minimum": 1}, "signal_type": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$"},
+    "severity": {"type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]}, "evidence_ref": {"type": "string", "pattern": "^(sha256:[0-9a-f]{64}|restricted:[A-Za-z0-9_-]{16,128})$"},
+    "occurred_at": {"type": "string", "format": "date-time"}
+  }
+}

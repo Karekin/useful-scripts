@@ -1,0 +1,7 @@
+{
+  "event_id": "82000000-0000-4000-8000-000000000031", "event_type": "token_platform.invocation.usage_recorded", "schema_version": 1, "tenant_id": 1,
+  "aggregate_type": "token_platform_invocation_usage", "aggregate_id": "82000000-0000-4000-8000-000000000032", "aggregate_version": 1, "event_sequence": 1,
+  "idempotency_key": "token-usage-example-1:event", "correlation_id": "82000000-0000-4000-8000-000000000003", "causation_id": "82000000-0000-4000-8000-000000000021",
+  "occurred_at": "2026-07-16T03:03:00.000Z", "recorded_at": "2026-07-16T03:03:00.100Z", "source_system": "cloudmold-token-platform",
+  "payload": {"usage_id": "82000000-0000-4000-8000-000000000032", "request_id": "REQ-001", "principal_id": "82000000-0000-4000-8000-000000000013", "credential_id": "82000000-0000-4000-8000-000000000012", "offering_id": "82000000-0000-4000-8000-000000000002", "provider_code": "INTERNAL_TEST", "model_code": "TEST_MODEL", "result_status": "SUCCEEDED", "input_tokens": 100, "cached_input_tokens": 20, "output_tokens": 25, "total_tokens": 125, "duration_millis": 800, "quota_cost_microunits": 2500, "pricing_version_id": "82000000-0000-4000-8000-000000000033", "ledger_entry_id": "82000000-0000-4000-8000-000000000034", "occurred_at": "2026-07-16T03:03:00.000Z"}
+}

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/risk-relationship-observed-v1.schema.json",
+  "title": "risk.relationship.observed payload v1", "type": "object", "additionalProperties": false,
+  "required": ["relation_id", "subject_principal_id", "related_principal_id", "medium_type", "medium_token", "key_version", "first_seen_at", "last_seen_at", "confidence_basis_points"],
+  "properties": {
+    "relation_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "subject_principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "related_principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "medium_type": {"type": "string", "enum": ["PHONE", "DEVICE", "IP", "ADDRESS", "PAYMENT_ACCOUNT"]}, "medium_token": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "key_version": {"type": "integer", "minimum": 1}, "first_seen_at": {"type": "string", "format": "date-time"}, "last_seen_at": {"type": "string", "format": "date-time"},
+    "confidence_basis_points": {"type": "integer", "minimum": 0, "maximum": 10000}
+  }
+}

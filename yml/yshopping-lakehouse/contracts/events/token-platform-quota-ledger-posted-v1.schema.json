@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/token-platform-quota-ledger-posted-v1.schema.json",
+  "title": "token_platform.quota.ledger_posted payload v1", "type": "object", "additionalProperties": false,
+  "required": ["account_id", "ledger_entry_id", "principal_id", "entry_type", "signed_delta_microunits", "balance_after_microunits", "reference_type", "reference_id", "occurred_at"],
+  "properties": {
+    "account_id": {"type": "string", "minLength": 1, "maxLength": 64}, "ledger_entry_id": {"type": "string", "minLength": 1, "maxLength": 64}, "principal_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "entry_type": {"type": "string", "enum": ["OPENING", "ALLOCATION", "ADJUSTMENT", "REVERSAL", "EXPIRATION", "INVOCATION_USAGE"]},
+    "signed_delta_microunits": {"type": "integer"}, "balance_after_microunits": {"type": "integer", "minimum": 0},
+    "reference_type": {"type": "string", "minLength": 1, "maxLength": 64}, "reference_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "occurred_at": {"type": "string", "format": "date-time"}
+  }
+}

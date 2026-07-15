@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/risk-policy-version-published-v1.schema.json",
+  "title": "risk.policy.version_published payload v1", "type": "object", "additionalProperties": false,
+  "required": ["policy_id", "policy_code", "policy_version", "rules_sha256", "current_status", "approved_by_principal_id", "effective_from", "operation"],
+  "properties": {
+    "policy_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "policy_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_-]{1,63}$"}, "policy_version": {"type": "integer", "minimum": 1},
+    "rules_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "previous_status": {"type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]*$"},
+    "current_status": {"type": "string", "const": "PUBLISHED"}, "approved_by_principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "effective_from": {"type": "string", "format": "date-time"}, "operation": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$"}
+  }
+}

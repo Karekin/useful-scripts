@@ -3,8 +3,8 @@
   "scope": "Y-Shopping business semantics to CloudMold backend authorities and lakehouse models",
   "similarity_score": {
     "method": "surface_coverage_v1",
-    "target_percent": 80.0,
-    "baseline_floor_percent": 82.14,
+    "target_percent": 95.0,
+    "baseline_floor_percent": 95.24,
     "description": "Across non-deferred backend and lakehouse surfaces, verified/partial=1, legacy_only=0.5 and missing=0. Existing refs and explicit gaps remain mandatory, so status-only promotion cannot pass validation."
   },
   "source_documents": [
@@ -76,6 +76,21 @@
       "description": "用户风控关系中的手机号、IP、地址和设备必须脱敏、限权并声明保留期。"
     },
     {
+      "source_anchor": "ODS:4156-4280,DWD_DWM:13684-13864,ADS:4353-4405",
+      "decision": "secure",
+      "description": "AI 工作流只沉淀运行身份、状态、Token、耗时、成本和结构化效果；prompt、response、graph、凭据和错误堆栈不得进入公共事件或分析层。"
+    },
+    {
+      "source_anchor": "ODS:7773-8144,DIM:1773-1977,DWD_DWM:14423-14846,DWS:1521-1653,ADS:4404-4602",
+      "decision": "normalize",
+      "description": "Token 平台拒绝明文 password/api_key/email/IP/prompt 入仓；quota 使用整数 microunits，模型定价使用不可变版本，人民币支付继续由 Pay 以 amount_minor + currency 负责。"
+    },
+    {
+      "source_anchor": "main:2758-2808,2811-3267,3272-3317",
+      "decision": "correct",
+      "description": "风控原型策略缺 S02、窗口和金额口径混用且直接输出关系明文；CloudMold 使用审批后的版本化规则、tenant-scoped keyed HMAC 介质、人工复核与可撤销反馈，禁止模型自动处罚。"
+    },
+    {
       "source_anchor": "ODS:7476-7616,DIM:2683-2891,ADS:7528-8040",
       "decision": "split",
       "description": "Merchant、LegalEntity、Shop、Principal 与来源账号是不同实体；拒绝将 seller_id、spu_publish_user_id 或 user_id 直接强转为 merchant_id。"
@@ -121,8 +136,8 @@
       "ADS": {"candidate_names": 57, "create_targets": 48, "insert_targets": 42, "dependency_edges": 116, "unresolved_edges": 8}
     },
     "totals": {"candidate_names": 664, "create_targets": 440, "insert_targets": 261, "dependency_edges": 634, "unresolved_edges": 40},
-    "current_model_sql_files": 142,
-    "current_model_targets": 173,
+    "current_model_sql_files": 154,
+    "current_model_targets": 207,
     "known_high_confidence_issues": [
       "DWD 子订单当日任务误从主订单 ODS 取数，且子订单 DDL 缺逗号。",
       "SCM 操作 DDL 缺逗号并重复 operator_name。",
@@ -675,28 +690,28 @@
       "source_anchor": "main:1494-2207",
       "target_processes": ["工作流调用", "Token 与耗时", "异常", "情报研判", "客服自动化", "社区红蓝军", "资产指标标签问答", "任务和表治理", "告警降噪"],
       "backend": {
-        "status": "legacy_only",
-        "refs": ["yudao-cloud/yudao-module-ai"],
-        "gaps": ["AI 模块当前未纳入根构建", "目标工作流运行事实与业务效果反馈未逐项验证"]
+        "status": "partial",
+        "refs": ["yudao-cloud/cloudmold-module-ai-operations"],
+        "gaps": ["已建立无原文的 Application/WorkflowVersion/Run/Invocation/Feedback 权威首切片；真实 Provider/Dify 接入、情报/客服/社区/元数据业务效果、历史回填和生产多租户仍未完成"]
       },
-      "lakehouse": {"status": "missing", "refs": [], "gaps": ["AI 调用、质量、成本和效果模型未迁移"]},
-      "next_gate": "核心业务域稳定后，先建立无 PII 的 AI 调用事实和成本质量指标。"
+      "lakehouse": {"status": "partial", "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-ai-operations-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-ai-operations-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-ai-operations-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-ai-operations-readiness.sql"], "gaps": ["工作流运行、模型调用和效果反馈已形成 DWD/DIM/DWS/ADS；尚无真实 Provider 非空流量、完整成本、业务质量准确率或历史回填"]},
+      "next_gate": "接入一个受控内部 Provider 流量，完成 Run→Invocation→Feedback 非空对账和成本覆盖率验证。"
     },
     {
       "id": "token_platform",
       "source_anchor": "main:2498-2695",
       "target_processes": ["注册登录", "钱包", "充值", "兑换", "令牌", "模型广场", "模型调用", "AI 画布", "Skill 商城"],
-      "backend": {"status": "missing", "refs": [], "gaps": ["Token 平台不是当前电商后端能力"]},
-      "lakehouse": {"status": "missing", "refs": [], "gaps": ["Token 用户画像和模型消耗模型未迁移"]},
-      "next_gate": "保持在 M2 之后，除非公司内部 Token 评估成为明确需求。"
+      "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-token-platform"], "gaps": ["已建立 ModelOffering/PricingVersion、无密钥凭据元数据、Quota 不可变账本和 InvocationUsage；人民币充值到账、兑换、画布、Skill 商城、套餐和真实 Secret Manager 接入未完成"]},
+      "lakehouse": {"status": "partial", "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-token-platform-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-token-platform-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-token-platform-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-token-platform-readiness.sql"], "gaps": ["用户/模型用量和 quota-ledger 对账模型已落地；真实用量、充值因果、跨系统 Principal 映射、成本结算与非空画像尚未完成"]},
+      "next_gate": "接入公司内部受控调用计量，验证 Usage→PricingVersion→QuotaLedger 精确守恒，再评估 Pay 充值适配。"
     },
     {
       "id": "user_risk_graph",
       "source_anchor": "main:2758-2802,3153-3317",
       "target_processes": ["规则信号", "手机 IP 地址设备建边", "候选团伙", "AI 复核", "人工反馈", "风险 ADS"],
-      "backend": {"status": "missing", "refs": [], "gaps": ["没有版本化风控策略、关系介质和复核闭环"]},
-      "lakehouse": {"status": "missing", "refs": [], "gaps": ["风险特征、关系图和团伙结果模型未迁移", "原型 SQL 存在策略缺号、口径和 PII 风险"]},
-      "next_gate": "先完成用户身份与 PII 契约，再以可解释规则和脱敏关系图建设。"
+      "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-risk"], "gaps": ["已建立审批策略版本、标准化信号、keyed-HMAC 关系边、候选团伙和人工复核/决策/反馈；完整 S01–S12、登录/地址/device 来源适配、申诉撤销和执行结果尚未完成，且禁止自动处罚"]},
+      "lakehouse": {"status": "partial", "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-risk-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-risk-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-risk-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-risk-readiness.sql"], "gaps": ["策略/信号/脱敏关系/团伙/复核事件已分层；真实来源特征、图谱时效撤销、非空人工复核、误伤率和生产策略效果尚未完成"]},
+      "next_gate": "以 S01/S10 两条可解释策略接入受控历史样本，验证脱敏边、人工复核、误伤反馈和无自动执行。"
     }
   ]
 }

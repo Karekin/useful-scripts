@@ -1,0 +1,7 @@
+{
+  "event_id": "82000000-0000-4000-8000-000000000001", "event_type": "token_platform.model_offering.status_changed", "schema_version": 1, "tenant_id": 1,
+  "aggregate_type": "token_platform_model_offering", "aggregate_id": "82000000-0000-4000-8000-000000000002", "aggregate_version": 1, "event_sequence": 1,
+  "idempotency_key": "token-offering-example-1:event", "correlation_id": "82000000-0000-4000-8000-000000000003", "causation_id": null,
+  "occurred_at": "2026-07-16T03:00:00.000Z", "recorded_at": "2026-07-16T03:00:00.100Z", "source_system": "cloudmold-token-platform",
+  "payload": {"offering_id": "82000000-0000-4000-8000-000000000002", "offering_code": "INTERNAL_TEST_MODEL", "provider_code": "INTERNAL_TEST", "model_code": "TEST_MODEL", "previous_status": null, "current_status": "DRAFT", "operation": "CREATE_MODEL_OFFERING"}
+}

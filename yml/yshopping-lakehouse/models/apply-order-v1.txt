@@ -44,6 +44,9 @@ models/dwd/dwd-canonical-warehouse-operator-assignment-event.sql
 models/dwd/dwd-canonical-promotion-event.sql
 models/dwd/dwd-canonical-engagement-event.sql
 models/dwd/dwd-canonical-customer-service-event.sql
+models/dwd/dwd-canonical-ai-operations-event.sql
+models/dwd/dwd-canonical-token-platform-event.sql
+models/dwd/dwd-canonical-risk-event.sql
 models/dwd/dwd-legacy-coupon-current.sql
 models/dwd/dwd-legacy-activity-current.sql
 models/dwd/dwd-legacy-collect-current.sql
@@ -86,6 +89,9 @@ models/dim/dim-canonical-inventory-migration-shadow-window-current.sql
 models/dim/dim-canonical-promotion-current.sql
 models/dim/dim-canonical-engagement-current.sql
 models/dim/dim-canonical-customer-service-current.sql
+models/dim/dim-canonical-ai-operations-current.sql
+models/dim/dim-canonical-token-platform-current.sql
+models/dim/dim-canonical-risk-current.sql
 models/dim/dim-legacy-coupon-current.sql
 models/dim/dim-legacy-activity-current.sql
 models/dim/dim-legacy-collect-current.sql
@@ -113,6 +119,9 @@ models/dws/dws-canonical-warehouse-network-current.sql
 models/dws/dws-canonical-promotion-current.sql
 models/dws/dws-canonical-engagement-current.sql
 models/dws/dws-canonical-customer-service-current.sql
+models/dws/dws-canonical-ai-operations-current.sql
+models/dws/dws-canonical-token-platform-current.sql
+models/dws/dws-canonical-risk-current.sql
 models/dws/dws-legacy-coupon-current.sql
 models/dws/dws-legacy-activity-current.sql
 models/dws/dws-legacy-collect-current.sql
@@ -138,6 +147,9 @@ models/ads/ads-canonical-warehouse-network-readiness.sql
 models/ads/ads-canonical-promotion-readiness.sql
 models/ads/ads-canonical-engagement-readiness.sql
 models/ads/ads-canonical-customer-service-readiness.sql
+models/ads/ads-canonical-ai-operations-readiness.sql
+models/ads/ads-canonical-token-platform-readiness.sql
+models/ads/ads-canonical-risk-readiness.sql
 models/ads/ads-legacy-coupon-current.sql
 models/ads/ads-legacy-activity-current.sql
 models/ads/ads-legacy-collect-current.sql

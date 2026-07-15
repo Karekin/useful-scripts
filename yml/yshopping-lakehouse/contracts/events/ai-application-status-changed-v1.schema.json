@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/ai-application-status-changed-v1.schema.json",
+  "title": "ai.application.status_changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["application_id", "application_code", "name", "current_status", "operation"],
+  "properties": {
+    "application_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,63}$"},
+    "application_code": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"},
+    "name": {"type": "string", "minLength": 1, "maxLength": 128},
+    "previous_status": {"type": "string", "enum": ["DRAFT", "ACTIVE", "SUSPENDED", "RETIRED"]},
+    "current_status": {"type": "string", "enum": ["DRAFT", "ACTIVE", "SUSPENDED", "RETIRED"]},
+    "operation": {"type": "string", "enum": ["REGISTER_APPLICATION", "ACTIVATE_APPLICATION", "SUSPEND_APPLICATION", "RETIRE_APPLICATION"]}
+  }
+}
