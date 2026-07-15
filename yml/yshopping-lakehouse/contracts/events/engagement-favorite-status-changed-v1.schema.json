@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/engagement-favorite-status-changed-v1.schema.json",
+  "title": "engagement.favorite.status_changed payload v1", "type": "object", "additionalProperties": false,
+  "required": ["favorite_id", "principal_id", "canonical_spu_id", "previous_status", "current_status", "behavior_type", "source_system", "source_type", "source_id", "run_id"],
+  "properties": {
+    "favorite_id": {"type": "string", "format": "uuid"}, "principal_id": {"type": "string", "format": "uuid"},
+    "canonical_spu_id": {"type": "string", "format": "uuid"},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "ACTIVE", "REMOVED"]},
+    "current_status": {"type": "string", "enum": ["ACTIVE", "REMOVED"]},
+    "behavior_type": {"type": "string", "enum": ["COLLECT", "UNCOLLECT"]},
+    "source_system": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32},
+    "source_type": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32},
+    "source_id": {"type": "string", "minLength": 1, "maxLength": 128}, "run_id": {"type": "string", "minLength": 1, "maxLength": 64}
+  }
+}

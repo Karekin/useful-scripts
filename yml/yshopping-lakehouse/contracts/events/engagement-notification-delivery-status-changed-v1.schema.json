@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/engagement-notification-delivery-status-changed-v1.schema.json",
+  "title": "engagement.notification.delivery_status_changed payload v1", "type": "object", "additionalProperties": false,
+  "required": ["delivery_id", "delivery_key", "campaign_id", "principal_id", "channel", "previous_status", "current_status", "provider_reference", "run_id"],
+  "properties": {
+    "delivery_id": {"type": "string", "format": "uuid"}, "delivery_key": {"type": "string", "minLength": 8, "maxLength": 128},
+    "campaign_id": {"type": "string", "format": "uuid"}, "principal_id": {"type": "string", "format": "uuid"},
+    "channel": {"type": "string", "enum": ["SMS", "APP_PUSH"]},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "QUEUED", "SENT", "FAILED", "DELIVERED", "OPENED", "CLICKED"]},
+    "current_status": {"type": "string", "enum": ["QUEUED", "SENT", "FAILED", "DELIVERED", "OPENED", "CLICKED"]},
+    "provider_reference": {"type": ["string", "null"], "maxLength": 128}, "run_id": {"type": "string", "minLength": 1, "maxLength": 64}
+  }
+}

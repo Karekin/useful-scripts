@@ -3,8 +3,8 @@
   "scope": "Y-Shopping business semantics to CloudMold backend authorities and lakehouse models",
   "similarity_score": {
     "method": "surface_coverage_v1",
-    "target_percent": 60.0,
-    "baseline_floor_percent": 61.90,
+    "target_percent": 80.0,
+    "baseline_floor_percent": 82.14,
     "description": "Across non-deferred backend and lakehouse surfaces, verified/partial=1, legacy_only=0.5 and missing=0. Existing refs and explicit gaps remain mandatory, so status-only promotion cannot pass validation."
   },
   "source_documents": [
@@ -121,8 +121,8 @@
       "ADS": {"candidate_names": 57, "create_targets": 48, "insert_targets": 42, "dependency_edges": 116, "unresolved_edges": 8}
     },
     "totals": {"candidate_names": 664, "create_targets": 440, "insert_targets": 261, "dependency_edges": 634, "unresolved_edges": 40},
-    "current_model_sql_files": 130,
-    "current_model_targets": 129,
+    "current_model_sql_files": 142,
+    "current_model_targets": 173,
     "known_high_confidence_issues": [
       "DWD 子订单当日任务误从主订单 ODS 取数，且子订单 DDL 缺逗号。",
       "SCM 操作 DDL 缺逗号并重复 operator_name。",
@@ -519,16 +519,16 @@
       "source_anchor": "main:82-90",
       "target_processes": ["活动折扣", "用户助力", "抽奖", "通知", "积分", "奖品", "问卷", "短信或 App 推送"],
       "backend": {
-        "status": "legacy_only",
-        "refs": ["yudao-cloud/yudao-module-mall/yudao-module-promotion-server"],
-        "gaps": ["未建立 CloudMold 活动权威与事件契约", "目标中的助力、抽奖、问卷等过程未逐项验证"]
+        "status": "partial",
+        "refs": ["yudao-cloud/cloudmold-module-promotion", "yudao-cloud/sql/cloudmold/V20260716_26__canonical_promotion_first_slice.sql", "yudao-cloud/yudao-module-mall/yudao-module-promotion-server"],
+        "gaps": ["已建立 tenant-scoped Campaign/Activity 权威、状态机、乐观锁、幂等与 Outbox；legacy Promotion 尚未切换", "助力、抽奖、问卷、积分和奖品仍未形成独立权威过程"]
       },
       "lakehouse": {
         "status": "partial",
-        "refs": ["useful-scripts/yml/yshopping-lakehouse/pipelines/legacy-mall-alignment-mysql-to-starrocks.yaml", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-legacy-activity-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-legacy-activity-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-legacy-activity-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-legacy-activity-current.sql", "useful-scripts/yml/yshopping-lakehouse/tests/sql/22-legacy-coupon-activity-collect-current-state-contract.sql"],
-        "gaps": ["现阶段仅投影 Yudao Promotion 六类活动的 MySQL current-state，尚无规范活动权威、不可变事件历史或 SCD2", "六类 legacy 状态码尚未逐类型规范化，当前 10 行均保留为 UNKNOWN_LEGACY_STATUS", "助力、抽奖、问卷、通知、积分权益和奖品等原型过程仍未逐项覆盖", "源数据中的非法活动时间窗只在 readiness 中显式阻断，尚未完成源端治理"]
+        "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-promotion-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-promotion-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-promotion-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-promotion-readiness.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-legacy-activity-current.sql", "useful-scripts/yml/yshopping-lakehouse/tests/sql/22-legacy-coupon-activity-collect-current-state-contract.sql"],
+        "gaps": ["Campaign 不可变事件、当前态、活动汇总和时间窗 readiness 已建立；legacy 与 canonical 仍为双轨", "助力、抽奖、问卷、积分、奖品和独立触达事实仍未逐项覆盖", "规范当前态不是 SCD2"]
       },
-      "next_gate": "建立规范活动权威和版本化事件，修复源端时间窗，并逐过程补齐助力、抽奖、问卷、通知、积分与奖品事实。"
+      "next_gate": "接入 legacy adapter 与非空事件对账，再逐过程补齐助力、抽奖、问卷、积分与奖品。"
     },
     {
       "id": "game",
@@ -543,36 +543,36 @@
       "source_anchor": "main:99-103,835-842",
       "target_processes": ["津贴", "优惠券发放", "抢券", "退回", "模板", "活动", "订单分摊", "退款回退"],
       "backend": {
-        "status": "legacy_only",
-        "refs": ["yudao-cloud/yudao-module-mall/yudao-module-promotion-server"],
-        "gaps": ["尚未与规范订单建立可审计的优惠分摊和退款回退契约"]
+        "status": "partial",
+        "refs": ["yudao-cloud/cloudmold-module-promotion", "yudao-cloud/sql/cloudmold/V20260716_26__canonical_promotion_first_slice.sql", "yudao-cloud/yudao-module-mall/yudao-module-promotion-server"],
+        "gaps": ["已建立 Campaign、CouponTemplate、CouponEntitlement、金额快照、状态账本、幂等和 Outbox", "订单项级优惠分摊、退款回退、批次/配额、复杂叠加与 legacy adapter 未完成"]
       },
-      "lakehouse": {"status": "partial", "refs": ["useful-scripts/yml/yshopping-lakehouse/pipelines/legacy-mall-alignment-mysql-to-starrocks.yaml", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-legacy-coupon-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-legacy-coupon-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-legacy-coupon-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-legacy-coupon-current.sql", "useful-scripts/yml/yshopping-lakehouse/tests/sql/22-legacy-coupon-activity-collect-current-state-contract.sql"], "gaps": ["现阶段只投影 legacy 模板和用户券 current-state，不是规范 Campaign/Entitlement 生命周期、不可变事件历史或 SCD2", "抢券、津贴、独立退回流水、订单项级分摊、平台/商家资金方和退款回退仍缺失", "legacy user_id/use_order_id 仅保留为来源标识，尚未映射规范 Principal/Order；已使用券缺可验证订单关联"]},
-      "next_gate": "建立规范 Template/Campaign/Entitlement、Order-owned 不可变订单项分摊及 AfterSale 引用原分摊的回退账本。"
+      "lakehouse": {"status": "partial", "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-promotion-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-promotion-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-promotion-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-promotion-readiness.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-legacy-coupon-current.sql", "useful-scripts/yml/yshopping-lakehouse/tests/sql/22-legacy-coupon-activity-collect-current-state-contract.sql"], "gaps": ["Template/Entitlement 版本化事件、当前态、权益汇总与孤儿权益 readiness 已建立", "订单项分摊、退款回退、配额和 legacy Principal/Order 映射仍缺失", "规范当前态不是 SCD2"]},
+      "next_gate": "接入 Order-owned 不可变订单项分摊及 AfterSale 引用原分摊的回退账本，并完成 legacy 受控迁移。"
     },
     {
       "id": "push",
       "source_anchor": "main:104,844-849",
       "target_processes": ["短信发送", "App 推送", "投递结果", "营销触达"],
       "backend": {
-        "status": "legacy_only",
-        "refs": ["yudao-cloud/yudao-module-system"],
-        "gaps": ["目标推送过程未形成稳定业务事件与效果回流"]
+        "status": "partial",
+        "refs": ["yudao-cloud/cloudmold-module-engagement", "yudao-cloud/sql/cloudmold/V20260716_27__canonical_engagement_first_slice.sql", "yudao-cloud/yudao-module-system"],
+        "gaps": ["已建立 SMS/App Push Campaign、Delivery、Attempt、Receipt 与效果状态回流", "真实供应商 adapter、模板治理、退订和限流未完成"]
       },
-      "lakehouse": {"status": "missing", "refs": [], "gaps": ["推送日志和触达效果模型未迁移"]},
-      "next_gate": "用户 360 与营销权益具备后再建设触达闭环。"
+      "lakehouse": {"status": "partial", "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-engagement-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-engagement-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-engagement-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-engagement-readiness.sql"], "gaps": ["投递、尝试、回执、效果当前态和缺失尝试 readiness 已建立", "尚无真实供应商非空投递、成本、退订与模板维度"]},
+      "next_gate": "接真实 SMS/App Push adapter，并以同一 run_id 对账投递、回执、效果和成本。"
     },
     {
       "id": "customer_service",
       "source_anchor": "main:105-107,648-678",
       "target_processes": ["工单", "工单订单关联", "留言", "多轮会话", "附件", "质检", "客诉风控", "赔付或理赔"],
       "backend": {
-        "status": "legacy_only",
-        "refs": ["yudao-cloud/yudao-module-crm"],
-        "gaps": ["CRM 不能证明覆盖目标客服工单语义", "缺少理赔、质检和逐消息 AI 事实契约"]
+        "status": "partial",
+        "refs": ["yudao-cloud/cloudmold-module-customer-service", "yudao-cloud/sql/cloudmold/V20260716_28__canonical_customer_service_first_slice.sql", "yudao-cloud/yudao-module-crm"],
+        "gaps": ["已建立独立 Ticket、qualified Order/AfterSale Link、PII-safe Message/Attachment、QualityReview、Claim/Compensation、幂等、版本与 Outbox", "实时会话路由、SLA 升级、真实赔付 adapter、风控自动化、申诉仲裁和历史迁移未完成"]
       },
-      "lakehouse": {"status": "missing", "refs": [], "gaps": ["客服与理赔 DWD/DWM/ADS 未迁移"]},
-      "next_gate": "售后模型稳定后建立独立 Ticket/Claim SoR，按 message 粒度输出 AI 客服事实。"
+      "lakehouse": {"status": "partial", "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-customer-service-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-customer-service-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-customer-service-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-customer-service-readiness.sql"], "gaps": ["PII-safe 工单、消息、附件、质检、理赔 DWD/DIM/DWS/ADS 已建立", "尚无真实赔付流水、SLA、AI 推理结果、风控与历史工单非空对账"]},
+      "next_gate": "接 Pay/Trade 赔付 adapter 与 SLA/风险事实，完成 legacy CRM/客服历史映射和非空对账。"
     },
     {
       "id": "user_identity",
@@ -600,21 +600,21 @@
       "id": "advertising",
       "source_anchor": "main:118-120",
       "target_processes": ["广告展示", "广告点击", "归因"],
-      "backend": {"status": "missing", "refs": [], "gaps": ["未建立广告投放与归因上下文"]},
-      "lakehouse": {"status": "missing", "refs": [], "gaps": ["展示、点击与归因模型未迁移"]},
-      "next_gate": "作为 M2 扩展域，在商品、商家和用户身份稳定后建设。"
+      "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-promotion", "yudao-cloud/sql/cloudmold/V20260716_26__canonical_promotion_first_slice.sql"], "gaps": ["已建立 Placement 与 IMPRESSION→CLICK→ATTRIBUTION 不可变血缘、去重和金额归因", "素材、预算、竞价、受众、频控、订单归因窗口与 legacy adapter 未完成"]},
+      "lakehouse": {"status": "partial", "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-promotion-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-promotion-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-promotion-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-promotion-readiness.sql"], "gaps": ["展示、点击、归因事件与血缘异常 readiness 已建立", "预算消耗、受众、频控和多触点归因模型未完成"]},
+      "next_gate": "以真实流量完成非空展示→点击→订单归因对账，再补预算、频控和多触点窗口。"
     },
     {
       "id": "collect",
       "source_anchor": "main:121-123,2716-2750",
       "target_processes": ["SPU 收藏", "收藏提醒", "用户偏好"],
       "backend": {
-        "status": "legacy_only",
-        "refs": ["yudao-cloud/yudao-module-mall/yudao-module-product-server"],
-        "gaps": ["未形成规范行为事件与提醒效果闭环"]
+        "status": "partial",
+        "refs": ["yudao-cloud/cloudmold-module-engagement", "yudao-cloud/sql/cloudmold/V20260716_27__canonical_engagement_first_slice.sql", "yudao-cloud/yudao-module-mall/yudao-module-product-server"],
+        "gaps": ["已建立 Principal+canonical SPU 唯一收藏状态、COLLECT/UNCOLLECT 不可变行为、幂等和 Outbox", "Catalog SPU/Identity adapter、提醒编排、用户偏好画像和 legacy 迁移未完成"]
       },
-      "lakehouse": {"status": "partial", "refs": ["useful-scripts/yml/yshopping-lakehouse/pipelines/legacy-mall-alignment-mysql-to-starrocks.yaml", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-legacy-collect-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-legacy-collect-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-legacy-collect-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-legacy-collect-current.sql", "useful-scripts/yml/yshopping-lakehouse/tests/sql/22-legacy-coupon-activity-collect-current-state-contract.sql"], "gaps": ["现阶段只投影 Product Favorite current-state；尽管 SPU ODS 已存在，仍未做规范 Catalog 关联、行为事件历史或 SCD2", "收藏提醒、触达效果、用户偏好画像和 canonical Principal/SPU 身份映射仍未形成闭环"]},
-      "next_gate": "建立规范收藏行为事件、Principal/SPU 映射、提醒触达效果，并接入用户 360 的时态偏好模型。"
+      "lakehouse": {"status": "partial", "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-engagement-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-engagement-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-engagement-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-engagement-readiness.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-legacy-collect-current.sql"], "gaps": ["收藏状态与行为事件、当前态、汇总及缺失行为 readiness 已建立", "canonical Principal/SPU adapter、提醒效果、偏好画像、legacy 回填和 SCD2 未完成"]},
+      "next_gate": "补公开 Catalog SPU/Identity adapter、legacy 映射和非空收藏事件对账，再接提醒效果与用户 360。"
     },
     {
       "id": "metadata",
@@ -644,9 +644,9 @@
       "id": "community",
       "source_anchor": "main:910-912,1273-1357,2716-2750",
       "target_processes": ["动态", "评论", "分享", "喜欢", "关注", "搜索", "私信", "举报", "申诉", "直播", "分佣", "机审", "人审", "质检", "回查", "内容分发"],
-      "backend": {"status": "missing", "refs": [], "gaps": ["未建立社区内容与审核上下文"]},
-      "lakehouse": {"status": "missing", "refs": [], "gaps": ["社区行为、审核和经营模型未迁移"]},
-      "next_gate": "作为 M2 扩展域，先明确内容、审核和用户身份的边界。"
+      "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-engagement", "yudao-cloud/sql/cloudmold/V20260716_27__canonical_engagement_first_slice.sql"], "gaps": ["已建立 POST/COMMENT 内容、COMMENT/LIKE/SHARE/FOLLOW 行为与举报审核联动", "搜索、私信、申诉、直播、分佣、机审、人审质检、分发和 legacy adapter 未完成"]},
+      "lakehouse": {"status": "partial", "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-engagement-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-engagement-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-engagement-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-engagement-readiness.sql"], "gaps": ["内容、交互、审核 DWD/DIM/DWS/ADS 与待审核 readiness 已建立", "搜索、私信、直播、分佣、审核效率、分发和历史迁移未完成"]},
+      "next_gate": "补 Identity adapter、真实内容非空对账，再建设申诉、机审/人审质检与分发效果。"
     },
     {
       "id": "supply_chain_quality",

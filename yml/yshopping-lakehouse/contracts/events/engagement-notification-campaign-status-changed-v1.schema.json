@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/engagement-notification-campaign-status-changed-v1.schema.json",
+  "title": "engagement.notification.campaign_status_changed payload v1", "type": "object", "additionalProperties": false,
+  "required": ["campaign_id", "campaign_code", "channel", "campaign_name", "previous_status", "current_status", "source_system", "source_type", "source_id", "run_id"],
+  "properties": {
+    "campaign_id": {"type": "string", "format": "uuid"}, "campaign_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "channel": {"type": "string", "enum": ["SMS", "APP_PUSH"]}, "campaign_name": {"type": "string", "minLength": 1, "maxLength": 128},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "DRAFT", "ACTIVE", "PAUSED", "COMPLETED"]},
+    "current_status": {"type": "string", "enum": ["DRAFT", "ACTIVE", "PAUSED", "COMPLETED"]},
+    "source_system": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32},
+    "source_type": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32},
+    "source_id": {"type": "string", "minLength": 1, "maxLength": 128}, "run_id": {"type": "string", "minLength": 1, "maxLength": 64}
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/promotion-coupon-entitlement-state-changed-v1.schema.json",
+  "title": "promotion.coupon_entitlement.state_changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["entitlement_id", "entitlement_code", "template_id", "principal_id", "previous_status", "current_status", "face_amount_minor", "threshold_minor", "currency_code", "operation", "ledger_entry_id"],
+  "properties": {
+    "entitlement_id": {"type": "string", "format": "uuid"},
+    "entitlement_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "template_id": {"type": "string", "format": "uuid"},
+    "campaign_id": {"type": "string", "format": "uuid"},
+    "principal_id": {"type": "string", "format": "uuid"},
+    "order_ref": {"type": ["string", "null"], "maxLength": 128},
+    "previous_status": {"type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32},
+    "current_status": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32},
+    "face_amount_minor": {"type": "integer", "minimum": 0},
+    "threshold_minor": {"type": "integer", "minimum": 0},
+    "currency_code": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "operation": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32},
+    "ledger_entry_id": {"type": "string", "format": "uuid"},
+    "reason": {"type": ["string", "null"], "maxLength": 256}
+  }
+}

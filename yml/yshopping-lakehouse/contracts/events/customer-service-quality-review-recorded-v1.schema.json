@@ -1,0 +1,6 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://cloudmold.local/contracts/customer-service-quality-review-recorded-v1.schema.json",
+  "title":"customer_service.quality_review.recorded payload v1","type":"object","additionalProperties":false,
+  "required":["run_id","review_id","ticket_id","reviewer_principal_id","score_basis_points","outcome_code","reason_code"],
+  "properties":{"run_id":{"type":"string","minLength":1,"maxLength":64},"review_id":{"type":"string","format":"uuid"},"ticket_id":{"type":"string","format":"uuid"},"reviewer_principal_id":{"type":"string","format":"uuid"},"score_basis_points":{"type":"integer","minimum":0,"maximum":10000},"outcome_code":{"type":"string","minLength":1,"maxLength":64},"reason_code":{"type":["string","null"],"maxLength":64}}
+}

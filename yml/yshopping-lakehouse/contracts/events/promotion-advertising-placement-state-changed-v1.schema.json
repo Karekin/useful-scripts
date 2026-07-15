@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/promotion-advertising-placement-state-changed-v1.schema.json",
+  "title": "promotion.advertising_placement.state_changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["placement_id", "placement_code", "campaign_id", "name", "channel_code", "page_code", "slot_code", "creative_ref", "valid_from", "valid_to", "previous_status", "current_status", "operation"],
+  "properties": {
+    "placement_id": {"type": "string", "format": "uuid"},
+    "placement_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "campaign_id": {"type": "string", "format": "uuid"},
+    "name": {"type": "string", "minLength": 1, "maxLength": 128},
+    "channel_code": {"type": "string", "minLength": 1, "maxLength": 32},
+    "page_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "slot_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "creative_ref": {"type": "string", "minLength": 1, "maxLength": 256},
+    "valid_from": {"type": "string", "format": "date-time"},
+    "valid_to": {"type": "string", "format": "date-time"},
+    "previous_status": {"type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32},
+    "current_status": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32},
+    "operation": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32}
+  }
+}

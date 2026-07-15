@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/promotion-coupon-template-state-changed-v1.schema.json",
+  "title": "promotion.coupon_template.state_changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["template_id", "template_code", "title", "benefit_type", "threshold_minor", "currency_code", "funder_type", "valid_from", "valid_to", "previous_status", "current_status", "operation"],
+  "properties": {
+    "template_id": {"type": "string", "format": "uuid"},
+    "template_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "campaign_id": {"type": "string", "format": "uuid"},
+    "title": {"type": "string", "minLength": 1, "maxLength": 128},
+    "benefit_type": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32},
+    "face_amount_minor": {"type": ["integer", "null"], "minimum": 0},
+    "threshold_minor": {"type": "integer", "minimum": 0},
+    "discount_basis_points": {"type": ["integer", "null"], "minimum": 1, "maximum": 10000},
+    "cap_amount_minor": {"type": ["integer", "null"], "minimum": 0},
+    "currency_code": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "funder_type": {"type": "string", "enum": ["PLATFORM", "MERCHANT", "SHARED"]},
+    "merchant_id": {"type": ["string", "null"], "format": "uuid"},
+    "valid_from": {"type": "string", "format": "date-time"},
+    "valid_to": {"type": "string", "format": "date-time"},
+    "previous_status": {"type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32},
+    "current_status": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32},
+    "operation": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32}
+  }
+}

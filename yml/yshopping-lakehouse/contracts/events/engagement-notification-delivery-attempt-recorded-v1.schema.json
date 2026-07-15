@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/engagement-notification-delivery-attempt-recorded-v1.schema.json",
+  "title": "engagement.notification.delivery_attempt_recorded payload v1", "type": "object", "additionalProperties": false,
+  "required": ["attempt_id", "delivery_id", "campaign_id", "attempt_no", "outcome", "provider_reference", "provider_code", "delivery_status", "run_id"],
+  "properties": {
+    "attempt_id": {"type": "string", "format": "uuid"}, "delivery_id": {"type": "string", "format": "uuid"}, "campaign_id": {"type": "string", "format": "uuid"},
+    "attempt_no": {"type": "integer", "minimum": 1}, "outcome": {"type": "string", "enum": ["ACCEPTED", "REJECTED", "FAILED"]},
+    "provider_reference": {"type": ["string", "null"], "maxLength": 128}, "provider_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "delivery_status": {"type": "string", "enum": ["QUEUED", "SENT", "FAILED", "DELIVERED", "OPENED", "CLICKED"]}, "run_id": {"type": "string", "minLength": 1, "maxLength": 64}
+  }
+}

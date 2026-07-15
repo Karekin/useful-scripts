@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/engagement-community-content-status-changed-v1.schema.json",
+  "title": "engagement.community.content_status_changed payload v1", "type": "object", "additionalProperties": false,
+  "required": ["content_id", "author_principal_id", "content_type", "body_ref", "previous_status", "current_status", "source_system", "source_type", "source_id", "run_id"],
+  "properties": {
+    "content_id": {"type": "string", "format": "uuid"}, "author_principal_id": {"type": "string", "format": "uuid"},
+    "content_type": {"type": "string", "enum": ["POST", "COMMENT"]}, "body_ref": {"type": "string", "minLength": 1, "maxLength": 512},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "DRAFT", "PUBLISHED", "HIDDEN", "REMOVED"]},
+    "current_status": {"type": "string", "enum": ["DRAFT", "PUBLISHED", "HIDDEN", "REMOVED"]},
+    "source_system": {"type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32},
+    "source_type": {"type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32},
+    "source_id": {"type": ["string", "null"], "maxLength": 128}, "run_id": {"type": "string", "minLength": 1, "maxLength": 64}
+  }
+}

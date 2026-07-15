@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/engagement-community-moderation-status-changed-v1.schema.json",
+  "title": "engagement.community.moderation_status_changed payload v1", "type": "object", "additionalProperties": false,
+  "required": ["moderation_case_id", "content_id", "reporter_principal_id", "moderator_principal_id", "reason_code", "previous_status", "current_status", "decision", "decision_reason_code", "run_id"],
+  "properties": {
+    "moderation_case_id": {"type": "string", "format": "uuid"}, "content_id": {"type": "string", "format": "uuid"},
+    "reporter_principal_id": {"type": "string", "format": "uuid"}, "moderator_principal_id": {"type": ["string", "null"], "format": "uuid"},
+    "reason_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 64},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "OPEN", "DISMISSED", "ACTIONED"]},
+    "current_status": {"type": "string", "enum": ["OPEN", "DISMISSED", "ACTIONED"]},
+    "decision": {"type": ["string", "null"], "enum": [null, "DISMISS", "HIDE", "REMOVE"]},
+    "decision_reason_code": {"type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 64},
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 64}
+  }
+}

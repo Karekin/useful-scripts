@@ -1,0 +1,27 @@
+{
+  "event_id": "75000000-0000-4000-8000-000000000001",
+  "event_type": "promotion.advertising_interaction.recorded",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "promotion_advertising_interaction",
+  "aggregate_id": "75000000-0000-4000-8000-000000000002",
+  "aggregate_version": 1,
+  "event_sequence": 1,
+  "idempotency_key": "promotion-interaction-example-1:event",
+  "correlation_id": "75000000-0000-4000-8000-000000000003",
+  "causation_id": null,
+  "occurred_at": "2026-07-16T02:20:00.000Z",
+  "recorded_at": "2026-07-16T02:20:00.100Z",
+  "source_system": "cloudmold-promotion",
+  "payload": {
+    "interaction_id": "75000000-0000-4000-8000-000000000002",
+    "interaction_type": "CLICK",
+    "deduplication_key": "session-001:home-hero-01:click",
+    "placement_id": "74000000-0000-4000-8000-000000000002",
+    "campaign_id": "71000000-0000-4000-8000-000000000002",
+    "principal_id": "73000000-0000-4000-8000-000000000004",
+    "session_id": "session-001",
+    "source_interaction_id": "75000000-0000-4000-8000-000000000004",
+    "occurred_at": "2026-07-16T02:20:00.000Z"
+  }
+}

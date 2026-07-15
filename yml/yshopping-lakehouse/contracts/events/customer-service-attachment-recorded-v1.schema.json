@@ -1,0 +1,6 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://cloudmold.local/contracts/customer-service-attachment-recorded-v1.schema.json",
+  "title":"customer_service.attachment.recorded payload v1","type":"object","additionalProperties":false,
+  "required":["run_id","attachment_id","ticket_id","message_id","media_type","object_token","content_sha256","size_bytes","malware_scan_status"],
+  "properties":{"run_id":{"type":"string","minLength":1,"maxLength":64},"attachment_id":{"type":"string","format":"uuid"},"ticket_id":{"type":"string","format":"uuid"},"message_id":{"type":"string","format":"uuid"},"media_type":{"type":"string","minLength":1,"maxLength":128},"object_token":{"type":"string","pattern":"^[A-Za-z0-9._:-]+$","minLength":8,"maxLength":512},"content_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},"size_bytes":{"type":"integer","minimum":0},"malware_scan_status":{"type":"string","enum":["PENDING","CLEAN","BLOCKED"]}}
+}

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/engagement-community-interaction-recorded-v1.schema.json",
+  "title": "engagement.community.interaction_recorded payload v1", "type": "object", "additionalProperties": false,
+  "required": ["interaction_id", "actor_principal_id", "interaction_type", "target_type", "target_id", "payload_ref", "run_id"],
+  "properties": {
+    "interaction_id": {"type": "string", "format": "uuid"}, "actor_principal_id": {"type": "string", "format": "uuid"},
+    "interaction_type": {"type": "string", "enum": ["COMMENT", "LIKE", "SHARE", "FOLLOW"]},
+    "target_type": {"type": "string", "enum": ["CONTENT", "PRINCIPAL"]}, "target_id": {"type": "string", "format": "uuid"},
+    "payload_ref": {"type": ["string", "null"], "maxLength": 256}, "run_id": {"type": "string", "minLength": 1, "maxLength": 64}
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://cloudmold.local/contracts/customer-service-message-recorded-v1.schema.json",
+  "title":"customer_service.message.recorded payload v1","type":"object","additionalProperties":false,
+  "required":["run_id","message_id","ticket_id","direction","sender_type","sender_principal_id","message_type","content_token","attachment_count","occurred_at"],
+  "properties":{"run_id":{"type":"string","minLength":1,"maxLength":64},"message_id":{"type":"string","format":"uuid"},"ticket_id":{"type":"string","format":"uuid"},"direction":{"type":"string","enum":["INBOUND","OUTBOUND","INTERNAL"]},"sender_type":{"type":"string","enum":["CUSTOMER","AGENT","SYSTEM"]},"sender_principal_id":{"type":["string","null"],"format":"uuid"},"message_type":{"type":"string","enum":["TEXT","IMAGE","FILE","SYSTEM_NOTE"]},"content_token":{"type":"string","pattern":"^[A-Za-z0-9._:-]+$","minLength":8,"maxLength":512},"attachment_count":{"type":"integer","minimum":0},"occurred_at":{"type":"string","format":"date-time"}}
+}

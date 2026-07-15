@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/engagement-favorite-behavior-recorded-v1.schema.json",
+  "title": "engagement.favorite.behavior_recorded payload v1", "type": "object", "additionalProperties": false,
+  "required": ["behavior_id", "favorite_id", "principal_id", "canonical_spu_id", "behavior_type", "favorite_status", "run_id"],
+  "properties": {
+    "behavior_id": {"type": "string", "format": "uuid"}, "favorite_id": {"type": "string", "format": "uuid"},
+    "principal_id": {"type": "string", "format": "uuid"}, "canonical_spu_id": {"type": "string", "format": "uuid"},
+    "behavior_type": {"type": "string", "enum": ["COLLECT", "UNCOLLECT"]},
+    "favorite_status": {"type": "string", "enum": ["ACTIVE", "REMOVED"]}, "run_id": {"type": "string", "minLength": 1, "maxLength": 64}
+  }
+}

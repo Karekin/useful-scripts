@@ -2,6 +2,120 @@
   "manifest_version": 1,
   "envelope": "events/domain-event-envelope-v1.schema.json",
   "events": {
+    "promotion.campaign.state_changed": {
+      "schema_version": 1,
+      "aggregate_type": "promotion_campaign",
+      "payload_schema": "events/promotion-campaign-state-changed-v1.schema.json",
+      "example": "examples/promotion-campaign-state-changed-v1.json"
+    },
+    "promotion.coupon_template.state_changed": {
+      "schema_version": 1,
+      "aggregate_type": "promotion_coupon_template",
+      "payload_schema": "events/promotion-coupon-template-state-changed-v1.schema.json",
+      "example": "examples/promotion-coupon-template-state-changed-v1.json"
+    },
+    "promotion.coupon_entitlement.state_changed": {
+      "schema_version": 1,
+      "aggregate_type": "promotion_coupon_entitlement",
+      "payload_schema": "events/promotion-coupon-entitlement-state-changed-v1.schema.json",
+      "example": "examples/promotion-coupon-entitlement-state-changed-v1.json"
+    },
+    "promotion.advertising_placement.state_changed": {
+      "schema_version": 1,
+      "aggregate_type": "promotion_advertising_placement",
+      "payload_schema": "events/promotion-advertising-placement-state-changed-v1.schema.json",
+      "example": "examples/promotion-advertising-placement-state-changed-v1.json"
+    },
+    "promotion.advertising_interaction.recorded": {
+      "schema_version": 1,
+      "aggregate_type": "promotion_advertising_interaction",
+      "payload_schema": "events/promotion-advertising-interaction-recorded-v1.schema.json",
+      "example": "examples/promotion-advertising-interaction-recorded-v1.json"
+    },
+    "engagement.favorite.status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "engagement_favorite",
+      "payload_schema": "events/engagement-favorite-status-changed-v1.schema.json",
+      "example": "examples/engagement-favorite-status-changed-v1.json"
+    },
+    "engagement.favorite.behavior_recorded": {
+      "schema_version": 1,
+      "aggregate_type": "engagement_favorite",
+      "payload_schema": "events/engagement-favorite-behavior-recorded-v1.schema.json",
+      "example": "examples/engagement-favorite-behavior-recorded-v1.json"
+    },
+    "engagement.notification.campaign_status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "notification_campaign",
+      "payload_schema": "events/engagement-notification-campaign-status-changed-v1.schema.json",
+      "example": "examples/engagement-notification-campaign-status-changed-v1.json"
+    },
+    "engagement.notification.delivery_status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "notification_delivery",
+      "payload_schema": "events/engagement-notification-delivery-status-changed-v1.schema.json",
+      "example": "examples/engagement-notification-delivery-status-changed-v1.json"
+    },
+    "engagement.notification.delivery_attempt_recorded": {
+      "schema_version": 1,
+      "aggregate_type": "notification_delivery",
+      "payload_schema": "events/engagement-notification-delivery-attempt-recorded-v1.schema.json",
+      "example": "examples/engagement-notification-delivery-attempt-recorded-v1.json"
+    },
+    "engagement.notification.delivery_receipt_recorded": {
+      "schema_version": 1,
+      "aggregate_type": "notification_delivery",
+      "payload_schema": "events/engagement-notification-delivery-receipt-recorded-v1.schema.json",
+      "example": "examples/engagement-notification-delivery-receipt-recorded-v1.json"
+    },
+    "engagement.community.content_status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "community_content",
+      "payload_schema": "events/engagement-community-content-status-changed-v1.schema.json",
+      "example": "examples/engagement-community-content-status-changed-v1.json"
+    },
+    "engagement.community.interaction_recorded": {
+      "schema_version": 1,
+      "aggregate_type": "community_interaction",
+      "payload_schema": "events/engagement-community-interaction-recorded-v1.schema.json",
+      "example": "examples/engagement-community-interaction-recorded-v1.json"
+    },
+    "engagement.community.moderation_status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "community_moderation_case",
+      "payload_schema": "events/engagement-community-moderation-status-changed-v1.schema.json",
+      "example": "examples/engagement-community-moderation-status-changed-v1.json"
+    },
+    "customer_service.ticket.status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "customer_service_ticket",
+      "payload_schema": "events/customer-service-ticket-status-changed-v1.schema.json",
+      "example": "examples/customer-service-ticket-status-changed-v1.json"
+    },
+    "customer_service.message.recorded": {
+      "schema_version": 1,
+      "aggregate_type": "customer_service_message",
+      "payload_schema": "events/customer-service-message-recorded-v1.schema.json",
+      "example": "examples/customer-service-message-recorded-v1.json"
+    },
+    "customer_service.attachment.recorded": {
+      "schema_version": 1,
+      "aggregate_type": "customer_service_attachment",
+      "payload_schema": "events/customer-service-attachment-recorded-v1.schema.json",
+      "example": "examples/customer-service-attachment-recorded-v1.json"
+    },
+    "customer_service.quality_review.recorded": {
+      "schema_version": 1,
+      "aggregate_type": "customer_service_quality_review",
+      "payload_schema": "events/customer-service-quality-review-recorded-v1.schema.json",
+      "example": "examples/customer-service-quality-review-recorded-v1.json"
+    },
+    "customer_service.claim.status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "customer_service_claim",
+      "payload_schema": "events/customer-service-claim-status-changed-v1.schema.json",
+      "example": "examples/customer-service-claim-status-changed-v1.json"
+    },
     "identity.source.linked": {
       "schema_version": 1,
       "aggregate_type": "identity_principal",

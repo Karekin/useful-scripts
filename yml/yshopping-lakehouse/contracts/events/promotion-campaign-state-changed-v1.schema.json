@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/promotion-campaign-state-changed-v1.schema.json",
+  "title": "promotion.campaign.state_changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["campaign_id", "campaign_code", "campaign_kind", "name", "previous_status", "current_status", "starts_at", "ends_at", "operation"],
+  "properties": {
+    "campaign_id": {"type": "string", "format": "uuid"},
+    "campaign_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "campaign_kind": {"type": "string", "enum": ["ACTIVITY", "COUPON", "ADVERTISING", "GENERAL"]},
+    "name": {"type": "string", "minLength": 1, "maxLength": 128},
+    "previous_status": {"type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32},
+    "current_status": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32},
+    "starts_at": {"type": "string", "format": "date-time"},
+    "ends_at": {"type": "string", "format": "date-time"},
+    "operation": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$", "maxLength": 32}
+  }
+}

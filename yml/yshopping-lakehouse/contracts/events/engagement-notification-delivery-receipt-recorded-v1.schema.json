@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/engagement-notification-delivery-receipt-recorded-v1.schema.json",
+  "title": "engagement.notification.delivery_receipt_recorded payload v1", "type": "object", "additionalProperties": false,
+  "required": ["receipt_id", "delivery_id", "campaign_id", "external_receipt_id", "receipt_status", "delivery_status", "received_at", "run_id"],
+  "properties": {
+    "receipt_id": {"type": "string", "format": "uuid"}, "delivery_id": {"type": "string", "format": "uuid"}, "campaign_id": {"type": "string", "format": "uuid"},
+    "external_receipt_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "receipt_status": {"type": "string", "enum": ["DELIVERED", "FAILED", "OPENED", "CLICKED"]},
+    "delivery_status": {"type": "string", "enum": ["QUEUED", "SENT", "FAILED", "DELIVERED", "OPENED", "CLICKED"]},
+    "received_at": {"type": "string", "format": "date-time"}, "run_id": {"type": "string", "minLength": 1, "maxLength": 64}
+  }
+}

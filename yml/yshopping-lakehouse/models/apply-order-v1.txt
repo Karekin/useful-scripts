@@ -41,6 +41,9 @@ models/dwd/dwd-canonical-merchant-deposit-ledger-event.sql
 models/dwd/dwd-canonical-warehouse-entity-status-event.sql
 models/dwd/dwd-canonical-warehouse-source-mapping-event.sql
 models/dwd/dwd-canonical-warehouse-operator-assignment-event.sql
+models/dwd/dwd-canonical-promotion-event.sql
+models/dwd/dwd-canonical-engagement-event.sql
+models/dwd/dwd-canonical-customer-service-event.sql
 models/dwd/dwd-legacy-coupon-current.sql
 models/dwd/dwd-legacy-activity-current.sql
 models/dwd/dwd-legacy-collect-current.sql
@@ -80,6 +83,9 @@ models/dim/dim-canonical-inventory-migration-qualification-current.sql
 models/dim/dim-canonical-inventory-migration-pilot-batch-current.sql
 models/dim/dim-canonical-inventory-migration-pilot-item-current.sql
 models/dim/dim-canonical-inventory-migration-shadow-window-current.sql
+models/dim/dim-canonical-promotion-current.sql
+models/dim/dim-canonical-engagement-current.sql
+models/dim/dim-canonical-customer-service-current.sql
 models/dim/dim-legacy-coupon-current.sql
 models/dim/dim-legacy-activity-current.sql
 models/dim/dim-legacy-collect-current.sql
@@ -104,6 +110,9 @@ models/dws/dws-canonical-listing-unpublish-saga-current.sql
 models/dws/dws-canonical-merchant-deposit-current.sql
 models/dws/dws-canonical-fulfillment-milestone-current.sql
 models/dws/dws-canonical-warehouse-network-current.sql
+models/dws/dws-canonical-promotion-current.sql
+models/dws/dws-canonical-engagement-current.sql
+models/dws/dws-canonical-customer-service-current.sql
 models/dws/dws-legacy-coupon-current.sql
 models/dws/dws-legacy-activity-current.sql
 models/dws/dws-legacy-collect-current.sql
@@ -126,6 +135,9 @@ models/ads/ads-canonical-merchant-readiness.sql
 models/ads/ads-canonical-listing-unpublish-readiness.sql
 models/ads/ads-canonical-merchant-deposit-readiness.sql
 models/ads/ads-canonical-warehouse-network-readiness.sql
+models/ads/ads-canonical-promotion-readiness.sql
+models/ads/ads-canonical-engagement-readiness.sql
+models/ads/ads-canonical-customer-service-readiness.sql
 models/ads/ads-legacy-coupon-current.sql
 models/ads/ads-legacy-activity-current.sql
 models/ads/ads-legacy-collect-current.sql

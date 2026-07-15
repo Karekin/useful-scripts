@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/promotion-advertising-interaction-recorded-v1.schema.json",
+  "title": "promotion.advertising_interaction.recorded payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["interaction_id", "interaction_type", "deduplication_key", "placement_id", "campaign_id", "occurred_at"],
+  "properties": {
+    "interaction_id": {"type": "string", "format": "uuid"},
+    "interaction_type": {"type": "string", "enum": ["IMPRESSION", "CLICK", "ATTRIBUTION"]},
+    "deduplication_key": {"type": "string", "minLength": 8, "maxLength": 128},
+    "placement_id": {"type": "string", "format": "uuid"},
+    "campaign_id": {"type": "string", "format": "uuid"},
+    "principal_id": {"type": ["string", "null"], "format": "uuid"},
+    "session_id": {"type": ["string", "null"], "maxLength": 128},
+    "source_interaction_id": {"type": ["string", "null"], "format": "uuid"},
+    "order_ref": {"type": ["string", "null"], "maxLength": 128},
+    "attribution_amount_minor": {"type": ["integer", "null"], "minimum": 0},
+    "currency_code": {"type": ["string", "null"], "pattern": "^[A-Z]{3}$"},
+    "occurred_at": {"type": "string", "format": "date-time"}
+  }
+}
