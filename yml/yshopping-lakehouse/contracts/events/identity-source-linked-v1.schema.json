@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/identity-source-linked-v1.schema.json",
+  "title": "identity.source.linked payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id", "principal_id", "principal_type", "principal_status",
+    "source_identity_id", "source_system", "source_type", "source_id", "source_status"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "principal_id": {"type": "string", "format": "uuid"},
+    "principal_type": {"type": "string", "enum": ["PLATFORM_OPERATOR", "MEMBER", "MERCHANT_OPERATOR", "WAREHOUSE_OPERATOR"]},
+    "principal_status": {"type": "string", "enum": ["ACTIVE", "DISABLED"]},
+    "source_identity_id": {"type": "string", "format": "uuid"},
+    "source_system": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$"},
+    "source_type": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*$"},
+    "source_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "source_status": {"type": "string", "enum": ["ACTIVE", "REVOKED"]}
+  }
+}

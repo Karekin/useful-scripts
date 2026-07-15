@@ -5,6 +5,7 @@ SELECT
     event.listing_id,
     event.listing_no,
     event.run_id,
+    event.merchant_id,
     event.aggregate_version AS listing_version,
     event.revision AS listing_revision,
     event.current_status AS listing_status,

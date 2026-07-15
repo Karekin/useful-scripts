@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/merchant-deposit-ledger-posted-v1.schema.json",
+  "title": "merchant.deposit.ledger_posted payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id", "merchant_id", "account_id", "ledger_entry_id", "entry_type", "amount_minor", "currency",
+    "held_delta_minor", "frozen_delta_minor", "held_before_minor", "held_after_minor",
+    "frozen_before_minor", "frozen_after_minor", "required_before_minor", "required_after_minor",
+    "paid_after_minor", "deducted_after_minor", "previous_coverage_status", "current_coverage_status",
+    "previous_enforcement_status", "current_enforcement_status", "policy_version", "business_reference",
+    "reason_code", "evidence_ref"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "merchant_id": {"type": "string", "format": "uuid"},
+    "account_id": {"type": "string", "format": "uuid"},
+    "ledger_entry_id": {"type": "string", "format": "uuid"},
+    "entry_type": {"type": "string", "enum": ["ASSESSED", "PAID", "FROZEN", "UNFROZEN", "DEDUCTED", "ENFORCEMENT_ACTIVATED"]},
+    "amount_minor": {"type": "integer", "minimum": 0},
+    "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "held_delta_minor": {"type": "integer"},
+    "frozen_delta_minor": {"type": "integer"},
+    "held_before_minor": {"type": "integer", "minimum": 0},
+    "held_after_minor": {"type": "integer", "minimum": 0},
+    "frozen_before_minor": {"type": "integer", "minimum": 0},
+    "frozen_after_minor": {"type": "integer", "minimum": 0},
+    "required_before_minor": {"type": "integer", "minimum": 0},
+    "required_after_minor": {"type": "integer", "minimum": 1},
+    "paid_after_minor": {"type": "integer", "minimum": 0},
+    "deducted_after_minor": {"type": "integer", "minimum": 0},
+    "previous_coverage_status": {"type": ["string", "null"], "enum": [null, "SUFFICIENT", "BID_RESTRICTED", "SALES_BLOCKED"]},
+    "current_coverage_status": {"type": "string", "enum": ["SUFFICIENT", "BID_RESTRICTED", "SALES_BLOCKED"]},
+    "previous_enforcement_status": {"type": ["string", "null"], "enum": [null, "SHADOW", "ENFORCED"]},
+    "current_enforcement_status": {"type": "string", "enum": ["SHADOW", "ENFORCED"]},
+    "policy_version": {"type": "string", "minLength": 1, "maxLength": 32},
+    "business_reference": {"type": "string", "minLength": 1, "maxLength": 128},
+    "reason_code": {"type": "string", "pattern": "^[A-Z0-9_]+$", "maxLength": 64},
+    "evidence_ref": {"type": "string", "pattern": "^(?i:sha256|sha512|ticket|run|evidence|vault|kms|token):[A-Za-z0-9._/-]+$", "maxLength": 256}
+  }
+}

@@ -1,0 +1,45 @@
+CREATE OR REPLACE VIEW yshopping_dwd.dwd_canonical_inventory_migration_qualification_event AS
+SELECT
+    event_id,
+    tenant_id,
+    aggregate_id AS qualification_id,
+    aggregate_version AS qualification_version,
+    occurred_at,
+    recorded_at,
+    correlation_id,
+    causation_id,
+    idempotency_key,
+    get_json_string(payload, '$.migration_run_id') AS migration_run_id,
+    get_json_string(payload, '$.assessment_id') AS assessment_id,
+    get_json_string(payload, '$.qualification_id') AS payload_qualification_id,
+    get_json_string(payload, '$.source_system') AS migration_source_system,
+    get_json_string(payload, '$.source_type') AS migration_source_type,
+    get_json_string(payload, '$.source_id') AS source_id,
+    get_json_string(payload, '$.source_classification') AS source_classification,
+    CAST(get_json_string(payload, '$.source_version') AS BIGINT) AS source_version,
+    CAST(REPLACE(SUBSTR(get_json_string(payload, '$.source_updated_at'), 1, 19), 'T', ' ') AS DATETIME) AS source_updated_at,
+    get_json_string(payload, '$.source_snapshot_hash') AS source_snapshot_hash,
+    get_json_string(payload, '$.owner_type') AS owner_type,
+    get_json_string(payload, '$.owner_id') AS owner_id,
+    get_json_string(payload, '$.canonical_sku_id') AS canonical_sku_id,
+    get_json_string(payload, '$.warehouse_source_mapping_id') AS warehouse_source_mapping_id,
+    get_json_string(payload, '$.warehouse_id') AS warehouse_id,
+    get_json_string(payload, '$.location_id') AS location_id,
+    get_json_string(payload, '$.lot_tracking_policy') AS lot_tracking_policy,
+    get_json_string(payload, '$.lot_id') AS lot_id,
+    get_json_string(payload, '$.stock_status') AS stock_status,
+    get_json_string(payload, '$.quality_status') AS quality_status,
+    get_json_string(payload, '$.base_uom_code') AS base_uom_code,
+    CAST(get_json_string(payload, '$.source_on_hand_quantity') AS DECIMAL(24,6)) AS source_on_hand_quantity,
+    CAST(get_json_string(payload, '$.source_reserved_quantity') AS DECIMAL(24,6)) AS source_reserved_quantity,
+    CAST(get_json_string(payload, '$.source_in_transit_quantity') AS DECIMAL(24,6)) AS source_in_transit_quantity,
+    get_json_string(payload, '$.resolved_blocker_codes') AS resolved_blocker_codes_json,
+    get_json_string(payload, '$.qualification_status') AS qualification_status,
+    get_json_string(payload, '$.policy_version') AS policy_version,
+    get_json_string(payload, '$.verification_ref') AS verification_ref,
+    CAST(REPLACE(SUBSTR(get_json_string(payload, '$.qualified_at'), 1, 19), 'T', ' ') AS DATETIME) AS qualified_at
+FROM yshopping_dwd.dwd_domain_event
+WHERE event_type = 'inventory.migration.balance_qualified'
+  AND schema_version = 1
+  AND source_system = 'cloudmold-inventory'
+  AND aggregate_type = 'inventory_migration_qualification';

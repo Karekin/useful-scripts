@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/inventory-migration-balance-qualified-v1.schema.json",
+  "title": "inventory.migration.balance_qualified payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "migration_run_id", "assessment_id", "qualification_id", "source_system", "source_type", "source_id",
+    "source_classification", "source_version", "source_updated_at", "source_snapshot_hash", "owner_type",
+    "owner_id", "canonical_sku_id", "warehouse_source_mapping_id", "warehouse_id", "location_id",
+    "lot_tracking_policy", "lot_id", "stock_status", "quality_status", "base_uom_code",
+    "source_on_hand_quantity", "source_reserved_quantity", "source_in_transit_quantity",
+    "resolved_blocker_codes", "qualification_status", "policy_version", "verification_ref", "qualified_at"
+  ],
+  "properties": {
+    "migration_run_id": {"type": "string", "format": "uuid"},
+    "assessment_id": {"type": "string", "format": "uuid"},
+    "qualification_id": {"type": "string", "format": "uuid"},
+    "source_system": {"type": "string", "const": "CLOUDMOLD_INVENTORY_V1"},
+    "source_type": {"type": "string", "const": "BALANCE"},
+    "source_id": {"type": "string", "format": "uuid"},
+    "source_classification": {"type": "string", "const": "CONTROLLED_CANARY"},
+    "source_version": {"type": "integer", "minimum": 1},
+    "source_updated_at": {"type": "string", "format": "date-time"},
+    "source_snapshot_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "owner_type": {"type": "string", "const": "MERCHANT"},
+    "owner_id": {"type": "string", "format": "uuid"},
+    "canonical_sku_id": {"type": "string", "format": "uuid"},
+    "warehouse_source_mapping_id": {"type": "string", "format": "uuid"},
+    "warehouse_id": {"type": "string", "format": "uuid"},
+    "location_id": {"type": "string", "format": "uuid"},
+    "lot_tracking_policy": {"type": "string", "enum": ["NOT_TRACKED", "TRACKED"]},
+    "lot_id": {"type": ["string", "null"], "format": "uuid"},
+    "stock_status": {"type": "string", "enum": ["SELLABLE", "NON_SELLABLE"]},
+    "quality_status": {"type": "string", "enum": ["PENDING_QC", "QUALIFIED", "DAMAGED", "REJECTED"]},
+    "base_uom_code": {"type": "string", "pattern": "^[A-Z0-9._-]+$", "maxLength": 32},
+    "source_on_hand_quantity": {"type": "string", "pattern": "^[1-9][0-9]*(\\.[0-9]{1,6})?$"},
+    "source_reserved_quantity": {"type": "string", "pattern": "^0(\\.0{1,6})?$"},
+    "source_in_transit_quantity": {"type": "string", "pattern": "^0(\\.0{1,6})?$"},
+    "resolved_blocker_codes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "enum": ["CONTROLLED_NON_PRODUCTION_SOURCE", "LOCATION_UNRESOLVED", "LOT_POLICY_UNPROVEN", "OWNER_TYPE_MISSING", "TARGET_DIMENSION_UNRESOLVED", "WAREHOUSE_UNRESOLVED"]}},
+    "qualification_status": {"type": "string", "const": "QUALIFIED"},
+    "policy_version": {"type": "string", "minLength": 1, "maxLength": 32},
+    "verification_ref": {"type": "string", "pattern": "^(?i:sha256|sha512|ticket|run|evidence|vault|kms|token):[A-Za-z0-9._/-]+$", "maxLength": 256},
+    "qualified_at": {"type": "string", "format": "date-time"}
+  },
+  "allOf": [
+    {"if": {"properties": {"lot_tracking_policy": {"const": "NOT_TRACKED"}}}, "then": {"properties": {"lot_id": {"type": "null"}}}},
+    {"if": {"properties": {"lot_tracking_policy": {"const": "TRACKED"}}}, "then": {"properties": {"lot_id": {"type": "string", "format": "uuid"}}}}
+  ]
+}

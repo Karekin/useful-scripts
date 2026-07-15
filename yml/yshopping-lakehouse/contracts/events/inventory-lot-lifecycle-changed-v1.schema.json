@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/inventory-lot-lifecycle-changed-v1.schema.json",
+  "title": "inventory.lot.lifecycle.changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id", "migration_run_id", "lot_id", "owner_type", "owner_id", "canonical_sku_id",
+    "lot_code", "manufactured_on", "expires_on", "received_at", "previous_status",
+    "current_status", "change_type", "reason_code", "evidence_ref", "recall_reference"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "migration_run_id": {"type": ["string", "null"], "minLength": 1, "maxLength": 128},
+    "lot_id": {"type": "string", "format": "uuid"},
+    "owner_type": {"type": "string", "const": "MERCHANT"},
+    "owner_id": {"type": "string", "format": "uuid"},
+    "canonical_sku_id": {"type": "string", "format": "uuid"},
+    "lot_code": {"type": "string", "minLength": 1, "maxLength": 128},
+    "manufactured_on": {"type": ["string", "null"], "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+    "expires_on": {"type": ["string", "null"], "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+    "received_at": {"type": ["string", "null"], "format": "date-time"},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "ACTIVE"]},
+    "current_status": {"type": "string", "enum": ["ACTIVE", "RECALLED", "CLOSED"]},
+    "change_type": {"type": "string", "enum": ["CREATED", "RECALLED", "CLOSED"]},
+    "reason_code": {"type": "string", "pattern": "^[A-Z0-9_]+$", "maxLength": 64},
+    "evidence_ref": {"type": "string", "pattern": "^(?i:sha256|sha512|ticket|run|evidence|vault|kms|token):[A-Za-z0-9._/-]+$", "maxLength": 256},
+    "recall_reference": {"type": ["string", "null"], "pattern": "^(?i:sha256|sha512|ticket|run|evidence|vault|kms|token):[A-Za-z0-9._/-]+$", "maxLength": 256}
+  }
+}

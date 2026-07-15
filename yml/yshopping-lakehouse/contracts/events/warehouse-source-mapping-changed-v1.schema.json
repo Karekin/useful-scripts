@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/warehouse-source-mapping-changed-v1.schema.json",
+  "title": "warehouse.source_mapping.changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "mapping_id", "source_system", "source_type", "source_id",
+    "canonical_type", "canonical_id", "current_status"
+  ],
+  "properties": {
+    "mapping_id": {"type": "string", "format": "uuid"},
+    "source_system": {"type": "string", "minLength": 1, "maxLength": 32},
+    "source_type": {"type": "string", "minLength": 1, "maxLength": 32},
+    "source_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "canonical_type": {"type": "string", "enum": ["WAREHOUSE", "ZONE", "LOCATION"]},
+    "canonical_id": {"type": "string", "format": "uuid"},
+    "warehouse_id": {"type": "string", "format": "uuid"},
+    "zone_id": {"type": "string", "format": "uuid"},
+    "location_id": {"type": "string", "format": "uuid"},
+    "current_status": {"type": "string", "enum": ["ACTIVE", "ENDED"]}
+  }
+}

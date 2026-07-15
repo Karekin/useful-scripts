@@ -6,7 +6,7 @@ COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
 STARROCKS_CONTAINER=${STARROCKS_CONTAINER:-yshopping-starrocks}
 
 usage() {
-  echo "usage: lakehousectl {config-check|contract-test|start|submit-cdc|submit-catalog-cdc|submit-event-cdc|apply-models|health|test|reconcile|reconcile-canonical-inventory|reconcile-canonical-catalog|reconcile-canonical-commerce|reconcile-canonical-commerce-v2|reconcile-canonical-cancellation-saga|reconcile-canonical-paid-cancellation-saga|reconcile-canonical-aftersales} [--tenant ID] [--run-id ID]"
+  echo "usage: lakehousectl {config-check|contract-test|start|submit-cdc|submit-catalog-cdc|submit-legacy-mall-cdc|submit-event-cdc|apply-models|health|test|reconcile|reconcile-canonical-inventory|reconcile-canonical-inventory-lot|reconcile-canonical-inventory-migration|reconcile-canonical-catalog|reconcile-canonical-commerce|reconcile-canonical-commerce-v2|reconcile-canonical-cancellation-saga|reconcile-canonical-paid-cancellation-saga|reconcile-canonical-aftersales|reconcile-canonical-listing-unpublish-saga|reconcile-canonical-merchant|reconcile-canonical-merchant-deposit|reconcile-canonical-warehouse-network} [--tenant ID] [--run-id ID] [--saga-id UUID] [--merchant-id UUID] [--warehouse-id UUID] [--source-system CODE] [--source-type CODE] [--source-id ID]"
 }
 
 sql() {
@@ -63,12 +63,24 @@ run_tests() {
 
 TENANT_ID=""
 RUN_ID=""
+SAGA_ID=""
+MERCHANT_ID=""
+WAREHOUSE_ID=""
+SOURCE_SYSTEM=""
+SOURCE_TYPE=""
+SOURCE_ID=""
 COMMAND=${1:-}
 shift || true
 while (( $# )); do
   case "$1" in
     --tenant) TENANT_ID=${2:?missing tenant}; shift 2 ;;
     --run-id) RUN_ID=${2:?missing run id}; shift 2 ;;
+    --saga-id) SAGA_ID=${2:?missing saga id}; shift 2 ;;
+    --merchant-id) MERCHANT_ID=${2:?missing merchant id}; shift 2 ;;
+    --warehouse-id) WAREHOUSE_ID=${2:?missing warehouse id}; shift 2 ;;
+    --source-system) SOURCE_SYSTEM=${2:?missing source system}; shift 2 ;;
+    --source-type) SOURCE_TYPE=${2:?missing source type}; shift 2 ;;
+    --source-id) SOURCE_ID=${2:?missing source id}; shift 2 ;;
     *) echo "unknown argument: $1" >&2; usage; exit 2 ;;
   esac
 done
@@ -77,10 +89,35 @@ if [[ -n "$TENANT_ID" && ! "$TENANT_ID" =~ ^[1-9][0-9]*$ ]]; then
   echo "--tenant must be a positive integer" >&2
   exit 2
 fi
+if [[ -n "$MERCHANT_ID" && ! "$MERCHANT_ID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$ ]]; then
+  echo "--merchant-id must be a UUID" >&2
+  exit 2
+fi
+if [[ -n "$SAGA_ID" && ! "$SAGA_ID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$ ]]; then
+  echo "--saga-id must be a UUID" >&2
+  exit 2
+fi
+if [[ -n "$WAREHOUSE_ID" && ! "$WAREHOUSE_ID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$ ]]; then
+  echo "--warehouse-id must be a UUID" >&2
+  exit 2
+fi
+if [[ -n "$SOURCE_SYSTEM" && ! "$SOURCE_SYSTEM" =~ ^[A-Z][A-Z0-9_]{0,31}$ ]]; then
+  echo "--source-system must be an uppercase type code" >&2
+  exit 2
+fi
+if [[ -n "$SOURCE_TYPE" && ! "$SOURCE_TYPE" =~ ^[A-Z][A-Z0-9_]{0,31}$ ]]; then
+  echo "--source-type must be an uppercase type code" >&2
+  exit 2
+fi
+if [[ -n "$SOURCE_ID" && ! "$SOURCE_ID" =~ ^[A-Za-z0-9._:-]{1,128}$ ]]; then
+  echo "--source-id contains unsupported characters" >&2
+  exit 2
+fi
 
 case "$COMMAND" in
   config-check)
     docker compose -f "$COMPOSE_FILE" config --quiet
+    test -f "$ROOT_DIR/pipelines/legacy-mall-alignment-mysql-to-starrocks.yaml"
     test -f "$ROOT_DIR/contracts/erp-procurement-inventory-v1.yaml"
     test -f "$ROOT_DIR/contracts/canonical-listing-fulfillment-commerce-v2.yaml"
     test -f "$ROOT_DIR/contracts/canonical-order-cancellation-saga-v1.yaml"
@@ -88,11 +125,13 @@ case "$COMMAND" in
     test -f "$ROOT_DIR/contracts/canonical-aftersales-return-refund-v1.yaml"
     find "$ROOT_DIR/models" "$ROOT_DIR/tests/sql" -type f -name '*.sql' -size 0 | grep . && exit 1 || true
     "$ROOT_DIR/scripts/contractctl" validate
+    "$ROOT_DIR/scripts/alignmentctl" validate
     python3 "$ROOT_DIR/scripts/modelctl" validate
     echo "configuration valid"
     ;;
   contract-test)
     "$ROOT_DIR/scripts/contractctl" validate
+    "$ROOT_DIR/scripts/alignmentctl" validate
     ;;
   start)
     docker compose -f "$COMPOSE_FILE" up -d --build starrocks jobmanager taskmanager
@@ -104,6 +143,10 @@ case "$COMMAND" in
   submit-catalog-cdc)
     test -f "$ROOT_DIR/.env" || { echo "missing $ROOT_DIR/.env" >&2; exit 1; }
     docker compose -f "$COMPOSE_FILE" --profile tools run --rm catalog-cdc-cli
+    ;;
+  submit-legacy-mall-cdc)
+    test -f "$ROOT_DIR/.env" || { echo "missing $ROOT_DIR/.env" >&2; exit 1; }
+    docker compose -f "$COMPOSE_FILE" --profile tools run --rm legacy-mall-cdc-cli
     ;;
   submit-event-cdc)
     test -f "$ROOT_DIR/.env" || { echo "missing $ROOT_DIR/.env" >&2; exit 1; }
@@ -159,6 +202,97 @@ case "$COMMAND" in
     [[ "$events" == "6" && "$max_version" == "6" && "$final_on_hand" == "8.000000" \
        && "$final_reserved" == "0.000000" && "$final_available" == "8.000000" ]] || {
       echo "canonical inventory reconciliation failed" >&2
+      exit 1
+    }
+    run_tests
+    ;;
+  reconcile-canonical-inventory-lot)
+    test -n "$TENANT_ID" || { echo "--tenant is required" >&2; exit 2; }
+    test -n "$RUN_ID" || { echo "--run-id is required" >&2; exit 2; }
+    require_running
+    safe_run_id=${RUN_ID//\'/\'\'}
+    result=$(sql --skip-column-names -e "
+      SELECT
+        (SELECT COUNT(*) FROM yshopping_dwd.dwd_canonical_inventory_lot_lifecycle_event
+          WHERE tenant_id=$TENANT_ID AND run_id='$safe_run_id') lifecycle_events,
+        (SELECT COUNT(*) FROM yshopping_dwd.dwd_canonical_inventory_lot_source_mapping_event
+          WHERE tenant_id=$TENANT_ID AND run_id='$safe_run_id') mapping_events,
+        (SELECT COUNT(*) FROM yshopping_dwd.dwd_canonical_inventory_movement
+          WHERE tenant_id=$TENANT_ID AND schema_version=3 AND business_id='$safe_run_id') inventory_events,
+        lot_status, lot_version, source_mapping_count, effective_mapping_count,
+        on_hand_quantity, reserved_quantity, in_transit_quantity, unreserved_quantity,
+        allocatable_quantity, allocation_eligibility, readiness_status
+      FROM yshopping_ads.ads_canonical_inventory_lot_readiness
+      WHERE tenant_id=$TENANT_ID AND run_id='$safe_run_id';")
+    require_single_row "$result" "canonical Inventory Lot reconciliation"
+    echo -e "lifecycle_events\tmapping_events\tinventory_events\tlot_status\tlot_version\tmappings\teffective_mappings\ton_hand\treserved\tin_transit\tunreserved\tallocatable\teligibility\treadiness"
+    echo "$result"
+    read -r lifecycle_events mapping_events inventory_events lot_status lot_version mappings effective_mappings \
+      on_hand reserved in_transit unreserved allocatable eligibility readiness <<< "$result"
+    [[ "$lifecycle_events" == "2" && "$mapping_events" == "3" && "$inventory_events" == "3" \
+       && "$lot_status" == "RECALLED" && "$lot_version" == "2" \
+       && "$mappings" == "2" && "$effective_mappings" == "1" \
+       && "$on_hand" == "10.000000" && "$reserved" == "0.000000" \
+       && "$in_transit" == "0.000000" && "$unreserved" == "10.000000" \
+       && "$allocatable" == "0.000000" && "$eligibility" == "LOT_RECALLED" \
+       && "$readiness" == "RECALLED_FENCED" ]] || {
+      echo "canonical Inventory Lot reconciliation failed" >&2
+      exit 1
+    }
+    run_tests
+    ;;
+  reconcile-canonical-inventory-migration)
+    test -n "$TENANT_ID" || { echo "--tenant is required" >&2; exit 2; }
+    test -n "$RUN_ID" || { echo "--run-id is required" >&2; exit 2; }
+    [[ "$RUN_ID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$ ]] || {
+      echo "--run-id must be a UUID for canonical Inventory migration" >&2
+      exit 2
+    }
+    require_running
+    result=$(sql --skip-column-names -e "
+      SELECT candidate_count, assessment_event_count, distinct_source_count,
+             eligible_count, blocked_count, rejected_count,
+             blockerless_blocked_count, eligible_with_blocker_count, false_allocation_claim_count,
+             source_on_hand_quantity, source_reserved_quantity, source_in_transit_quantity,
+             active_reservation_count, active_reservation_quantity,
+             qualification_count, qualification_event_count, controlled_canary_count,
+             invalid_qualification_status_count, nonzero_qualification_hold_count,
+             qualification_assessment_mismatch_count, qualified_on_hand_quantity,
+             opening_event_count, distinct_opening_qualification_count,
+             opening_on_hand_quantity, opening_hold_delta_count, invalid_opening_driver_count,
+             post_qualification_legacy_write_count,
+             migration_stage, readiness_status
+      FROM yshopping_ads.ads_canonical_inventory_migration_readiness
+      WHERE tenant_id=$TENANT_ID AND migration_run_id='$RUN_ID';")
+    require_single_row "$result" "canonical Inventory migration reconciliation"
+    echo -e "candidates\tassessment_events\tdistinct_sources\teligible\tblocked\trejected\tblockerless_blocked\teligible_with_blocker\tfalse_allocations\ton_hand\treserved\tin_transit\tactive_reservations\tactive_reservation_quantity\tqualifications\tqualification_events\tcontrolled_canaries\tinvalid_qualification_status\tnonzero_qualification_holds\tqualification_mismatch\tqualified_quantity\topening_events\tdistinct_opening_qualifications\topening_quantity\topening_holds\tinvalid_opening_driver\tpost_qualification_legacy_writes\tstage\treadiness"
+    echo "$result"
+    IFS=$'\t' read -r candidates assessment_events distinct_sources eligible blocked rejected \
+      blockerless eligible_with_blocker false_allocations on_hand reserved in_transit \
+      active_reservations active_reservation_quantity qualifications qualification_events controlled_canaries \
+      invalid_qualification_status nonzero_qualification_holds qualification_mismatch qualified_quantity \
+      opening_events distinct_opening_qualifications opening_quantity opening_holds invalid_opening_driver \
+      post_qualification_legacy_writes stage readiness <<< "$result"
+    [[ "$candidates" =~ ^[1-9][0-9]*$ \
+       && "$assessment_events" == "$candidates" && "$distinct_sources" == "$candidates" \
+       && "$candidates" == "$((eligible + blocked + rejected))" \
+       && "$blockerless" == "0" && "$eligible_with_blocker" == "0" \
+       && "$false_allocations" == "0" && "$qualifications" == "$qualification_events" \
+       && "$qualifications" == "$controlled_canaries" && "$invalid_qualification_status" == "0" \
+       && "$nonzero_qualification_holds" == "0" && "$qualification_mismatch" == "0" \
+       && "$opening_holds" == "0" && "$invalid_opening_driver" == "0" \
+       && "$post_qualification_legacy_writes" == "0" \
+       && ( ( "$stage" == "ASSESSED_ONLY" && "$qualifications" == "0" \
+              && "$opening_events" == "0" && "$opening_quantity" == "0.000000" \
+              && ( "$readiness" == "BLOCKED" || "$readiness" == "READY_TO_QUALIFY" ) ) \
+            || ( "$stage" == "QUALIFIED_ONLY" && "$qualifications" =~ ^[1-9][0-9]*$ \
+                 && "$opening_events" == "0" && "$readiness" == "QUALIFIED_RUNTIME_GATED" ) \
+            || ( "$stage" == "MIGRATED_CANARY" && "$qualifications" =~ ^[1-9][0-9]*$ \
+                 && "$opening_events" == "$qualifications" \
+                 && "$distinct_opening_qualifications" == "$qualifications" \
+                 && "$opening_quantity" == "$qualified_quantity" \
+                 && "$readiness" == "CANARY_RECONCILED" ) ) ]] || {
+      echo "canonical Inventory migration reconciliation failed" >&2
       exit 1
     }
     run_tests
@@ -363,6 +497,161 @@ case "$COMMAND" in
        && "$order_status" == "RETURNED" && "$payment_status" == "REFUNDED" \
        && "$recorded_order_valid" == "1" && "$readiness" == "RECONCILED" ]] || {
       echo "canonical after-sales reconciliation failed" >&2
+      exit 1
+    }
+    run_tests
+    ;;
+  reconcile-canonical-listing-unpublish-saga)
+    test -n "$TENANT_ID" || { echo "--tenant is required" >&2; exit 2; }
+    test -n "$RUN_ID" || { echo "--run-id is required" >&2; exit 2; }
+    test -n "$SAGA_ID" || { echo "--saga-id is required" >&2; exit 2; }
+    require_running
+    safe_run_id=${RUN_ID//\'/\'\'}
+    result=$(sql --skip-column-names -e "
+      SELECT saga_event_count, current_status, source_entity_type, source_event_status,
+             expected_listing_count, unpublished_listing_count, skipped_listing_count,
+             actual_unpublish_event_count, actual_unpublished_listing_count,
+             source_event_matches, readiness_status, recovery_status
+      FROM yshopping_ads.ads_canonical_listing_unpublish_readiness
+      WHERE tenant_id=$TENANT_ID AND run_id='$safe_run_id' AND saga_id='$SAGA_ID';")
+    require_single_row "$result" "canonical Listing unpublish Saga reconciliation"
+    echo -e "saga_events\tsaga_status\tsource_entity\tsource_status\texpected_listings\treported_unpublished\treported_skipped\tunpublish_events\tactual_unpublished\tsource_matches\treadiness\trecovery"
+    echo "$result"
+    read -r saga_events saga_status source_entity source_status expected reported skipped \
+      unpublish_events actual source_matches readiness recovery <<< "$result"
+    [[ "$saga_events" =~ ^[0-9]+$ ]] && (( saga_events >= 3 )) \
+      && [[ "$saga_status" == "COMPLETED" \
+         && ( "$source_status" == "SUSPENDED" || "$source_status" == "PAUSED" ) \
+         && "$expected" == "$((reported + skipped))" \
+         && "$unpublish_events" == "$reported" && "$actual" == "$reported" \
+         && "$source_matches" == "1" && "$readiness" == "RECONCILED" ]] || {
+      echo "canonical Listing unpublish Saga reconciliation failed" >&2
+      exit 1
+    }
+    run_tests
+    ;;
+  reconcile-canonical-merchant)
+    test -n "$TENANT_ID" || { echo "--tenant is required" >&2; exit 2; }
+    test -n "$MERCHANT_ID" || { echo "--merchant-id is required" >&2; exit 2; }
+    test -n "$SOURCE_SYSTEM" || { echo "--source-system is required" >&2; exit 2; }
+    test -n "$SOURCE_TYPE" || { echo "--source-type is required" >&2; exit 2; }
+    test -n "$SOURCE_ID" || { echo "--source-id is required" >&2; exit 2; }
+    require_running
+    result=$(sql --skip-column-names -e "
+      SELECT readiness.legal_entity_status, readiness.merchant_status, readiness.shop_status,
+             readiness.onboarding_status, readiness.active_operator_count, readiness.active_owner_count,
+             onboarding.onboarding_event_count, merchant.entity_event_count,
+             shop.entity_event_count, legal_entity.entity_event_count,
+             source.source_status, source.principal_status, readiness.readiness_status
+      FROM yshopping_ads.ads_canonical_merchant_readiness readiness
+      JOIN yshopping_dim.dim_canonical_merchant_onboarding_current onboarding
+        ON onboarding.tenant_id=readiness.tenant_id
+       AND onboarding.merchant_id=readiness.merchant_id
+       AND onboarding.shop_id=readiness.shop_id
+      JOIN yshopping_dim.dim_canonical_merchant_current merchant
+        ON merchant.tenant_id=readiness.tenant_id AND merchant.merchant_id=readiness.merchant_id
+      JOIN yshopping_dim.dim_canonical_shop_current shop
+        ON shop.tenant_id=readiness.tenant_id AND shop.shop_id=readiness.shop_id
+      JOIN yshopping_dim.dim_canonical_merchant_legal_entity_current legal_entity
+        ON legal_entity.tenant_id=readiness.tenant_id
+       AND legal_entity.legal_entity_id=readiness.legal_entity_id
+      JOIN yshopping_dim.dim_canonical_identity_source_current source
+        ON source.tenant_id=readiness.tenant_id
+       AND source.principal_id=readiness.owner_principal_id
+       AND source.identity_source_system='$SOURCE_SYSTEM'
+       AND source.source_type='$SOURCE_TYPE'
+       AND source.source_id='$SOURCE_ID'
+      WHERE readiness.tenant_id=$TENANT_ID AND readiness.merchant_id='$MERCHANT_ID';")
+    require_single_row "$result" "canonical merchant reconciliation"
+    echo -e "legal_entity_status\tmerchant_status\tshop_status\tonboarding_status\tactive_operators\tactive_owners\tonboarding_events\tmerchant_events\tshop_events\tlegal_entity_events\tsource_status\tprincipal_status\treadiness"
+    echo "$result"
+    read -r legal_status merchant_status shop_status onboarding_status active_operators active_owners \
+      onboarding_events merchant_events shop_events legal_events source_status principal_status readiness <<< "$result"
+    [[ "$legal_status" == "VERIFIED" && "$merchant_status" == "ACTIVE" \
+       && "$shop_status" == "ACTIVE" && "$onboarding_status" == "APPROVED" \
+       && "$active_operators" == "1" && "$active_owners" == "1" \
+       && "$onboarding_events" == "4" && "$merchant_events" -ge 2 \
+       && "$shop_events" -ge 2 && "$legal_events" == "2" \
+       && "$source_status" == "ACTIVE" && "$principal_status" == "ACTIVE" \
+       && "$readiness" == "MERCHANT_SHOP_READY" ]] || {
+      echo "canonical merchant reconciliation failed" >&2
+      exit 1
+    }
+    run_tests
+    ;;
+  reconcile-canonical-merchant-deposit)
+    test -n "$TENANT_ID" || { echo "--tenant is required" >&2; exit 2; }
+    test -n "$RUN_ID" || { echo "--run-id is required" >&2; exit 2; }
+    test -n "$MERCHANT_ID" || { echo "--merchant-id is required" >&2; exit 2; }
+    require_running
+    safe_run_id=${RUN_ID//\'/\'\'}
+    result=$(sql --skip-column-names -e "
+      SELECT ledger_entry_count, account_version, required_amount_minor, held_amount_minor,
+             frozen_amount_minor, paid_amount_minor, deducted_amount_minor, coverage_status,
+             enforcement_status, critical_deposit_event_id, suspension_event_count,
+             unpublish_saga_count, unpublish_saga_status, unpublish_saga_readiness, readiness_status
+      FROM yshopping_ads.ads_canonical_merchant_deposit_readiness
+      WHERE tenant_id=$TENANT_ID AND merchant_id='$MERCHANT_ID' AND run_id='$safe_run_id';")
+    require_single_row "$result" "canonical Merchant deposit reconciliation"
+    echo -e "ledger_entries\taccount_version\trequired_minor\theld_minor\tfrozen_minor\tpaid_minor\tdeducted_minor\tcoverage\tenforcement\tcritical_event\tsuspensions\tunpublish_sagas\tsaga_status\tsaga_readiness\treadiness"
+    echo "$result"
+    read -r ledger_entries account_version required held frozen paid deducted coverage enforcement \
+      critical_event suspensions sagas saga_status saga_readiness readiness <<< "$result"
+    [[ "$ledger_entries" =~ ^[0-9]+$ ]] && (( ledger_entries >= 6 )) \
+      && [[ "$ledger_entries" == "$account_version" && "$required" == "$held" \
+         && "$frozen" == "0" && "$held" == "$((paid - deducted))" \
+         && "$coverage" == "SUFFICIENT" && "$enforcement" == "ENFORCED" \
+         && -n "$critical_event" && "$suspensions" == "1" && "$sagas" == "1" \
+         && "$saga_status" == "COMPLETED" && "$saga_readiness" == "RECONCILED" \
+         && "$readiness" == "RECONCILED" ]] || {
+      echo "canonical Merchant deposit reconciliation failed" >&2
+      exit 1
+    }
+    run_tests
+    ;;
+  reconcile-canonical-warehouse-network)
+    test -n "$TENANT_ID" || { echo "--tenant is required" >&2; exit 2; }
+    test -n "$WAREHOUSE_ID" || { echo "--warehouse-id is required" >&2; exit 2; }
+    test -n "$SOURCE_SYSTEM" || { echo "--source-system is required" >&2; exit 2; }
+    test -n "$SOURCE_TYPE" || { echo "--source-type is required" >&2; exit 2; }
+    test -n "$SOURCE_ID" || { echo "--source-id is required" >&2; exit 2; }
+    require_running
+    result=$(sql --skip-column-names -e "
+      SELECT readiness.warehouse_status, readiness.zone_count, readiness.active_zone_count,
+             readiness.location_count, readiness.active_location_count,
+             readiness.active_mapping_count, readiness.active_operator_count,
+             warehouse.entity_event_count,
+             COALESCE(mapping.exact_active_source_count, 0), readiness.readiness_status
+      FROM yshopping_ads.ads_canonical_warehouse_network_readiness readiness
+      JOIN yshopping_dim.dim_canonical_warehouse_current warehouse
+        ON warehouse.tenant_id=readiness.tenant_id AND warehouse.warehouse_id=readiness.warehouse_id
+      LEFT JOIN (
+        SELECT tenant_id, warehouse_id, COUNT(*) exact_active_source_count
+        FROM (
+          SELECT event.*,
+                 ROW_NUMBER() OVER (
+                   PARTITION BY tenant_id, mapping_id
+                   ORDER BY aggregate_version DESC, recorded_at DESC, event_id DESC
+                 ) row_num
+          FROM yshopping_dwd.dwd_canonical_warehouse_source_mapping_event event
+          WHERE mapping_source_system='$SOURCE_SYSTEM'
+            AND source_type='$SOURCE_TYPE' AND source_id='$SOURCE_ID'
+        ) ranked
+        WHERE row_num=1 AND current_status='ACTIVE'
+        GROUP BY tenant_id, warehouse_id
+      ) mapping ON mapping.tenant_id=readiness.tenant_id AND mapping.warehouse_id=readiness.warehouse_id
+      WHERE readiness.tenant_id=$TENANT_ID AND readiness.warehouse_id='$WAREHOUSE_ID';")
+    require_single_row "$result" "canonical warehouse network reconciliation"
+    echo -e "warehouse_status\tzones\tactive_zones\tlocations\tactive_locations\tactive_mappings\tactive_operators\twarehouse_events\texact_source_mappings\treadiness"
+    echo "$result"
+    read -r warehouse_status zones active_zones locations active_locations active_mappings \
+      active_operators warehouse_events exact_source_mappings readiness <<< "$result"
+    [[ "$warehouse_status" == "ACTIVE" && "$zones" == "1" && "$active_zones" == "1" \
+       && "$locations" == "1" && "$active_locations" == "1" \
+       && "$active_mappings" == "1" && "$active_operators" == "1" \
+       && "$warehouse_events" == "2" && "$exact_source_mappings" == "1" \
+       && "$readiness" == "WAREHOUSE_NETWORK_READY" ]] || {
+      echo "canonical warehouse network reconciliation failed" >&2
       exit 1
     }
     run_tests

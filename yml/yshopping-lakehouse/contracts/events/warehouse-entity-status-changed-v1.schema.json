@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/warehouse-entity-status-changed-v1.schema.json",
+  "title": "warehouse.entity.status_changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["entity_type", "entity_id", "warehouse_id", "previous_status", "current_status"],
+  "properties": {
+    "entity_type": {"type": "string", "enum": ["WAREHOUSE", "ZONE", "LOCATION"]},
+    "entity_id": {"type": "string", "format": "uuid"},
+    "warehouse_id": {"type": "string", "format": "uuid"},
+    "warehouse_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "name": {"type": "string", "minLength": 1, "maxLength": 128},
+    "warehouse_type": {"type": "string", "minLength": 1, "maxLength": 32},
+    "zone_id": {"type": "string", "format": "uuid"},
+    "zone_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "zone_type": {"type": "string", "minLength": 1, "maxLength": 32},
+    "location_id": {"type": "string", "format": "uuid"},
+    "location_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "location_type": {"type": "string", "minLength": 1, "maxLength": 32},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "DRAFT", "ACTIVE", "INACTIVE"]},
+    "current_status": {"type": "string", "enum": ["DRAFT", "ACTIVE", "INACTIVE"]}
+  },
+  "oneOf": [
+    {"properties": {"entity_type": {"const": "WAREHOUSE"}}},
+    {"properties": {"entity_type": {"const": "ZONE"}}, "required": ["zone_id"]},
+    {"properties": {"entity_type": {"const": "LOCATION"}}, "required": ["zone_id", "location_id", "location_type"]}
+  ]
+}

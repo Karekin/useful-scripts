@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/inventory-migration-shadow-round-completed-v1.schema.json",
+  "title": "inventory.migration.shadow_round_completed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "shadow_round_id", "shadow_window_id", "pilot_batch_id", "manifest_hash", "expected_item_set_hash",
+    "round_sequence", "expected_item_count", "observed_item_count", "match_item_count",
+    "different_item_count", "uncomparable_item_count", "watermark_kind", "previous_source_gtid_set",
+    "source_gtid_set", "previous_target_gtid_set", "target_gtid_set", "source_watermark_captured_at",
+    "target_watermark_applied_at", "source_monotonic", "target_monotonic", "target_contains_source",
+    "gtid_validator_version", "gtid_evidence_hash", "lag_seconds", "round_started_at", "round_completed_at",
+    "round_status", "round_result", "execution_available", "cutover_ready"
+  ],
+  "properties": {
+    "shadow_round_id": {"type": "string", "format": "uuid"},
+    "shadow_window_id": {"type": "string", "format": "uuid"},
+    "pilot_batch_id": {"type": "string", "format": "uuid"},
+    "manifest_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "expected_item_set_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "round_sequence": {"type": "integer", "minimum": 1},
+    "expected_item_count": {"type": "integer", "minimum": 1},
+    "observed_item_count": {"type": "integer", "minimum": 0},
+    "match_item_count": {"type": "integer", "minimum": 0},
+    "different_item_count": {"type": "integer", "minimum": 0},
+    "uncomparable_item_count": {"type": "integer", "minimum": 0},
+    "watermark_kind": {"type": "string", "const": "MYSQL_GTID_SET"},
+    "previous_source_gtid_set": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "source_gtid_set": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "previous_target_gtid_set": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "target_gtid_set": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "source_watermark_captured_at": {"type": "string", "format": "date-time"},
+    "target_watermark_applied_at": {"type": "string", "format": "date-time"},
+    "source_monotonic": {"type": "boolean", "const": true},
+    "target_monotonic": {"type": "boolean", "const": true},
+    "target_contains_source": {"type": "boolean"},
+    "gtid_validator_version": {"type": "string", "const": "MYSQL_GTID_SET_CONTAINS_V1"},
+    "gtid_evidence_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "lag_seconds": {"type": "integer", "minimum": 0},
+    "round_started_at": {"type": "string", "format": "date-time"},
+    "round_completed_at": {"type": "string", "format": "date-time"},
+    "round_status": {"type": "string", "const": "COMPLETED"},
+    "round_result": {"type": "string", "enum": ["MATCH", "DIFFERENT", "UNCOMPARABLE"]},
+    "execution_available": {"type": "boolean", "const": false},
+    "cutover_ready": {"type": "boolean", "const": false}
+  },
+  "allOf": [
+    {"if": {"properties": {"target_contains_source": {"const": false}}},
+     "then": {"properties": {"round_result": {"const": "UNCOMPARABLE"}}}}
+  ]
+}

@@ -1,0 +1,43 @@
+CREATE OR REPLACE VIEW yshopping_dwd.dwd_canonical_inventory_migration_shadow_item_comparison_event AS
+SELECT
+    event_id,tenant_id,aggregate_id AS shadow_comparison_id,aggregate_version AS comparison_version,
+    occurred_at,recorded_at,correlation_id,causation_id,idempotency_key,
+    get_json_string(payload,'$.shadow_window_id') AS shadow_window_id,
+    get_json_string(payload,'$.shadow_round_id') AS shadow_round_id,
+    get_json_string(payload,'$.pilot_batch_id') AS pilot_batch_id,
+    get_json_string(payload,'$.pilot_item_id') AS pilot_item_id,
+    CAST(get_json_string(payload,'$.round_sequence') AS BIGINT) AS round_sequence,
+    CAST(get_json_string(payload,'$.manifest_ordinal') AS BIGINT) AS manifest_ordinal,
+    get_json_string(payload,'$.item_scope_hash') AS item_scope_hash,
+    get_json_string(payload,'$.manifest_hash') AS manifest_hash,
+    get_json_string(payload,'$.expected_item_set_hash') AS expected_item_set_hash,
+    get_json_string(payload,'$.source_gtid_set') AS source_gtid_set,
+    get_json_string(payload,'$.target_gtid_set') AS target_gtid_set,
+    CAST(get_json_string(payload,'$.source_available') AS BOOLEAN) AS source_available,
+    CAST(get_json_string(payload,'$.source_version') AS BIGINT) AS source_version,
+    get_json_string(payload,'$.source_snapshot_hash') AS source_snapshot_hash,
+    get_json_string(payload,'$.source_grain_hash') AS source_grain_hash,
+    CAST(get_json_string(payload,'$.source_on_hand_quantity') AS DECIMAL(24,6)) AS source_on_hand_quantity,
+    CAST(get_json_string(payload,'$.source_reserved_quantity') AS DECIMAL(24,6)) AS source_reserved_quantity,
+    CAST(get_json_string(payload,'$.source_in_transit_quantity') AS DECIMAL(24,6)) AS source_in_transit_quantity,
+    get_json_string(payload,'$.target_projection_kind') AS target_projection_kind,
+    CAST(get_json_string(payload,'$.target_materialized') AS BOOLEAN) AS target_materialized,
+    CAST(get_json_string(payload,'$.target_available') AS BOOLEAN) AS target_available,
+    CAST(get_json_string(payload,'$.target_projection_version') AS BIGINT) AS target_projection_version,
+    get_json_string(payload,'$.target_snapshot_hash') AS target_snapshot_hash,
+    get_json_string(payload,'$.target_grain_hash') AS target_grain_hash,
+    CAST(get_json_string(payload,'$.target_on_hand_quantity') AS DECIMAL(24,6)) AS target_on_hand_quantity,
+    CAST(get_json_string(payload,'$.target_reserved_quantity') AS DECIMAL(24,6)) AS target_reserved_quantity,
+    CAST(get_json_string(payload,'$.target_in_transit_quantity') AS DECIMAL(24,6)) AS target_in_transit_quantity,
+    CAST(get_json_string(payload,'$.comparable') AS BOOLEAN) AS comparable,
+    get_json_string(payload,'$.comparison_result') AS comparison_result,
+    get_json_string(payload,'$.difference_fields') AS difference_fields_json,
+    get_json_string(payload,'$.reason_codes') AS reason_codes_json,
+    CAST(REPLACE(SUBSTR(get_json_string(payload,'$.source_observed_at'),1,19),'T',' ') AS DATETIME) AS source_observed_at,
+    CAST(REPLACE(SUBSTR(get_json_string(payload,'$.target_observed_at'),1,19),'T',' ') AS DATETIME) AS target_observed_at,
+    CAST(get_json_string(payload,'$.execution_available') AS BOOLEAN) AS execution_available,
+    CAST(get_json_string(payload,'$.cutover_ready') AS BOOLEAN) AS cutover_ready
+FROM yshopping_dwd.dwd_domain_event
+WHERE event_type='inventory.migration.shadow_item_compared'
+  AND schema_version=1 AND source_system='cloudmold-inventory'
+  AND aggregate_type='inventory_migration_shadow_comparison';

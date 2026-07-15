@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/warehouse-operator-assignment-changed-v1.schema.json",
+  "title": "warehouse.operator_assignment.changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["assignment_id", "warehouse_id", "principal_id", "role_code", "current_status"],
+  "properties": {
+    "assignment_id": {"type": "string", "format": "uuid"},
+    "warehouse_id": {"type": "string", "format": "uuid"},
+    "zone_id": {"type": "string", "format": "uuid"},
+    "location_id": {"type": "string", "format": "uuid"},
+    "principal_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "role_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "current_status": {"type": "string", "enum": ["ACTIVE", "ENDED"]}
+  }
+}

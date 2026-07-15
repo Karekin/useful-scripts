@@ -1,0 +1,32 @@
+{
+  "event_id": "65000000-0000-4000-8000-000000000001",
+  "event_type": "inventory.lot.source_mapping.changed",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "inventory_lot_source_mapping",
+  "aggregate_id": "65000000-0000-4000-8000-000000000002",
+  "aggregate_version": 1,
+  "event_sequence": 1,
+  "idempotency_key": "inventory-lot-example-link:INVENTORY_LOT_SOURCE_MAPPING:1",
+  "correlation_id": "65000000-0000-4000-8000-000000000003",
+  "causation_id": null,
+  "occurred_at": "2026-07-15T09:00:00.000Z",
+  "recorded_at": "2026-07-15T09:00:00.100Z",
+  "source_system": "cloudmold-inventory",
+  "payload": {
+    "run_id": "clot-example",
+    "migration_run_id": null,
+    "mapping_id": "65000000-0000-4000-8000-000000000002",
+    "mapping_source_system": "CLOUDMOLD_ERP_OPERATOR",
+    "source_type": "CONTROLLED_LOT",
+    "source_id": "clot-example:controlled-batch",
+    "lot_id": "65000000-0000-4000-8000-000000000004",
+    "valid_from": "2026-07-15T08:00:00.000Z",
+    "valid_to": null,
+    "previous_status": null,
+    "current_status": "ACTIVE",
+    "change_type": "LINKED",
+    "verification_ref": "run:clot-example/source/A",
+    "change_reason_code": "CONTROLLED_LINK_SOURCE"
+  }
+}

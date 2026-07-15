@@ -1,0 +1,26 @@
+{
+  "event_id": "41000000-0000-4000-8000-000000000001",
+  "event_type": "warehouse.source_mapping.changed",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "warehouse_source_mapping",
+  "aggregate_id": "41000000-0000-4000-8000-000000000002",
+  "aggregate_version": 1,
+  "event_sequence": 1,
+  "idempotency_key": "warehouse-source-example-1:event",
+  "correlation_id": "41000000-0000-4000-8000-000000000003",
+  "causation_id": null,
+  "occurred_at": "2026-07-15T02:01:00.000Z",
+  "recorded_at": "2026-07-15T02:01:00.100Z",
+  "source_system": "cloudmold-warehouse",
+  "payload": {
+    "mapping_id": "41000000-0000-4000-8000-000000000002",
+    "source_system": "WMS",
+    "source_type": "WAREHOUSE",
+    "source_id": "17",
+    "canonical_type": "WAREHOUSE",
+    "canonical_id": "41000000-0000-4000-8000-000000000004",
+    "warehouse_id": "41000000-0000-4000-8000-000000000004",
+    "current_status": "ACTIVE"
+  }
+}

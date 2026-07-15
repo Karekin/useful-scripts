@@ -1,0 +1,23 @@
+{
+  "event_id": "42000000-0000-4000-8000-000000000001",
+  "event_type": "warehouse.operator_assignment.changed",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "warehouse_operator_assignment",
+  "aggregate_id": "42000000-0000-4000-8000-000000000002",
+  "aggregate_version": 1,
+  "event_sequence": 1,
+  "idempotency_key": "warehouse-operator-example-1:event",
+  "correlation_id": "42000000-0000-4000-8000-000000000003",
+  "causation_id": null,
+  "occurred_at": "2026-07-15T02:02:00.000Z",
+  "recorded_at": "2026-07-15T02:02:00.100Z",
+  "source_system": "cloudmold-warehouse",
+  "payload": {
+    "assignment_id": "42000000-0000-4000-8000-000000000002",
+    "warehouse_id": "42000000-0000-4000-8000-000000000004",
+    "principal_id": "42000000-0000-4000-8000-000000000005",
+    "role_code": "PICKER",
+    "current_status": "ACTIVE"
+  }
+}

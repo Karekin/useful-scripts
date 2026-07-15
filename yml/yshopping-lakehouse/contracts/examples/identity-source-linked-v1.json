@@ -1,0 +1,27 @@
+{
+  "event_id": "20000000-0000-4000-8000-000000000001",
+  "event_type": "identity.source.linked",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "identity_principal",
+  "aggregate_id": "20000000-0000-4000-8000-000000000002",
+  "aggregate_version": 1,
+  "event_sequence": 1,
+  "idempotency_key": "identity-link-example-1",
+  "correlation_id": "20000000-0000-4000-8000-000000000003",
+  "causation_id": null,
+  "occurred_at": "2026-07-15T00:00:00.000Z",
+  "recorded_at": "2026-07-15T00:00:00.100Z",
+  "source_system": "cloudmold-identity",
+  "payload": {
+    "run_id": "identity-example",
+    "principal_id": "20000000-0000-4000-8000-000000000002",
+    "principal_type": "PLATFORM_OPERATOR",
+    "principal_status": "ACTIVE",
+    "source_identity_id": "20000000-0000-4000-8000-000000000004",
+    "source_system": "SYSTEM",
+    "source_type": "ADMIN_USER",
+    "source_id": "42",
+    "source_status": "ACTIVE"
+  }
+}

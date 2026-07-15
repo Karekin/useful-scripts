@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/listing-sales-eligibility-enforcement-status-changed-v1.schema.json",
+  "title": "listing.sales_eligibility_enforcement.status_changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id", "saga_id", "source_event_id", "source_entity_type", "source_aggregate_version",
+    "merchant_id", "shop_id", "previous_status", "current_status", "active_step", "attempt",
+    "reason", "expected_listing_count", "unpublished_listing_count", "skipped_listing_count",
+    "error_code", "error_message", "next_retry_at"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "saga_id": {"type": "string", "format": "uuid"},
+    "source_event_id": {"type": "string", "format": "uuid"},
+    "source_entity_type": {"type": "string", "enum": ["MERCHANT", "SHOP"]},
+    "source_aggregate_version": {"type": "integer", "minimum": 1},
+    "merchant_id": {"type": "string", "format": "uuid"},
+    "shop_id": {"type": ["string", "null"], "format": "uuid"},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "REQUESTED", "UNPUBLISHING", "RETRY_SCHEDULED", "MANUAL_REVIEW", "COMPLETED"]},
+    "current_status": {"type": "string", "enum": ["REQUESTED", "UNPUBLISHING", "RETRY_SCHEDULED", "MANUAL_REVIEW", "COMPLETED"]},
+    "active_step": {"type": "string", "enum": ["UNPUBLISH_LISTINGS", "NONE"]},
+    "attempt": {"type": "integer", "minimum": 0},
+    "reason": {"type": "string", "minLength": 1, "maxLength": 512},
+    "expected_listing_count": {"type": "integer", "minimum": 0},
+    "unpublished_listing_count": {"type": "integer", "minimum": 0},
+    "skipped_listing_count": {"type": "integer", "minimum": 0},
+    "error_code": {"type": ["string", "null"], "maxLength": 64},
+    "error_message": {"type": ["string", "null"], "maxLength": 256},
+    "next_retry_at": {"type": ["string", "null"], "format": "date-time"}
+  }
+}

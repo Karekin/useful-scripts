@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/merchant-operator-assignment-changed-v1.schema.json",
+  "title": "merchant.operator_assignment.changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "assignment_id", "merchant_id", "shop_id", "principal_id", "role_code",
+    "previous_status", "current_status", "valid_from"
+  ],
+  "properties": {
+    "assignment_id": {"type": "string", "format": "uuid"},
+    "merchant_id": {"type": "string", "format": "uuid"},
+    "shop_id": {"type": "string", "format": "uuid"},
+    "principal_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "role_code": {"type": "string", "enum": ["OWNER"]},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "ACTIVE"]},
+    "current_status": {"type": "string", "enum": ["ACTIVE", "REVOKED"]},
+    "valid_from": {"type": "string", "format": "date-time"}
+  }
+}

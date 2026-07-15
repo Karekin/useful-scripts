@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/inventory-lot-source-mapping-changed-v1.schema.json",
+  "title": "inventory.lot.source_mapping.changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id", "migration_run_id", "mapping_id", "mapping_source_system", "source_type",
+    "source_id", "lot_id", "valid_from", "valid_to", "previous_status", "current_status",
+    "change_type", "verification_ref", "change_reason_code"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "migration_run_id": {"type": ["string", "null"], "minLength": 1, "maxLength": 128},
+    "mapping_id": {"type": "string", "format": "uuid"},
+    "mapping_source_system": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,31}$"},
+    "source_type": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,31}$"},
+    "source_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "lot_id": {"type": "string", "format": "uuid"},
+    "valid_from": {"type": "string", "format": "date-time"},
+    "valid_to": {"type": ["string", "null"], "format": "date-time"},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "ACTIVE"]},
+    "current_status": {"type": "string", "enum": ["ACTIVE", "ENDED"]},
+    "change_type": {"type": "string", "enum": ["LINKED", "ENDED"]},
+    "verification_ref": {"type": "string", "pattern": "^(?i:sha256|sha512|ticket|run|evidence|vault|kms|token):[A-Za-z0-9._/-]+$", "maxLength": 256},
+    "change_reason_code": {"type": "string", "pattern": "^[A-Z0-9_]+$", "maxLength": 64}
+  }
+}

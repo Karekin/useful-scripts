@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+lakehouse_dir="$(cd "${script_dir}/.." && pwd)"
+starrocks_container="${STARROCKS_CONTAINER:-yshopping-starrocks}"
+starrocks_user="${STARROCKS_USER:-root}"
+starrocks_password="${STARROCKS_PASSWORD:-}"
+timeout_seconds="${WAREHOUSE_RECONCILE_TIMEOUT_SECONDS:-60}"
+reconciliation_sql="${lakehouse_dir}/evidence/warehouse-single-source-reconciliation.sql"
+
+starrocks_client() {
+  if [[ -n "${starrocks_password}" ]]; then
+    docker exec -i "${starrocks_container}" mysql -h127.0.0.1 -P9030 \
+      -u"${starrocks_user}" -p"${starrocks_password}" --batch --raw "$@"
+  else
+    docker exec -i "${starrocks_container}" mysql -h127.0.0.1 -P9030 \
+      -u"${starrocks_user}" --batch --raw "$@"
+  fi
+}
+
+deadline=$((SECONDS + timeout_seconds))
+while true; do
+  entity_events="$(starrocks_client -N -e "
+    SELECT COUNT(*) FROM yshopping_dwd.dwd_canonical_warehouse_entity_status_event
+    WHERE tenant_id=991501;")"
+  mapping_events="$(starrocks_client -N -e "
+    SELECT COUNT(*) FROM yshopping_dwd.dwd_canonical_warehouse_source_mapping_event
+    WHERE tenant_id=991501;")"
+  if [[ "${entity_events}" == "6" && "${mapping_events}" == "2" ]]; then
+    break
+  fi
+  if (( SECONDS >= deadline )); then
+    echo "warehouse CDC evidence did not arrive within ${timeout_seconds}s: entity=${entity_events}, mapping=${mapping_events}" >&2
+    exit 1
+  fi
+  sleep 1
+done
+
+violations="$(starrocks_client -N -e "
+  SELECT SUM(violation_count) FROM (
+    SELECT IF(COUNT(*)=6,0,1) violation_count
+      FROM yshopping_dwd.dwd_canonical_warehouse_entity_status_event WHERE tenant_id=991501
+    UNION ALL
+    SELECT IF(COUNT(*)=2,0,1)
+      FROM yshopping_dwd.dwd_canonical_warehouse_source_mapping_event
+      WHERE tenant_id=991501 AND canonical_id<>source_id
+    UNION ALL
+    SELECT IF(COUNT(*)=1,0,1)
+      FROM yshopping_dim.dim_canonical_warehouse_current
+      WHERE tenant_id=991501 AND warehouse_id='f1500000-0000-4000-8000-000000000001'
+        AND current_status='ACTIVE' AND aggregate_version=2
+    UNION ALL
+    SELECT IF(COUNT(*)=1,0,1)
+      FROM yshopping_dim.dim_canonical_warehouse_zone_current
+      WHERE tenant_id=991501 AND warehouse_id='f1500000-0000-4000-8000-000000000001'
+        AND zone_id='f1500000-0000-4000-8000-000000000002'
+        AND current_status='ACTIVE' AND aggregate_version=2
+    UNION ALL
+    SELECT IF(COUNT(*)=1,0,1)
+      FROM yshopping_dim.dim_canonical_warehouse_location_current
+      WHERE tenant_id=991501 AND warehouse_id='f1500000-0000-4000-8000-000000000001'
+        AND zone_id='f1500000-0000-4000-8000-000000000002'
+        AND location_id='f1500000-0000-4000-8000-000000000003'
+        AND current_status='ACTIVE' AND aggregate_version=2
+    UNION ALL
+    SELECT IF(COUNT(*)=1,0,1)
+      FROM yshopping_dws.dws_canonical_warehouse_network_current
+      WHERE tenant_id=991501 AND warehouse_id='f1500000-0000-4000-8000-000000000001'
+        AND warehouse_status='ACTIVE' AND zone_count=1 AND active_zone_count=1
+        AND location_count=1 AND active_location_count=1 AND active_mapping_count=2
+    UNION ALL
+    SELECT IF(COUNT(*)=1,0,1)
+      FROM yshopping_ads.ads_canonical_warehouse_network_readiness
+      WHERE tenant_id=991501 AND warehouse_id='f1500000-0000-4000-8000-000000000001'
+        AND readiness_status='IN_PROGRESS' AND active_operator_count=0
+  ) checks;")"
+if [[ "${violations}" != "0" ]]; then
+  echo "warehouse DWD-DIM-DWS-ADS reconciliation has ${violations} violation(s)" >&2
+  starrocks_client < "${reconciliation_sql}"
+  exit 1
+fi
+
+starrocks_client < "${reconciliation_sql}"
+echo "PASS warehouse DWD-DIM-DWS-ADS reconciliation"

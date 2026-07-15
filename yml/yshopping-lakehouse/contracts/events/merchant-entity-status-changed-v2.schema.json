@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/merchant-entity-status-changed-v2.schema.json",
+  "title": "merchant.entity.status_changed payload v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["entity_type", "previous_status", "current_status"],
+  "properties": {
+    "entity_type": {"type": "string", "enum": ["LEGAL_ENTITY", "MERCHANT", "SHOP"]},
+    "legal_entity_id": {"type": "string", "format": "uuid"},
+    "merchant_id": {"type": "string", "format": "uuid"},
+    "shop_id": {"type": "string", "format": "uuid"},
+    "channel_code": {"type": "string", "minLength": 1, "maxLength": 32},
+    "external_shop_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "previous_status": {
+      "type": ["string", "null"],
+      "enum": [null, "PENDING_VERIFICATION", "PENDING_ACTIVATION", "DRAFT", "ACTIVE", "SUSPENDED", "PAUSED"]
+    },
+    "current_status": {
+      "type": "string",
+      "enum": ["PENDING_VERIFICATION", "VERIFIED", "PENDING_ACTIVATION", "DRAFT", "ACTIVE", "SUSPENDED", "PAUSED"]
+    },
+    "reason": {"type": ["string", "null"], "minLength": 1, "maxLength": 512}
+  },
+  "oneOf": [
+    {"properties": {"entity_type": {"const": "LEGAL_ENTITY"}}, "required": ["legal_entity_id"]},
+    {"properties": {"entity_type": {"const": "MERCHANT"}}, "required": ["legal_entity_id", "merchant_id"]},
+    {"properties": {"entity_type": {"const": "SHOP"}}, "required": ["merchant_id", "shop_id", "channel_code", "external_shop_id"]}
+  ]
+}

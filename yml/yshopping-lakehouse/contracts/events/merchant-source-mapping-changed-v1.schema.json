@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/merchant-source-mapping-changed-v1.schema.json",
+  "title": "merchant.source_mapping.changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id", "migration_run_id", "mapping_id", "source_system", "source_type", "source_id",
+    "target_type", "target_id", "valid_from", "valid_to", "previous_status", "current_status",
+    "verification_ref"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "migration_run_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "mapping_id": {"type": "string", "format": "uuid"},
+    "source_system": {"type": "string", "minLength": 1, "maxLength": 32},
+    "source_type": {"type": "string", "minLength": 1, "maxLength": 32},
+    "source_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "target_type": {"type": "string", "enum": ["LEGAL_ENTITY", "MERCHANT", "SHOP"]},
+    "target_id": {"type": "string", "format": "uuid"},
+    "valid_from": {"type": "string", "format": "date-time"},
+    "valid_to": {"type": ["string", "null"], "format": "date-time"},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "ACTIVE"]},
+    "current_status": {"type": "string", "enum": ["ACTIVE", "REVOKED"]},
+    "verification_ref": {"type": "string", "minLength": 1, "maxLength": 256}
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "event_id": "30000000-0000-4000-8000-000000000001",
+  "event_type": "merchant.onboarding.status_changed",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "MERCHANT_ONBOARDING",
+  "aggregate_id": "30000000-0000-4000-8000-000000000002",
+  "aggregate_version": 4,
+  "event_sequence": 1,
+  "idempotency_key": "merchant-onboarding-example-1",
+  "correlation_id": "30000000-0000-4000-8000-000000000003",
+  "causation_id": null,
+  "occurred_at": "2026-07-15T01:00:00.000Z",
+  "recorded_at": "2026-07-15T01:00:00.100Z",
+  "source_system": "cloudmold-merchant",
+  "payload": {
+    "application_id": "30000000-0000-4000-8000-000000000002",
+    "legal_entity_id": "30000000-0000-4000-8000-000000000004",
+    "owner_principal_id": "30000000-0000-4000-8000-000000000005",
+    "channel_code": "YSHOPPING",
+    "external_shop_id": "yshop-001",
+    "previous_status": "UNDER_REVIEW",
+    "current_status": "APPROVED",
+    "merchant_id": "30000000-0000-4000-8000-000000000006",
+    "shop_id": "30000000-0000-4000-8000-000000000007"
+  }
+}

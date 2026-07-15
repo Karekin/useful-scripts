@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/inventory-migration-shadow-window-status-changed-v1.schema.json",
+  "title": "inventory.migration.shadow_window_status_changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "shadow_window_id", "pilot_batch_id", "migration_run_id", "admission_event_id",
+    "manifest_hash", "expected_item_set_hash", "environment", "environment_fingerprint",
+    "policy_version", "policy_hash", "expected_item_count", "target_projection_kind",
+    "target_materialized", "watermark_kind", "required_round_count", "required_duration_seconds",
+    "max_round_gap_seconds", "max_lag_seconds", "window_started_at", "window_verified_at",
+    "window_status", "verification_result", "gtid_validator_version", "collector_artifact_hash",
+    "execution_available", "cutover_ready"
+  ],
+  "properties": {
+    "shadow_window_id": {"type": "string", "format": "uuid"},
+    "pilot_batch_id": {"type": "string", "format": "uuid"},
+    "migration_run_id": {"type": "string", "format": "uuid"},
+    "admission_event_id": {"type": "string", "format": "uuid"},
+    "manifest_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "expected_item_set_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "environment": {"type": "string", "const": "PRODUCTION"},
+    "environment_fingerprint": {"type": "string", "minLength": 1, "maxLength": 128},
+    "policy_version": {"type": "string", "minLength": 1, "maxLength": 32},
+    "policy_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "expected_item_count": {"type": "integer", "minimum": 1},
+    "target_projection_kind": {"type": "string", "const": "CANONICAL_INVENTORY_V3_SHADOW_PROJECTION"},
+    "target_materialized": {"type": "boolean", "const": false},
+    "watermark_kind": {"type": "string", "const": "MYSQL_GTID_SET"},
+    "required_round_count": {"type": "integer", "minimum": 3},
+    "required_duration_seconds": {"type": "integer", "minimum": 3600},
+    "max_round_gap_seconds": {"type": "integer", "minimum": 1},
+    "max_lag_seconds": {"type": "integer", "minimum": 0},
+    "window_started_at": {"type": "string", "format": "date-time"},
+    "window_verified_at": {"type": ["string", "null"], "format": "date-time"},
+    "window_status": {"type": "string", "enum": ["OPEN", "OBSERVING", "VERIFIED"]},
+    "verification_result": {"type": "string", "enum": ["PENDING", "MATCH", "DIFFERENT", "UNCOMPARABLE"]},
+    "gtid_validator_version": {"type": "string", "const": "MYSQL_GTID_SET_CONTAINS_V1"},
+    "collector_artifact_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "execution_available": {"type": "boolean", "const": false},
+    "cutover_ready": {"type": "boolean", "const": false}
+  },
+  "allOf": [
+    {"if": {"properties": {"window_status": {"enum": ["OPEN", "OBSERVING"]}}}, "then": {"properties": {"verification_result": {"const": "PENDING"}, "window_verified_at": {"type": "null"}}}},
+    {"if": {"properties": {"window_status": {"const": "VERIFIED"}}}, "then": {"properties": {"verification_result": {"enum": ["MATCH", "DIFFERENT", "UNCOMPARABLE"]}, "window_verified_at": {"type": "string", "format": "date-time"}}}}
+  ]
+}

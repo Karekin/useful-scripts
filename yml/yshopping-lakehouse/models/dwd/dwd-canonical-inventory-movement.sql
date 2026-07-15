@@ -12,22 +12,40 @@ SELECT
     idempotency_key,
     get_json_string(payload, '$.canonical_sku_id') AS canonical_sku_id,
     get_json_string(payload, '$.warehouse_id') AS warehouse_id,
+    get_json_string(payload, '$.location_id') AS location_id,
+    CASE WHEN schema_version IN (3, 4) THEN get_json_string(payload, '$.lot_id') END AS lot_id,
+    CASE WHEN schema_version IN (3, 4) THEN get_json_string(payload, '$.lot_code') END AS lot_code,
+    CASE WHEN schema_version IN (1, 2) THEN get_json_string(payload, '$.lot_no') END AS legacy_lot_no,
+    get_json_string(payload, '$.owner_type') AS owner_type,
     get_json_string(payload, '$.owner_id') AS owner_id,
+    get_json_string(payload, '$.stock_status') AS stock_status,
     get_json_string(payload, '$.quality_status') AS quality_status,
-    CAST(get_json_string(payload, '$.delta_quantity') AS DECIMAL(24,6)) AS delta_on_hand_quantity,
+    COALESCE(
+        CAST(get_json_string(payload, '$.delta_on_hand_quantity') AS DECIMAL(24,6)),
+        CAST(get_json_string(payload, '$.delta_quantity') AS DECIMAL(24,6))
+    ) AS delta_on_hand_quantity,
+    CAST(get_json_string(payload, '$.delta_reserved_quantity') AS DECIMAL(24,6)) AS delta_reserved_quantity,
+    CAST(get_json_string(payload, '$.delta_in_transit_quantity') AS DECIMAL(24,6)) AS delta_in_transit_quantity,
     CAST(get_json_string(payload, '$.after_on_hand_quantity') AS DECIMAL(24,6)) AS after_on_hand_quantity,
     CAST(get_json_string(payload, '$.after_reserved_quantity') AS DECIMAL(24,6)) AS after_reserved_quantity,
+    CAST(get_json_string(payload, '$.after_in_transit_quantity') AS DECIMAL(24,6)) AS after_in_transit_quantity,
     CAST(get_json_string(payload, '$.after_available_quantity') AS DECIMAL(24,6)) AS after_available_quantity,
+    COALESCE(get_json_string(payload, '$.base_uom_code'), get_json_string(payload, '$.uom_code')) AS base_uom_code,
     get_json_string(payload, '$.uom_code') AS uom_code,
     get_json_string(payload, '$.movement_type') AS movement_type,
+    CAST(get_json_string(payload, '$.ledger_transaction_id') AS BIGINT) AS ledger_transaction_id,
+    get_json_string(payload, '$.movement_group_id') AS movement_group_id,
+    get_json_string(payload, '$.entry_role') AS entry_role,
+    get_json_string(payload, '$.counterparty_balance_id') AS counterparty_balance_id,
     get_json_string(payload, '$.business_type') AS business_type,
     get_json_string(payload, '$.business_id') AS business_id,
     get_json_string(payload, '$.business_item_id') AS business_item_id,
     get_json_string(payload, '$.business_no') AS business_no,
     get_json_string(payload, '$.reservation_id') AS reservation_id,
+    get_json_string(payload, '$.allocation_id') AS allocation_id,
     get_json_string(payload, '$.cancellation_saga_id') AS cancellation_saga_id,
     CAST(get_json_string(payload, '$.step_ordinal') AS INT) AS step_ordinal
 FROM yshopping_dwd.dwd_domain_event
 WHERE event_type = 'inventory.stock.changed'
-  AND schema_version IN (1, 2)
+  AND schema_version IN (1, 2, 3, 4)
   AND source_system = 'cloudmold-inventory';

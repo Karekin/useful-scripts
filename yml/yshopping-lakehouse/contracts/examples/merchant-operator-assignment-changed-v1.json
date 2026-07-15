@@ -1,0 +1,26 @@
+{
+  "event_id": "32000000-0000-4000-8000-000000000001",
+  "event_type": "merchant.operator_assignment.changed",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "MERCHANT_OPERATOR_ASSIGNMENT",
+  "aggregate_id": "32000000-0000-4000-8000-000000000002",
+  "aggregate_version": 1,
+  "event_sequence": 1,
+  "idempotency_key": "merchant-owner-assignment-example-1",
+  "correlation_id": "32000000-0000-4000-8000-000000000003",
+  "causation_id": null,
+  "occurred_at": "2026-07-15T01:02:00.000Z",
+  "recorded_at": "2026-07-15T01:02:00.100Z",
+  "source_system": "cloudmold-merchant",
+  "payload": {
+    "assignment_id": "32000000-0000-4000-8000-000000000002",
+    "merchant_id": "32000000-0000-4000-8000-000000000004",
+    "shop_id": "32000000-0000-4000-8000-000000000005",
+    "principal_id": "32000000-0000-4000-8000-000000000006",
+    "role_code": "OWNER",
+    "previous_status": null,
+    "current_status": "ACTIVE",
+    "valid_from": "2026-07-15T01:02:00.000Z"
+  }
+}

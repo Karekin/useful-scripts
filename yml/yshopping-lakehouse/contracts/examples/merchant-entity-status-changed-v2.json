@@ -1,0 +1,24 @@
+{
+  "event_id": "31000000-0000-4000-8000-000000000011",
+  "event_type": "merchant.entity.status_changed",
+  "schema_version": 2,
+  "tenant_id": 1,
+  "aggregate_type": "MERCHANT_MERCHANT",
+  "aggregate_id": "31000000-0000-4000-8000-000000000002",
+  "aggregate_version": 3,
+  "event_sequence": 1,
+  "idempotency_key": "merchant-suspension-example-1",
+  "correlation_id": "31000000-0000-4000-8000-000000000003",
+  "causation_id": null,
+  "occurred_at": "2026-07-15T02:01:00.000Z",
+  "recorded_at": "2026-07-15T02:01:00.100Z",
+  "source_system": "cloudmold-merchant",
+  "payload": {
+    "entity_type": "MERCHANT",
+    "legal_entity_id": "31000000-0000-4000-8000-000000000004",
+    "merchant_id": "31000000-0000-4000-8000-000000000002",
+    "previous_status": "ACTIVE",
+    "current_status": "SUSPENDED",
+    "reason": "risk control suspension"
+  }
+}

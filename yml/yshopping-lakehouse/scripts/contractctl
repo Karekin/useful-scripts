@@ -133,7 +133,8 @@ def validate_all() -> None:
                 errors.append(f"{example_path}: event_type does not match manifest")
             if example.get("schema_version") != schema_version:
                 errors.append(f"{example_path}: schema_version does not match manifest")
-            if example.get("aggregate_type") != event_config["aggregate_type"]:
+            expected_aggregate_type = config.get("aggregate_type", event_config["aggregate_type"])
+            if example.get("aggregate_type") != expected_aggregate_type:
                 errors.append(f"{example_path}: aggregate_type does not match manifest")
             seen_examples.add(example_path)
             contract_count += 1

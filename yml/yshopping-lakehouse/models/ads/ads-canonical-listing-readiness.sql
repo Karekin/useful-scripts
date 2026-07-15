@@ -13,6 +13,7 @@ SELECT
     COALESCE(offer.offer_count, 0) AS offer_count,
     COALESCE(offer.enabled_offer_count, 0) AS enabled_offer_count,
     COALESCE(offer.active_catalog_sku_count, 0) AS active_catalog_sku_count,
+    COALESCE(offer.active_merchant_shop_offer_count, 0) AS active_merchant_shop_offer_count,
     CASE
         WHEN listing.current_status = 'PUBLISHED'
          AND listing.completion_passed = TRUE
@@ -27,8 +28,25 @@ SELECT
         THEN 'LISTING_PUBLISHED'
         ELSE 'IN_PROGRESS'
     END AS readiness_status,
+    CASE
+        WHEN listing.current_status = 'PUBLISHED'
+         AND listing.completion_passed = TRUE
+         AND listing.business_approved = TRUE
+         AND listing.risk_approved = TRUE
+         AND COALESCE(offer.offer_count, 0) > 0
+         AND offer.offer_count = offer.enabled_offer_count
+         AND offer.offer_count = offer.active_catalog_sku_count
+         AND offer.offer_count = offer.active_merchant_shop_offer_count
+        THEN 'LISTING_SELLABLE'
+        WHEN listing.current_status = 'PUBLISHED'
+         AND COALESCE(offer.offer_count, 0) > 0
+         AND offer.offer_count <> COALESCE(offer.active_merchant_shop_offer_count, 0)
+        THEN 'SELLING_BLOCKED_MERCHANT_SHOP'
+        ELSE 'NOT_SELLABLE'
+    END AS sellability_status,
     GREATEST(listing.recorded_at, COALESCE(review.review_freshness_at, listing.recorded_at),
-             COALESCE(offer.offer_freshness_at, listing.recorded_at)) AS data_freshness_at
+             COALESCE(offer.offer_freshness_at, listing.recorded_at),
+             COALESCE(offer.merchant_freshness_at, listing.recorded_at)) AS data_freshness_at
 FROM yshopping_dim.dim_canonical_listing_current listing
 LEFT JOIN (
     SELECT tenant_id, listing_id, revision,
@@ -45,7 +63,9 @@ LEFT JOIN (
            COUNT(*) AS offer_count,
            COUNT(IF(enabled = TRUE AND currency_code = 'CNY', 1, NULL)) AS enabled_offer_count,
            COUNT(IF(catalog_sku_status = 'ACTIVE', 1, NULL)) AS active_catalog_sku_count,
-           MAX(offer_freshness_at) AS offer_freshness_at
+           COUNT(IF(merchant_shop_active = TRUE, 1, NULL)) AS active_merchant_shop_offer_count,
+           MAX(offer_freshness_at) AS offer_freshness_at,
+           MAX(merchant_freshness_at) AS merchant_freshness_at
     FROM yshopping_dws.dws_canonical_listing_offer_current
     GROUP BY tenant_id, listing_id
 ) offer ON offer.tenant_id = listing.tenant_id AND offer.listing_id = listing.listing_id;

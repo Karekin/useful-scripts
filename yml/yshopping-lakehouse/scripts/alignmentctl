@@ -1,0 +1,797 @@
+#!/usr/bin/env python3
+"""Validate the Y-Shopping source-to-domain-to-lakehouse alignment contract."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import sys
+from pathlib import Path
+from typing import Any
+
+
+ROOT = Path(__file__).resolve().parents[1]
+WORKSPACE_ROOT = ROOT.parents[2]
+DEFAULT_MANIFEST = ROOT / "contracts" / "yshopping-model-alignment-v1.json"
+DEFAULT_REFERENCE_ROOT = Path(
+    "/Users/karekin/Library/Mobile Documents/iCloud~md~obsidian/Documents/project/"
+    "语兴好物（y shopping）-电商数仓搭建"
+)
+REFERENCE_ROOT = Path(os.environ.get("YSHOPPING_REFERENCE_ROOT", DEFAULT_REFERENCE_ROOT))
+ALLOWED_STATUSES = {"verified", "partial", "legacy_only", "missing", "deferred"}
+IMPLEMENTED_STATUSES = {"verified", "partial", "legacy_only"}
+REQUIRED_LAYERS = {"ODS", "DIM", "DWD_DWM", "DWS", "ADS"}
+REQUIRED_EVENT_ENVELOPE_FIELDS = {
+    "tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"
+}
+EVENT_TYPE_PATTERN = re.compile(r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$")
+FIELD_DECISIONS = {"reuse", "rename", "normalize", "split", "new", "deprecate", "reject"}
+SENSITIVE_CLASSIFICATIONS = {"pii", "restricted_financial"}
+INVARIANT_KINDS = {
+    "unique",
+    "foreign_key",
+    "not_equal",
+    "temporal",
+    "acyclic_hierarchy",
+    "pii_exposure",
+    "money_unit",
+    "layer_coverage",
+    "event_projection",
+}
+CORRECTION_DECISIONS = {"split", "correct", "normalize", "reject", "secure", "new"}
+SIMILARITY_METHOD = "surface_coverage_v1"
+SIMILARITY_STATUS_WEIGHTS = {
+    "verified": 1.0,
+    "partial": 1.0,
+    "legacy_only": 0.5,
+    "missing": 0.0,
+}
+
+
+class AlignmentError(RuntimeError):
+    pass
+
+
+def load(path: Path) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise AlignmentError(f"cannot load {path}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise AlignmentError(f"{path}: root must be an object")
+    return value
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def resolve_project_path(value: str, workspace_root: Path = WORKSPACE_ROOT) -> Path:
+    path = Path(value)
+    return path if path.is_absolute() else workspace_root / path
+
+
+def validate_source_documents(
+    manifest: dict[str, Any], reference_root: Path = REFERENCE_ROOT
+) -> list[str]:
+    errors: list[str] = []
+    documents = manifest.get("source_documents")
+    if not isinstance(documents, list) or not documents:
+        return ["source_documents: requires a non-empty list"]
+    seen: set[str] = set()
+    for index, document in enumerate(documents):
+        label = f"source_documents[{index}]"
+        if not isinstance(document, dict):
+            errors.append(f"{label}: must be an object")
+            continue
+        filename = document.get("filename")
+        if not isinstance(filename, str) or not filename:
+            errors.append(f"{label}.filename: required")
+            continue
+        if filename in seen:
+            errors.append(f"{label}.filename: duplicate {filename}")
+        seen.add(filename)
+        path = reference_root / filename
+        if not path.is_file():
+            errors.append(f"{label}: missing source document {path}")
+            continue
+        expected_hash = document.get("sha256")
+        if sha256(path) != expected_hash:
+            errors.append(f"{label}: source drift detected for {filename}")
+        expected_lines = document.get("line_count")
+        actual_lines = len(path.read_text(encoding="utf-8").splitlines())
+        if actual_lines != expected_lines:
+            errors.append(
+                f"{label}: line count changed for {filename}: {actual_lines} != {expected_lines}"
+            )
+    return errors
+
+
+def validate_source_corrections(manifest: dict[str, Any]) -> list[str]:
+    corrections = manifest.get("source_corrections")
+    if not isinstance(corrections, list) or not corrections:
+        return ["source_corrections: record known source inconsistencies instead of copying them"]
+    errors: list[str] = []
+    seen: set[tuple[str, str]] = set()
+    for index, correction in enumerate(corrections):
+        label = f"source_corrections[{index}]"
+        if not isinstance(correction, dict):
+            errors.append(f"{label}: must be an object")
+            continue
+        anchor = correction.get("source_anchor")
+        decision = correction.get("decision")
+        description = correction.get("description")
+        if not isinstance(anchor, str) or not anchor:
+            errors.append(f"{label}.source_anchor: required")
+        if decision not in CORRECTION_DECISIONS:
+            errors.append(f"{label}.decision: invalid {decision}")
+        if not isinstance(description, str) or not description:
+            errors.append(f"{label}.description: required")
+        key = (str(anchor), str(description))
+        if key in seen:
+            errors.append(f"{label}: duplicate correction")
+        seen.add(key)
+    return errors
+
+
+def validate_surface(
+    surface: Any, label: str, workspace_root: Path = WORKSPACE_ROOT
+) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(surface, dict):
+        return [f"{label}: must be an object"]
+    status = surface.get("status")
+    if status not in ALLOWED_STATUSES:
+        errors.append(f"{label}.status: must be one of {sorted(ALLOWED_STATUSES)}")
+    refs = surface.get("refs", [])
+    if not isinstance(refs, list) or any(not isinstance(item, str) or not item for item in refs):
+        errors.append(f"{label}.refs: must be a list of non-empty paths")
+        refs = []
+    if status in IMPLEMENTED_STATUSES and not refs:
+        errors.append(f"{label}.refs: {status} requires implementation evidence")
+    if status in {"missing", "deferred"} and refs:
+        errors.append(f"{label}.refs: {status} must not claim implementation evidence")
+    for ref in refs:
+        if not resolve_project_path(ref, workspace_root).exists():
+            errors.append(f"{label}.refs: missing {ref}")
+    gaps = surface.get("gaps", [])
+    if not isinstance(gaps, list) or any(not isinstance(item, str) or not item for item in gaps):
+        errors.append(f"{label}.gaps: must be a list of non-empty descriptions")
+    if status == "verified" and gaps:
+        errors.append(f"{label}.gaps: verified surfaces cannot have open gaps")
+    if status in {"partial", "legacy_only", "missing"} and not gaps:
+        errors.append(f"{label}.gaps: {status} requires explicit gaps")
+    return errors
+
+
+def validate_units(
+    manifest: dict[str, Any], workspace_root: Path = WORKSPACE_ROOT
+) -> list[str]:
+    errors: list[str] = []
+    required = manifest.get("required_alignment_units")
+    units = manifest.get("alignment_units")
+    if not isinstance(required, list) or any(not isinstance(item, str) for item in required):
+        errors.append("required_alignment_units: must be a list of ids")
+        required = []
+    if len(required) != len(set(required)):
+        errors.append("required_alignment_units: contains duplicates")
+    if not isinstance(units, list):
+        return errors + ["alignment_units: must be a list"]
+    seen: set[str] = set()
+    for index, unit in enumerate(units):
+        label = f"alignment_units[{index}]"
+        if not isinstance(unit, dict):
+            errors.append(f"{label}: must be an object")
+            continue
+        unit_id = unit.get("id")
+        if not isinstance(unit_id, str) or not re.fullmatch(r"[a-z0-9]+(?:[._-][a-z0-9]+)*", unit_id):
+            errors.append(f"{label}.id: invalid or missing")
+            continue
+        if unit_id in seen:
+            errors.append(f"{label}.id: duplicate {unit_id}")
+        seen.add(unit_id)
+        processes = unit.get("target_processes")
+        if not isinstance(processes, list) or not processes or any(
+            not isinstance(item, str) or not item for item in processes
+        ):
+            errors.append(f"{label}.target_processes: requires non-empty descriptions")
+        anchor = unit.get("source_anchor")
+        if not isinstance(anchor, str) or not anchor:
+            errors.append(f"{label}.source_anchor: required")
+        context_refs = unit.get("context_refs", [])
+        if not isinstance(context_refs, list) or any(
+            not isinstance(item, str) or not item for item in context_refs
+        ):
+            errors.append(f"{label}.context_refs: must be a list of ids")
+        errors.extend(validate_surface(unit.get("backend"), f"{label}.backend", workspace_root))
+        errors.extend(validate_surface(unit.get("lakehouse"), f"{label}.lakehouse", workspace_root))
+        next_gate = unit.get("next_gate")
+        if not isinstance(next_gate, str) or not next_gate:
+            errors.append(f"{label}.next_gate: required")
+    missing = set(required) - seen
+    unexpected = seen - set(required)
+    if missing:
+        errors.append(f"alignment_units: missing required ids {sorted(missing)}")
+    if unexpected:
+        errors.append(f"alignment_units: undeclared ids {sorted(unexpected)}")
+    return errors
+
+
+def calculate_similarity_score(manifest: dict[str, Any]) -> dict[str, Any]:
+    """Measure honest backend/lakehouse model-surface coverage.
+
+    Partial and verified surfaces both count as structurally represented; functional
+    completeness remains governed by their explicit gaps. Legacy-only surfaces count
+    half because they provide a real source model without a canonical boundary.
+    Deferred surfaces are outside the active denominator.
+    """
+    earned_by_side = {"backend": 0.0, "lakehouse": 0.0}
+    eligible_by_side = {"backend": 0, "lakehouse": 0}
+    excluded_units = 0
+    unit_scores: list[dict[str, Any]] = []
+    units = manifest.get("alignment_units", [])
+    if not isinstance(units, list):
+        units = []
+    for unit in units:
+        if not isinstance(unit, dict):
+            continue
+        statuses: dict[str, Any] = {}
+        weights: dict[str, float] = {}
+        for side in ("backend", "lakehouse"):
+            surface = unit.get(side, {})
+            status = surface.get("status") if isinstance(surface, dict) else None
+            statuses[side] = status
+            if status == "deferred":
+                continue
+            eligible_by_side[side] += 1
+            weight = SIMILARITY_STATUS_WEIGHTS.get(str(status), 0.0)
+            weights[side] = weight
+            earned_by_side[side] += weight
+        if statuses.get("backend") == "deferred" and statuses.get("lakehouse") == "deferred":
+            excluded_units += 1
+        unit_scores.append({
+            "id": unit.get("id"),
+            "backend_status": statuses.get("backend"),
+            "lakehouse_status": statuses.get("lakehouse"),
+            "backend_weight": weights.get("backend"),
+            "lakehouse_weight": weights.get("lakehouse"),
+        })
+
+    def percent(earned: float, eligible: int) -> float:
+        return round(earned * 100.0 / eligible, 2) if eligible else 0.0
+
+    earned_total = sum(earned_by_side.values())
+    eligible_total = sum(eligible_by_side.values())
+    config = manifest.get("similarity_score", {})
+    target = config.get("target_percent") if isinstance(config, dict) else None
+    overall = percent(earned_total, eligible_total)
+    return {
+        "method": SIMILARITY_METHOD,
+        "overall_percent": overall,
+        "backend_percent": percent(earned_by_side["backend"], eligible_by_side["backend"]),
+        "lakehouse_percent": percent(earned_by_side["lakehouse"], eligible_by_side["lakehouse"]),
+        "earned_surface_points": earned_total,
+        "eligible_surface_count": eligible_total,
+        "excluded_unit_count": excluded_units,
+        "target_percent": target,
+        "target_met": isinstance(target, (int, float)) and overall >= float(target),
+        "unit_scores": unit_scores,
+    }
+
+
+def validate_similarity_score(manifest: dict[str, Any]) -> list[str]:
+    config = manifest.get("similarity_score")
+    if not isinstance(config, dict):
+        return ["similarity_score: required"]
+    errors: list[str] = []
+    if config.get("method") != SIMILARITY_METHOD:
+        errors.append(f"similarity_score.method: expected {SIMILARITY_METHOD}")
+    target = config.get("target_percent")
+    floor = config.get("baseline_floor_percent")
+    if not isinstance(target, (int, float)) or not 0 < float(target) <= 100:
+        errors.append("similarity_score.target_percent: expected number in (0, 100]")
+    if not isinstance(floor, (int, float)) or not 0 <= float(floor) <= 100:
+        errors.append("similarity_score.baseline_floor_percent: expected number in [0, 100]")
+    score = calculate_similarity_score(manifest)
+    if isinstance(floor, (int, float)) and score["overall_percent"] < float(floor):
+        errors.append(
+            "similarity_score: "
+            f"{score['overall_percent']:.2f}% is below baseline floor {float(floor):.2f}%"
+        )
+    return errors
+
+
+def validate_detailed_alignment(
+    manifest: dict[str, Any],
+    reference_root: Path = REFERENCE_ROOT,
+    workspace_root: Path = WORKSPACE_ROOT,
+) -> list[str]:
+    errors: list[str] = []
+    detailed = manifest.get("detailed_alignment")
+    if not isinstance(detailed, dict):
+        return ["detailed_alignment: required"]
+    if detailed.get("schema_version") != 2:
+        errors.append("detailed_alignment.schema_version: expected 2")
+    required = detailed.get("required_context_ids")
+    contexts = detailed.get("contexts")
+    if not isinstance(required, list) or any(not isinstance(item, str) for item in required):
+        errors.append("detailed_alignment.required_context_ids: must be a list of ids")
+        required = []
+    if len(required) != len(set(required)):
+        errors.append("detailed_alignment.required_context_ids: contains duplicates")
+    if not isinstance(contexts, list):
+        return errors + ["detailed_alignment.contexts: must be a list"]
+
+    source_documents = {
+        item.get("filename"): item
+        for item in manifest.get("source_documents", [])
+        if isinstance(item, dict)
+    }
+    unit_by_id = {
+        item.get("id"): item
+        for item in manifest.get("alignment_units", [])
+        if isinstance(item, dict)
+    }
+    seen_contexts: set[str] = set()
+    seen_fields: set[str] = set()
+    seen_events: set[tuple[str, int]] = set()
+    seen_invariants: set[str] = set()
+    covered_units: dict[str, str] = {}
+
+    mandatory_entities = {
+        "merchant_shop_identity": {
+            "identity.principal",
+            "identity.source_identity",
+            "merchant.merchant",
+            "merchant.legal_entity",
+            "merchant.shop",
+            "merchant.operator_assignment",
+            "merchant.onboarding_application",
+        },
+        "warehouse_location": {
+            "warehouse.warehouse",
+            "warehouse.zone",
+            "warehouse.location",
+            "warehouse.source_mapping",
+            "warehouse.operator_assignment",
+        },
+    }
+    mandatory_invariants = {
+        "merchant_shop_identity": {
+            "merchant-shop-distinct",
+            "principal-source-distinct",
+            "shop-belongs-to-merchant",
+            "typed-seller-resolution",
+            "merchant-sensitive-exposure",
+            "merchant-five-layer-coverage",
+        },
+        "warehouse_location": {
+            "warehouse-source-id-distinct",
+            "location-belongs-to-warehouse",
+            "location-belongs-to-zone",
+            "inventory-location-event-projection",
+            "warehouse-five-layer-coverage",
+        },
+    }
+
+    for index, context in enumerate(contexts):
+        label = f"detailed_alignment.contexts[{index}]"
+        if not isinstance(context, dict):
+            errors.append(f"{label}: must be an object")
+            continue
+        context_id = context.get("id")
+        if not isinstance(context_id, str) or not context_id:
+            errors.append(f"{label}.id: required")
+            continue
+        if context_id in seen_contexts:
+            errors.append(f"{label}.id: duplicate {context_id}")
+        seen_contexts.add(context_id)
+
+        decision_document = context.get("decision_document")
+        if not isinstance(decision_document, str) or not decision_document:
+            errors.append(f"{label}.decision_document: required")
+        elif not resolve_project_path(decision_document, workspace_root).is_file():
+            errors.append(f"{label}.decision_document: missing {decision_document}")
+
+        covers = context.get("covers_alignment_units")
+        if not isinstance(covers, list) or not covers:
+            errors.append(f"{label}.covers_alignment_units: requires ids")
+            covers = []
+        for unit_id in covers:
+            if unit_id not in unit_by_id:
+                errors.append(f"{label}.covers_alignment_units: unknown {unit_id}")
+                continue
+            # A broad alignment unit may be refined by multiple non-overlapping
+            # decision contexts (for example admission governance and shadow
+            # verification), provided the unit explicitly lists every context.
+            covered_units[unit_id] = context_id
+            if context_id not in unit_by_id[unit_id].get("context_refs", []):
+                errors.append(f"alignment unit {unit_id}: missing context_ref {context_id}")
+
+        anchors = context.get("source_anchors")
+        if not isinstance(anchors, list) or not anchors:
+            errors.append(f"{label}.source_anchors: requires source evidence")
+            anchors = []
+        for anchor_index, anchor in enumerate(anchors):
+            anchor_label = f"{label}.source_anchors[{anchor_index}]"
+            if not isinstance(anchor, dict):
+                errors.append(f"{anchor_label}: must be an object")
+                continue
+            document = anchor.get("document")
+            start = anchor.get("line_start")
+            end = anchor.get("line_end")
+            assets = anchor.get("assets")
+            if document not in source_documents:
+                errors.append(f"{anchor_label}.document: unknown {document}")
+                continue
+            path = reference_root / str(document)
+            lines = path.read_text(encoding="utf-8").splitlines() if path.is_file() else []
+            if not isinstance(start, int) or not isinstance(end, int) or start < 1 or end < start or end > len(lines):
+                errors.append(f"{anchor_label}: invalid line range {start}-{end}")
+                continue
+            if not isinstance(assets, list) or not assets:
+                errors.append(f"{anchor_label}.assets: requires assets")
+                continue
+            segment = "\n".join(lines[start - 1 : end]).lower()
+            for asset in assets:
+                if not isinstance(asset, str) or asset.lower() not in segment:
+                    errors.append(f"{anchor_label}.assets: {asset} not found in declared range")
+
+        entities = context.get("entities")
+        if not isinstance(entities, list) or not entities:
+            errors.append(f"{label}.entities: requires canonical entities")
+            entities = []
+        entity_ids: set[str] = set()
+        for entity_index, entity in enumerate(entities):
+            entity_label = f"{label}.entities[{entity_index}]"
+            if not isinstance(entity, dict):
+                errors.append(f"{entity_label}: must be an object")
+                continue
+            entity_id = entity.get("id")
+            if not isinstance(entity_id, str) or not entity_id:
+                errors.append(f"{entity_label}.id: required")
+                continue
+            if entity_id in entity_ids:
+                errors.append(f"{entity_label}.id: duplicate {entity_id}")
+            entity_ids.add(entity_id)
+            key = entity.get("business_key")
+            if not isinstance(key, list) or "tenant_id" not in key or len(key) < 2:
+                errors.append(f"{entity_label}.business_key: must include tenant_id and an entity key")
+            required_fields = entity.get("required_fields")
+            if not isinstance(required_fields, list) or "tenant_id" not in required_fields:
+                errors.append(f"{entity_label}.required_fields: must include tenant_id")
+            backend = entity.get("backend")
+            if not isinstance(backend, dict) or backend.get("status") not in ALLOWED_STATUSES:
+                errors.append(f"{entity_label}.backend: invalid status")
+            elif backend.get("status") in IMPLEMENTED_STATUSES:
+                refs = backend.get("refs")
+                if not isinstance(refs, list) or not refs:
+                    errors.append(f"{entity_label}.backend.refs: implementation evidence required")
+                else:
+                    for ref in refs:
+                        if not resolve_project_path(ref, workspace_root).exists():
+                            errors.append(f"{entity_label}.backend.refs: missing {ref}")
+        missing_entities = mandatory_entities.get(context_id, set()) - entity_ids
+        if missing_entities:
+            errors.append(f"{label}.entities: missing mandatory {sorted(missing_entities)}")
+
+        authorities: dict[str, str] = {}
+        decisions = context.get("sor_decisions")
+        if not isinstance(decisions, list) or not decisions:
+            errors.append(f"{label}.sor_decisions: requires authority decisions")
+            decisions = []
+        for decision_index, decision in enumerate(decisions):
+            decision_label = f"{label}.sor_decisions[{decision_index}]"
+            if not isinstance(decision, dict):
+                errors.append(f"{decision_label}: must be an object")
+                continue
+            entity_id = decision.get("entity")
+            authority = decision.get("authority_id")
+            if entity_id not in entity_ids:
+                errors.append(f"{decision_label}.entity: unknown {entity_id}")
+            if not isinstance(authority, str) or not authority:
+                errors.append(f"{decision_label}.authority_id: required")
+            elif entity_id in authorities:
+                errors.append(f"{decision_label}: duplicate canonical authority for {entity_id}")
+            else:
+                authorities[str(entity_id)] = authority
+            legacy_sources = decision.get("legacy_sources")
+            if not isinstance(legacy_sources, list):
+                errors.append(f"{decision_label}.legacy_sources: must be a list")
+            else:
+                for source in legacy_sources:
+                    if not isinstance(source, dict) or not all(source.get(k) for k in ("source_system", "object", "role")):
+                        errors.append(f"{decision_label}.legacy_sources: incomplete source mapping")
+                    elif source.get("authority") is True:
+                        errors.append(f"{decision_label}.legacy_sources: legacy source cannot be authority")
+
+        fields = context.get("field_mappings")
+        if not isinstance(fields, list) or not fields:
+            errors.append(f"{label}.field_mappings: requires mappings")
+            fields = []
+        for field_index, field in enumerate(fields):
+            field_label = f"{label}.field_mappings[{field_index}]"
+            if not isinstance(field, dict):
+                errors.append(f"{field_label}: must be an object")
+                continue
+            target = field.get("target")
+            if not isinstance(target, str) or not target:
+                errors.append(f"{field_label}.target: required")
+            elif target in seen_fields:
+                errors.append(f"{field_label}.target: duplicate {target}")
+            else:
+                seen_fields.add(target)
+            decision = field.get("decision")
+            sources = field.get("sources")
+            if decision not in FIELD_DECISIONS:
+                errors.append(f"{field_label}.decision: invalid {decision}")
+            if not isinstance(sources, list):
+                errors.append(f"{field_label}.sources: must be a list")
+                sources = []
+            if decision == "new" and sources:
+                errors.append(f"{field_label}.sources: new fields cannot claim source fields")
+            if decision == "normalize" and not field.get("transform"):
+                errors.append(f"{field_label}.transform: normalize requires a transform")
+            classification = field.get("classification")
+            if not isinstance(classification, str) or not classification:
+                errors.append(f"{field_label}.classification: required")
+            if classification in SENSITIVE_CLASSIFICATIONS:
+                controls = field.get("controls")
+                if not isinstance(controls, dict) or not all(
+                    controls.get(item) for item in ("handling", "retention", "lakehouse_exposure")
+                ):
+                    errors.append(f"{field_label}.controls: sensitive fields require handling, retention and lakehouse_exposure")
+            if classification == "restricted_financial":
+                money = field.get("money")
+                if not isinstance(money, dict) or money.get("unit") != "minor" or not all(
+                    money.get(item) for item in ("currency_field", "rounding")
+                ):
+                    errors.append(f"{field_label}.money: financial amounts require minor unit, currency and rounding")
+
+        events = context.get("events")
+        if not isinstance(events, list) or not events:
+            errors.append(f"{label}.events: requires event contracts")
+            events = []
+        event_by_type: dict[str, dict[str, Any]] = {}
+        for event_index, event in enumerate(events):
+            event_label = f"{label}.events[{event_index}]"
+            if not isinstance(event, dict):
+                errors.append(f"{event_label}: must be an object")
+                continue
+            event_type = event.get("event_type")
+            version = event.get("schema_version")
+            if not isinstance(event_type, str) or not isinstance(version, int):
+                errors.append(f"{event_label}: event_type and integer schema_version required")
+                continue
+            if not EVENT_TYPE_PATTERN.fullmatch(event_type):
+                errors.append(f"{event_label}.event_type: invalid event_type {event_type}")
+            event_key = (event_type, version)
+            if event_key in seen_events:
+                errors.append(f"{event_label}: duplicate event {event_key}")
+            seen_events.add(event_key)
+            event_by_type[event_type] = event
+            if event.get("aggregate") not in entity_ids:
+                errors.append(f"{event_label}.aggregate: unknown {event.get('aggregate')}")
+            envelope_fields = event.get("required_envelope_fields")
+            if not isinstance(envelope_fields, list) or set(envelope_fields) != REQUIRED_EVENT_ENVELOPE_FIELDS:
+                errors.append(
+                    f"{event_label}.required_envelope_fields: expected exactly "
+                    f"{sorted(REQUIRED_EVENT_ENVELOPE_FIELDS)}"
+                )
+            payload = event.get("required_payload_fields")
+            if not isinstance(payload, list) or not payload or any(
+                not isinstance(item, str) or not item for item in payload
+            ):
+                errors.append(f"{event_label}.required_payload_fields: requires field names")
+                payload = []
+            if "tenant_id" in payload:
+                errors.append(f"{event_label}.required_payload_fields: tenant_id belongs to the envelope")
+            targets = event.get("dwd_targets")
+            if not isinstance(targets, list) or not targets:
+                errors.append(f"{event_label}.dwd_targets: required")
+            status = event.get("status")
+            if status not in ALLOWED_STATUSES:
+                errors.append(f"{event_label}.status: invalid {status}")
+            if status in IMPLEMENTED_STATUSES:
+                schema_ref = event.get("schema_ref")
+                schema_path = resolve_project_path(schema_ref, workspace_root) if isinstance(schema_ref, str) else None
+                if schema_path is None or not schema_path.is_file():
+                    errors.append(f"{event_label}.schema_ref: implementation evidence required")
+                else:
+                    schema = load(schema_path)
+                    schema_required = set(schema.get("required", []))
+                    missing_schema_fields = set(payload) - schema_required
+                    if missing_schema_fields:
+                        errors.append(
+                            f"{event_label}.schema_ref: required payload fields missing from schema "
+                            f"{sorted(missing_schema_fields)}"
+                        )
+
+        layers = context.get("layers")
+        if not isinstance(layers, list):
+            errors.append(f"{label}.layers: must be a list")
+            layers = []
+        layer_names = {item.get("layer") for item in layers if isinstance(item, dict)}
+        if layer_names != REQUIRED_LAYERS or len(layers) != len(REQUIRED_LAYERS):
+            errors.append(f"{label}.layers: expected exactly {sorted(REQUIRED_LAYERS)}")
+        for layer_index, layer in enumerate(layers):
+            layer_label = f"{label}.layers[{layer_index}]"
+            if not isinstance(layer, dict):
+                continue
+            if not isinstance(layer.get("grain"), str) or not layer.get("grain"):
+                errors.append(f"{layer_label}.grain: required")
+            keys = layer.get("key_fields")
+            if not isinstance(keys, list) or "tenant_id" not in keys:
+                errors.append(f"{layer_label}.key_fields: must include tenant_id")
+            if not isinstance(layer.get("canonical_targets"), list) or not layer.get("canonical_targets"):
+                errors.append(f"{layer_label}.canonical_targets: required even for missing layers")
+            if layer.get("status") not in ALLOWED_STATUSES:
+                errors.append(f"{layer_label}.status: invalid")
+            if not isinstance(layer.get("corrections"), list):
+                errors.append(f"{layer_label}.corrections: must be a list")
+
+        invariants = context.get("invariants")
+        if not isinstance(invariants, list) or not invariants:
+            errors.append(f"{label}.invariants: requires executable rules")
+            invariants = []
+        context_invariants: set[str] = set()
+        for invariant_index, invariant in enumerate(invariants):
+            invariant_label = f"{label}.invariants[{invariant_index}]"
+            if not isinstance(invariant, dict):
+                errors.append(f"{invariant_label}: must be an object")
+                continue
+            invariant_id = invariant.get("id")
+            kind = invariant.get("kind")
+            if not isinstance(invariant_id, str) or not invariant_id:
+                errors.append(f"{invariant_label}.id: required")
+            elif invariant_id in seen_invariants:
+                errors.append(f"{invariant_label}.id: duplicate {invariant_id}")
+            else:
+                seen_invariants.add(invariant_id)
+                context_invariants.add(invariant_id)
+            if kind not in INVARIANT_KINDS:
+                errors.append(f"{invariant_label}.kind: invalid {kind}")
+            if kind == "foreign_key" and invariant.get("right_entity") not in entity_ids:
+                errors.append(f"{invariant_label}.right_entity: unknown {invariant.get('right_entity')}")
+            if kind == "event_projection":
+                event = event_by_type.get(invariant.get("event_type"))
+                required_fields = set(invariant.get("required_fields", []))
+                if not event:
+                    errors.append(f"{invariant_label}.event_type: unknown")
+                elif not required_fields.issubset(set(event.get("required_payload_fields", []))):
+                    errors.append(f"{invariant_label}.required_fields: not covered by event payload")
+                if not set(invariant.get("layers", [])).issubset(REQUIRED_LAYERS):
+                    errors.append(f"{invariant_label}.layers: unknown layer")
+        missing_invariants = mandatory_invariants.get(context_id, set()) - context_invariants
+        if missing_invariants:
+            errors.append(f"{label}.invariants: missing mandatory {sorted(missing_invariants)}")
+
+        gaps = context.get("gaps")
+        if not isinstance(gaps, list) or not gaps or any(
+            not isinstance(gap, dict) or gap.get("severity") not in {"error", "warning"} or not gap.get("description")
+            for gap in gaps
+        ):
+            errors.append(f"{label}.gaps: requires structured severity and description")
+
+    if seen_contexts != set(required):
+        errors.append(
+            "detailed_alignment.contexts: ids differ from required_context_ids: "
+            f"actual={sorted(seen_contexts)}, required={sorted(required)}"
+        )
+    return errors
+
+
+def validate_asset_baseline(
+    manifest: dict[str, Any], root: Path = ROOT
+) -> list[str]:
+    errors: list[str] = []
+    baseline = manifest.get("prototype_asset_baseline")
+    if not isinstance(baseline, dict):
+        return ["prototype_asset_baseline: required"]
+    layers = baseline.get("layers")
+    if not isinstance(layers, dict) or set(layers) != {"ODS", "DIM", "DWD_DWM", "DWS", "ADS"}:
+        return ["prototype_asset_baseline.layers: expected ODS, DIM, DWD_DWM, DWS and ADS"]
+    metrics = ("candidate_names", "create_targets", "insert_targets", "dependency_edges", "unresolved_edges")
+    totals = {metric: 0 for metric in metrics}
+    for layer, values in layers.items():
+        if not isinstance(values, dict):
+            errors.append(f"prototype_asset_baseline.layers.{layer}: must be an object")
+            continue
+        for metric in metrics:
+            value = values.get(metric)
+            if not isinstance(value, int) or value < 0:
+                errors.append(f"prototype_asset_baseline.layers.{layer}.{metric}: expected non-negative integer")
+            else:
+                totals[metric] += value
+    declared_totals = baseline.get("totals", {})
+    for metric, value in totals.items():
+        if declared_totals.get(metric) != value:
+            errors.append(
+                f"prototype_asset_baseline.totals.{metric}: {declared_totals.get(metric)} != {value}"
+            )
+    model_manifest = root / "models" / "apply-order-v1.txt"
+    entries = [
+        line.strip()
+        for line in model_manifest.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    sql_files = list((root / "models").rglob("*.sql"))
+    expected_files = baseline.get("current_model_sql_files")
+    if len(entries) != expected_files or len(sql_files) != expected_files:
+        errors.append(
+            "prototype_asset_baseline.current_model_sql_files: "
+            f"declared {expected_files}, manifest {len(entries)}, files {len(sql_files)}"
+        )
+    create_pattern = re.compile(
+        r"\bCREATE\s+(?:OR\s+REPLACE\s+)?(?:TABLE|VIEW)\s+"
+        r"(?:IF\s+NOT\s+EXISTS\s+)?[`\"]?([A-Za-z0-9_.-]+)",
+        re.IGNORECASE,
+    )
+    targets: set[str] = set()
+    for sql_file in sql_files:
+        targets.update(match.lower() for match in create_pattern.findall(sql_file.read_text(encoding="utf-8")))
+    expected_targets = baseline.get("current_model_targets")
+    if len(targets) != expected_targets:
+        errors.append(
+            "prototype_asset_baseline.current_model_targets: "
+            f"declared {expected_targets}, actual {len(targets)}"
+        )
+    return errors
+
+
+def validate_all(
+    manifest_path: Path = DEFAULT_MANIFEST,
+    reference_root: Path = REFERENCE_ROOT,
+    workspace_root: Path = WORKSPACE_ROOT,
+) -> None:
+    manifest = load(manifest_path)
+    errors: list[str] = []
+    if manifest.get("contract_version") != 1:
+        errors.append("contract_version: expected 1")
+    errors.extend(validate_source_documents(manifest, reference_root))
+    errors.extend(validate_source_corrections(manifest))
+    errors.extend(validate_asset_baseline(manifest, workspace_root / "useful-scripts/yml/yshopping-lakehouse"))
+    errors.extend(validate_units(manifest, workspace_root))
+    errors.extend(validate_similarity_score(manifest))
+    errors.extend(validate_detailed_alignment(manifest, reference_root, workspace_root))
+    if errors:
+        raise AlignmentError("\n".join(errors))
+    score = calculate_similarity_score(manifest)
+    print(
+        "alignment valid: "
+        f"{len(manifest['source_documents'])} source documents, "
+        f"{len(manifest['alignment_units'])} alignment units, "
+        f"{len(manifest['detailed_alignment']['contexts'])} detailed contexts, "
+        f"{manifest['prototype_asset_baseline']['totals']['candidate_names']} prototype candidates, "
+        f"{manifest['prototype_asset_baseline']['current_model_sql_files']} current SQL files, "
+        f"similarity {score['overall_percent']:.2f}% / target {score['target_percent']:.2f}%"
+    )
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("command", choices=["validate", "score"])
+    parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    parser.add_argument("--reference-root", type=Path, default=REFERENCE_ROOT)
+    args = parser.parse_args()
+    if args.command == "score":
+        manifest = load(args.manifest)
+        print(json.dumps(calculate_similarity_score(manifest), ensure_ascii=False, indent=2))
+    else:
+        validate_all(args.manifest, args.reference_root)
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except AlignmentError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        raise SystemExit(1)

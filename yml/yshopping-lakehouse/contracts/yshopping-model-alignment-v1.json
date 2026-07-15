@@ -1,0 +1,702 @@
+{
+  "contract_version": 1,
+  "scope": "Y-Shopping business semantics to CloudMold backend authorities and lakehouse models",
+  "similarity_score": {
+    "method": "surface_coverage_v1",
+    "target_percent": 60.0,
+    "baseline_floor_percent": 61.90,
+    "description": "Across non-deferred backend and lakehouse surfaces, verified/partial=1, legacy_only=0.5 and missing=0. Existing refs and explicit gaps remain mandatory, so status-only promotion cannot pass validation."
+  },
+  "source_documents": [
+    {
+      "filename": "语兴好物（y shopping）-电商数仓搭建.md",
+      "sha256": "b3327a08070abb4d30b0acb969fa7088a219c484c2491dd808cc7005961838db",
+      "line_count": 3323
+    },
+    {
+      "filename": "ODS语兴好物（y shopping）电商数据表.md",
+      "sha256": "69ba6d474ea267648096926d4fb96e20eb518afcdb9fcb3e54d92729f3aade1b",
+      "line_count": 8156
+    },
+    {
+      "filename": "DIM语兴好物（y shopping）电商数据表.md",
+      "sha256": "fadbf436377ea0033079d2e2d82efa217c7b33db2410d9b3c112b84a07612b3d",
+      "line_count": 2891
+    },
+    {
+      "filename": "DWD_DWM语兴好物（y shopping）电商数据表.md",
+      "sha256": "fd8d4b4d5defb6ba10d72d3d103219eaaab50c77b7f01f148ae44c37e370b17e",
+      "line_count": 21268
+    },
+    {
+      "filename": "DWS语兴好物（y shopping）电商数据表.md",
+      "sha256": "f264a65c2f2bf30aef269143bfbff41f48c6a955e1d079df92778f31142152be",
+      "line_count": 1656
+    },
+    {
+      "filename": "ADS语兴好物（y shopping）电商数据表.md",
+      "sha256": "fc14a85e9866af9319f2d84a14fc7ab234fb419d286094e526341a9536e3660d",
+      "line_count": 8142
+    }
+  ],
+  "source_corrections": [
+    {
+      "source_anchor": "main:77-81,528-534",
+      "decision": "split",
+      "description": "订单取消、资金退款、退货履约和换货必须是独立事实与状态机，不能沿用 refund 混合语义。"
+    },
+    {
+      "source_anchor": "main:524-527",
+      "decision": "correct",
+      "description": "订单物流事实不能复用 payment DWD 名称，CloudMold 保持 Fulfillment、Shipment 和 Tracking 独立。"
+    },
+    {
+      "source_anchor": "main:138-140",
+      "decision": "correct",
+      "description": "津贴维度不能复用奖品维度名称，营销权益需要独立稳定标识。"
+    },
+    {
+      "source_anchor": "DIM:493-578,DWD_DWM:504-597,5640-6200",
+      "decision": "correct",
+      "description": "Coupon Template/Activity DIM 误写客服来源，Coupon/订单优惠 DWD/DWM 还存在错误来源、缺逗号、错误关联和一对多行放大；仅继承业务粒度，不复制原型物理 SQL。"
+    },
+    {
+      "source_anchor": "main:291-297,2599-2641",
+      "decision": "normalize",
+      "description": "跨域 Business ID 使用稳定字符串语义；数据库内部键不得冒充跨域业务键。"
+    },
+    {
+      "source_anchor": "main:574-602",
+      "decision": "reject",
+      "description": "拒绝会丢失中间状态的半年分区回刷作为权威历史；关键状态以版本化领域事件形成 DWD 历史。"
+    },
+    {
+      "source_anchor": "main:2790-2802,2842-2852,3200-3267",
+      "decision": "secure",
+      "description": "用户风控关系中的手机号、IP、地址和设备必须脱敏、限权并声明保留期。"
+    },
+    {
+      "source_anchor": "ODS:7476-7616,DIM:2683-2891,ADS:7528-8040",
+      "decision": "split",
+      "description": "Merchant、LegalEntity、Shop、Principal 与来源账号是不同实体；拒绝将 seller_id、spu_publish_user_id 或 user_id 直接强转为 merchant_id。"
+    },
+    {
+      "source_anchor": "ODS:7476-7616,DWD_DWM:merchant-deposit-exit",
+      "decision": "normalize",
+      "description": "商家保证金统一为 amount_minor + currency；退出 ODS 误建提现表、保证金 DWD 误读退出表等源名错误不复制。"
+    },
+    {
+      "source_anchor": "ADS:7528-8040",
+      "decision": "secure",
+      "description": "营业执照、证件、手机号、地址和银行账户进入受限模型；公共 DIM/DWS/ADS 仅保留令牌化、脱敏或聚合结果。"
+    },
+    {
+      "source_anchor": "ODS:6847-7050,DIM:2143-2235,DWD_DWM:20114-20720",
+      "decision": "correct",
+      "description": "纠正 warhouse 拼写、SCM user 作业误写/误读 Warehouse 与重复字段；ERP/WMS/MES 来源主键不得成为规范 warehouse_id。"
+    },
+    {
+      "source_anchor": "main:2354-2404",
+      "decision": "new",
+      "description": "location_code 事实字段不能证明库位主数据已存在；CloudMold 必须补 Warehouse/Zone/Location、来源映射和 Handling Unit 作业模型。"
+    },
+    {
+      "source_anchor": "ODS:6744-6957,DWD_DWM:17346-18054",
+      "decision": "split",
+      "description": "unique_id 是逐件唯一码/P 码，不是库存 Lot；唯一码、规范批次和来源批号必须保持独立身份与粒度。"
+    },
+    {
+      "source_anchor": "ODS:2298-2363,DWD_DWM:7688",
+      "decision": "correct",
+      "description": "社区模型的 batch_no 注释实际为召回原因，不能作为库存批次事实；Lot 仅接受 Inventory 权威身份或经时态验证的来源映射。"
+    }
+  ],
+  "prototype_asset_baseline": {
+    "method": "Static extraction of table-like layer tokens, CREATE/INSERT targets and FROM/JOIN dependencies; candidates include aliases, typos and example-only names and are not deployable-model counts.",
+    "layers": {
+      "ODS": {"candidate_names": 317, "create_targets": 158, "insert_targets": 0, "dependency_edges": 0, "unresolved_edges": 0},
+      "DIM": {"candidate_names": 43, "create_targets": 36, "insert_targets": 32, "dependency_edges": 52, "unresolved_edges": 4},
+      "DWD_DWM": {"candidate_names": 224, "create_targets": 182, "insert_targets": 171, "dependency_edges": 438, "unresolved_edges": 28},
+      "DWS": {"candidate_names": 23, "create_targets": 16, "insert_targets": 16, "dependency_edges": 28, "unresolved_edges": 0},
+      "ADS": {"candidate_names": 57, "create_targets": 48, "insert_targets": 42, "dependency_edges": 116, "unresolved_edges": 8}
+    },
+    "totals": {"candidate_names": 664, "create_targets": 440, "insert_targets": 261, "dependency_edges": 634, "unresolved_edges": 40},
+    "current_model_sql_files": 130,
+    "current_model_targets": 129,
+    "known_high_confidence_issues": [
+      "DWD 子订单当日任务误从主订单 ODS 取数，且子订单 DDL 缺逗号。",
+      "SCM 操作 DDL 缺逗号并重复 operator_name。",
+      "SCM sorting 标题是 DWD 但实际 CREATE ODS。",
+      "SCM 质检 CREATE、历史来源和当日 INSERT 使用了不一致表名。",
+      "DIM coupon template 误写入客服工单来源维度。",
+      "DIM goods white 实际 CREATE ODS。",
+      "DWS 多周期订单建表名与 INSERT 目标名不一致。",
+      "DWS community report 误重建 trend 表。",
+      "ADS AI 客服、蓝军和告警资产复用了错误 overview/base DDL。",
+      "五层混合 Hive、MaxCompute、Flink、Kafka、Doris、Paimon 与自定义 UDF 方言，必须逐表契约化后落地。"
+    ]
+  },
+  "required_alignment_units": [
+    "trade.order",
+    "trade.payment",
+    "trade.reverse",
+    "trade.inventory",
+    "trade.supply_chain",
+    "activity",
+    "game",
+    "coupon",
+    "push",
+    "customer_service",
+    "user_identity",
+    "seller_core",
+    "advertising",
+    "collect",
+    "metadata",
+    "product_onboarding",
+    "community",
+    "supply_chain_quality",
+    "seller_lifecycle",
+    "ai_operations",
+    "token_platform",
+    "user_risk_graph"
+  ],
+  "detailed_alignment": {
+    "schema_version": 2,
+    "required_context_ids": ["merchant_shop_identity", "warehouse_location", "inventory_migration_pilot", "inventory_migration_shadow_window"],
+    "contexts": [
+      {
+        "id": "merchant_shop_identity",
+        "decision_document": "/Users/karekin/Library/Mobile Documents/iCloud~md~obsidian/Documents/project/后台管理系统/能力建设/商家店铺与身份数据权威ADR.md",
+        "covers_alignment_units": ["user_identity", "seller_core", "seller_lifecycle"],
+        "source_anchors": [
+          {"document": "ODS语兴好物（y shopping）电商数据表.md", "line_start": 7476, "line_end": 7616, "assets": ["ods_merchant_sys_entry_apply_df", "ods_merchant_sys_info_df"]},
+          {"document": "DIM语兴好物（y shopping）电商数据表.md", "line_start": 2683, "line_end": 2891, "assets": ["dim_merchant_df"]},
+          {"document": "ADS语兴好物（y shopping）电商数据表.md", "line_start": 7528, "line_end": 8040, "assets": ["ads_merchant_profile"]}
+        ],
+        "sor_decisions": [
+          {"entity": "identity.principal", "authority_id": "cloudmold-identity", "status": "partial", "legacy_sources": [{"source_system": "member", "object": "member_user", "role": "credential_profile_source"}, {"source_system": "system", "object": "system_users", "role": "credential_profile_source"}]},
+          {"entity": "merchant.merchant", "authority_id": "cloudmold-merchant", "status": "partial", "legacy_sources": [{"source_system": "yshopping", "object": "ods_merchant_sys_info_df", "role": "migration_source"}, {"source_system": "wms", "object": "wms_merchant", "role": "owner_projection"}]},
+          {"entity": "merchant.shop", "authority_id": "cloudmold-merchant", "status": "partial", "legacy_sources": [{"source_system": "listing", "object": "shop_id", "role": "unmapped_reference"}]},
+          {"entity": "merchant.legal_entity", "authority_id": "cloudmold-merchant", "status": "partial", "legacy_sources": [{"source_system": "yshopping", "object": "ods_merchant_sys_entry_apply_df", "role": "migration_source"}]},
+          {"entity": "merchant.source_mapping", "authority_id": "cloudmold-merchant", "status": "partial", "legacy_sources": [{"source_system": "yshopping", "object": "merchant/shop source identifiers", "role": "historical_backfill_source"}]}
+        ],
+        "entities": [
+          {"id": "identity.principal", "grain": "one tenant-scoped cross-domain actor", "business_key": ["tenant_id", "principal_id"], "required_fields": ["tenant_id", "principal_id", "principal_type", "status", "version"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-identity", "yudao-cloud/sql/cloudmold/V20260715_13__canonical_identity_and_merchant_first_slice.sql"]}},
+          {"id": "identity.source_identity", "grain": "one effective source account mapping", "business_key": ["tenant_id", "source_system", "source_type", "source_id"], "required_fields": ["tenant_id", "principal_id", "source_system", "source_type", "source_id", "valid_from"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-identity", "yudao-cloud/sql/cloudmold/V20260715_13__canonical_identity_and_merchant_first_slice.sql"]}},
+          {"id": "merchant.merchant", "grain": "one tenant-scoped seller account", "business_key": ["tenant_id", "merchant_id"], "required_fields": ["tenant_id", "merchant_id", "legal_entity_id", "status", "version"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-merchant", "yudao-cloud/sql/cloudmold/V20260715_13__canonical_identity_and_merchant_first_slice.sql"]}},
+          {"id": "merchant.legal_entity", "grain": "one contracting and settlement legal body", "business_key": ["tenant_id", "legal_entity_id"], "required_fields": ["tenant_id", "legal_entity_id", "status", "version"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-merchant", "yudao-cloud/sql/cloudmold/V20260715_13__canonical_identity_and_merchant_first_slice.sql"]}},
+          {"id": "merchant.shop", "grain": "one merchant shop on one channel", "business_key": ["tenant_id", "channel_code", "external_shop_id"], "required_fields": ["tenant_id", "shop_id", "merchant_id", "channel_code", "external_shop_id", "status", "version"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-merchant", "yudao-cloud/sql/cloudmold/V20260715_13__canonical_identity_and_merchant_first_slice.sql"]}},
+          {"id": "merchant.source_mapping", "grain": "one effective qualified source identifier mapped to one canonical Merchant-domain target", "business_key": ["tenant_id", "source_system", "source_type", "source_id", "valid_from"], "required_fields": ["tenant_id", "mapping_id", "source_system", "source_type", "source_id", "target_type", "target_id", "valid_from", "valid_to", "verification_ref", "migration_run_id", "status", "version"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-merchant", "yudao-cloud/sql/cloudmold/V20260715_17__canonical_merchant_source_mapping.sql"]}},
+          {"id": "merchant.operator_assignment", "grain": "one effective principal role on merchant or shop", "business_key": ["tenant_id", "merchant_id", "principal_id", "role_code", "valid_from"], "required_fields": ["tenant_id", "merchant_id", "principal_id", "role_code", "valid_from", "valid_to"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-merchant", "yudao-cloud/sql/cloudmold/V20260715_13__canonical_identity_and_merchant_first_slice.sql"]}},
+          {"id": "merchant.onboarding_application", "grain": "one auditable merchant onboarding application", "business_key": ["tenant_id", "application_id"], "required_fields": ["tenant_id", "application_id", "legal_entity_id", "status", "version"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-merchant", "yudao-cloud/sql/cloudmold/V20260715_13__canonical_identity_and_merchant_first_slice.sql"]}},
+          {"id": "listing.sales_eligibility_enforcement", "grain": "one Merchant or Shop sales-eligibility event with one frozen exact PUBLISHED Listing workset", "business_key": ["tenant_id", "source_event_id"], "required_fields": ["tenant_id", "saga_id", "source_event_id", "source_entity_type", "source_aggregate_version", "merchant_id", "shop_id", "status", "expected_listing_count", "unpublished_listing_count", "skipped_listing_count", "version"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-listing", "yudao-cloud/sql/cloudmold/V20260715_18__listing_sales_eligibility_unpublish_saga.sql"]}},
+          {"id": "merchant.deposit_account", "grain": "one tenant, Merchant and ISO-4217 currency deposit account", "business_key": ["tenant_id", "merchant_id", "currency"], "required_fields": ["tenant_id", "account_id", "merchant_id", "currency", "required_amount_minor", "held_amount_minor", "frozen_amount_minor", "coverage_status", "enforcement_status", "version"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-merchant", "yudao-cloud/sql/cloudmold/V20260715_19__canonical_merchant_deposit_ledger.sql"]}},
+          {"id": "merchant.deposit_ledger_entry", "grain": "one immutable deposit assessment, money movement or enforcement activation", "business_key": ["tenant_id", "ledger_entry_id"], "required_fields": ["tenant_id", "account_id", "merchant_id", "account_version", "entry_type", "amount_minor", "currency", "held_delta_minor", "frozen_delta_minor", "business_reference", "evidence_ref"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-merchant", "yudao-cloud/sql/cloudmold/V20260715_19__canonical_merchant_deposit_ledger.sql"]}}
+        ],
+        "field_mappings": [
+          {"target": "identity.source_identity.source_id", "type": "string", "required": true, "classification": "internal_id", "decision": "normalize", "transform": "string(source database id) with source_system and source_type", "sources": [{"asset": "member_user", "field": "id"}, {"asset": "system_users", "field": "id"}], "status": "mapped"},
+          {"target": "identity.principal.principal_id", "type": "string", "required": true, "classification": "internal_id", "decision": "new", "transform": "generate stable tenant-scoped id", "sources": [], "status": "specified"},
+          {"target": "merchant.merchant.merchant_id", "type": "string", "required": true, "classification": "internal_id", "decision": "normalize", "transform": "resolve through tenant and source mapping", "sources": [{"asset": "ods_merchant_sys_info_df", "field": "merchant_id"}], "status": "mapped"},
+          {"target": "merchant.shop.shop_id", "type": "string", "required": true, "classification": "internal_id", "decision": "new", "transform": "generate independently from merchant_id", "sources": [], "status": "specified"},
+          {"target": "merchant.shop.external_shop_id", "type": "string", "required": true, "classification": "external_id", "decision": "normalize", "transform": "channel-qualified source shop reference", "sources": [{"asset": "cloudmold_listing", "field": "shop_id"}], "status": "mapped"},
+          {"target": "merchant.source_mapping.source_id", "type": "string", "required": true, "classification": "internal_id", "decision": "normalize", "transform": "trim source id and qualify it by tenant plus uppercase source_system/source_type; resolve only one active effective mapping", "sources": [{"asset": "merchant/shop legacy sources", "field": "id"}], "status": "mapped"},
+          {"target": "merchant.source_mapping.target_id", "type": "string", "required": true, "classification": "internal_id", "decision": "normalize", "transform": "validate target_type LEGAL_ENTITY/MERCHANT/SHOP in the same tenant and reject target_id equal to source_id", "sources": [], "status": "specified"},
+          {"target": "merchant.operator_assignment.principal_id", "type": "string", "required": true, "classification": "internal_id", "decision": "normalize", "transform": "resolve typed seller/user/operator through SourceIdentity", "sources": [{"asset": "cross_domain", "field": "seller_id/user_id/operator_id"}], "status": "mapped"},
+          {"target": "merchant.legal_entity.registration_number", "type": "string", "required": true, "classification": "pii", "decision": "normalize", "transform": "validate and encrypt registration identity", "sources": [{"asset": "ods_merchant_sys_entry_apply_df", "field": "license_no"}], "controls": {"handling": "encrypted, masked by default and purpose-scoped", "retention": "contract term plus statutory retention, then delete", "lakehouse_exposure": "restricted dimension only; tokenized outside restricted zone"}, "status": "mapped"},
+          {"target": "merchant.legal_entity.contact_mobile", "type": "string", "required": false, "classification": "pii", "decision": "normalize", "transform": "E.164 normalization and encryption", "sources": [{"asset": "ods_merchant_sys_entry_apply_df", "field": "mobile"}], "controls": {"handling": "encrypted and masked", "retention": "active relationship plus approved retention", "lakehouse_exposure": "hashed or omitted from general models"}, "status": "mapped"},
+          {"target": "merchant.merchant.deposit_amount_minor", "type": "int64", "required": true, "classification": "restricted_financial", "decision": "normalize", "transform": "convert source amount once to minor units", "sources": [{"asset": "yshopping_merchant_deposit", "field": "amount"}], "controls": {"handling": "ledger access only", "retention": "financial statutory retention", "lakehouse_exposure": "aggregated or restricted"}, "money": {"unit": "minor", "currency_field": "currency", "rounding": "HALF_EVEN at ingestion boundary"}, "status": "mapped"}
+        ],
+        "events": [
+          {"event_type": "identity.source.linked", "schema_version": 1, "aggregate": "identity.principal", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["run_id", "principal_id", "principal_type", "principal_status", "source_identity_id", "source_system", "source_type", "source_id", "source_status"], "dwd_targets": ["dwd_canonical_identity_source_link_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/identity-source-linked-v1.schema.json"},
+          {"event_type": "merchant.onboarding.status_changed", "schema_version": 1, "aggregate": "merchant.onboarding_application", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["application_id", "legal_entity_id", "owner_principal_id", "channel_code", "external_shop_id", "previous_status", "current_status"], "dwd_targets": ["dwd_canonical_merchant_onboarding_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/merchant-onboarding-status-changed-v1.schema.json"},
+          {"event_type": "merchant.entity.status_changed", "schema_version": 1, "aggregate": "merchant.merchant", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["entity_type", "previous_status", "current_status"], "dwd_targets": ["dwd_canonical_merchant_entity_status_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/merchant-entity-status-changed-v1.schema.json"},
+          {"event_type": "merchant.entity.status_changed", "schema_version": 2, "aggregate": "merchant.merchant", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["entity_type", "previous_status", "current_status"], "dwd_targets": ["dwd_canonical_merchant_entity_status_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/merchant-entity-status-changed-v2.schema.json", "semantics": "sales-eligibility changes for Merchant SUSPENDED/ACTIVE and Shop PAUSED/ACTIVE; Listing and Order revalidate current Merchant/Shop activity fail-closed", "runtime_evidence": "/Users/karekin/.cloudmold/runs/merchant-sales-eligibility/cmse15phys/ledger.json"},
+          {"event_type": "listing.sales_eligibility_enforcement.status_changed", "schema_version": 1, "aggregate": "listing.sales_eligibility_enforcement", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["run_id", "saga_id", "source_event_id", "source_entity_type", "source_aggregate_version", "merchant_id", "shop_id", "previous_status", "current_status", "active_step", "attempt", "reason", "expected_listing_count", "unpublished_listing_count", "skipped_listing_count", "error_code", "error_message", "next_retry_at"], "dwd_targets": ["dwd_canonical_listing_unpublish_saga_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/listing-sales-eligibility-enforcement-status-changed-v1.schema.json", "semantics": "source Merchant/Shop status event id is the immutable Saga cause; the exact PUBLISHED Listing set is frozen transactionally and every physical UNPUBLISH event reuses that cause", "runtime_evidence": "/Users/karekin/.cloudmold/runs/merchant-sales-eligibility/cmse15phys/ledger.json"},
+          {"event_type": "merchant.source_mapping.changed", "schema_version": 1, "aggregate": "merchant.source_mapping", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["run_id", "migration_run_id", "mapping_id", "source_system", "source_type", "source_id", "target_type", "target_id", "valid_from", "valid_to", "previous_status", "current_status", "verification_ref"], "dwd_targets": ["dwd_canonical_merchant_source_mapping_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/merchant-source-mapping-changed-v1.schema.json", "runtime_evidence": "/Users/karekin/.cloudmold/runs/merchant-source-mapping/cmsm15a/ledger.json"},
+          {"event_type": "merchant.operator_assignment.changed", "schema_version": 1, "aggregate": "merchant.operator_assignment", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["assignment_id", "merchant_id", "shop_id", "principal_id", "role_code", "previous_status", "current_status", "valid_from"], "dwd_targets": ["dwd_canonical_merchant_operator_assignment_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/merchant-operator-assignment-changed-v1.schema.json"},
+          {"event_type": "merchant.deposit.ledger_posted", "schema_version": 1, "aggregate": "merchant.deposit_account", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["run_id", "merchant_id", "account_id", "ledger_entry_id", "entry_type", "amount_minor", "currency", "held_delta_minor", "frozen_delta_minor", "held_before_minor", "held_after_minor", "frozen_before_minor", "frozen_after_minor", "required_before_minor", "required_after_minor", "paid_after_minor", "deducted_after_minor", "previous_coverage_status", "current_coverage_status", "previous_enforcement_status", "current_enforcement_status", "policy_version", "business_reference", "reason_code", "evidence_ref"], "dwd_targets": ["dwd_canonical_merchant_deposit_ledger_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/merchant-deposit-ledger-posted-v1.schema.json", "semantics": "append-only minor-unit ledger; 60 percent is bid restriction only, an enforced crossing below 20 percent causes Merchant SUSPENDED and the existing exact Listing UNPUBLISH Saga; top-up never auto-resumes or republishes", "runtime_evidence": "/Users/karekin/.cloudmold/runs/merchant-deposit/cmdp15phys/replay-ledger-20260715T042130Z.json"}
+        ],
+        "layers": [
+          {"layer": "ODS", "source_assets": ["cloudmold_event_outbox", "ods_merchant_sys_entry_apply_df", "ods_merchant_sys_info_df", "member_user", "system_users"], "canonical_targets": ["cloudmold_event_outbox", "ods_identity_source_account_cdc", "ods_merchant_onboarding_cdc", "ods_merchant_cdc"], "grain": "one source row change or immutable Outbox event with source identity", "key_fields": ["tenant_id", "source_system", "source_id", "source_version"], "status": "partial", "corrections": ["current canonical slice uses generic Outbox ODS; System source account validation and one exact mapping are verified, while bulk legacy source CDC/backfill is still pending", "retain source identity; never overwrite source ids with canonical ids"]},
+          {"layer": "DIM", "source_assets": ["dim_merchant_df", "dim_user_df"], "canonical_targets": ["dim_canonical_principal_current", "dim_canonical_identity_source_current", "dim_canonical_merchant_current", "dim_canonical_shop_current", "dim_canonical_merchant_legal_entity_current", "dim_canonical_merchant_operator_assignment_current", "dim_canonical_merchant_source_mapping_current", "dim_canonical_listing_unpublish_saga_current", "dim_canonical_merchant_deposit_account_current"], "grain": "one current canonical entity, process manager or one active effective qualified source mapping", "key_fields": ["tenant_id", "canonical_id"], "status": "partial", "corrections": ["Merchant, Shop, Principal and LegalEntity remain separate", "merchant source mapping current state is fail-closed on missing or ambiguous active mappings", "Listing unpublish Saga current state preserves retry and manual-review history", "deposit account current state derives only from its latest immutable ledger event", "restricted legal and payment attributes are omitted from general dimensions"]},
+          {"layer": "DWD_DWM", "source_assets": ["cloudmold Identity/Merchant/Listing Outbox events", "yshopping merchant onboarding, appeal, withdrawal, exit, deposit and login facts"], "canonical_targets": ["dwd_canonical_identity_source_link_event", "dwd_canonical_merchant_onboarding_event", "dwd_canonical_merchant_entity_status_event", "dwd_canonical_listing_unpublish_saga_event", "dwd_canonical_merchant_source_mapping_event", "dwd_canonical_merchant_operator_assignment_event", "dwd_canonical_merchant_deposit_ledger_event"], "grain": "one immutable domain event", "key_fields": ["tenant_id", "event_id", "aggregate_version"], "status": "partial", "corrections": ["identity, onboarding, entity v1/v2, Listing physical-unpublish enforcement, qualified merchant source mapping, operator and deposit ledger events are implemented", "settlement, penalty case, appeal and exit facts remain missing"]},
+          {"layer": "DWS", "source_assets": [], "canonical_targets": ["dws_canonical_merchant_shop_current", "dws_canonical_listing_unpublish_saga_current", "dws_canonical_merchant_deposit_current", "dws_canonical_merchant_shop_day"], "grain": "one merchant/shop, deposit account or sales-eligibility enforcement current state, or one business day", "key_fields": ["tenant_id", "merchant_id", "shop_id"], "status": "partial", "corrections": ["current master readiness, deposit conservation and exact deposit-to-suspension-to-UNPUBLISH reconciliation exist; daily operating aggregation is still pending"]},
+          {"layer": "ADS", "source_assets": ["ads_merchant_profile", "ads_user_trade_360_profile"], "canonical_targets": ["ads_canonical_merchant_readiness", "ads_canonical_listing_unpublish_readiness", "ads_canonical_merchant_deposit_readiness", "ads_canonical_merchant_profile", "ads_canonical_principal_commerce_profile"], "grain": "one canonical merchant, deposit account, principal or sales-eligibility enforcement readiness row", "key_fields": ["tenant_id", "canonical_id", "as_of_time"], "status": "partial", "corrections": ["master-data, deposit control and physical Listing enforcement readiness are implemented", "operating profile and User 360 remain pending; direct seller_id coercion is rejected"]}
+        ],
+        "invariants": [
+          {"id": "merchant-shop-distinct", "kind": "not_equal", "left": "merchant.merchant.merchant_id", "right": "merchant.shop.shop_id", "severity": "error"},
+          {"id": "principal-source-distinct", "kind": "not_equal", "left": "identity.principal.principal_id", "right": "identity.source_identity.source_id", "severity": "error"},
+          {"id": "shop-belongs-to-merchant", "kind": "foreign_key", "left": ["tenant_id", "merchant_id"], "right_entity": "merchant.merchant", "severity": "error"},
+          {"id": "typed-seller-resolution", "kind": "not_equal", "left": "untyped.seller_id", "right": "merchant.merchant.merchant_id", "severity": "error"},
+          {"id": "merchant-source-active-unique", "kind": "unique", "fields": ["tenant_id", "source_system", "source_type", "source_id"], "predicate": "status = ACTIVE and valid_from <= effective_at and (valid_to is null or valid_to > effective_at)", "severity": "error"},
+          {"id": "merchant-source-target-distinct", "kind": "not_equal", "left": "merchant.source_mapping.source_id", "right": "merchant.source_mapping.target_id", "severity": "error"},
+          {"id": "merchant-source-resolution-fail-closed", "kind": "temporal", "entity": "merchant.source_mapping", "rule": "exactly one ACTIVE mapping is effective at lookup time; zero or multiple matches fail closed", "severity": "error"},
+          {"id": "listing-unpublish-source-event-exact", "kind": "event_projection", "event_type": "listing.sales_eligibility_enforcement.status_changed", "required_fields": ["source_event_id", "source_entity_type", "source_aggregate_version", "merchant_id", "shop_id"], "layers": ["DWD_DWM", "DWS", "ADS"], "severity": "error"},
+          {"id": "listing-unpublish-frozen-count-exact", "kind": "event_projection", "event_type": "listing.sales_eligibility_enforcement.status_changed", "required_fields": ["expected_listing_count", "unpublished_listing_count", "skipped_listing_count"], "layers": ["DWD_DWM", "DIM", "DWS", "ADS"], "severity": "error"},
+          {"id": "listing-unpublish-physical-effect-exact", "kind": "event_projection", "event_type": "listing.sales_eligibility_enforcement.status_changed", "required_fields": ["source_event_id", "unpublished_listing_count"], "layers": ["DWD_DWM", "DWS", "ADS"], "severity": "error"},
+          {"id": "merchant-deposit-minor-unit-conservation", "kind": "event_projection", "event_type": "merchant.deposit.ledger_posted", "required_fields": ["amount_minor", "currency", "held_delta_minor", "held_before_minor", "held_after_minor", "paid_after_minor", "deducted_after_minor"], "layers": ["DWD_DWM", "DIM", "DWS", "ADS"], "severity": "error"},
+          {"id": "merchant-deposit-threshold-exact", "kind": "temporal", "entity": "merchant.deposit_account", "rule": "integer cross multiplication yields SUFFICIENT at or above 60 percent, BID_RESTRICTED from 20 through below 60 percent, and SALES_BLOCKED below 20 percent", "severity": "error"},
+          {"id": "merchant-deposit-sales-block-causation-exact", "kind": "event_projection", "event_type": "merchant.deposit.ledger_posted", "required_fields": ["previous_coverage_status", "current_coverage_status", "current_enforcement_status"], "layers": ["DWD_DWM", "DWS", "ADS"], "severity": "error"},
+          {"id": "merchant-sensitive-exposure", "kind": "pii_exposure", "fields": ["registration_number", "contact_mobile", "bank_account"], "severity": "error"},
+          {"id": "merchant-five-layer-coverage", "kind": "layer_coverage", "severity": "error"}
+        ],
+        "gaps": [
+          {"severity": "warning", "description": "Identity and Merchant first-slice authorities plus Member/System source-account adapters are implemented; one real System mapping and Merchant/Shop/Listing run is reconciled, but Member sampling and production bulk migration/backfill are not yet verified."},
+          {"severity": "warning", "description": "Listing-owned physical UNPUBLISH Saga is implemented with a transactionally frozen workset, retries, manual review and exact lakehouse causation reconciliation; a separately deployed Merchant/Listing topology will still require a real Outbox subscriber adapter instead of the current local transactional choreography bridge."},
+          {"severity": "error", "description": "Qualified Merchant/Shop source mapping commands, event, DWD and fail-closed current DIM exist; cmsm15a proves one effective YSHOPPING Merchant mapping with revoke/replacement and immutable replay, but historical Merchant/Shop/Listing batch backfill plus dual-read rollback and per-tenant cutover are not implemented."},
+          {"severity": "error", "description": "Canonical Merchant deposit account/ledger, minor-unit event contract and DWD-to-ADS exact enforcement reconciliation are implemented; cmdp15phys proves eight non-empty ledger events, exact 60/20 thresholds, one causal suspension and one completed Listing Saga, but historical per-tenant SHADOW-to-ENFORCED migration remains pending; settlement, penalty case, appeal, exit, profile and User 360 remain missing."}
+        ]
+      },
+      {
+        "id": "warehouse_location",
+        "decision_document": "/Users/karekin/Library/Mobile Documents/iCloud~md~obsidian/Documents/project/后台管理系统/能力建设/仓库库位与WMS物理作业数据权威ADR.md",
+        "covers_alignment_units": ["trade.supply_chain", "supply_chain_quality"],
+        "source_anchors": [
+          {"document": "ODS语兴好物（y shopping）电商数据表.md", "line_start": 6847, "line_end": 7050, "assets": ["ods_scm_quality_operate_di", "ods_scm_warehouse_df"]},
+          {"document": "DIM语兴好物（y shopping）电商数据表.md", "line_start": 2143, "line_end": 2235, "assets": ["dim_scm_warhouse_df"]},
+          {"document": "DWD_DWM语兴好物（y shopping）电商数据表.md", "line_start": 20114, "line_end": 20720, "assets": ["dwm_scm_detail_di", "dim_scm_warhouse_df"]}
+        ],
+        "sor_decisions": [
+          {"entity": "warehouse.warehouse", "authority_id": "cloudmold-warehouse", "status": "partial", "legacy_sources": [{"source_system": "erp", "object": "erp_warehouse", "role": "migration_source"}, {"source_system": "wms", "object": "wms_warehouse", "role": "migration_source"}, {"source_system": "mes", "object": "mes_wm_warehouse", "role": "manufacturing_projection"}, {"source_system": "yshopping", "object": "ods_scm_warehouse_df", "role": "prototype_migration_source"}]},
+          {"entity": "warehouse.zone", "authority_id": "cloudmold-warehouse", "status": "partial", "legacy_sources": [{"source_system": "mes", "object": "mes_wm_warehouse_location", "role": "semantic_migration_candidate"}]},
+          {"entity": "warehouse.location", "authority_id": "cloudmold-warehouse", "status": "partial", "legacy_sources": [{"source_system": "mes", "object": "mes_wm_warehouse_area", "role": "semantic_migration_candidate"}, {"source_system": "yshopping", "object": "ods_scm_quality_operate_di.location_code", "role": "fact_reference_only"}]}
+        ],
+        "entities": [
+          {"id": "warehouse.warehouse", "grain": "one tenant-scoped fulfillment warehouse", "business_key": ["tenant_id", "warehouse_id"], "required_fields": ["tenant_id", "warehouse_id", "warehouse_code", "name", "status", "version"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-warehouse", "yudao-cloud/sql/cloudmold/V20260715_14__canonical_warehouse_network_first_slice.sql"]}},
+          {"id": "warehouse.zone", "grain": "one warehouse zone or staging area", "business_key": ["tenant_id", "warehouse_id", "zone_code"], "required_fields": ["tenant_id", "zone_id", "warehouse_id", "zone_code", "zone_type", "status"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-warehouse", "yudao-cloud/sql/cloudmold/V20260715_14__canonical_warehouse_network_first_slice.sql"]}},
+          {"id": "warehouse.location", "grain": "one smallest addressable storage or staging position", "business_key": ["tenant_id", "warehouse_id", "location_code"], "required_fields": ["tenant_id", "location_id", "warehouse_id", "zone_id", "location_code", "location_type", "status"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-warehouse", "yudao-cloud/sql/cloudmold/V20260715_14__canonical_warehouse_network_first_slice.sql"]}},
+          {"id": "warehouse.source_mapping", "grain": "one effective source warehouse or location mapping", "business_key": ["tenant_id", "source_system", "source_type", "source_id", "valid_from"], "required_fields": ["tenant_id", "canonical_id", "source_system", "source_type", "source_id", "valid_from", "valid_to"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-warehouse", "yudao-cloud/sql/cloudmold/V20260715_14__canonical_warehouse_network_first_slice.sql"]}},
+          {"id": "warehouse.operator_assignment", "grain": "one effective principal warehouse role", "business_key": ["tenant_id", "warehouse_id", "principal_id", "role_code", "valid_from"], "required_fields": ["tenant_id", "warehouse_id", "principal_id", "role_code", "valid_from", "valid_to"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-warehouse", "yudao-cloud/sql/cloudmold/V20260715_14__canonical_warehouse_network_first_slice.sql"]}},
+          {"id": "inventory.balance_v3", "grain": "one tenant, typed owner, canonical SKU, warehouse, location, optional canonical lot, stock status, quality status and base UOM balance", "business_key": ["tenant_id", "owner_type", "owner_id", "canonical_sku_id", "warehouse_id", "location_id", "lot_id", "stock_status", "quality_status", "base_uom_code"], "required_fields": ["tenant_id", "balance_id", "owner_type", "owner_id", "canonical_sku_id", "warehouse_id", "location_id", "stock_status", "quality_status", "base_uom_code", "on_hand_quantity", "reserved_quantity", "in_transit_quantity", "version"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-inventory", "yudao-cloud/sql/cloudmold/V20260715_16__canonical_inventory_location_lot_v3.sql"]}},
+          {"id": "inventory.lot", "grain": "one canonical Lot for an owner and canonical SKU", "business_key": ["tenant_id", "lot_id"], "required_fields": ["tenant_id", "lot_id", "owner_type", "owner_id", "canonical_sku_id", "lot_code", "manufactured_on", "expires_on", "received_at", "status", "version"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-inventory", "yudao-cloud/sql/cloudmold/V20260715_20__canonical_inventory_lot_lifecycle.sql"]}},
+          {"id": "inventory.lot_source_mapping", "grain": "one qualified source Lot identity validity interval", "business_key": ["tenant_id", "source_system", "source_type", "source_id", "valid_from"], "required_fields": ["tenant_id", "mapping_id", "source_system", "source_type", "source_id", "lot_id", "valid_from", "valid_to", "verification_ref", "status", "version"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-inventory", "yudao-cloud/sql/cloudmold/V20260715_20__canonical_inventory_lot_lifecycle.sql"]}},
+          {"id": "inventory.reservation_allocation_v3", "grain": "one reservation allocation against one exact v3 balance", "business_key": ["tenant_id", "allocation_id"], "required_fields": ["tenant_id", "reservation_id", "allocation_id", "balance_id", "quantity", "status", "version"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-inventory", "yudao-cloud/sql/cloudmold/V20260715_16__canonical_inventory_location_lot_v3.sql"]}},
+          {"id": "inventory.migration_assessment", "grain": "one immutable assessment of one v1 balance source row within one migration run", "business_key": ["tenant_id", "migration_run_id", "source_system", "source_type", "source_id"], "required_fields": ["tenant_id", "migration_run_id", "assessment_id", "legacy_balance_id", "source_snapshot_hash", "source_version", "source_updated_at", "active_reservation_count", "active_reservation_quantity", "assessment_status", "blocker_codes", "policy_version", "verification_ref"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-inventory", "yudao-cloud/sql/cloudmold/V20260715_21__canonical_inventory_migration_assessment.sql"]}},
+          {"id": "inventory.migration_qualification", "grain": "one explicitly evidenced canonical target qualification for one controlled v1 canary source row", "business_key": ["tenant_id", "qualification_id"], "required_fields": ["tenant_id", "migration_run_id", "assessment_id", "qualification_id", "source_snapshot_hash", "owner_type", "owner_id", "canonical_sku_id", "warehouse_source_mapping_id", "warehouse_id", "location_id", "lot_tracking_policy", "lot_id", "source_on_hand_quantity", "qualification_status", "policy_version", "verification_ref"], "backend": {"status": "verified", "refs": ["yudao-cloud/cloudmold-module-inventory", "yudao-cloud/sql/cloudmold/V20260715_22__canonical_inventory_migration_qualification_opening.sql", "/Users/karekin/.cloudmold/runs/inventory-migration-canary/cmig15canary2/ledger.json"]}}
+        ],
+        "field_mappings": [
+          {"target": "warehouse.source_mapping.source_id", "type": "string", "required": true, "classification": "internal_id", "decision": "normalize", "transform": "string(source database id) qualified by system and type", "sources": [{"asset": "erp_warehouse/wms_warehouse/mes_wm_warehouse", "field": "id"}], "status": "mapped"},
+          {"target": "warehouse.warehouse.warehouse_id", "type": "string", "required": true, "classification": "internal_id", "decision": "new", "transform": "generate stable tenant-scoped id independent from source ids", "sources": [], "status": "specified"},
+          {"target": "warehouse.warehouse.warehouse_code", "type": "string", "required": true, "classification": "business_key", "decision": "normalize", "transform": "validate unique tenant-scoped code", "sources": [{"asset": "ods_scm_warehouse_df", "field": "code"}, {"asset": "wms_warehouse", "field": "code"}], "status": "mapped"},
+          {"target": "warehouse.location.location_id", "type": "string", "required": true, "classification": "internal_id", "decision": "new", "transform": "generate after warehouse and zone resolution", "sources": [], "status": "specified"},
+          {"target": "warehouse.location.location_code", "type": "string", "required": true, "classification": "business_key", "decision": "normalize", "transform": "tenant and warehouse qualified position code", "sources": [{"asset": "ods_scm_quality_operate_di", "field": "location_code"}], "status": "mapped"},
+          {"target": "inventory.balance.owner_id", "type": "string", "required": true, "classification": "internal_id", "decision": "reuse", "transform": "retain typed inventory owner; do not rename to seller", "sources": [{"asset": "cloudmold_inventory_balance", "field": "owner_id"}], "status": "mapped"},
+          {"target": "inventory.balance.location_id", "type": "string", "required": true, "classification": "internal_id", "decision": "normalize", "transform": "resolve canonical location and include in balance key after source mapping backfill", "sources": [{"asset": "inventory.stock.changed.v3", "field": "location_id"}], "status": "specified"},
+          {"target": "inventory.balance.lot_id", "type": "string|null", "required": false, "classification": "internal_id", "decision": "normalize", "transform": "use an explicit canonical lot_id when a qualified lot exists; null means genuinely untracked by lot and must never be replaced with a fake NO_LOT identifier", "sources": [{"asset": "inventory.stock.changed.v3", "field": "lot_id"}], "status": "verified"},
+          {"target": "inventory.balance.lot_code", "type": "string|null", "required": false, "classification": "business_label", "decision": "normalize", "transform": "retain the canonical Lot label only as an attribute; identity and joins use lot_id", "sources": [{"asset": "inventory.stock.changed.v3", "field": "lot_code"}], "status": "verified"},
+          {"target": "inventory.lot_source_mapping.source_id", "type": "string", "required": true, "classification": "external_id", "decision": "normalize", "transform": "qualify by tenant, source system and source type; resolve only within [valid_from, valid_to) and never equate source_id to lot_id", "sources": [{"asset": "qualified ERP/WMS Lot source", "field": "batch_or_lot_id"}], "status": "verified"}
+        ],
+        "events": [
+          {"event_type": "warehouse.entity.status_changed", "schema_version": 1, "aggregate": "warehouse.warehouse", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["entity_type", "entity_id", "warehouse_id", "previous_status", "current_status"], "dwd_targets": ["dwd_canonical_warehouse_entity_status_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/warehouse-entity-status-changed-v1.schema.json"},
+          {"event_type": "warehouse.source_mapping.changed", "schema_version": 1, "aggregate": "warehouse.source_mapping", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["mapping_id", "canonical_type", "canonical_id", "source_system", "source_type", "source_id", "current_status"], "dwd_targets": ["dwd_canonical_warehouse_source_mapping_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/warehouse-source-mapping-changed-v1.schema.json"},
+          {"event_type": "warehouse.operator_assignment.changed", "schema_version": 1, "aggregate": "warehouse.operator_assignment", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["assignment_id", "warehouse_id", "principal_id", "role_code", "current_status"], "dwd_targets": ["dwd_canonical_warehouse_operator_assignment_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/warehouse-operator-assignment-changed-v1.schema.json"},
+          {"event_type": "wms.receipt.received", "schema_version": 1, "aggregate": "warehouse.warehouse", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["warehouse_id", "location_id", "handling_unit_id", "receipt_id"], "dwd_targets": ["dwd_canonical_wms_receipt_event"], "status": "missing"},
+          {"event_type": "wms.quality.inspected", "schema_version": 1, "aggregate": "warehouse.location", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["warehouse_id", "location_id", "lot_no", "quality_status", "principal_id"], "dwd_targets": ["dwd_canonical_wms_quality_event"], "status": "missing"},
+          {"event_type": "inventory.stock.changed", "schema_version": 3, "aggregate": "inventory.balance_v3", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["owner_type", "owner_id", "canonical_sku_id", "warehouse_id", "location_id", "lot_id", "lot_code", "stock_status", "quality_status", "base_uom_code", "delta_on_hand_quantity", "delta_reserved_quantity", "delta_in_transit_quantity", "after_on_hand_quantity", "after_reserved_quantity", "after_in_transit_quantity", "after_available_quantity", "ledger_transaction_id", "movement_group_id"], "nullable_payload_fields": ["lot_id", "lot_code", "reservation_id", "allocation_id", "counterparty_balance_id"], "dwd_targets": ["dwd_canonical_inventory_movement"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/inventory-stock-changed-v3.schema.json", "runtime_evidence": "/Users/karekin/.cloudmold/runs/inventory-v3/cinv315a/ledger.json"},
+          {"event_type": "inventory.lot.lifecycle.changed", "schema_version": 1, "aggregate": "inventory.lot", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["run_id", "migration_run_id", "lot_id", "owner_type", "owner_id", "canonical_sku_id", "lot_code", "manufactured_on", "expires_on", "received_at", "previous_status", "current_status", "change_type", "reason_code", "evidence_ref", "recall_reference"], "nullable_payload_fields": ["migration_run_id", "manufactured_on", "expires_on", "received_at", "previous_status", "recall_reference"], "dwd_targets": ["dwd_canonical_inventory_lot_lifecycle_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/inventory-lot-lifecycle-changed-v1.schema.json", "runtime_evidence": "/Users/karekin/.cloudmold/runs/inventory-lot/clot15iso/ledger.json"},
+          {"event_type": "inventory.lot.source_mapping.changed", "schema_version": 1, "aggregate": "inventory.lot_source_mapping", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["run_id", "migration_run_id", "mapping_id", "mapping_source_system", "source_type", "source_id", "lot_id", "valid_from", "valid_to", "previous_status", "current_status", "change_type", "verification_ref", "change_reason_code"], "nullable_payload_fields": ["migration_run_id", "valid_to", "previous_status"], "dwd_targets": ["dwd_canonical_inventory_lot_source_mapping_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/inventory-lot-source-mapping-changed-v1.schema.json", "runtime_evidence": "/Users/karekin/.cloudmold/runs/inventory-lot/clot15iso/ledger.json"},
+          {"event_type": "inventory.migration.balance_assessed", "schema_version": 1, "aggregate": "inventory.migration_assessment", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["migration_run_id", "assessment_id", "legacy_balance_id", "source_system", "source_type", "source_id", "source_classification", "source_version", "source_updated_at", "source_snapshot_hash", "source_owner_id", "resolved_owner_type", "resolved_owner_id", "source_sku_id", "resolved_canonical_sku_id", "source_warehouse_id", "resolved_warehouse_id", "source_location_id", "resolved_location_id", "source_lot_id", "resolved_lot_id", "lot_tracking_policy", "stock_status", "quality_status", "source_uom_code", "resolved_base_uom_code", "source_on_hand_quantity", "source_reserved_quantity", "source_in_transit_quantity", "active_reservation_count", "active_reservation_quantity", "reservation_allocation_count", "reservation_allocation_quantity", "assessment_status", "blocker_codes", "policy_version", "verification_ref", "assessed_at"], "nullable_payload_fields": ["resolved_owner_type", "resolved_owner_id", "resolved_canonical_sku_id", "resolved_warehouse_id", "source_location_id", "resolved_location_id", "source_lot_id", "resolved_lot_id", "resolved_base_uom_code"], "dwd_targets": ["dwd_canonical_inventory_migration_assessment_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/inventory-migration-balance-assessed-v1.schema.json", "runtime_evidence": "/Users/karekin/.cloudmold/runs/inventory-migration-assessment/cmig15assess/ledger.json"}
+          ,{"event_type": "inventory.migration.balance_assessed", "schema_version": 2, "aggregate": "inventory.migration_assessment", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["migration_run_id", "assessment_id", "source_id", "source_classification", "source_snapshot_hash", "active_reservation_count", "reservation_allocation_count", "assessment_status", "blocker_codes"], "dwd_targets": ["dwd_canonical_inventory_migration_assessment_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/inventory-migration-balance-assessed-v2.schema.json", "runtime_evidence": "/Users/karekin/.cloudmold/runs/inventory-migration-canary/cmig15canary2/ledger.json"}
+          ,{"event_type": "inventory.migration.balance_qualified", "schema_version": 1, "aggregate": "inventory.migration_qualification", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["migration_run_id", "assessment_id", "qualification_id", "source_id", "source_snapshot_hash", "owner_type", "owner_id", "canonical_sku_id", "warehouse_source_mapping_id", "warehouse_id", "location_id", "lot_tracking_policy", "source_on_hand_quantity", "qualification_status"], "dwd_targets": ["dwd_canonical_inventory_migration_qualification_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/inventory-migration-balance-qualified-v1.schema.json", "runtime_evidence": "/Users/karekin/.cloudmold/runs/inventory-migration-canary/cmig15canary2/ledger.json"}
+          ,{"event_type": "inventory.stock.changed", "schema_version": 4, "aggregate": "inventory.balance_v3", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["owner_type", "owner_id", "canonical_sku_id", "warehouse_id", "location_id", "lot_id", "stock_status", "quality_status", "base_uom_code", "delta_on_hand_quantity", "delta_reserved_quantity", "delta_in_transit_quantity", "movement_type", "migration_run_id", "migration_candidate_id", "migration_qualification_id", "source_snapshot_hash", "opening_driver"], "dwd_targets": ["dwd_canonical_inventory_movement"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/inventory-stock-changed-v4.schema.json", "runtime_evidence": "/Users/karekin/.cloudmold/runs/inventory-migration-canary/cmig15canary2/ledger.json"}
+        ],
+        "layers": [
+          {"layer": "ODS", "source_assets": ["cloudmold_event_outbox", "ods_scm_warehouse_df", "ods_scm_quality_operate_di", "erp_warehouse", "wms_warehouse", "mes_wm_warehouse"], "canonical_targets": ["cloudmold_event_outbox", "ods_warehouse_source_cdc", "ods_warehouse_location_source_cdc", "ods_wms_operation_cdc"], "grain": "one source master or operation row change", "key_fields": ["tenant_id", "source_system", "source_type", "source_id", "source_version"], "status": "partial", "corrections": ["current canonical slice uses generic Outbox ODS; one exact ERP source warehouse is reconciled, while WMS/MES and bulk historical source CDC/backfill remain pending", "retain every source id and resolve through effective mapping"]},
+          {"layer": "DIM", "source_assets": ["dim_scm_warhouse_df", "current dim_warehouse_current", "inventory Lot lifecycle and mapping events", "inventory migration assessment and qualification events"], "canonical_targets": ["dim_canonical_warehouse_current", "dim_canonical_warehouse_zone_current", "dim_canonical_warehouse_location_current", "dim_canonical_inventory_lot_current", "dim_canonical_inventory_lot_source_mapping_current", "dim_canonical_inventory_migration_assessment_current", "dim_canonical_inventory_migration_qualification_current"], "grain": "one current canonical warehouse, zone, location, Lot, Lot source mapping, migration assessment or qualification", "key_fields": ["tenant_id", "canonical_id"], "status": "partial", "corrections": ["canonical Warehouse, Lot, migration-assessment and migration-qualification dimensions are implemented from versioned events", "legacy warhouse projection, unique_id and unqualified source batch text remain non-authoritative"]},
+          {"layer": "DWD_DWM", "source_assets": ["cloudmold Warehouse Network Outbox events", "dwm_scm_detail_di", "inventory.stock.changed.v3", "inventory.lot.lifecycle.changed.v1", "inventory.lot.source_mapping.changed.v1", "inventory.migration.balance_assessed.v1"], "canonical_targets": ["dwd_canonical_warehouse_entity_status_event", "dwd_canonical_warehouse_source_mapping_event", "dwd_canonical_warehouse_operator_assignment_event", "dwd_canonical_inventory_movement", "dwd_canonical_inventory_lot_lifecycle_event", "dwd_canonical_inventory_lot_source_mapping_event", "dwd_canonical_inventory_migration_assessment_event", "dwd_canonical_wms_receipt_event", "dwd_canonical_wms_quality_event"], "grain": "one immutable master, Lot, migration assessment, inventory ledger movement or physical operation event", "key_fields": ["tenant_id", "event_id", "aggregate_version"], "status": "partial", "corrections": ["Warehouse Network, canonical Lot, migration assessment and Inventory v3 movement projections are implemented", "v1 active reservations remain distinct from canonical reservation allocations; assessment never opens stock", "Inventory v3 publishes exact canonical location_id and nullable canonical lot_id; never fabricate default locations or lots", "WMS receipt and quality operation events remain missing"]},
+          {"layer": "DWS", "source_assets": ["dwd_canonical_inventory_movement", "dwd_canonical_inventory_lot_lifecycle_event", "dwd_canonical_inventory_lot_source_mapping_event", "dim_canonical_inventory_migration_assessment_current"], "canonical_targets": ["dws_canonical_warehouse_network_current", "dws_canonical_inventory_balance_current", "dws_canonical_inventory_lot_current", "dws_canonical_inventory_migration_run", "dws_canonical_warehouse_location_inventory_day", "dws_canonical_warehouse_operation_day"], "grain": "one warehouse network state, exact inventory balance/Lot grain, immutable migration run, or warehouse/location business day", "key_fields": ["tenant_id", "warehouse_id", "location_id", "lot_id", "base_uom_code"], "status": "partial", "corrections": ["master network, exact Inventory v3 balance, Lot current and migration run rollup models are implemented without cross-location or cross-UOM allocation aggregation", "capacity, throughput and quality daily summaries remain pending"]},
+          {"layer": "ADS", "source_assets": ["dws_canonical_inventory_balance_current", "dws_canonical_inventory_lot_current", "dws_canonical_inventory_migration_run"], "canonical_targets": ["ads_canonical_warehouse_network_readiness", "ads_canonical_inventory_health", "ads_canonical_inventory_lot_readiness", "ads_canonical_inventory_migration_readiness", "ads_canonical_warehouse_operation_health"], "grain": "one canonical warehouse, exact balance/Lot, migration run or location health snapshot", "key_fields": ["tenant_id", "warehouse_id", "location_id", "lot_id", "migration_run_id", "as_of_time"], "status": "partial", "corrections": ["master-data, inventory health, migration readiness and recalled/closed/expired Lot fencing consume canonical Warehouse, Location, Lot and Inventory v3 dimensions", "ASSESSED_ONLY forbids opening; QUALIFIED_ONLY requires an exact CONTROLLED_CANARY qualification; MIGRATED_CANARY requires one qualification-linked schema v4 opening", "physical-operation health remains gated on WMS operations"]}
+        ],
+        "invariants": [
+          {"id": "warehouse-source-id-distinct", "kind": "not_equal", "left": "warehouse.warehouse.warehouse_id", "right": "warehouse.source_mapping.source_id", "severity": "error"},
+          {"id": "location-belongs-to-warehouse", "kind": "foreign_key", "left": ["tenant_id", "warehouse_id"], "right_entity": "warehouse.warehouse", "severity": "error"},
+          {"id": "location-belongs-to-zone", "kind": "foreign_key", "left": ["tenant_id", "zone_id"], "right_entity": "warehouse.zone", "severity": "error"},
+          {"id": "warehouse-location-hierarchy", "kind": "acyclic_hierarchy", "severity": "error"},
+          {"id": "inventory-location-event-projection", "kind": "event_projection", "event_type": "inventory.stock.changed", "required_fields": ["owner_type", "owner_id", "canonical_sku_id", "warehouse_id", "location_id", "lot_id", "quality_status", "stock_status", "base_uom_code"], "layers": ["DWD_DWM", "DWS", "ADS"], "severity": "error"},
+          {"id": "inventory-lot-source-id-distinct", "kind": "not_equal", "left": "inventory.lot.lot_id", "right": "inventory.lot_source_mapping.source_id", "severity": "error"},
+          {"id": "inventory-lot-event-projection", "kind": "event_projection", "event_type": "inventory.lot.lifecycle.changed", "required_fields": ["lot_id", "owner_type", "owner_id", "canonical_sku_id", "lot_code", "current_status"], "layers": ["DWD_DWM", "DIM", "DWS", "ADS"], "severity": "error"},
+          {"id": "inventory-migration-assess-only-fence", "kind": "event_projection", "event_type": "inventory.migration.balance_assessed", "required_fields": ["migration_run_id", "source_id", "source_snapshot_hash", "active_reservation_count", "reservation_allocation_count", "assessment_status", "blocker_codes"], "layers": ["DWD_DWM", "DIM", "DWS", "ADS"], "severity": "error"},
+          {"id": "inventory-migration-controlled-canary-qualification", "kind": "event_projection", "event_type": "inventory.migration.balance_qualified", "required_fields": ["migration_run_id", "assessment_id", "qualification_id", "source_id", "source_snapshot_hash", "owner_id", "canonical_sku_id", "warehouse_source_mapping_id", "warehouse_id", "location_id", "lot_tracking_policy", "qualification_status"], "layers": ["DWD_DWM", "DIM", "DWS", "ADS"], "severity": "error"},
+          {"id": "inventory-migration-single-opening-driver", "kind": "event_projection", "event_type": "inventory.stock.changed", "required_fields": ["migration_run_id", "migration_candidate_id", "migration_qualification_id", "source_snapshot_hash", "movement_type", "opening_driver", "delta_on_hand_quantity", "delta_reserved_quantity", "delta_in_transit_quantity"], "layers": ["DWD_DWM", "DWS", "ADS"], "severity": "error"},
+          {"id": "warehouse-five-layer-coverage", "kind": "layer_coverage", "severity": "error"}
+        ],
+        "gaps": [
+          {"severity": "warning", "description": "Warehouse/Zone/Location and source mapping passed a clean V13-V15 MySQL rehearsal; tenant 1 ERP warehouse 3 has an exact non-empty WAREHOUSE_NETWORK_READY mapping, but WMS/MES and historical bulk warehouse/location backfill remain incomplete."},
+          {"severity": "error", "description": "WMS has no authoritative physical Lot, handling-unit, putaway, wave, pick or quality-operation domain model; CloudMold Inventory Lot therefore remains the canonical Lot authority."},
+          {"severity": "warning", "description": "Inventory v3 已以 tenant/owner/SKU/Warehouse/Location/nullable Lot/stock/quality/UOM 精确粒度跑通 RECEIVE→RESERVE→SHIP→RETURN→RESERVE→RELEASE，湖仓对账 6 个事件、最大版本 6、最终 8/0/8；但仍是影子账本。"},
+          {"severity": "warning", "description": "Lot 已具备公开 REGISTER/RECALL/CLOSE、时态来源映射、精确可用量查询、召回禁售、不可变重放及六层湖仓模型；clot15iso 以 ISO 时间契约对账为 lifecycle 2、mapping 3、inventory 3、最终 10/0/0/10 且 allocatable=0。V21 评估仍保持 cmig15assess 的 18/18/18、0/18/0、source 170/3/0、opening 0、BLOCKED。V22 的 cmig15canary2 已以一个 CONTROLLED_CANARY 对账为 assessment/qualification/opening 各 1、10/0/0、MIGRATED_CANARY/CANARY_RECONCILED；V23 resolved bridge 已拒绝并回滚新 v1 写入，历史五入口仍 immutable replay，aggregate-version 源漂移计数为 0。该证据仍不包含生产 batch/审批、连续 shadow window、reversal 或租户 cutover。"},
+          {"severity": "warning", "description": "Reservation v3 当前一次只分配一个余额；多库位分配、调拨、盘点、质量状态迁移和唯一码仍未实现。"}
+        ]
+      },
+      {
+        "id": "inventory_migration_pilot",
+        "decision_document": "/Users/karekin/Library/Mobile Documents/iCloud~md~obsidian/Documents/project/后台管理系统/能力建设/Catalog与Inventory数据权威ADR.md",
+        "covers_alignment_units": ["trade.inventory"],
+        "source_anchors": [
+          {"document": "ODS语兴好物（y shopping）电商数据表.md", "line_start": 6847, "line_end": 6869, "assets": ["ods_scm_quality_operate_di"]}
+        ],
+        "sor_decisions": [
+          {"entity": "inventory.migration_pilot_batch", "authority_id": "cloudmold-inventory", "status": "partial", "legacy_sources": [{"source_system": "yshopping", "object": "inventory production population", "role": "evidence_only_non_authoritative"}]},
+          {"entity": "inventory.migration_pilot_item", "authority_id": "cloudmold-inventory", "status": "partial", "legacy_sources": [{"source_system": "cloudmold_inventory_v1", "object": "cloudmold_inventory_balance", "role": "immutable_source_snapshot"}]},
+          {"entity": "inventory.migration_pilot_approval", "authority_id": "cloudmold-inventory", "status": "partial", "legacy_sources": [{"source_system": "system", "object": "system_users", "role": "credential_actor_only"}]},
+          {"entity": "inventory.migration_pilot_checkpoint", "authority_id": "cloudmold-inventory", "status": "partial", "legacy_sources": []}
+        ],
+        "entities": [
+          {"id": "inventory.migration_pilot_batch", "grain": "one tenant-scoped immutable production-history admission manifest", "business_key": ["tenant_id", "pilot_batch_id"], "required_fields": ["tenant_id", "pilot_batch_id", "migration_run_id", "environment", "environment_fingerprint", "manifest_hash", "policy_hash", "expected_item_count", "expected_on_hand_quantity", "source_watermark", "target_watermark", "status", "version"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-inventory", "yudao-cloud/sql/cloudmold/V20260715_24__inventory_production_pilot_admission.sql"]}},
+          {"id": "inventory.migration_pilot_item", "grain": "one exact frozen legacy balance source and canonical target grain", "business_key": ["tenant_id", "pilot_item_id"], "required_fields": ["tenant_id", "pilot_item_id", "pilot_batch_id", "assessment_id", "source_id", "source_version", "source_snapshot_hash", "owner_id", "canonical_sku_id", "warehouse_id", "location_id", "lot_id", "base_uom_code", "item_scope_hash", "status", "version"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-inventory", "yudao-cloud/sql/cloudmold/V20260715_24__inventory_production_pilot_admission.sql"]}},
+          {"id": "inventory.migration_pilot_approval", "grain": "one immutable approval role decision bound to one manifest and policy hash", "business_key": ["tenant_id", "approval_id"], "required_fields": ["tenant_id", "approval_id", "pilot_batch_id", "approval_role", "system_user_id", "scope_hash", "policy_hash", "expires_at", "status"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-inventory", "yudao-cloud/sql/cloudmold/V20260715_24__inventory_production_pilot_admission.sql"]}},
+          {"id": "inventory.migration_pilot_checkpoint", "grain": "one immutable governance state checkpoint", "business_key": ["tenant_id", "checkpoint_id"], "required_fields": ["tenant_id", "checkpoint_id", "pilot_batch_id", "checkpoint_type", "batch_version", "scope_hash", "policy_hash", "item_count"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-inventory", "yudao-cloud/sql/cloudmold/V20260715_24__inventory_production_pilot_admission.sql"]}}
+        ],
+        "field_mappings": [
+          {"target": "inventory.migration_pilot_batch.manifest_hash", "type": "sha256", "required": true, "classification": "internal_id", "decision": "new", "transform": "", "sources": [], "status": "specified"},
+          {"target": "inventory.migration_pilot_item.source_snapshot_hash", "type": "sha256", "required": true, "classification": "internal_id", "decision": "normalize", "transform": "hash the exact v1 row, ledger source fact and active reservation denominator", "sources": [{"asset": "cloudmold_inventory_balance", "field": "version and quantities"}], "status": "mapped"},
+          {"target": "inventory.migration_pilot_item.location_id", "type": "uuid", "required": true, "classification": "internal_id", "decision": "normalize", "transform": "resolve an active effective Location source mapping; never default a location", "sources": [{"asset": "ods_scm_quality_operate_di", "field": "location_code"}], "status": "mapped"},
+          {"target": "inventory.migration_pilot_item.base_uom_code", "type": "string", "required": true, "classification": "business_key", "decision": "normalize", "transform": "require exact source and target UOM equality with conversion ratio 1", "sources": [], "status": "specified"},
+          {"target": "inventory.migration_pilot_approval.system_user_id", "type": "int64", "required": true, "classification": "internal_actor_id", "decision": "reuse", "transform": "", "sources": [{"asset": "authenticated SecurityContext", "field": "system_user_id"}], "status": "mapped"},
+          {"target": "inventory.migration_pilot_batch.source_watermark", "type": "watermark", "required": true, "classification": "internal_id", "decision": "new", "transform": "", "sources": [], "status": "specified"},
+          {"target": "inventory.migration_pilot_batch.target_watermark", "type": "watermark", "required": true, "classification": "internal_id", "decision": "new", "transform": "", "sources": [], "status": "specified"}
+        ],
+        "events": [
+          {"event_type": "inventory.migration.pilot_batch_status_changed", "schema_version": 1, "aggregate": "inventory.migration_pilot_batch", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["pilot_batch_id", "migration_run_id", "environment", "environment_fingerprint", "manifest_hash", "policy_hash", "expected_item_count", "expected_on_hand_quantity", "approved_item_count", "admitted_item_count", "requester_system_user_id", "approver_system_user_ids", "executor_system_user_id", "source_watermark_value", "target_watermark_value", "batch_status", "execution_available", "cutover_ready"], "dwd_targets": ["dwd_canonical_inventory_migration_pilot_batch_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/inventory-migration-pilot-batch-status-changed-v1.schema.json"},
+          {"event_type": "inventory.migration.pilot_item_status_changed", "schema_version": 1, "aggregate": "inventory.migration_pilot_item", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["pilot_batch_id", "pilot_item_id", "manifest_ordinal", "item_scope_hash", "manifest_hash", "migration_run_id", "assessment_id", "source_id", "source_snapshot_hash", "source_on_hand_quantity", "owner_id", "canonical_sku_id", "warehouse_id", "location_id", "lot_tracking_policy", "lot_id", "base_uom_code", "uom_conversion_ratio", "target_balance_absent", "bridge_absent", "item_status", "execution_available"], "dwd_targets": ["dwd_canonical_inventory_migration_pilot_item_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/inventory-migration-pilot-item-status-changed-v1.schema.json"}
+        ],
+        "layers": [
+          {"layer": "ODS", "source_assets": ["cloudmold_event_outbox", "cloudmold_inventory_balance"], "canonical_targets": ["cloudmold_event_outbox", "ods_inventory_migration_source_snapshot"], "grain": "one immutable source row or outbox event", "key_fields": ["tenant_id", "source_id", "source_version"], "status": "partial", "corrections": ["Y-Shopping operation facts are evidence inputs, not balance authority"]},
+          {"layer": "DIM", "source_assets": ["pilot batch and item events"], "canonical_targets": ["dim_canonical_inventory_migration_pilot_batch_current", "dim_canonical_inventory_migration_pilot_item_current"], "grain": "one current pilot batch or item governance state", "key_fields": ["tenant_id", "pilot_batch_id", "pilot_item_id"], "status": "verified", "corrections": ["pilot batch is governance identity, never Inventory Lot, P-code or WMS operation batch"]},
+          {"layer": "DWD_DWM", "source_assets": ["inventory migration pilot events"], "canonical_targets": ["dwd_canonical_inventory_migration_pilot_batch_event", "dwd_canonical_inventory_migration_pilot_item_event"], "grain": "one immutable governance state transition", "key_fields": ["tenant_id", "event_id", "aggregate_version"], "status": "verified", "corrections": ["internal system-user actors remain credential IDs and never become canonical Principal IDs"]},
+          {"layer": "DWS", "source_assets": ["pilot batch/item current dimensions", "migration assessment dimension"], "canonical_targets": ["dws_canonical_inventory_migration_pilot_batch"], "grain": "one pilot batch denominator and admission reconciliation", "key_fields": ["tenant_id", "pilot_batch_id"], "status": "verified", "corrections": ["reported and observed item and quantity denominators must agree exactly"]},
+          {"layer": "ADS", "source_assets": ["dws_canonical_inventory_migration_pilot_batch"], "canonical_targets": ["ads_canonical_inventory_migration_pilot_readiness"], "grain": "one admission-only pilot readiness row", "key_fields": ["tenant_id", "pilot_batch_id"], "status": "verified", "corrections": ["ADMISSION_RECONCILED always keeps execution_available and cutover_ready false"]}
+        ],
+        "invariants": [
+          {"id": "pilot-batch-event-projection", "kind": "event_projection", "event_type": "inventory.migration.pilot_batch_status_changed", "required_fields": ["manifest_hash", "expected_item_count", "approved_item_count", "admitted_item_count", "execution_available", "cutover_ready"], "layers": ["DWD_DWM", "DIM", "DWS", "ADS"], "severity": "error"},
+          {"id": "pilot-item-event-projection", "kind": "event_projection", "event_type": "inventory.migration.pilot_item_status_changed", "required_fields": ["item_scope_hash", "source_snapshot_hash", "owner_id", "canonical_sku_id", "warehouse_id", "location_id", "lot_id", "base_uom_code"], "layers": ["DWD_DWM", "DIM", "DWS", "ADS"], "severity": "error"},
+          {"id": "pilot-item-source-unique", "kind": "unique", "fields": ["tenant_id", "source_id"], "severity": "error"},
+          {"id": "pilot-actor-separation", "kind": "not_equal", "left": "inventory.migration_pilot_batch.requester_system_user_id", "right": "inventory.migration_pilot_approval.system_user_id", "severity": "error"},
+          {"id": "pilot-admission-no-execution", "kind": "temporal", "entity": "inventory.migration_pilot_batch", "rule": "ADMISSION_PASSED never creates a qualification, opening, bridge or v3 balance and always reports execution_available=false and cutover_ready=false", "severity": "error"},
+          {"id": "pilot-five-layer-coverage", "kind": "layer_coverage", "severity": "error"}
+        ],
+        "gaps": [
+          {"severity": "error", "description": "Y-Shopping documents still do not prove authoritative current quantities, Location master, UOM equivalence or stable source/target CDC watermarks; without external structured evidence production eligibility remains zero."},
+          {"severity": "error", "description": "V24 is admission-only: production qualification, shadow comparison, reversal, rollback and tenant cutover remain deliberately unavailable."}
+        ]
+      },
+      {
+        "id": "inventory_migration_shadow_window",
+        "decision_document": "/Users/karekin/Library/Mobile Documents/iCloud~md~obsidian/Documents/project/后台管理系统/能力建设/Catalog与Inventory数据权威ADR.md",
+        "covers_alignment_units": ["trade.inventory"],
+        "source_anchors": [
+          {"document": "ODS语兴好物（y shopping）电商数据表.md", "line_start": 1573, "line_end": 1600, "assets": ["ods_trade_trade_inventory_flow_df"]}
+        ],
+        "sor_decisions": [
+          {"entity": "inventory.migration_shadow_window", "authority_id": "cloudmold-inventory-shadow-window", "status": "partial", "legacy_sources": [{"source_system": "yshopping", "object": "inventory observations", "role": "comparison_evidence_only"}]},
+          {"entity": "inventory.migration_shadow_round", "authority_id": "cloudmold-inventory-shadow-round", "status": "partial", "legacy_sources": [{"source_system": "mysql", "object": "raw GTID sets", "role": "collector_input_not_validator"}]},
+          {"entity": "inventory.migration_shadow_comparison", "authority_id": "cloudmold-inventory-shadow-comparison", "status": "partial", "legacy_sources": [{"source_system": "cloudmold_inventory_v1", "object": "balance snapshots", "role": "source_observation"}, {"source_system": "cloudmold_inventory_v3", "object": "CANONICAL_INVENTORY_V3_SHADOW_PROJECTION", "role": "read_only_target_observation"}]}
+        ],
+        "entities": [
+          {"id": "inventory.migration_shadow_window", "grain": "one immutable-policy observation window bound to one historical admitted pilot manifest", "business_key": ["tenant_id", "shadow_window_id"], "required_fields": ["tenant_id", "shadow_window_id", "pilot_batch_id", "admission_event_id", "manifest_hash", "expected_item_set_hash", "window_status", "verification_result", "version"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-inventory"]}},
+          {"id": "inventory.migration_shadow_round", "grain": "one atomic completed observation round over the full expected item set", "business_key": ["tenant_id", "shadow_round_id"], "required_fields": ["tenant_id", "shadow_round_id", "shadow_window_id", "round_sequence", "source_gtid_set", "target_gtid_set", "round_result", "version"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-inventory"]}},
+          {"id": "inventory.migration_shadow_comparison", "grain": "one expected pilot item comparison in one completed round", "business_key": ["tenant_id", "shadow_window_id", "shadow_round_id", "pilot_item_id"], "required_fields": ["tenant_id", "shadow_comparison_id", "shadow_window_id", "shadow_round_id", "pilot_item_id", "source_version", "target_available", "comparison_result", "version"], "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-inventory"]}}
+        ],
+        "field_mappings": [
+          {"target": "inventory.migration_shadow_window.expected_item_set_hash", "type": "sha256", "required": true, "classification": "internal_id", "decision": "new", "transform": "hash the ordered immutable V24 ADMISSION_PASSED item identities", "sources": [], "status": "specified"},
+          {"target": "inventory.migration_shadow_round.source_gtid_set", "type": "mysql_gtid_set", "required": true, "classification": "internal_id", "decision": "normalize", "transform": "retain raw collector value and validate containment server-side with MYSQL_GTID_SET_CONTAINS_V1", "sources": [{"asset": "MySQL", "field": "executed_gtid_set"}], "status": "mapped"},
+          {"target": "inventory.migration_shadow_comparison.target_projection_kind", "type": "enum", "required": true, "classification": "internal_id", "decision": "new", "transform": "constant CANONICAL_INVENTORY_V3_SHADOW_PROJECTION; no target balance materialization", "sources": [], "status": "specified"},
+          {"target": "inventory.migration_shadow_comparison.comparison_result", "type": "enum", "required": true, "classification": "business_status", "decision": "new", "transform": "MATCH, DIFFERENT or UNCOMPARABLE from exact grain and quantity comparison", "sources": [], "status": "specified"}
+        ],
+        "events": [
+          {"event_type": "inventory.migration.shadow_window_status_changed", "schema_version": 1, "aggregate": "inventory.migration_shadow_window", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["shadow_window_id", "pilot_batch_id", "admission_event_id", "manifest_hash", "expected_item_set_hash", "expected_item_count", "target_projection_kind", "watermark_kind", "required_round_count", "required_duration_seconds", "window_status", "verification_result", "execution_available", "cutover_ready"], "dwd_targets": ["dwd_canonical_inventory_migration_shadow_window_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/inventory-migration-shadow-window-status-changed-v1.schema.json"},
+          {"event_type": "inventory.migration.shadow_round_completed", "schema_version": 1, "aggregate": "inventory.migration_shadow_round", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["shadow_round_id", "shadow_window_id", "round_sequence", "expected_item_count", "observed_item_count", "source_gtid_set", "target_gtid_set", "source_monotonic", "target_monotonic", "target_contains_source", "gtid_validator_version", "round_result", "execution_available", "cutover_ready"], "dwd_targets": ["dwd_canonical_inventory_migration_shadow_round_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/inventory-migration-shadow-round-completed-v1.schema.json"},
+          {"event_type": "inventory.migration.shadow_item_compared", "schema_version": 1, "aggregate": "inventory.migration_shadow_comparison", "required_envelope_fields": ["tenant_id", "aggregate_id", "aggregate_version", "occurred_at", "source_system"], "required_payload_fields": ["shadow_comparison_id", "shadow_window_id", "shadow_round_id", "pilot_item_id", "round_sequence", "item_scope_hash", "source_version", "source_grain_hash", "target_projection_kind", "target_available", "target_grain_hash", "comparable", "comparison_result", "difference_fields", "reason_codes", "execution_available", "cutover_ready"], "dwd_targets": ["dwd_canonical_inventory_migration_shadow_item_comparison_event"], "status": "verified", "schema_ref": "useful-scripts/yml/yshopping-lakehouse/contracts/events/inventory-migration-shadow-item-compared-v1.schema.json"}
+        ],
+        "layers": [
+          {"layer": "ODS", "source_assets": ["cloudmold_event_outbox", "raw MySQL GTID sets"], "canonical_targets": ["cloudmold_event_outbox", "ods_inventory_shadow_observation"], "grain": "one immutable collector observation or event", "key_fields": ["tenant_id", "shadow_window_id", "round_sequence"], "status": "partial", "corrections": ["collector GTID strings are evidence inputs; ordering and containment are server-derived"]},
+          {"layer": "DIM", "source_assets": ["shadow window events"], "canonical_targets": ["dim_canonical_inventory_migration_shadow_window_current"], "grain": "one current window governance state", "key_fields": ["tenant_id", "shadow_window_id"], "status": "verified", "corrections": ["window_status and verification_result are separate axes"]},
+          {"layer": "DWD_DWM", "source_assets": ["shadow window, round and comparison events"], "canonical_targets": ["dwd_canonical_inventory_migration_shadow_window_event", "dwd_canonical_inventory_migration_shadow_round_event", "dwd_canonical_inventory_migration_shadow_item_comparison_event"], "grain": "one immutable state, atomic round or item comparison event", "key_fields": ["tenant_id", "event_id", "aggregate_version"], "status": "verified", "corrections": ["a missing target projection is UNCOMPARABLE/TARGET_MISSING, never a synthesized MATCH"]},
+          {"layer": "DWS", "source_assets": ["historical V24 admitted items", "shadow rounds", "shadow item comparisons"], "canonical_targets": ["dws_canonical_inventory_migration_shadow_round", "dws_canonical_inventory_migration_shadow_window"], "grain": "one complete expected-items-by-round denominator and one full window", "key_fields": ["tenant_id", "shadow_window_id", "shadow_round_id"], "status": "verified", "corrections": ["build denominator from admitted expected items crossed with rounds, then left join observations"]},
+          {"layer": "ADS", "source_assets": ["shadow window DWS"], "canonical_targets": ["ads_canonical_inventory_migration_shadow_readiness"], "grain": "one window evidence readiness row", "key_fields": ["tenant_id", "shadow_window_id"], "status": "verified", "corrections": ["only VERIFIED plus MATCH plus all DWS gates yields SHADOW_MATCH_VERIFIED; execution and cutover remain false"]}
+        ],
+        "invariants": [
+          {"id": "shadow-window-event-projection", "kind": "event_projection", "event_type": "inventory.migration.shadow_window_status_changed", "required_fields": ["window_status", "verification_result", "expected_item_set_hash", "target_projection_kind"], "layers": ["DWD_DWM", "DIM", "DWS", "ADS"], "severity": "error"},
+          {"id": "shadow-round-event-projection", "kind": "event_projection", "event_type": "inventory.migration.shadow_round_completed", "required_fields": ["round_sequence", "source_gtid_set", "target_gtid_set", "target_contains_source", "round_result"], "layers": ["DWD_DWM", "DWS", "ADS"], "severity": "error"},
+          {"id": "shadow-comparison-event-projection", "kind": "event_projection", "event_type": "inventory.migration.shadow_item_compared", "required_fields": ["pilot_item_id", "target_available", "comparison_result", "reason_codes"], "layers": ["DWD_DWM", "DWS", "ADS"], "severity": "error"},
+          {"id": "shadow-expected-items-rounds-denominator", "kind": "unique", "fields": ["tenant_id", "shadow_window_id", "round_sequence", "pilot_item_id"], "severity": "error"},
+          {"id": "shadow-gtid-server-containment", "kind": "temporal", "entity": "inventory.migration_shadow_round", "rule": "MYSQL_GTID_SET monotonicity and containment are server-derived and never lexicographic", "severity": "error"},
+          {"id": "shadow-verified-not-execution", "kind": "temporal", "entity": "inventory.migration_shadow_window", "rule": "VERIFIED is terminal evidence validation, not execution or cutover permission", "severity": "error"},
+          {"id": "shadow-five-layer-coverage", "kind": "layer_coverage", "severity": "error"}
+        ],
+        "gaps": [
+          {"severity": "error", "description": "No real production shadow cohort has yet emitted the required full-denominator rounds; this contract supplies validation models only and grants no execution, cutover or materialization capability."},
+          {"severity": "warning", "description": "The independent CANONICAL_INVENTORY_V3_SHADOW_PROJECTION must be provided read-only by the backend collector; absence remains explicit UNCOMPARABLE/TARGET_MISSING evidence."}
+        ]
+      }
+    ]
+  },
+  "alignment_units": [
+    {
+      "id": "trade.order",
+      "source_anchor": "main:518-527,544-558",
+      "target_processes": ["主订单", "商家或履约子订单", "订单项", "优惠分摊", "订单申诉", "交易日志", "物流单", "物流轨迹"],
+      "backend": {
+        "status": "partial",
+        "refs": ["yudao-cloud/cloudmold-module-order", "yudao-cloud/cloudmold-module-fulfillment"],
+        "gaps": ["缺少主订单到多商家或多履约子订单拆分", "缺少优惠分摊和订单申诉权威", "多包裹与精确物流轨迹未完成"]
+      },
+      "lakehouse": {
+        "status": "partial",
+        "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-item-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-order-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-order-item-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-commerce-v2-readiness.sql"],
+        "gaps": ["未覆盖子订单、优惠分摊、申诉及完整物流轨迹事实", "当前维度不是 SCD2"]
+      },
+      "next_gate": "实现商家/履约拆单、优惠分摊和多包裹契约并以同一 run_id 对账。"
+    },
+    {
+      "id": "trade.payment",
+      "source_anchor": "main:520-526",
+      "target_processes": ["支付创建", "支付确认", "退款", "支付退款记录", "资金金额对账"],
+      "backend": {
+        "status": "partial",
+        "refs": ["yudao-cloud/cloudmold-module-payment"],
+        "gaps": ["仅 INTERNAL_TEST provider 完成规范闭环", "真实 Pay Adapter 与渠道回调未完成"]
+      },
+      "lakehouse": {
+        "status": "partial",
+        "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-payment-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-payment-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-commerce-readiness.sql"],
+        "gaps": ["尚无真实支付渠道流水与结算对账事实"]
+      },
+      "next_gate": "接入真实 Pay Adapter，并证明订单应付、实付、退款和渠道流水逐笔一致。"
+    },
+    {
+      "id": "trade.reverse",
+      "source_anchor": "main:528-534",
+      "target_processes": ["取消", "退款资格", "资金退款", "退货", "逆向物流", "质检", "换货", "理赔", "优惠退回"],
+      "backend": {
+        "status": "partial",
+        "refs": ["yudao-cloud/cloudmold-module-aftersales", "yudao-cloud/cloudmold-module-order", "yudao-cloud/cloudmold-module-fulfillment"],
+        "gaps": ["仅整单全额退货退款和已支付未发货取消已验证", "部分退货、换货、拒绝质检和异常逆向物流未完成"]
+      },
+      "lakehouse": {
+        "status": "partial",
+        "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-after-sale-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-return-fulfillment-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-after-sale-resolution-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-after-sale-readiness.sql"],
+        "gaps": ["缺少部分数量、换货、拒绝质检和理赔模型"]
+      },
+      "next_gate": "以订单项为粒度补齐部分退货、换货和拒绝质检，保持取消 Saga 与售后事实互斥。"
+    },
+    {
+      "id": "trade.inventory",
+      "context_refs": ["inventory_migration_pilot", "inventory_migration_shadow_window"],
+      "source_anchor": "main:77-81,560-572",
+      "target_processes": ["现存", "预占", "可用", "收货", "发货", "退货", "释放", "调拨", "盘点", "残次"],
+      "backend": {
+        "status": "partial",
+        "refs": ["yudao-cloud/cloudmold-module-inventory", "yudao-cloud/cloudmold-module-warehouse", "yudao-cloud/sql/cloudmold/V20260715_16__canonical_inventory_location_lot_v3.sql", "yudao-cloud/sql/cloudmold/V20260715_20__canonical_inventory_lot_lifecycle.sql", "yudao-cloud/sql/cloudmold/V20260715_21__canonical_inventory_migration_assessment.sql", "yudao-cloud/sql/cloudmold/V20260715_22__canonical_inventory_migration_qualification_opening.sql", "yudao-cloud/sql/cloudmold/V20260715_24__inventory_production_pilot_admission.sql", "yudao-cloud/sql/cloudmold/V20260715_25__inventory_migration_continuous_shadow.sql", "/Users/karekin/.cloudmold/runs/inventory-migration-canary/cmig15canary2/ledger.json"],
+        "gaps": ["Inventory v3 影子账本已纳入 typed owner、canonical SKU、Warehouse、Location、nullable canonical Lot、stock/quality status、base UOM、在途、预占分配与双分录字段，并以真实 6 步闭环和全幂等重放验证", "Lot 已实现公开生命周期、时态来源链接、精确可用量和召回禁售；clot15iso 的 8 次成功写入、ISO 时间事件及重放均通过", "V22 已实现显式 CONTROLLED_CANARY 的 ASSESS→QUALIFY→MIGRATE；cmig15canary2 以精确 Merchant/SKU/Warehouse source mapping/Location/NOT_TRACKED 证据生成唯一 schema v4 opening，10/0/0 且全写入口不可变重放", "V23 已把 RESOLVED bridge 作为 v1 单源写围栏；五个历史入口 immutable replay，新 fence probe 被明确拒绝且完整回滚，源版本/数量/ledger 未漂移", "已有目标余额的 canary 被 MIGRATE 拒绝并保留 QUALIFIED_ONLY；原 18 条 fixture/scenario/probe 仍为 BLOCKED 且从未资格化", "V24 已实现生产 pilot batch/item、双审批、不可变 checkpoint 与默认关闭的 admission 控制面；真实生产 cohort 仍为 0", "V25 已实现完整 denominator、MySQL GTID 覆盖、固定 target projection、actor separation 及 MATCH/DIFFERENT/UNCOMPARABLE 的连续 shadow 证据控制面；开发库 window/round/comparison 仍为 0 行，不构成生产 MATCH", "当前一次预占只分配一个余额；多库位分配、调拨、盘点、质量状态迁移和唯一码尚未形成完整权威模型", "Mall/ERP/WMS 旧库存仍未逐租户切换；真实 production shadow window、双向 reversal 围栏和租户级停止旧写尚未完成"]
+      },
+      "lakehouse": {
+        "status": "partial",
+        "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-inventory-movement.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-inventory-lot-lifecycle-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-inventory-lot-source-mapping-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-inventory-migration-assessment-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-inventory-migration-qualification-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-inventory-lot-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-inventory-lot-source-mapping-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-inventory-migration-assessment-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-inventory-migration-qualification-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-inventory-lot-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-inventory-migration-run.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-inventory-lot-readiness.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-inventory-migration-readiness.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-inventory-migration-shadow-window-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-inventory-migration-shadow-round-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-inventory-migration-shadow-item-comparison-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-inventory-migration-shadow-window-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-inventory-migration-shadow-round.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-inventory-migration-shadow-window.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-inventory-migration-shadow-readiness.sql"],
+        "gaps": ["Inventory v3 与 canonical Lot 的库位、Lot、stock/quality、在途、预占分配和台账字段已进入 DWD/DIM/DWS/ADS；clot15iso 精确对账 2 个生命周期事件、3 个映射事件、3 个库存事件及 RECALLED_FENCED", "迁移评估、资格与 schema v4 opening 已进入 DWD/DIM/DWS/ADS；cmig15canary2 精确对账 assessment/qualification/opening 各 1、10/0/0、MIGRATED_CANARY/CANARY_RECONCILED", "migration DWS/ADS 按 qualification source version 计算 post_qualification_legacy_write_count，当前为 0；任何源版本前进均 fail-closed，而非被静默当作双跑一致", "DWS/ADS 保留 owner/SKU/Warehouse/Location/Lot/stock/quality/UOM 精确粒度，不跨库位或 UOM 聚合可分配量", "V24 pilot 与 V25 shadow window/round/item 已进入 DWD/DIM/DWS/ADS；23 条 shadow DQC 固化完整 denominator、水位覆盖、间隔/延迟、结果语义和零 execution/cutover leak", "缺少多库位分配、调拨、盘点、质量迁移、逐件唯一码和 WMS 物理作业分析", "尚未取得合格生产历史余额 cohort，也未产生非空的真实连续 shadow window、reversal 与逐租户切换证据"]
+      },
+      "next_gate": "补齐外部结构化生产证据并形成合法 V24 pilot，在固定 CANONICAL_INVENTORY_V3_SHADOW_PROJECTION 上完成至少 12 轮、72 小时、完整 denominator 的真实 V25 shadow window；随后才评估 production qualification v2。reversal 必须保留 opening 历史并具备 v1/v3 双向围栏和人工审批。"
+    },
+    {
+      "id": "trade.supply_chain",
+      "context_refs": ["warehouse_location"],
+      "source_anchor": "main:2333-2404",
+      "target_processes": ["供应商", "采购订单", "采购入库", "销售出库", "退货入库", "仓网", "运输调度", "财务记账"],
+      "backend": {
+        "status": "partial",
+        "refs": ["yudao-cloud/cloudmold-module-warehouse", "yudao-cloud/yudao-module-erp", "yudao-cloud/yudao-module-wms"],
+        "gaps": ["已将租户 1 的真实 ERP 仓库 3 映射到独立规范 Warehouse/Zone/Location 并完成非空对账；WMS/MES 来源映射和历史批量回填仍未完成", "ERP 与 WMS 没有完整规范跨服务作业契约", "采购尚未引用完整规范 Catalog/Inventory/Order 权威", "财务三账闭环未完成"]
+      },
+      "lakehouse": {
+        "status": "partial",
+        "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-purchase-order-line.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-purchase-receipt-line.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-warehouse-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-purchase-receipt-daily.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-purchase-fulfillment.sql"],
+        "gaps": ["仅采购入库先导切片", "销售出库、调拨、盘点、退货和财务事实不完整", "procurement.receipt.approved 目前只有 Schema/样例，没有生产 emitter 和专用下游模型"]
+      },
+      "next_gate": "在已验证 ERP 映射上补 WMS/MES 与历史仓网回填，再把采购入库接到规范 Catalog、Location 与 Inventory。"
+    },
+    {
+      "id": "activity",
+      "source_anchor": "main:82-90",
+      "target_processes": ["活动折扣", "用户助力", "抽奖", "通知", "积分", "奖品", "问卷", "短信或 App 推送"],
+      "backend": {
+        "status": "legacy_only",
+        "refs": ["yudao-cloud/yudao-module-mall/yudao-module-promotion-server"],
+        "gaps": ["未建立 CloudMold 活动权威与事件契约", "目标中的助力、抽奖、问卷等过程未逐项验证"]
+      },
+      "lakehouse": {
+        "status": "partial",
+        "refs": ["useful-scripts/yml/yshopping-lakehouse/pipelines/legacy-mall-alignment-mysql-to-starrocks.yaml", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-legacy-activity-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-legacy-activity-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-legacy-activity-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-legacy-activity-current.sql", "useful-scripts/yml/yshopping-lakehouse/tests/sql/22-legacy-coupon-activity-collect-current-state-contract.sql"],
+        "gaps": ["现阶段仅投影 Yudao Promotion 六类活动的 MySQL current-state，尚无规范活动权威、不可变事件历史或 SCD2", "六类 legacy 状态码尚未逐类型规范化，当前 10 行均保留为 UNKNOWN_LEGACY_STATUS", "助力、抽奖、问卷、通知、积分权益和奖品等原型过程仍未逐项覆盖", "源数据中的非法活动时间窗只在 readiness 中显式阻断，尚未完成源端治理"]
+      },
+      "next_gate": "建立规范活动权威和版本化事件，修复源端时间窗，并逐过程补齐助力、抽奖、问卷、通知、积分与奖品事实。"
+    },
+    {
+      "id": "game",
+      "source_anchor": "main:91-98",
+      "target_processes": ["游戏记录", "游戏收益", "抽卡", "用户助力", "礼物赠送", "任务", "碎片"],
+      "backend": {"status": "missing", "refs": [], "gaps": ["未建设游戏限界上下文"]},
+      "lakehouse": {"status": "missing", "refs": [], "gaps": ["游戏域分层模型未迁移"]},
+      "next_gate": "作为 M2 扩展域，在核心电商闭环完成后再建立。"
+    },
+    {
+      "id": "coupon",
+      "source_anchor": "main:99-103,835-842",
+      "target_processes": ["津贴", "优惠券发放", "抢券", "退回", "模板", "活动", "订单分摊", "退款回退"],
+      "backend": {
+        "status": "legacy_only",
+        "refs": ["yudao-cloud/yudao-module-mall/yudao-module-promotion-server"],
+        "gaps": ["尚未与规范订单建立可审计的优惠分摊和退款回退契约"]
+      },
+      "lakehouse": {"status": "partial", "refs": ["useful-scripts/yml/yshopping-lakehouse/pipelines/legacy-mall-alignment-mysql-to-starrocks.yaml", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-legacy-coupon-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-legacy-coupon-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-legacy-coupon-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-legacy-coupon-current.sql", "useful-scripts/yml/yshopping-lakehouse/tests/sql/22-legacy-coupon-activity-collect-current-state-contract.sql"], "gaps": ["现阶段只投影 legacy 模板和用户券 current-state，不是规范 Campaign/Entitlement 生命周期、不可变事件历史或 SCD2", "抢券、津贴、独立退回流水、订单项级分摊、平台/商家资金方和退款回退仍缺失", "legacy user_id/use_order_id 仅保留为来源标识，尚未映射规范 Principal/Order；已使用券缺可验证订单关联"]},
+      "next_gate": "建立规范 Template/Campaign/Entitlement、Order-owned 不可变订单项分摊及 AfterSale 引用原分摊的回退账本。"
+    },
+    {
+      "id": "push",
+      "source_anchor": "main:104,844-849",
+      "target_processes": ["短信发送", "App 推送", "投递结果", "营销触达"],
+      "backend": {
+        "status": "legacy_only",
+        "refs": ["yudao-cloud/yudao-module-system"],
+        "gaps": ["目标推送过程未形成稳定业务事件与效果回流"]
+      },
+      "lakehouse": {"status": "missing", "refs": [], "gaps": ["推送日志和触达效果模型未迁移"]},
+      "next_gate": "用户 360 与营销权益具备后再建设触达闭环。"
+    },
+    {
+      "id": "customer_service",
+      "source_anchor": "main:105-107,648-678",
+      "target_processes": ["工单", "工单订单关联", "留言", "多轮会话", "附件", "质检", "客诉风控", "赔付或理赔"],
+      "backend": {
+        "status": "legacy_only",
+        "refs": ["yudao-cloud/yudao-module-crm"],
+        "gaps": ["CRM 不能证明覆盖目标客服工单语义", "缺少理赔、质检和逐消息 AI 事实契约"]
+      },
+      "lakehouse": {"status": "missing", "refs": [], "gaps": ["客服与理赔 DWD/DWM/ADS 未迁移"]},
+      "next_gate": "售后模型稳定后建立独立 Ticket/Claim SoR，按 message 粒度输出 AI 客服事实。"
+    },
+    {
+      "id": "user_identity",
+      "context_refs": ["merchant_shop_identity"],
+      "source_anchor": "main:108-114,2706-2750",
+      "target_processes": ["地址", "登录", "游客", "注册", "换绑", "注销", "买家身份", "收件身份", "用户 360"],
+      "backend": {
+        "status": "partial",
+        "refs": ["yudao-cloud/cloudmold-module-identity", "yudao-cloud/cloudmold-integration-yudao", "yudao-cloud/yudao-module-member"],
+        "gaps": ["Member/System 公共 API 来源验证适配器已实现并 fail-closed；当前仅对 System 用户 1 做了真实非空映射，Member 样本与历史批量回填尚未完成", "Order、Seller 及消费者 PII 删除与保留期契约仍不完整"]
+      },
+      "lakehouse": {"status": "partial", "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-identity-source-link-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-principal-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-identity-source-current.sql"], "gaps": ["用户行为事实、地址受限维度和用户 360 尚未迁移"]},
+      "next_gate": "按租户批量回填 Member/System 来源身份并验证冲突/回滚，再建设受限 PII 维度和用户 360 指标。"
+    },
+    {
+      "id": "seller_core",
+      "context_refs": ["merchant_shop_identity"],
+      "source_anchor": "main:115-117,2416-2490",
+      "target_processes": ["商家订单", "商家能力", "三方认证", "店铺", "商品发布", "供应链", "客服", "营销"],
+      "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-identity", "yudao-cloud/cloudmold-module-merchant", "yudao-cloud/cloudmold-module-listing", "yudao-cloud/sql/cloudmold/V20260715_17__canonical_merchant_source_mapping.sql", "yudao-cloud/sql/cloudmold/V20260715_18__listing_sales_eligibility_unpublish_saga.sql"], "gaps": ["Listing CREATE_DRAFT/PUBLISH 已对 Merchant/Shop/Principal/OWNER Assignment fail-closed，并以真实 System 来源 Principal 跑通一条发布样本", "Merchant SUSPEND 或 Shop PAUSE 会在同一事务冻结全部 PUBLISHED Listing 并启动持久化 UNPUBLISH Saga；恢复营业不会自动重新发布", "当前单体部署使用本地事务编排桥；拆分部署前必须补真实 Outbox 订阅适配器", "历史 Merchant/Shop/Listing 来源映射和生产批量回填尚未完成"]},
+      "lakehouse": {"status": "partial", "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-merchant-entity-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-listing-unpublish-saga-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-listing-unpublish-saga-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-listing-unpublish-saga-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-listing-unpublish-readiness.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-merchant-source-mapping-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-merchant-source-mapping-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-merchant-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-shop-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-merchant-shop-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-merchant-readiness.sql"], "gaps": ["经营、服务、风险和资金事实尚未迁移", "历史来源映射批量回填尚未完成", "User 360 与商家画像仍未完成"]},
+      "next_gate": "执行历史 Merchant/Shop/Listing/Principal ID 双写回填、冲突 DQC 与回滚对账，并在服务拆分前补 Outbox 订阅适配器；Order 下单校验与物理批量 UNPUBLISH 已完成。"
+    },
+    {
+      "id": "advertising",
+      "source_anchor": "main:118-120",
+      "target_processes": ["广告展示", "广告点击", "归因"],
+      "backend": {"status": "missing", "refs": [], "gaps": ["未建立广告投放与归因上下文"]},
+      "lakehouse": {"status": "missing", "refs": [], "gaps": ["展示、点击与归因模型未迁移"]},
+      "next_gate": "作为 M2 扩展域，在商品、商家和用户身份稳定后建设。"
+    },
+    {
+      "id": "collect",
+      "source_anchor": "main:121-123,2716-2750",
+      "target_processes": ["SPU 收藏", "收藏提醒", "用户偏好"],
+      "backend": {
+        "status": "legacy_only",
+        "refs": ["yudao-cloud/yudao-module-mall/yudao-module-product-server"],
+        "gaps": ["未形成规范行为事件与提醒效果闭环"]
+      },
+      "lakehouse": {"status": "partial", "refs": ["useful-scripts/yml/yshopping-lakehouse/pipelines/legacy-mall-alignment-mysql-to-starrocks.yaml", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-legacy-collect-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-legacy-collect-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-legacy-collect-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-legacy-collect-current.sql", "useful-scripts/yml/yshopping-lakehouse/tests/sql/22-legacy-coupon-activity-collect-current-state-contract.sql"], "gaps": ["现阶段只投影 Product Favorite current-state；尽管 SPU ODS 已存在，仍未做规范 Catalog 关联、行为事件历史或 SCD2", "收藏提醒、触达效果、用户偏好画像和 canonical Principal/SPU 身份映射仍未形成闭环"]},
+      "next_gate": "建立规范收藏行为事件、Principal/SPU 映射、提醒触达效果，并接入用户 360 的时态偏好模型。"
+    },
+    {
+      "id": "metadata",
+      "source_anchor": "main:124-125,2209-2331",
+      "target_processes": ["表", "字段", "任务", "血缘", "运行", "SLA", "DQC", "告警", "治理"],
+      "backend": {"status": "deferred", "refs": [], "gaps": []},
+      "lakehouse": {"status": "deferred", "refs": [], "gaps": []},
+      "next_gate": "先由文件化契约和 CI 承担最小治理，D4 再按规模引入元数据控制面。"
+    },
+    {
+      "id": "product_onboarding",
+      "source_anchor": "main:1383-1437",
+      "target_processes": ["新品申请", "Excel 导入", "信息补全", "材质补全", "尺码补全", "翻译补全", "图片补全", "商品审核", "风控审核", "发布", "抽检", "人员结算"],
+      "backend": {
+        "status": "partial",
+        "refs": ["yudao-cloud/cloudmold-module-catalog", "yudao-cloud/cloudmold-module-listing"],
+        "gaps": ["Catalog 与 Listing 仅覆盖定义、生命周期和发布", "申请、补全、风控、抽检和人员结算未建设"]
+      },
+      "lakehouse": {
+        "status": "partial",
+        "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-catalog-sku-snapshot.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-listing-review-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-catalog-sku-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-catalog-readiness.sql"],
+        "gaps": ["缺少商品申请、操作、拒绝、抽检和人员效率事实"]
+      },
+      "next_gate": "建立 Product Onboarding 独立上下文，不把准入工作流塞入 Catalog 聚合。"
+    },
+    {
+      "id": "community",
+      "source_anchor": "main:910-912,1273-1357,2716-2750",
+      "target_processes": ["动态", "评论", "分享", "喜欢", "关注", "搜索", "私信", "举报", "申诉", "直播", "分佣", "机审", "人审", "质检", "回查", "内容分发"],
+      "backend": {"status": "missing", "refs": [], "gaps": ["未建立社区内容与审核上下文"]},
+      "lakehouse": {"status": "missing", "refs": [], "gaps": ["社区行为、审核和经营模型未迁移"]},
+      "next_gate": "作为 M2 扩展域，先明确内容、审核和用户身份的边界。"
+    },
+    {
+      "id": "supply_chain_quality",
+      "context_refs": ["warehouse_location"],
+      "source_anchor": "main:2354-2404",
+      "target_processes": ["入库收货", "分拣", "唯一码标签", "质检", "拍照", "真伪鉴别", "出库交接", "地区园区仓库", "库区库位通道排列层", "运输调度"],
+      "backend": {
+        "status": "partial",
+        "refs": ["yudao-cloud/cloudmold-module-warehouse", "yudao-cloud/yudao-module-wms"],
+        "gaps": ["Warehouse/Zone/Location SoR 已建立并完成一座真实 ERP 仓映射；WMS/MES 来源、历史库区库位与物理作业尚未回填", "HandlingUnit、收货、质检、上架、波次、拣货和出库作业契约未完成", "Inventory/Fulfillment 尚未切换规范库位引用"]
+      },
+      "lakehouse": {"status": "partial", "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-warehouse-entity-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-warehouse-location-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-warehouse-network-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-warehouse-network-readiness.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-inventory-movement.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-inventory-lot-current.sql"], "gaps": ["Inventory location/Lot 库存事实已迁移；WMS 作业、质控、唯一码和运输调度事实仍未迁移"]},
+      "next_gate": "以已映射 ERP 仓和现有 Inventory v3/Lot 粒度为锚，补 WMS/MES 物理作业、历史库位、收货质检、上架、波次、拣货和出库交接契约。"
+    },
+    {
+      "id": "seller_lifecycle",
+      "context_refs": ["merchant_shop_identity"],
+      "source_anchor": "main:2416-2490",
+      "target_processes": ["资料填写", "资质审核", "保证金", "结算方式", "协议", "入驻", "处罚", "提现", "申诉", "退出"],
+      "backend": {"status": "partial", "refs": ["yudao-cloud/cloudmold-module-merchant", "yudao-cloud/sql/cloudmold/V20260715_19__canonical_merchant_deposit_ledger.sql"], "gaps": ["入驻审核、激活和保证金不可变账本及 60%/20% 管控已实现；保证金历史回填与逐租户强制切换、结算、协议、处罚案件、提现、申诉和退出尚未实现"]},
+      "lakehouse": {"status": "partial", "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-merchant-deposit-ledger-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-merchant-deposit-account-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-merchant-deposit-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-merchant-deposit-readiness.sql"], "gaps": ["cmdp15phys 已完成保证金八事件非空运行与精确因果对账；历史保证金回填、结算、处罚案件、申诉和退出事实未迁移"]},
+      "next_gate": "先完成保证金受控非空运行、精确因果对账与 replay，再补历史 SHADOW-to-ENFORCED 迁移；随后建设结算、处罚案件、申诉与退出。"
+    },
+    {
+      "id": "ai_operations",
+      "source_anchor": "main:1494-2207",
+      "target_processes": ["工作流调用", "Token 与耗时", "异常", "情报研判", "客服自动化", "社区红蓝军", "资产指标标签问答", "任务和表治理", "告警降噪"],
+      "backend": {
+        "status": "legacy_only",
+        "refs": ["yudao-cloud/yudao-module-ai"],
+        "gaps": ["AI 模块当前未纳入根构建", "目标工作流运行事实与业务效果反馈未逐项验证"]
+      },
+      "lakehouse": {"status": "missing", "refs": [], "gaps": ["AI 调用、质量、成本和效果模型未迁移"]},
+      "next_gate": "核心业务域稳定后，先建立无 PII 的 AI 调用事实和成本质量指标。"
+    },
+    {
+      "id": "token_platform",
+      "source_anchor": "main:2498-2695",
+      "target_processes": ["注册登录", "钱包", "充值", "兑换", "令牌", "模型广场", "模型调用", "AI 画布", "Skill 商城"],
+      "backend": {"status": "missing", "refs": [], "gaps": ["Token 平台不是当前电商后端能力"]},
+      "lakehouse": {"status": "missing", "refs": [], "gaps": ["Token 用户画像和模型消耗模型未迁移"]},
+      "next_gate": "保持在 M2 之后，除非公司内部 Token 评估成为明确需求。"
+    },
+    {
+      "id": "user_risk_graph",
+      "source_anchor": "main:2758-2802,3153-3317",
+      "target_processes": ["规则信号", "手机 IP 地址设备建边", "候选团伙", "AI 复核", "人工反馈", "风险 ADS"],
+      "backend": {"status": "missing", "refs": [], "gaps": ["没有版本化风控策略、关系介质和复核闭环"]},
+      "lakehouse": {"status": "missing", "refs": [], "gaps": ["风险特征、关系图和团伙结果模型未迁移", "原型 SQL 存在策略缺号、口径和 PII 风险"]},
+      "next_gate": "先完成用户身份与 PII 契约，再以可解释规则和脱敏关系图建设。"
+    }
+  ]
+}

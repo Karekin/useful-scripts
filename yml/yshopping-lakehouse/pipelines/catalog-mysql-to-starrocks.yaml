@@ -21,7 +21,7 @@ route:
   - source-table: ruoyi-vue-pro.product_(spu|sku|category|brand|property|property_value)
     sink-table: yshopping_ods.<>
     replace-symbol: <>
-    description: Route the Mall catalog authority into the Y Shopping ODS database
+    description: Route the legacy Mall catalog projection into ODS for migration and reconciliation; CloudMold Catalog remains the canonical authority
 
 pipeline:
   name: Y Shopping Catalog MySQL to StarRocks ODS

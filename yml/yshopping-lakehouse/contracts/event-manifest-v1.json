@@ -2,6 +2,69 @@
   "manifest_version": 1,
   "envelope": "events/domain-event-envelope-v1.schema.json",
   "events": {
+    "identity.source.linked": {
+      "schema_version": 1,
+      "aggregate_type": "identity_principal",
+      "payload_schema": "events/identity-source-linked-v1.schema.json",
+      "example": "examples/identity-source-linked-v1.json"
+    },
+    "merchant.onboarding.status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "MERCHANT_ONBOARDING",
+      "payload_schema": "events/merchant-onboarding-status-changed-v1.schema.json",
+      "example": "examples/merchant-onboarding-status-changed-v1.json"
+    },
+    "merchant.entity.status_changed": {
+      "aggregate_type": "MERCHANT_MERCHANT",
+      "versions": [
+        {
+          "schema_version": 1,
+          "payload_schema": "events/merchant-entity-status-changed-v1.schema.json",
+          "example": "examples/merchant-entity-status-changed-v1.json"
+        },
+        {
+          "schema_version": 2,
+          "payload_schema": "events/merchant-entity-status-changed-v2.schema.json",
+          "example": "examples/merchant-entity-status-changed-v2.json"
+        }
+      ]
+    },
+    "merchant.operator_assignment.changed": {
+      "schema_version": 1,
+      "aggregate_type": "MERCHANT_OPERATOR_ASSIGNMENT",
+      "payload_schema": "events/merchant-operator-assignment-changed-v1.schema.json",
+      "example": "examples/merchant-operator-assignment-changed-v1.json"
+    },
+    "merchant.source_mapping.changed": {
+      "schema_version": 1,
+      "aggregate_type": "MERCHANT_SOURCE_MAPPING",
+      "payload_schema": "events/merchant-source-mapping-changed-v1.schema.json",
+      "example": "examples/merchant-source-mapping-changed-v1.json"
+    },
+    "merchant.deposit.ledger_posted": {
+      "schema_version": 1,
+      "aggregate_type": "MERCHANT_DEPOSIT_ACCOUNT",
+      "payload_schema": "events/merchant-deposit-ledger-posted-v1.schema.json",
+      "example": "examples/merchant-deposit-ledger-posted-v1.json"
+    },
+    "warehouse.entity.status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "warehouse",
+      "payload_schema": "events/warehouse-entity-status-changed-v1.schema.json",
+      "example": "examples/warehouse-entity-status-changed-v1.json"
+    },
+    "warehouse.source_mapping.changed": {
+      "schema_version": 1,
+      "aggregate_type": "warehouse_source_mapping",
+      "payload_schema": "events/warehouse-source-mapping-changed-v1.schema.json",
+      "example": "examples/warehouse-source-mapping-changed-v1.json"
+    },
+    "warehouse.operator_assignment.changed": {
+      "schema_version": 1,
+      "aggregate_type": "warehouse_operator_assignment",
+      "payload_schema": "events/warehouse-operator-assignment-changed-v1.schema.json",
+      "example": "examples/warehouse-operator-assignment-changed-v1.json"
+    },
     "catalog.sku.defined": {
       "schema_version": 1,
       "aggregate_type": "catalog_sku",
@@ -32,8 +95,83 @@
           "schema_version": 2,
           "payload_schema": "events/inventory-stock-changed-v2.schema.json",
           "example": "examples/inventory-stock-changed-v2.json"
+        },
+        {
+          "schema_version": 3,
+          "aggregate_type": "inventory_balance_v3",
+          "payload_schema": "events/inventory-stock-changed-v3.schema.json",
+          "example": "examples/inventory-stock-changed-v3.json"
+        },
+        {
+          "schema_version": 4,
+          "aggregate_type": "inventory_balance_v3",
+          "payload_schema": "events/inventory-stock-changed-v4.schema.json",
+          "example": "examples/inventory-stock-changed-v4.json"
         }
       ]
+    },
+    "inventory.lot.lifecycle.changed": {
+      "schema_version": 1,
+      "aggregate_type": "inventory_lot",
+      "payload_schema": "events/inventory-lot-lifecycle-changed-v1.schema.json",
+      "example": "examples/inventory-lot-lifecycle-changed-v1.json"
+    },
+    "inventory.lot.source_mapping.changed": {
+      "schema_version": 1,
+      "aggregate_type": "inventory_lot_source_mapping",
+      "payload_schema": "events/inventory-lot-source-mapping-changed-v1.schema.json",
+      "example": "examples/inventory-lot-source-mapping-changed-v1.json"
+    },
+    "inventory.migration.balance_assessed": {
+      "aggregate_type": "inventory_migration_assessment",
+      "versions": [
+        {
+          "schema_version": 1,
+          "payload_schema": "events/inventory-migration-balance-assessed-v1.schema.json",
+          "example": "examples/inventory-migration-balance-assessed-v1.json"
+        },
+        {
+          "schema_version": 2,
+          "payload_schema": "events/inventory-migration-balance-assessed-v2.schema.json",
+          "example": "examples/inventory-migration-balance-assessed-v2.json"
+        }
+      ]
+    },
+    "inventory.migration.balance_qualified": {
+      "schema_version": 1,
+      "aggregate_type": "inventory_migration_qualification",
+      "payload_schema": "events/inventory-migration-balance-qualified-v1.schema.json",
+      "example": "examples/inventory-migration-balance-qualified-v1.json"
+    },
+    "inventory.migration.pilot_batch_status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "inventory_migration_pilot_batch",
+      "payload_schema": "events/inventory-migration-pilot-batch-status-changed-v1.schema.json",
+      "example": "examples/inventory-migration-pilot-batch-status-changed-v1.json"
+    },
+    "inventory.migration.pilot_item_status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "inventory_migration_pilot_item",
+      "payload_schema": "events/inventory-migration-pilot-item-status-changed-v1.schema.json",
+      "example": "examples/inventory-migration-pilot-item-status-changed-v1.json"
+    },
+    "inventory.migration.shadow_window_status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "inventory_migration_shadow_window",
+      "payload_schema": "events/inventory-migration-shadow-window-status-changed-v1.schema.json",
+      "example": "examples/inventory-migration-shadow-window-status-changed-v1.json"
+    },
+    "inventory.migration.shadow_round_completed": {
+      "schema_version": 1,
+      "aggregate_type": "inventory_migration_shadow_round",
+      "payload_schema": "events/inventory-migration-shadow-round-completed-v1.schema.json",
+      "example": "examples/inventory-migration-shadow-round-completed-v1.json"
+    },
+    "inventory.migration.shadow_item_compared": {
+      "schema_version": 1,
+      "aggregate_type": "inventory_migration_shadow_comparison",
+      "payload_schema": "events/inventory-migration-shadow-item-compared-v1.schema.json",
+      "example": "examples/inventory-migration-shadow-item-compared-v1.json"
     },
     "order.status.changed": {
       "aggregate_type": "order",
@@ -105,6 +243,12 @@
       "aggregate_type": "listing",
       "payload_schema": "events/listing-status-changed-v1.schema.json",
       "example": "examples/listing-status-changed-v1.json"
+    },
+    "listing.sales_eligibility_enforcement.status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "listing_sales_eligibility_enforcement",
+      "payload_schema": "events/listing-sales-eligibility-enforcement-status-changed-v1.schema.json",
+      "example": "examples/listing-sales-eligibility-enforcement-status-changed-v1.json"
     },
     "listing.review.decided": {
       "schema_version": 1,

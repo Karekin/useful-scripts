@@ -1,3 +1,6 @@
+-- Legacy Mall compatibility read model. Do not use its synthesized IDs or stock
+-- as canonical Catalog/Inventory authority; use dim_canonical_catalog_sku_current
+-- and dws_canonical_inventory_balance_current for new consumers.
 CREATE OR REPLACE VIEW yshopping_dim.dim_catalog_sku_current AS
 SELECT
     'yudao-mall' AS source_system,

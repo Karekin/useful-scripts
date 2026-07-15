@@ -1,0 +1,29 @@
+source:
+  type: mysql
+  hostname: yudao-mysql
+  port: 3306
+  username: "${CDC_MYSQL_USER}"
+  password: "${CDC_MYSQL_PASSWORD}"
+  tables: ruoyi-vue-pro.(promotion_coupon|promotion_coupon_template|promotion_bargain_activity|promotion_combination_activity|promotion_discount_activity|promotion_point_activity|promotion_reward_activity|promotion_seckill_activity|trade_order|trade_order_item|product_favorite)
+  server-id: 5700-5704
+  server-time-zone: Asia/Shanghai
+
+sink:
+  type: starrocks
+  name: Y Shopping Legacy Mall Alignment ODS
+  jdbc-url: jdbc:mysql://starrocks:9030
+  load-url: starrocks:8030
+  username: "${STARROCKS_USER}"
+  password: "${STARROCKS_PASSWORD}"
+  table.create.properties.replication_num: 1
+
+route:
+  - source-table: ruoyi-vue-pro.(promotion_coupon|promotion_coupon_template|promotion_bargain_activity|promotion_combination_activity|promotion_discount_activity|promotion_point_activity|promotion_reward_activity|promotion_seckill_activity|trade_order|trade_order_item|product_favorite)
+    sink-table: yshopping_ods.<>
+    replace-symbol: <>
+    description: Mirror selected legacy Mall rows for bounded Y-Shopping alignment; these tables remain compatibility evidence rather than canonical authorities
+
+pipeline:
+  name: Y Shopping Legacy Mall Alignment MySQL to StarRocks ODS
+  parallelism: ${FLINK_PARALLELISM}
+  schema.change.behavior: EVOLVE
