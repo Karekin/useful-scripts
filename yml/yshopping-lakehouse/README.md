@@ -292,6 +292,13 @@ SQL and CDC pipeline YAML. The current active paths contain zero references.
 semantic completion, and configuration validation fails if a fenced name enters
 an active path. This proves the repository-level admission policy is enforced;
 it does not prove production deployment state and grants no runtime/final credit.
+The residual Metadata capability is no longer classified as a missing canonical
+target. Its governed backend authority, immutable version/operation model and
+database migration are linked together with DWD, DIM, DWS and ADS Metadata
+models, and validation fails if any required target reference disappears. Its
+status is deliberately only `partial`: all ten authoritative Metadata source
+assets still have zero non-empty runtime reconciliations, so this implementation
+evidence grants no runtime or final semantic credit.
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%

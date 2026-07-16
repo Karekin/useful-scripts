@@ -4316,6 +4316,33 @@ def validate_residual_source_dispositions(
                 reference_error = _contract_reference_error(value)
                 if reference_error:
                     errors.append(f"residual {kind} reference {value!r}: {reference_error}")
+        metadata_backend_refs = {
+            "yudao-cloud/cloudmold-module-metadata/cloudmold-module-metadata-server/src/main/java/cn/iocoder/yudao/module/cloudmold/metadata/dal/dataobject/MetadataRecords.java",
+            "yudao-cloud/cloudmold-module-metadata/cloudmold-module-metadata-server/src/main/java/cn/iocoder/yudao/module/cloudmold/metadata/service/MetadataCommandServiceImpl.java",
+            "yudao-cloud/cloudmold-module-metadata/cloudmold-module-metadata-server/src/main/resources/db/migration/V20260716_01__cloudmold_metadata_first_slice.sql",
+        }
+        metadata_lakehouse_refs = {
+            "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-metadata-event.sql",
+            "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-metadata-current.sql",
+            "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-metadata-current.sql",
+            "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-metadata-readiness.sql",
+        }
+        missing_metadata_backend = metadata_backend_refs - set(references["backend_refs"])
+        missing_metadata_lakehouse = metadata_lakehouse_refs - set(references["lakehouse_refs"])
+        if missing_metadata_backend:
+            errors.append(
+                "residual metadata backend targets differ: "
+                f"missing={sorted(missing_metadata_backend)}"
+            )
+        if missing_metadata_lakehouse:
+            errors.append(
+                "residual metadata lakehouse targets differ: "
+                f"missing={sorted(missing_metadata_lakehouse)}"
+            )
+        if profiles.get("metadata_operations", {}).get("canonical_target_status") != "partial":
+            errors.append(
+                "residual metadata canonical target must remain partial until runtime reconciliation"
+            )
 
     assets = contract.get("assets")
     asset_fields = {

@@ -1936,6 +1936,30 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertIn("issuance/redemption conserve units", " ".join(profiles["reward_entitlement_ledger"]["capability_rules"]))
         self.assertIn("delivery never proves conversion", " ".join(profiles["advertising_attribution"]["capability_rules"]))
         self.assertIn("PAN/secret instrument data is excluded", " ".join(profiles["payment_ledger"]["capability_rules"]))
+        self.assertEqual("partial", profiles["metadata_operations"]["canonical_target_status"])
+
+    def test_residual_metadata_target_requires_backend_and_all_four_lakehouse_layers(self):
+        contract = SOURCE_ASSETS.load_residual_source_dispositions()
+        refs = contract["implementation_refs"]
+        self.assertTrue(any("cloudmold-module-metadata" in ref for ref in refs["backend_refs"]))
+        for layer in ("dwd", "dim", "dws", "ads"):
+            self.assertTrue(
+                any(f"/models/{layer}/" in ref and "canonical-metadata" in ref
+                    for ref in refs["lakehouse_refs"])
+            )
+
+        missing_backend = json.loads(json.dumps(contract))
+        missing_backend["implementation_refs"]["backend_refs"] = [
+            ref for ref in missing_backend["implementation_refs"]["backend_refs"]
+            if "MetadataCommandServiceImpl.java" not in ref
+        ]
+        errors = SOURCE_ASSETS.validate_residual_source_dispositions(self.inventory, missing_backend)
+        self.assertTrue(any("metadata backend targets differ" in error for error in errors))
+
+        weakened_status = json.loads(json.dumps(contract))
+        weakened_status["semantic_profiles"]["metadata_operations"]["canonical_target_status"] = "missing"
+        errors = SOURCE_ASSETS.validate_residual_source_dispositions(self.inventory, weakened_status)
+        self.assertTrue(any("must remain partial" in error for error in errors))
 
     def test_residual_status_credits_definition_not_runtime_or_final(self):
         status = SOURCE_ASSETS.residual_disposition_status(self.inventory)

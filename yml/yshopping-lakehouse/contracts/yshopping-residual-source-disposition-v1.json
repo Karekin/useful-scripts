@@ -520,7 +520,7 @@
       ],
       "security": "SQL, connections, owners, parameters and prompts are restricted.",
       "authority": "Metadata/Data Quality owns accepted state.",
-      "canonical_target_status": "missing"
+      "canonical_target_status": "partial"
     },
     "operations_intelligence": {
       "canonical_entities": [
@@ -610,7 +610,10 @@
       "yudao-cloud/cloudmold-module-customer-service/cloudmold-module-customer-service-server/src/main/java/cn/iocoder/yudao/module/cloudmold/customerservice/dal/dataobject/CustomerServiceTicketDO.java",
       "yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aioperations/dal/dataobject/AiInvocationAttemptDO.java",
       "yudao-cloud/cloudmold-module-warehouse/cloudmold-module-warehouse-server/src/main/java/cn/iocoder/yudao/module/cloudmold/warehouse/dal/dataobject/WarehouseOperationDO.java",
-      "yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantAccountDO.java"
+      "yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantAccountDO.java",
+      "yudao-cloud/cloudmold-module-metadata/cloudmold-module-metadata-server/src/main/java/cn/iocoder/yudao/module/cloudmold/metadata/dal/dataobject/MetadataRecords.java",
+      "yudao-cloud/cloudmold-module-metadata/cloudmold-module-metadata-server/src/main/java/cn/iocoder/yudao/module/cloudmold/metadata/service/MetadataCommandServiceImpl.java",
+      "yudao-cloud/cloudmold-module-metadata/cloudmold-module-metadata-server/src/main/resources/db/migration/V20260716_01__cloudmold_metadata_first_slice.sql"
     ],
     "lakehouse_refs": [
       "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-identity-source-link-event.sql",
@@ -620,7 +623,11 @@
       "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-customer-service-event.sql",
       "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-ai-operations-event.sql",
       "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-warehouse-entity-status-event.sql",
-      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-merchant-entity-status-event.sql"
+      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-merchant-entity-status-event.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-metadata-event.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-metadata-current.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-metadata-current.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-metadata-readiness.sql"
     ]
   },
   "assets": [
