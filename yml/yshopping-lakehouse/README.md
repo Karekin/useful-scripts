@@ -93,7 +93,7 @@ zero-difference checks, and a separately checksummed independent verifier.
 Documentation volume estimates (for example “15.96 亿”) are never used as a
 denominator. A merely non-empty JSON file can no longer promote any of the 718
 assets to `verified`.
-The governed detailed-disposition numerator is now 159/718. The Product
+The governed detailed-disposition numerator is now 176/718. The Product
 slice covers all ten authoritative 商品 overview assets: nine DDL-backed assets
 are specified across Catalog, Listing, workflow, Identity/Merchant and Quality
 boundaries; the personnel salary asset remains provisional because its detailed
@@ -222,7 +222,18 @@ award/send rows cannot prove entitlement delivery; campaign rows cannot create
 Order, Payment, Inventory or Ledger effects. Points and mall coin require typed
 units and immutable balanced entries, prize draws require auditable randomness,
 and raw keywords/answers remain restricted. Activity receives 0/56 detailed,
-runtime and final credit, so the global numerator remains 159/718 (22.14%).
+runtime and final credit; at the end of that slice the global numerator remained
+159/718 (22.14%).
+The first DWS-derived slice governs all seventeen unscoped candidate assets
+with a same-name CREATE in the DWS document. Five Order and five Refund buyer
+windows, three Community aggregates, two engine metrics, one supply-chain AI
+quality aggregate and one Token user-day aggregate now have explicit grains,
+half-open windows, denominators, units and authority boundaries. The corrected
+design rejects wrong INSERT targets, duplicate fields, invalid refund aliases,
+join fanout, random activity identifiers, unversioned AI thresholds, DOUBLE
+quota and top-up money without currency. DWS remains a derived projection and
+cannot mutate its owning domains. This slice receives 17/17 detailed credit but
+0/17 runtime/final credit, taking the global numerator to 176/718 (24.51%).
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%

@@ -139,6 +139,7 @@ case "$COMMAND" in
     test -f "$ROOT_DIR/contracts/yshopping-advertising-source-schema-request-v1.json"
     test -f "$ROOT_DIR/contracts/yshopping-community-source-disposition-v1.json"
     test -f "$ROOT_DIR/contracts/yshopping-activity-source-schema-request-v1.json"
+    test -f "$ROOT_DIR/contracts/yshopping-dws-derived-source-disposition-v1.json"
     test -f "$ROOT_DIR/contracts/yshopping-engagement-source-disposition-v1.json"
     test -f "$ROOT_DIR/contracts/yshopping-compensation-source-disposition-v1.json"
     test -f "$ROOT_DIR/contracts/yshopping-ticket-source-disposition-v1.json"

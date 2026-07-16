@@ -156,6 +156,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_advertising_source_schema_request(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_community_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_activity_source_schema_request(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_dws_derived_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_engagement_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_compensation_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_ticket_source_dispositions(self.inventory))
@@ -274,12 +275,12 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual(110, status["bounded_domain_asset_count"])
         self.assertEqual(6, status["explicit_rejection_count"])
         self.assertEqual(718, status["preliminary_handled_count"])
-        self.assertEqual(159, status["detailed_disposition_specified_count"])
+        self.assertEqual(176, status["detailed_disposition_specified_count"])
         self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
         self.assertEqual(99.16, status["routing_percent"])
         self.assertEqual(100.0, status["preliminary_handled_percent"])
-        self.assertEqual(22.14, status["detailed_disposition_specified_percent"])
+        self.assertEqual(24.51, status["detailed_disposition_specified_percent"])
         self.assertEqual(0.0, status["runtime_nonempty_reconciled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
         self.assertIn(
@@ -311,6 +312,8 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertTrue(any("community=30/33 (90.91%)" in line for line in lines))
         self.assertTrue(any("community=0/33 (0.00%)" in line for line in lines))
         self.assertTrue(any("activity=0/56 (0.00%)" in line for line in lines))
+        self.assertTrue(any("dws_derived=17/17 (100.00%)" in line for line in lines))
+        self.assertTrue(any("dws_derived=0/17 (0.00%)" in line for line in lines))
         self.assertTrue(any("engagement=4/4 (100.00%)" in line for line in lines))
         self.assertTrue(any("engagement=0/4 (0.00%)" in line for line in lines))
         self.assertTrue(any("compensation=1/3 (33.33%)" in line for line in lines))
@@ -1574,6 +1577,79 @@ class SourceAssetCtlTest(unittest.TestCase):
             for values in contract["implementation_refs"].values()
             for reference in values
         ]
+        self.assertEqual(
+            [],
+            [
+                (reference, SOURCE_ASSETS._contract_reference_error(reference))
+                for reference in references
+                if SOURCE_ASSETS._contract_reference_error(reference)
+            ],
+        )
+
+    def test_dws_derived_dispositions_cover_exact_17_same_name_creates(self):
+        contract = SOURCE_ASSETS.load_dws_derived_source_dispositions()
+        names = {asset["source_asset"] for asset in contract["assets"]}
+        self.assertEqual(17, len(names))
+        self.assertEqual([], SOURCE_ASSETS.validate_dws_derived_source_dispositions(self.inventory))
+        self.assertEqual(
+            {"1d", "7d", "14d", "30d", "90d"},
+            {
+                asset["window"] for asset in contract["assets"]
+                if asset["profile"] == "order_buyer_window"
+            },
+        )
+
+    def test_dws_derived_profiles_reject_wrong_targets_fanout_random_ids_and_untyped_money(self):
+        contract = SOURCE_ASSETS.load_dws_derived_source_dispositions()
+        by_name = {asset["source_asset"]: asset for asset in contract["assets"]}
+        profiles = contract["semantic_profiles"]
+        self.assertIn("duplicate order_success_amt_1d", " ".join(by_name["dws_trade_order_buyer_target_1d"]["corrections"]))
+        self.assertIn("invalid as as", " ".join(by_name["dws_trade_refund_buyer_target_7d"]["corrections"]))
+        self.assertIn("line 806", " ".join(by_name["dws_com_trend_user_target_1d"]["corrections"]))
+        self.assertIn("Cartesian multiplication", " ".join(profiles["community_user_day"]["metric_rules"]))
+        self.assertIn("random skew salt is never persisted", " ".join(profiles["platform_engine_hour"]["metric_rules"]))
+        token = " ".join(profiles["token_user_day"]["metric_rules"])
+        for text in ("integer ledger", "ISO currency", "username is not a stable join key"):
+            self.assertIn(text, token)
+
+    def test_dws_derived_status_credits_definition_not_runtime_or_final(self):
+        status = SOURCE_ASSETS.dws_derived_disposition_status(self.inventory)
+        self.assertEqual(17, status["dws_derived_source_asset_count"])
+        self.assertEqual(17, status["dws_derived_detailed_disposition_specified_count"])
+        self.assertEqual(100.0, status["dws_derived_detailed_disposition_percent"])
+        self.assertEqual(0, status["dws_derived_runtime_nonempty_reconciled_count"])
+        self.assertEqual(0, status["dws_derived_final_disposition_verified_count"])
+
+    def test_dws_derived_dispositions_reject_missing_duplicate_weakened_and_create_drift(self):
+        contract = SOURCE_ASSETS.load_dws_derived_source_dispositions()
+        missing = json.loads(json.dumps(contract))
+        missing["assets"].pop()
+        errors = SOURCE_ASSETS.validate_dws_derived_source_dispositions(self.inventory, missing)
+        self.assertTrue(any("differ from same-name CREATE" in error for error in errors))
+
+        duplicate = json.loads(json.dumps(contract))
+        duplicate["assets"][1] = json.loads(json.dumps(duplicate["assets"][0]))
+        errors = SOURCE_ASSETS.validate_dws_derived_source_dispositions(self.inventory, duplicate)
+        self.assertTrue(any("duplicate source_asset" in error for error in errors))
+
+        weakened = json.loads(json.dumps(contract))
+        weakened["semantic_profiles"]["platform_engine_hour"]["metric_rules"][3] = "persist random salt"
+        errors = SOURCE_ASSETS.validate_dws_derived_source_dispositions(self.inventory, weakened)
+        self.assertTrue(any("random activity identity" in error for error in errors))
+
+        drifted = json.loads(json.dumps(contract))
+        drifted["assets"][0]["detail_line"] = 36
+        errors = SOURCE_ASSETS.validate_dws_derived_source_dispositions(self.inventory, drifted)
+        self.assertTrue(any("CREATE evidence differs" in error for error in errors))
+
+    def test_all_dws_derived_implementation_references_resolve(self):
+        contract = SOURCE_ASSETS.load_dws_derived_source_dispositions()
+        references = [
+            reference
+            for values in contract["implementation_refs"].values()
+            for reference in values
+        ]
+        references.append(contract["runtime_nonempty_reconciliation"]["gate_ref"])
         self.assertEqual(
             [],
             [

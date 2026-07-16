@@ -1,0 +1,106 @@
+{
+  "contract_version": 1,
+  "contract_id": "yshopping.dws-derived.source-disposition.v1",
+  "source_scope": {
+    "authoritative_document": "DWS语兴好物（y shopping）电商数据表.md",
+    "expected_asset_count": 17,
+    "expected_source_evidence_counts": {"same_name_create": 17},
+    "scope_rule": "This slice covers candidate assets without an authoritative ODS domain that have a same-name CREATE in the DWS document. It specifies corrected derived metrics only; DWS never becomes Order, Payment, Inventory, Moderation, Risk, AI or Ledger authority."
+  },
+  "verification_policy": {
+    "specified_definition": "Same-name DWS CREATE plus explicit grain, window, denominator, source-event, dimensional-version, money/unit and correction rules.",
+    "verified_definition": "Non-empty production recomputation from governed canonical event denominators with exact window boundaries, independently checked counts/sums, late-data policy and zero unexplained differences.",
+    "empty_tables_are_evidence": false,
+    "allowed_decisions": ["derive", "correct", "reject"],
+    "runtime_statuses": ["missing", "pending", "verified"]
+  },
+  "semantic_profiles": {
+    "order_buyer_window": {
+      "canonical_entities": ["analytics.BuyerOrderWindow", "order.OrderReference", "order.OrderItemReference", "payment.PaymentReference", "promotion.BenefitAllocationReference", "catalog.CategoryVersionReference"],
+      "grain": "one tenant, buyer Principal, as_of_date and exact half-open rolling window",
+      "metric_rules": ["count distinct canonical order or order-item keys at the declared metric grain", "derive created paid successful unpaid from versioned Order/Payment lifecycle events without double counting transitions", "money uses integer minor units and ISO currency and never mixes currencies", "platform and seller subsidy derive from immutable benefit funding allocations", "category metrics use the category version effective at the chosen event time", "window is [as_of_date-window+1d, as_of_date+1d) in one declared timezone"],
+      "authority": "This is an analytical projection only; it cannot mutate Order, Payment, Promotion or Catalog state.",
+      "model_status": "partial"
+    },
+    "refund_buyer_window": {
+      "canonical_entities": ["analytics.BuyerAfterSaleWindow", "aftersales.AfterSaleCaseReference", "payment.RefundReference", "fulfillment.ReturnShipmentReference", "customerservice.CompensationReference"],
+      "grain": "one tenant, buyer Principal, as_of_date and exact half-open rolling refund window",
+      "metric_rules": ["count distinct after-sale cases and successful refund effects rather than source rows", "refund amount comes from captured Payment refund effects in integer minor units and ISO currency", "return logistics fee is separate from refunded merchandise and compensation", "compensation count and amount are separate typed metrics with named funding authority", "one-to-many compensation or shipment joins preaggregate before buyer aggregation", "window and late-arrival restatement policy are explicit and identical across numerator and denominator"],
+      "authority": "AfterSales, Payment, Return Fulfillment and Customer Service retain authority; DWS cannot infer success from status code 2 alone.",
+      "model_status": "partial"
+    },
+    "community_user_day": {
+      "canonical_entities": ["analytics.CommunityUserDay", "engagement.CommunityContentReference", "engagement.CommunityInteractionReference", "engagement.ModerationCaseReference", "identity.PrincipalReference"],
+      "grain": "one tenant, canonical Principal and local calendar day with separately aggregated content, interaction, appeal and live-session facts",
+      "metric_rules": ["preaggregate every source to user-day before joining to prevent Cartesian multiplication", "duration requires paired session start/end, timezone, negative-duration rejection and overlap policy", "publish reaction share comment appeal and selected counts use distinct immutable event keys", "selection and appeal success require accepted versioned Moderation decisions", "raw content, reports and actor identity remain restricted", "a metric row never grants visibility, moderation or engagement effects"],
+      "authority": "Engagement and Moderation own source facts; DWS is a privacy-minimized analytical projection.",
+      "model_status": "partial"
+    },
+    "live_creator_day": {
+      "canonical_entities": ["analytics.LiveCreatorDay", "engagement.LiveSessionReference", "engagement.LiveGiftEntitlementReference", "payment.PaymentReference", "ledger.LedgerTransactionReference"],
+      "grain": "one tenant, creator Principal and local calendar day from preaggregated live sessions and settled tip effects",
+      "metric_rules": ["session duration uses distinct session ids and paired start/end events", "gift quantity and monetary tip amount are different typed measures", "tip money requires ISO currency, integer minor units and exact Payment/Ledger settlement references", "refund reversal chargeback and compensation subtract through immutable entries", "multiple rooms sessions gifts and payments preaggregate before creator join", "viewer presence or gift intent never proves payment settlement"],
+      "authority": "Community owns session context while Payment/Ledger owns money; DWS cannot settle or pay a creator.",
+      "model_status": "missing"
+    },
+    "platform_engine_hour": {
+      "canonical_entities": ["analytics.EngineInvocationHour", "operations.InvocationObservation", "risk.PolicyVersionReference", "promotion.CampaignVersionReference"],
+      "grain": "one tenant, engine event code, governed optional campaign reference and exact UTC/local hour",
+      "metric_rules": ["request count uses stable request ids with retry and duplicate policy", "distinct subject count uses pseudonymous Principal mapping rather than raw user ids", "intercept requires versioned response/status dictionary and accepted Risk decision semantics", "missing campaign remains null or explicit UNKNOWN and random skew salt is never persisted as identity", "marketing classification comes from governed campaign mapping not numeric regex", "parameter null rate uses a complete versioned expected-parameter denominator with zero-denominator policy"],
+      "authority": "Engine metrics observe invocations only and cannot create campaign membership, Risk enforcement or business effects.",
+      "model_status": "partial"
+    },
+    "quality_ai_day": {
+      "canonical_entities": ["analytics.QualityAiCategoryDay", "ai_operations.InvocationAttemptReference", "quality.HumanReviewReference", "risk.DecisionReference", "catalog.CategoryVersionReference"],
+      "grain": "one tenant, date, platform, category/brand version, identify type, method and immutable model version",
+      "metric_rules": ["one denominator row per governed identification case and attempt selection rule", "AI judgment and human ground truth use versioned dictionaries and independent review lineage", "accuracy miss false-kill and risk-intercept numerators expose their exact eligible denominators", "confidence thresholds are policy versions rather than hard-coded universal truth", "latency excludes missing/invalid values and declares percentile algorithm", "AI or risk output never directly changes quality saleability refund or listing state"],
+      "authority": "AI Operations records attempts, Quality owns accepted review, Risk owns decision and owning domains apply effects.",
+      "model_status": "partial"
+    },
+    "token_user_day": {
+      "canonical_entities": ["analytics.TokenUserDay", "token_platform.InvocationUsageReference", "token_platform.QuotaLedgerReference", "token_platform.PricingVersionReference", "payment.PaymentReference", "identity.PrincipalReference"],
+      "grain": "one tenant, canonical Principal and UTC/local calendar day from immutable invocation, quota-ledger, payment and behavior events",
+      "metric_rules": ["request and token counts use unique invocation attempts and provider usage evidence", "input output and total token conservation is checked per invocation and model version", "quota cost comes from immutable integer ledger entries and pricing version rather than DOUBLE sums", "top-up money requires ISO currency, integer minor units and captured Payment reference", "TPM RPM and average duration declare eligible denominator and zero/missing policy", "username is not a stable join key for Skill downloads; use canonical Principal mapping"],
+      "authority": "Token Platform owns usage/quota, Payment owns top-up settlement and DWS cannot debit quota or create access entitlements.",
+      "model_status": "partial"
+    }
+  },
+  "implementation_refs": {
+    "backend_refs": [
+      "yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/dal/dataobject/OrderHeaderDO.java",
+      "yudao-cloud/cloudmold-module-aftersales/cloudmold-module-aftersales-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aftersale/dal/dataobject/AfterSaleCaseDO.java",
+      "yudao-cloud/cloudmold-module-engagement/cloudmold-module-engagement-server/src/main/java/cn/iocoder/yudao/module/cloudmold/engagement/dal/dataobject/CommunityInteractionDO.java",
+      "yudao-cloud/cloudmold-module-risk/cloudmold-module-risk-server/src/main/java/cn/iocoder/yudao/module/cloudmold/risk/dal/dataobject/RiskRecords.java",
+      "yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aioperations/dal/dataobject/AiInvocationAttemptDO.java",
+      "yudao-cloud/cloudmold-module-token-platform/cloudmold-module-token-platform-server/src/main/java/cn/iocoder/yudao/module/cloudmold/tokenplatform/dal/dataobject/InvocationUsageDO.java"
+    ],
+    "lakehouse_refs": [
+      "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-order-item-current.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-aftersales-buyer-1d.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-engagement-current.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-risk-current.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-ai-operations-current.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-token-platform-current.sql"
+    ]
+  },
+  "assets": [
+    {"source_asset":"dws_trade_order_buyer_target_1d","detail_line":35,"profile":"order_buyer_window","window":"1d","decision":"correct","corrections":["remove duplicate order_success_amt_1d DDL column","write to the declared order_buyer table rather than dws_trade_buyer_target_1d","remove unsupported collect metrics or source them from governed Engagement events"]},
+    {"source_asset":"dws_trade_order_buyer_target_7d","detail_line":132,"profile":"order_buyer_window","window":"7d","decision":"correct","corrections":["write to the declared order_buyer table","enforce exact half-open seven-day event window","deduplicate order-item lifecycle rows before aggregation"]},
+    {"source_asset":"dws_trade_order_buyer_target_14d","detail_line":229,"profile":"order_buyer_window","window":"14d","decision":"correct","corrections":["write to the declared order_buyer table","enforce exact half-open fourteen-day event window","bind category and benefit funding versions"]},
+    {"source_asset":"dws_trade_order_buyer_target_30d","detail_line":326,"profile":"order_buyer_window","window":"30d","decision":"correct","corrections":["write to the declared order_buyer table","enforce exact half-open thirty-day event window","separate currency before summing money"]},
+    {"source_asset":"dws_trade_order_buyer_target_90d","detail_line":429,"profile":"order_buyer_window","window":"90d","decision":"correct","corrections":["write to the declared order_buyer table","enforce exact half-open ninety-day event window","declare late-event restatement and retention policy"]},
+    {"source_asset":"dws_trade_refund_buyer_target_1d","detail_line":534,"profile":"refund_buyer_window","window":"1d","decision":"correct","corrections":["count canonical after-sale cases rather than sub-order source rows","use captured refund effects for money","separate logistics fee currency and payer"]},
+    {"source_asset":"dws_trade_refund_buyer_target_7d","detail_line":567,"profile":"refund_buyer_window","window":"7d","decision":"correct","corrections":["remove invalid as as syntax","do not write compensation amount into logistics alias","preaggregate compensation and return facts before joining"]},
+    {"source_asset":"dws_trade_refund_buyer_target_14d","detail_line":609,"profile":"refund_buyer_window","window":"14d","decision":"correct","corrections":["remove invalid as as syntax","define compensation count separately from amount","align compensation and refund windows"]},
+    {"source_asset":"dws_trade_refund_buyer_target_30d","detail_line":649,"profile":"refund_buyer_window","window":"30d","decision":"correct","corrections":["remove invalid as as syntax","prevent one-to-many join multiplication","use immutable refund and compensation effects"]},
+    {"source_asset":"dws_trade_refund_buyer_target_90d","detail_line":689,"profile":"refund_buyer_window","window":"90d","decision":"correct","corrections":["remove invalid as as syntax","separate refund logistics and compensation metrics","declare ninety-day late-restatement policy"]},
+    {"source_asset":"dws_com_trend_user_target_1d","detail_line":737,"profile":"community_user_day","window":"1d","decision":"correct","corrections":["preaggregate login content reaction share and comment sources before joining","do not let the report heading recreate and overwrite this table at line 806","resolve duration column alias mismatch and distinct event keys"]},
+    {"source_asset":"dws_com_apply_user_target_1d","detail_line":834,"profile":"community_user_day","window":"1d","decision":"correct","corrections":["remove trailing DDL comma","emit apply aliases rather than com_report aliases","use accepted appeal decision instead of status code inference"]},
+    {"source_asset":"dws_com_live_kol_target_1d","detail_line":862,"profile":"live_creator_day","window":"1d","decision":"correct","corrections":["preaggregate sessions and tips before joining","split gift count from settled tip money","require currency minor-unit and Payment/Ledger references"]},
+    {"source_asset":"dws_platform_ng_requerst_target_1h","detail_line":902,"profile":"platform_engine_hour","window":"1h","decision":"correct","corrections":["retain the misspelled physical name only as a source alias and expose canonical request naming","never persist RAND salt as activity identity","derive marketing classification from governed campaign mapping"]},
+    {"source_asset":"dws_platform_ng_param_target_1h","detail_line":1341,"profile":"platform_engine_hour","window":"1h","decision":"correct","corrections":["never persist RAND salt as activity identity","version expected parameter definitions","define zero-request denominator and null semantics"]},
+    {"source_asset":"dws_scm_quality_ai_platform_category_identify_1d","detail_line":1433,"profile":"quality_ai_day","window":"1d","decision":"correct","corrections":["bind category brand model threshold and result dictionaries to versions","publish eligible denominators for every accuracy metric","keep AI and risk results advisory until accepted owner effects"]},
+    {"source_asset":"dws_paimon_ai_token_user_target_1d","detail_line":1528,"profile":"token_user_day","window":"1d","decision":"correct","corrections":["replace DOUBLE quota aggregation with immutable integer quota ledger","require ISO currency and captured Payment reference for top-up money","replace username Skill join with canonical Principal mapping"]}
+  ],
+  "runtime_nonempty_reconciliation": {"gate_ref":"useful-scripts/yml/yshopping-lakehouse/tests/sql/23-canonical-promotion-engagement-customer-service-contract.sql","evidence_ref":null,"run_id":null,"row_count":0,"tenant_count":0,"status":"missing"}
+}
