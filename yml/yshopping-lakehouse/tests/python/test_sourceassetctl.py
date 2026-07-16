@@ -149,6 +149,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_metadata_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_commerce_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_product_source_dispositions(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_merchant_source_dispositions(self.inventory))
         self.assertEqual(
             [],
             validate_trade_admission(
@@ -261,12 +262,12 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual(110, status["bounded_domain_asset_count"])
         self.assertEqual(6, status["explicit_rejection_count"])
         self.assertEqual(718, status["preliminary_handled_count"])
-        self.assertEqual(57, status["detailed_disposition_specified_count"])
+        self.assertEqual(63, status["detailed_disposition_specified_count"])
         self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
         self.assertEqual(99.16, status["routing_percent"])
         self.assertEqual(100.0, status["preliminary_handled_percent"])
-        self.assertEqual(7.94, status["detailed_disposition_specified_percent"])
+        self.assertEqual(8.77, status["detailed_disposition_specified_percent"])
         self.assertEqual(0.0, status["runtime_nonempty_reconciled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
         self.assertIn(
@@ -288,7 +289,9 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertTrue(any("commerce=0/35 (0.00%)" in line for line in lines))
         self.assertTrue(any("product=9/10 (90.00%)" in line for line in lines))
         self.assertTrue(any("product=0/10 (0.00%)" in line for line in lines))
-        self.assertTrue(any("product=0/10; routing is not completion" in line for line in lines))
+        self.assertTrue(any("merchant=6/7 (85.71%)" in line for line in lines))
+        self.assertTrue(any("merchant=0/7 (0.00%)" in line for line in lines))
+        self.assertTrue(any("merchant=0/7; routing is not completion" in line for line in lines))
 
     def test_game_dispositions_cover_exact_authoritative_overview_rows(self):
         observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "游戏")
@@ -930,6 +933,105 @@ class SourceAssetCtlTest(unittest.TestCase):
 
     def test_all_product_implementation_references_resolve(self):
         contract = SOURCE_ASSETS.load_product_source_dispositions()
+        references = [
+            reference
+            for asset in contract["assets"]
+            for key in ("backend_refs", "lakehouse_refs")
+            for reference in asset[key]
+        ]
+        self.assertEqual(
+            [],
+            [
+                (reference, SOURCE_ASSETS._contract_reference_error(reference))
+                for reference in references
+                if SOURCE_ASSETS._contract_reference_error(reference)
+            ],
+        )
+
+    def test_merchant_dispositions_cover_the_exact_duplicated_overview_slice(self):
+        contract = SOURCE_ASSETS.load_merchant_source_dispositions()
+        expected = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "商家")
+        self.assertEqual(7, len(expected))
+        self.assertEqual(set(expected), {asset["source_asset"] for asset in contract["assets"]})
+        self.assertEqual(
+            {"ddl_backed": 6, "name_conflict": 1},
+            dict(Counter(asset["source_evidence"]["status"] for asset in contract["assets"])),
+        )
+        for asset in contract["assets"]:
+            observed = expected[asset["source_asset"]]
+            self.assertEqual(observed["source_labels"], [asset["source_label"]])
+            self.assertEqual(
+                observed["anchors"],
+                sorted(
+                    (anchor["document"], anchor["line"])
+                    for anchor in asset["source_anchors"]
+                ),
+            )
+
+    def test_merchant_dispositions_split_regulated_money_and_ai_authorities(self):
+        contract = SOURCE_ASSETS.load_merchant_source_dispositions()
+        by_name = {asset["source_asset"]: asset for asset in contract["assets"]}
+        onboarding = by_name["ods_merchant_sys_entry_apply_df"]
+        self.assertIn("no Shop may be invented", onboarding["semantic_rules"]["authority"])
+        info = by_name["ods_merchant_sys_info_df"]
+        self.assertIn("tokenized/restricted", info["semantic_rules"]["security"])
+        self.assertIn("independent authorities", " ".join(info["corrections"]))
+        withdrawal = by_name["ods_merchant_sys_withdraw_df"]
+        self.assertIn("currency is absent", withdrawal["semantic_rules"]["money_or_quantity"])
+        self.assertIn("raw card_id", " ".join(withdrawal["corrections"]))
+        exit_asset = by_name["ods_merchant_sys_exit_df"]
+        self.assertEqual("name_conflict", exit_asset["source_evidence"]["status"])
+        self.assertEqual("ods_merchant_sys_withdraw_df", exit_asset["source_evidence"]["detail_anchor"]["source_asset"])
+        self.assertEqual("provisional", exit_asset["specification_status"])
+        deposit = by_name["ods_merchant_sys_deposit_recharge_df"]
+        self.assertIn("amount is STRING", deposit["semantic_rules"]["money_or_quantity"])
+        assistant = by_name["ods_merchant_ai_merchant_ai_answer_df"]
+        self.assertIn("not a financial fact", assistant["semantic_rules"]["money_or_quantity"])
+
+    def test_merchant_status_is_specified_but_not_runtime_verified(self):
+        self.assertEqual(
+            {
+                "merchant_source_asset_count": 7,
+                "merchant_detailed_disposition_specified_count": 6,
+                "merchant_runtime_nonempty_reconciled_count": 0,
+                "merchant_final_disposition_verified_count": 0,
+                "merchant_detailed_disposition_percent": 85.71,
+                "merchant_runtime_nonempty_reconciled_percent": 0.0,
+                "merchant_final_disposition_verified_percent": 0.0,
+            },
+            SOURCE_ASSETS.merchant_disposition_status(self.inventory),
+        )
+        contract = SOURCE_ASSETS.load_merchant_source_dispositions()
+        for asset in contract["assets"]:
+            self.assertEqual("unverified", asset["verification_status"])
+            self.assertEqual("missing", asset["runtime_nonempty_reconciliation"]["status"])
+
+    def test_merchant_contract_rejects_missing_duplicate_mislabeled_and_false_verification(self):
+        contract = SOURCE_ASSETS.load_merchant_source_dispositions()
+        missing = json.loads(json.dumps(contract))
+        missing["assets"].pop()
+        errors = SOURCE_ASSETS.validate_merchant_source_dispositions(self.inventory, missing)
+        self.assertTrue(any("differ from authoritative ODS overview" in error for error in errors))
+
+        duplicate = json.loads(json.dumps(contract))
+        duplicate["assets"][1] = json.loads(json.dumps(duplicate["assets"][0]))
+        errors = SOURCE_ASSETS.validate_merchant_source_dispositions(self.inventory, duplicate)
+        self.assertTrue(any("duplicate source_asset" in error for error in errors))
+
+        mislabeled = json.loads(json.dumps(contract))
+        mislabeled["assets"][0]["source_label"] = "商户"
+        errors = SOURCE_ASSETS.validate_merchant_source_dispositions(self.inventory, mislabeled)
+        self.assertTrue(any("source label differs" in error for error in errors))
+
+        false_verification = json.loads(json.dumps(contract))
+        false_verification["assets"][0]["verification_status"] = "verified"
+        errors = SOURCE_ASSETS.validate_merchant_source_dispositions(
+            self.inventory, false_verification
+        )
+        self.assertTrue(any("forbidden without governed reconciliation" in error for error in errors))
+
+    def test_all_merchant_implementation_references_resolve(self):
+        contract = SOURCE_ASSETS.load_merchant_source_dispositions()
         references = [
             reference
             for asset in contract["assets"]

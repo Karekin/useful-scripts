@@ -1,0 +1,104 @@
+{
+  "contract_version": 1,
+  "contract_id": "yshopping.merchant.source-disposition.v1",
+  "source_scope": {
+    "domain": "商家",
+    "authoritative_document": "ODS语兴好物（y shopping）电商数据表.md",
+    "authoritative_overview_lines": ["199-205", "293-300"],
+    "expected_asset_count": 7,
+    "expected_source_evidence_counts": {"ddl_backed": 6, "name_conflict": 1},
+    "source_detail_limit": "The prototype combines legal identity, onboarding workflow, mutable merchant profile, payout, deposit, appeal and AI interaction data. It contains raw identity documents, bank/card data, addresses and free-form content, and the exit heading creates the withdraw table. Every authority and restricted field therefore requires an explicit split."
+  },
+  "verification_policy": {
+    "specified_definition": "A merchant source is specified only when a same-name detailed DDL proves the asset and its tenant, legal identity, money, workflow, security, history, authority, corrections and runtime gate are explicit.",
+    "verified_definition": "Verification requires a non-empty production evidence bundle and full-denominator tenant-scoped independent zero-difference reconciliation.",
+    "empty_tables_are_evidence": false,
+    "allowed_decisions": ["reuse", "merge", "split", "derive", "correct", "reject"],
+    "allowed_model_statuses": ["partial", "missing", "rejected"],
+    "runtime_statuses": ["missing", "pending", "verified"]
+  },
+  "lifecycle_policy_defaults": {
+    "history_policy": "Append onboarding, legal-entity, merchant, agreement, payout, deposit, appeal and AI interaction facts independently; mutable daily snapshots are observations, never history authority.",
+    "delete_policy": "Source deletion retires current visibility but never erases legal approvals, money ledger entries, appeals, payout attempts, deposit evidence or audit lineage.",
+    "backfill_policy": "Resolve tenant, Principal, Merchant, LegalEntity, Shop, bank token, payment, SPU and source mappings before replay; quarantine unknown statuses, ambiguous units, raw secrets, orphan effects and cross-aggregate identity guesses."
+  },
+  "assets": [
+    {
+      "source_asset": "ods_merchant_sys_entry_apply_df", "source_label": "商家入驻表", "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 200}, {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 294}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 7469, "end_line": 7535, "source_asset": "ods_merchant_sys_entry_apply_df"}},
+      "source_grain": "one mutable merchant-onboarding application snapshot per source id",
+      "decision": "split", "canonical_entities": ["merchant.MerchantOnboardingApplication", "merchant.MerchantLegalEntity", "merchant.Merchant", "identity.PrincipalReference", "merchant.DepositRequirement"],
+      "semantic_rules": {"grain": "one onboarding case references a separately versioned legal entity, Merchant candidate, operators and deposit requirement", "identity": "user, merchant, legal entity, corporation, contact and approver identities are distinct tenant-scoped references", "money_or_quantity": "initial deposit is int64 minor units plus ISO currency; settlement cadence and fee policy are separate versioned contracts", "history": "every review/legal/agreement/deposit transition appends; status 800 is not evidence of Shop creation", "security": "license, ID cards, phones, addresses and approver lists are tokenized or restricted encrypted evidence and forbidden from events", "authority": "Merchant owns onboarding and Merchant lifecycle; Identity owns Principals; LegalEntity owns regulated identity; no Shop may be invented from merchant_id"},
+      "corrections": ["split legal identity, onboarding, merchant and deposit requirement", "replace acl_ids and names with versioned Principal assignments", "do not create a Shop without an exact Shop source or approved command"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantOnboardingApplicationDO.java", "yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantLegalEntityDO.java", "yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantAccountDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-merchant-onboarding-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-merchant-legal-entity-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-merchant-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/15-canonical-identity-merchant-warehouse-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_merchant_sys_info_df", "source_label": "商家信息表", "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 201}, {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 295}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 7536, "end_line": 7616, "source_asset": "ods_merchant_sys_info_df"}},
+      "source_grain": "one mutable daily merchant information snapshot per merchant_id",
+      "decision": "split", "canonical_entities": ["merchant.Merchant", "merchant.MerchantLegalEntityVersion", "merchant.MerchantAgreementVersion", "merchant.SettlementPolicyVersion", "payment.BankAccountTokenReference", "merchant.MerchantDepositAccount", "fulfillment.AddressReference"],
+      "semantic_rules": {"grain": "one observed profile must split into independently versioned Merchant, legal, agreement, settlement, deposit and restricted address/payment references", "identity": "merchant_id is a qualified source mapping; user, legal entity, bank account, contacts and addresses remain separate identities", "money_or_quantity": "deposit and fee bounds require currency, minor units and rounding; string deposit_freeze/poundage_discount are quarantined until typed", "history": "daily snapshots produce explicit changes and SCD history; later PII cannot rewrite facts accepted under an earlier agreement", "security": "ID cards, bank account, phones, names and full addresses are tokenized/restricted and never emitted in canonical events", "authority": "Merchant owns lifecycle/profile; LegalEntity owns regulated identity; Payment owns bank token; Deposit ledger owns money; Fulfillment owns address use"},
+      "corrections": ["split overloaded mutable snapshot into independent authorities", "tokenize bank and identity data before ingestion", "reject deposit_freeze or fee discounts without typed amount/rate semantics"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantAccountDO.java", "yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantLegalEntityDO.java", "yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantDepositAccountDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-merchant-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-merchant-legal-entity-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-merchant-deposit-account-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/15-canonical-identity-merchant-warehouse-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_merchant_sys_appeal_df", "source_label": "商家申诉表", "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 202}, {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 296}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 7617, "end_line": 7644, "source_asset": "ods_merchant_sys_appeal_df"}},
+      "source_grain": "one mutable merchant appeal snapshot per source id",
+      "decision": "split", "canonical_entities": ["customer_service.MerchantAppealCase", "customer_service.AppealDecision", "merchant.MerchantReference", "catalog.CatalogSpuReference", "audit.RestrictedAppealEvidence"],
+      "semantic_rules": {"grain": "one appeal case with immutable submissions, evidence versions and decisions", "identity": "appeal, Merchant, SPU, payout, deposit, supply-chain or penalty references depend on apply_type and remain distinct", "money_or_quantity": "any granted money effect is a separate compensation/deposit/payout command, never encoded in appeal status", "history": "submission, cancellation, review and decision append; later text/images do not rewrite prior evidence", "security": "reason and images remain restricted evidence with malware scan and access audit", "authority": "Customer Service owns appeal workflow; the affected domain owns accepted effects"},
+      "corrections": ["route apply_type through a versioned target dictionary", "separate case decision from Merchant state", "retain images as restricted references rather than raw event payload"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-customer-service/cloudmold-module-customer-service-server/src/main/java/cn/iocoder/yudao/module/cloudmold/customerservice/dal/dataobject/CustomerServiceClaimDO.java", "yudao-cloud/cloudmold-module-customer-service/cloudmold-module-customer-service-server/src/main/java/cn/iocoder/yudao/module/cloudmold/customerservice/dal/dataobject/CustomerServiceAttachmentDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-customer-service-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-customer-service-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/23-canonical-promotion-engagement-customer-service-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_merchant_sys_withdraw_df", "source_label": "商家提现表", "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 203}, {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 297}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 7645, "end_line": 7673, "source_asset": "ods_merchant_sys_withdraw_df"}},
+      "source_grain": "one mutable merchant payout/withdrawal observation per order_no",
+      "decision": "split", "canonical_entities": ["payout.PayoutIntent", "payout.PayoutAttempt", "ledger.MerchantAccountEffect", "payment.BankInstrumentTokenReference", "merchant.MerchantReference"],
+      "semantic_rules": {"grain": "one payout intent may have multiple immutable provider attempts and one posted merchant ledger effect", "identity": "withdraw order, channel transaction, Merchant, user and bank token are separate tenant-scoped identities", "money_or_quantity": "amount is int64 minor units but currency is absent, so every row is blocked until account currency is proven", "history": "provider observations and payout transitions append; success/failure never overwrite attempts", "security": "card_id is tokenized and raw PAN/account data is forbidden; reason and provider data are restricted", "authority": "Payout owns withdrawal workflow; Ledger owns balance effect; Payment/bank vault owns instrument token; Merchant is reference only"},
+      "corrections": ["add immutable payout attempts", "prove currency from the exact account contract", "never store or emit raw card_id"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/dal/dataobject/PaymentTransactionDO.java", "yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantAccountDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-payment-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-merchant-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/10-canonical-order-payment-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_merchant_sys_exit_df", "source_label": "商家退出表", "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 204}, {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 298}],
+      "source_evidence": {"status": "name_conflict", "detail_anchor": {"heading_line": 7674, "end_line": 7703, "source_asset": "ods_merchant_sys_withdraw_df"}},
+      "source_grain": "purported merchant-offboarding application per exit_no, unproven because the detailed DDL recreates the withdraw table",
+      "decision": "correct", "canonical_entities": ["merchant.MerchantOffboardingCase", "merchant.MerchantStatusHistory", "listing.ListingUnpublishSagaReference", "payout.FinalSettlementReference"],
+      "semantic_rules": {"grain": "one versioned offboarding case coordinates penalties, listings, deposits, payout and final Merchant retirement", "identity": "exit case, Merchant, requester Principal, penalty, unpublish saga and settlement ids remain distinct", "money_or_quantity": "final deposit/payout/fee balances reconcile through their ledgers before retirement", "history": "request, review, rejection and completion append and source deletion never erases the case", "security": "mobile, merchant name and free-form reason remain restricted", "authority": "Merchant owns offboarding orchestration; Listing, Deposit, Payout and penalty domains own their effects"},
+      "corrections": ["do not execute the mislabeled withdraw DDL as an exit source", "require a physical exit schema before specification", "coordinate offboarding through durable cross-domain checkpoints"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantStatusHistoryDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-merchant-entity-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-merchant-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/15-canonical-identity-merchant-warehouse-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "provisional", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_merchant_sys_deposit_recharge_df", "source_label": "商家保证金充值表", "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 205}, {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 299}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 7704, "end_line": 7727, "source_asset": "ods_merchant_sys_deposit_recharge_df"}},
+      "source_grain": "one merchant deposit recharge application/provider observation per recharge_no",
+      "decision": "split", "canonical_entities": ["merchant.MerchantDepositLedgerEntry", "payment.PaymentTransactionReference", "audit.RestrictedDepositVoucher", "merchant.MerchantReference"],
+      "semantic_rules": {"grain": "one immutable deposit ledger posting references one separately observed payment/provider transaction", "identity": "recharge, provider transaction, Merchant, user Principal and ledger entry ids remain distinct", "money_or_quantity": "amount is STRING and generic-unit, so parse only through currency-specific decimal/unit/rounding evidence into int64 minor units", "history": "application, payment observation, approval and ledger posting append with idempotency", "security": "voucher and remark are restricted; public events expose only digest/reference", "authority": "Merchant Deposit ledger owns held funds; Payment owns money movement; Merchant lifecycle only consumes deposit readiness"},
+      "corrections": ["convert generic string amount only with exact currency/unit proof", "separate provider transaction from deposit ledger posting", "store voucher as restricted evidence"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantDepositLedgerEntryDO.java", "yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/dal/dataobject/PaymentTransactionDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-merchant-deposit-ledger-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-merchant-deposit-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/17-canonical-merchant-deposit-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_merchant_ai_merchant_ai_answer_df", "source_label": "yshopping商家AI问答记录表", "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 300}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 7728, "end_line": 7758, "source_asset": "ods_merchant_ai_merchant_ai_answer_df"}},
+      "source_grain": "one merchant assistant question-answer interaction per source id",
+      "decision": "split", "canonical_entities": ["ai_operations.AiInvocationAttempt", "ai_operations.AiOutcomeFeedback", "merchant.MerchantReference", "metadata.DataAccessEvidence", "audit.RestrictedPromptResponse"],
+      "semantic_rules": {"grain": "one invocation attempt plus independent adoption/like/dislike feedback observations", "identity": "interaction, invocation, Merchant, model/workflow version, data access and feedback ids remain distinct", "money_or_quantity": "money in natural-language answers is not a financial fact; structured metrics require source metric/unit lineage", "history": "prompt, response, model/data versions and each feedback transition append without rewriting", "security": "question, answer, suggested questions, merchant name and table list are restricted and may contain PII, secrets or operational schema", "authority": "AI Operations owns invocation/feedback; Merchant is context; business domains and Metadata own facts and lineage"},
+      "corrections": ["store prompt/response as restricted references rather than event payload", "bind exact model/workflow and governed dataset versions", "do not treat generated answers as Order, Refund or finance authority"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aioperations/dal/dataobject/AiInvocationAttemptDO.java", "yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aioperations/dal/dataobject/AiOutcomeFeedbackDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-ai-operations-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-ai-operations-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/24-canonical-ai-token-risk-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    }
+  ]
+}
