@@ -161,6 +161,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_ads_derived_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_dwd_dwm_derived_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_residual_source_dispositions(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_source_admission_fence(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_engagement_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_compensation_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_ticket_source_dispositions(self.inventory))
@@ -1984,6 +1985,53 @@ class SourceAssetCtlTest(unittest.TestCase):
                 if SOURCE_ASSETS._contract_reference_error(reference)
             ],
         )
+
+    def test_source_admission_fence_covers_all_269_rejected_or_quarantined_names(self):
+        denied = SOURCE_ASSETS.non_admitted_source_asset_names()
+        residual = {
+            asset["source_asset"]
+            for asset in SOURCE_ASSETS.load_residual_source_dispositions()["assets"]
+        }
+        self.assertEqual(269, len(denied))
+        self.assertTrue(residual <= denied)
+        self.assertEqual([], SOURCE_ASSETS.source_admission_violations())
+        status = SOURCE_ASSETS.source_admission_status(self.inventory)
+        self.assertEqual("verified", status["static_admission_fence_status"])
+        self.assertEqual(0, status["active_model_pipeline_violation_count"])
+
+    def test_source_admission_fence_detects_exact_active_model_and_pipeline_references(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "models").mkdir()
+            (root / "pipelines").mkdir()
+            (root / "models" / "bad.sql").write_text(
+                "SELECT * FROM ods_userpassword_df\nSELECT * FROM allowed_ods_userpassword_df_suffix\n",
+                encoding="utf-8",
+            )
+            (root / "pipelines" / "bad.yaml").write_text(
+                "table: dwd_xxx_xx\n",
+                encoding="utf-8",
+            )
+            violations = SOURCE_ASSETS.source_admission_violations(
+                root, {"ods_userpassword_df", "dwd_xxx_xx"}
+            )
+        self.assertEqual(
+            [
+                {"source_asset": "ods_userpassword_df", "path": "models/bad.sql", "line": 1},
+                {"source_asset": "dwd_xxx_xx", "path": "pipelines/bad.yaml", "line": 1},
+            ],
+            violations,
+        )
+
+    def test_source_admission_status_is_reported_without_runtime_credit(self):
+        lines = list(SOURCE_ASSETS.admission_lines(self.inventory))
+        self.assertEqual(1, len(lines))
+        self.assertIn("269 rejected/quarantined", lines[0])
+        self.assertIn("violations=0", lines[0])
+        self.assertIn("status=verified", lines[0])
+        status = SOURCE_ASSETS.disposition_status(self.inventory)
+        self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
+        self.assertEqual(0, status["final_disposition_verified_count"])
 
     def test_engagement_dispositions_cover_push_and_collect_assets(self):
         contract = SOURCE_ASSETS.load_engagement_source_dispositions()

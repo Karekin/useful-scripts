@@ -285,6 +285,13 @@ Identity, Payment, Advertising, Customer Service, Community, AI/Token,
 Warehouse/Inventory, Compensation, Commerce, Catalog, Merchant, Metadata and
 Operations semantics. This closes unique detailed decisions at 718/718 (100.00%)
 without granting runtime or final credit; both remain 0/718.
+The active source-admission fence now derives 269 globally unique rejected or
+quarantined names from the governed contracts and scans every checked-in model
+SQL and CDC pipeline YAML. The current active paths contain zero references.
+`./scripts/sourceassetctl admission-status` reports this separately from
+semantic completion, and configuration validation fails if a fenced name enters
+an active path. This proves the repository-level admission policy is enforced;
+it does not prove production deployment state and grants no runtime/final credit.
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%

@@ -5948,6 +5948,112 @@ def detailed_disposition_asset_names() -> set[str]:
     return names
 
 
+def non_admitted_source_asset_names() -> set[str]:
+    """Return source names that are rejected or quarantined from active ingestion."""
+    names: set[str] = set()
+    for contract in (
+        load_dws_derived_source_dispositions(),
+        load_dim_derived_source_dispositions(),
+        load_ads_derived_source_dispositions(),
+        load_dwd_dwm_derived_source_dispositions(),
+        load_residual_source_dispositions(),
+    ):
+        assets = contract.get("assets", []) if isinstance(contract, dict) else []
+        if not isinstance(assets, list):
+            continue
+        names.update(
+            asset["source_asset"]
+            for asset in assets
+            if isinstance(asset, dict)
+            and isinstance(asset.get("source_asset"), str)
+            and (
+                asset.get("decision") == "reject"
+                or asset.get("admission") in {"rejected", "quarantined"}
+            )
+        )
+    return names
+
+
+def source_admission_violations(
+    root: Path = ROOT, denied_names: set[str] | None = None
+) -> list[dict[str, Any]]:
+    """Find denied/quarantined logical names in active SQL models or CDC configs."""
+    denied_names = denied_names or non_admitted_source_asset_names()
+    violations: list[dict[str, Any]] = []
+    for directory in (root / "models", root / "pipelines"):
+        if not directory.exists():
+            continue
+        for path in sorted(directory.rglob("*")):
+            if not path.is_file() or path.suffix.lower() not in {".sql", ".yaml", ".yml"}:
+                continue
+            try:
+                lines = path.read_text(encoding="utf-8").splitlines()
+            except OSError as exc:
+                raise SourceAssetError(f"cannot scan active admission path {path}: {exc}") from exc
+            for line_number, line in enumerate(lines, start=1):
+                seen_on_line: set[str] = set()
+                for match in CANDIDATE_PATTERN.finditer(line):
+                    name = match.group(0).lower()
+                    if name not in denied_names or name in seen_on_line:
+                        continue
+                    seen_on_line.add(name)
+                    violations.append(
+                        {
+                            "source_asset": name,
+                            "path": str(path.relative_to(root)),
+                            "line": line_number,
+                        }
+                    )
+    return violations
+
+
+def validate_source_admission_fence(
+    inventory: dict[str, Any], root: Path = ROOT
+) -> list[str]:
+    errors: list[str] = []
+    denied_names = non_admitted_source_asset_names()
+    candidate_names = {
+        asset["normalized_name"]
+        for asset in inventory.get("logical_assets", [])
+        if "candidate" in asset.get("roles", [])
+    }
+    if len(denied_names) != 269:
+        errors.append(f"source admission deny/quarantine count differs: {len(denied_names)}")
+    if not denied_names <= candidate_names:
+        errors.append(
+            "source admission fence contains non-candidate names: "
+            f"{sorted(denied_names-candidate_names)}"
+        )
+    residual_names = {
+        asset.get("source_asset")
+        for asset in load_residual_source_dispositions().get("assets", [])
+        if isinstance(asset, dict)
+    }
+    if not residual_names <= denied_names:
+        errors.append(
+            "residual rejected/quarantined assets escaped admission fence: "
+            f"{sorted(residual_names-denied_names)}"
+        )
+    violations = source_admission_violations(root, denied_names)
+    if violations:
+        errors.append(
+            "non-admitted source assets appear in active models/pipelines: "
+            + json.dumps(violations, ensure_ascii=False, sort_keys=True)
+        )
+    return errors
+
+
+def source_admission_status(inventory: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
+    denied_names = non_admitted_source_asset_names()
+    violations = source_admission_violations(root, denied_names)
+    return {
+        "non_admitted_source_asset_count": len(denied_names),
+        "active_model_pipeline_violation_count": len(violations),
+        "static_admission_fence_status": "verified" if not violations else "violated",
+        "violations": violations,
+    }
+
+
 def disposition_status(
     inventory: dict[str, Any], policy: dict[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -6383,10 +6489,26 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
     )
 
 
+def admission_lines(inventory: dict[str, Any], root: Path = ROOT) -> Iterable[str]:
+    status = source_admission_status(inventory, root)
+    yield (
+        "source admission fence: "
+        f"{status['non_admitted_source_asset_count']} rejected/quarantined logical assets; "
+        f"active model/pipeline violations={status['active_model_pipeline_violation_count']}; "
+        f"status={status['static_admission_fence_status']}"
+    )
+    for violation in status["violations"]:
+        yield (
+            f"violation: {violation['source_asset']} at "
+            f"{violation['path']}:{violation['line']}"
+        )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "command", choices=("validate", "summary", "inventory", "disposition-status")
+        "command",
+        choices=("validate", "summary", "inventory", "disposition-status", "admission-status"),
     )
     parser.add_argument("--reference-root", type=Path, default=DEFAULT_REFERENCE_ROOT)
     args = parser.parse_args()
@@ -6410,6 +6532,7 @@ def main() -> int:
     errors.extend(validate_ads_derived_source_dispositions(inventory))
     errors.extend(validate_dwd_dwm_derived_source_dispositions(inventory))
     errors.extend(validate_residual_source_dispositions(inventory))
+    errors.extend(validate_source_admission_fence(inventory))
     errors.extend(validate_engagement_source_dispositions(inventory))
     errors.extend(validate_compensation_source_dispositions(inventory))
     errors.extend(validate_ticket_source_dispositions(inventory))
@@ -6428,6 +6551,8 @@ def main() -> int:
         print(json.dumps(inventory, ensure_ascii=False, indent=2))
     elif args.command == "disposition-status":
         print("\n".join(disposition_lines(inventory)))
+    elif args.command == "admission-status":
+        print("\n".join(admission_lines(inventory)))
     else:
         print("\n".join(summary_lines(inventory)))
     return 0
