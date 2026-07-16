@@ -8,11 +8,11 @@ SELECT resolution.*,
            OR inspection_after_sale_item_id <> after_sale_item_id
            OR refund_after_sale_item_id <> after_sale_item_id
            OR original_order_sku_id IS NULL OR original_order_sku_id <> canonical_sku_id
-           OR original_order_quantity <> requested_quantity
-           OR original_order_line_amount_minor <> original_order_discount_amount_minor + original_order_net_amount_minor
-           OR original_order_net_amount_minor <> approved_amount_minor
+           OR original_order_quantity IS NULL OR requested_quantity <= 0
+           OR requested_quantity > original_order_quantity
+           OR original_order_line_amount_minor
+                <> original_order_discount_amount_minor + original_order_net_amount_minor
            OR original_listing_id <> listing_id OR original_offer_id <> offer_id
-           OR requested_quantity <= 0
            OR received_quantity <> accepted_quantity + rejected_quantity
            OR accepted_quantity > received_quantity
            OR inventory_return_event_count > 1
@@ -25,6 +25,7 @@ SELECT resolution.*,
            OR refunded_amount_minor > approved_amount_minor
            OR refund_currency_code <> currency_code
            OR return_shipping_currency_code <> currency_code
+           OR return_shipping_amount_minor <> 0
            OR provider_code <> 'INTERNAL_TEST'
            OR reported_return_shipment_id <> return_shipment_id
            OR reported_canonical_sku_id <> canonical_sku_id
@@ -33,9 +34,7 @@ SELECT resolution.*,
            OR reported_returned_quantity <> inventory_return_quantity
            OR reported_uom_code <> return_uom_code
            OR reported_approved_amount_minor <> approved_amount_minor
-           OR reported_gross_amount_minor <> original_order_line_amount_minor
-           OR reported_benefit_amount_minor <> original_order_discount_amount_minor
-           OR reported_net_amount_minor <> original_order_net_amount_minor
+           OR reported_approved_amount_minor <> reported_net_amount_minor
            OR reported_gross_amount_minor <> reported_benefit_amount_minor + reported_net_amount_minor
            OR reported_refunded_amount_minor <> refunded_amount_minor
            OR refund_gross_amount_minor <> reported_gross_amount_minor
@@ -43,8 +42,43 @@ SELECT resolution.*,
            OR refund_net_amount_minor <> reported_net_amount_minor
            OR reported_currency_code <> currency_code
            OR resolution_saga_id <> saga_id
+           OR saga_schema_version NOT IN (1, 2, 3)
+           OR (saga_schema_version IN (1, 2) AND (
+                original_order_quantity <> requested_quantity
+             OR original_order_line_amount_minor <> reported_gross_amount_minor
+             OR original_order_discount_amount_minor <> reported_benefit_amount_minor
+             OR original_order_net_amount_minor <> reported_net_amount_minor))
+           OR (saga_schema_version = 3 AND (
+                recorded_order_settlement_effect_id IS NULL
+             OR recorded_order_settlement_effect_id <> order_settlement_effect_id
+             OR recorded_order_settlement_version <> order_settlement_version
+             OR settlement_after_sale_item_id <> after_sale_item_id
+             OR settlement_order_item_id <> order_item_id
+             OR settlement_quantity <> requested_quantity
+             OR settlement_gross_amount_minor <> reported_gross_amount_minor
+             OR settlement_benefit_amount_minor <> reported_benefit_amount_minor
+             OR settlement_net_amount_minor <> reported_net_amount_minor
+             OR settlement_inventory_operation_id <> inventory_operation_id
+             OR settlement_inventory_ledger_transaction_id <> inventory_ledger_transaction_id
+             OR settlement_payment_refund_transaction_id <> payment_refund_transaction_id
+             OR NOT (settlement_benefit_reversal_batch_id <=> benefit_reversal_batch_id)
+             OR item_returned_quantity <= 0 OR item_returned_quantity > item_ordered_quantity
+             OR order_returned_quantity <= 0 OR order_returned_quantity > order_total_quantity
+             OR settlement_cumulative_refunded_net_amount_minor <= 0
+             OR settlement_cumulative_reversed_benefit_amount_minor < 0
+             OR settlement_cumulative_refunded_net_amount_minor
+                  <> payment_effect_cumulative_refunded_amount_minor
+             OR settlement_full_return <> order_return_full
+             OR (settlement_status = 'FULL') <> settlement_full_return
+             OR payment_effect_schema_version <> 3
+             OR payment_effect_transaction_type <> 'REFUND'
+             OR payment_effect_refund_amount_minor <> approved_amount_minor
+             OR payment_effect_cumulative_refunded_amount_minor > payment_effect_captured_amount_minor
+             OR payment_effect_remaining_refundable_amount_minor
+                  <> payment_effect_captured_amount_minor - payment_effect_cumulative_refunded_amount_minor))
          THEN 'INCONSISTENT'
-         WHEN saga_status = 'COMPLETED'
+         WHEN saga_schema_version IN (1, 2)
+           AND saga_status = 'COMPLETED'
            AND saga_version >= IF(reported_benefit_amount_minor = 0, 10, 12)
            AND MOD(saga_version - IF(reported_benefit_amount_minor = 0, 10, 12), 2) = 0
            AND saga_event_count = saga_version
@@ -82,6 +116,66 @@ SELECT resolution.*,
            AND get_json_bool(checkpoints, '$.payment_refunded') = TRUE
            AND get_json_bool(checkpoints, '$.order_refund_confirmed') = TRUE
            AND get_json_bool(checkpoints, '$.order_returned') = TRUE
+           AND recorded_order_valid = TRUE
+         THEN 'RECONCILED'
+         WHEN saga_status = 'COMPLETED'
+           AND saga_schema_version = 3
+           AND saga_version >= IF(reported_benefit_amount_minor = 0, 8, 10)
+                                + IF(order_return_full, 4, 0)
+           AND MOD(saga_version - IF(reported_benefit_amount_minor = 0, 8, 10)
+                                  - IF(order_return_full, 4, 0), 2) = 0
+           AND saga_event_count = saga_version
+           AND after_sale_status = 'COMPLETED' AND after_sale_event_count = 4
+           AND return_fulfillment_status = 'INSPECTION_ACCEPTED' AND return_fulfillment_event_count = 5
+           AND inspection_result = 'ACCEPTED' AND rejected_quantity = 0
+           AND requested_quantity = accepted_quantity
+           AND accepted_quantity = inventory_return_quantity
+           AND refund_status = 'SUCCEEDED' AND refund_event_count = 2
+           AND approved_amount_minor = refunded_amount_minor
+           AND approved_amount_minor = reported_net_amount_minor
+           AND inventory_ledger_transaction_id IS NOT NULL
+           AND inventory_operation_id IS NOT NULL
+           AND ((reported_benefit_amount_minor = 0
+                  AND benefit_reversal_status = 'NOT_REQUIRED'
+                  AND benefit_reversal_batch_id IS NULL
+                  AND benefit_reversal_amount_minor = 0)
+                OR (reported_benefit_amount_minor > 0
+                  AND benefit_reversal_status = 'RECORDED'
+                  AND benefit_reversal_batch_id IS NOT NULL
+                  AND benefit_reversal_amount_minor = reported_benefit_amount_minor
+                  AND recorded_benefit_reversal_amount_minor = reported_benefit_amount_minor
+                  AND funding_reversal_amount_minor = reported_benefit_amount_minor
+                  AND benefit_reversal_idempotency_count = benefit_reversal_count
+                  AND entitlement_application_count = entitlement_effect_count
+                  AND retained_entitlement_count + returned_entitlement_count = entitlement_effect_count
+                  AND allocation_reversal_mismatch_count = 0
+                  AND entitlement_effect_mismatch_count = 0
+                  AND funding_reversal_mismatch_count = 0))
+           AND payment_refund_transaction_id = refund_transaction_id
+           AND get_json_bool(checkpoints, '$.inventory_returned') = TRUE
+           AND get_json_bool(checkpoints, '$.benefit_reversed') = TRUE
+           AND get_json_bool(checkpoints, '$.payment_refunded') = TRUE
+           AND get_json_bool(checkpoints, '$.order_settled') = TRUE
+           AND ((order_return_full = FALSE
+                  AND settlement_status = 'PARTIAL'
+                  AND order_returned_quantity < order_total_quantity
+                  AND payment_effect_status = 'PARTIALLY_REFUNDED'
+                  AND payment_effect_remaining_refundable_amount_minor > 0
+                  AND order_refund_operation_id IS NULL
+                  AND order_return_operation_id IS NULL
+                  AND get_json_bool(checkpoints, '$.order_refund_confirmed') = FALSE
+                  AND get_json_bool(checkpoints, '$.order_returned') = FALSE)
+                OR (order_return_full = TRUE
+                  AND settlement_status = 'FULL'
+                  AND order_returned_quantity = order_total_quantity
+                  AND payment_effect_status = 'REFUNDED'
+                  AND payment_effect_remaining_refundable_amount_minor = 0
+                  AND order_status = 'RETURNED'
+                  AND reported_order_version = current_order_version
+                  AND order_refund_operation_id IS NOT NULL
+                  AND order_return_operation_id IS NOT NULL
+                  AND get_json_bool(checkpoints, '$.order_refund_confirmed') = TRUE
+                  AND get_json_bool(checkpoints, '$.order_returned') = TRUE))
            AND recorded_order_valid = TRUE
          THEN 'RECONCILED'
          WHEN saga_status = 'COMPLETED' THEN 'INCONSISTENT'

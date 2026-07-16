@@ -20,6 +20,7 @@ models/dwd/dwd-canonical-order-status-event.sql
 models/dwd/dwd-canonical-order-benefit-application-event.sql
 models/dwd/dwd-canonical-order-benefit-allocation-event.sql
 models/dwd/dwd-canonical-order-benefit-funding-event.sql
+models/dwd/dwd-canonical-order-after-sale-settlement-event.sql
 models/dwd/dwd-canonical-payment-status-event.sql
 models/dwd/dwd-canonical-listing-status-event.sql
 models/dwd/dwd-canonical-listing-review-event.sql
@@ -64,6 +65,8 @@ models/dim/dim-warehouse-current.sql
 models/dim/dim-canonical-catalog-entity-status-current.sql
 models/dim/dim-canonical-catalog-sku-current.sql
 models/dim/dim-canonical-order-current.sql
+models/dim/dim-canonical-order-return-settlement-current.sql
+models/dim/dim-canonical-order-item-return-settlement-current.sql
 models/dim/dim-canonical-order-benefit-application-current.sql
 models/dim/dim-canonical-order-cancellation-saga-current.sql
 models/dim/dim-canonical-after-sale-current.sql

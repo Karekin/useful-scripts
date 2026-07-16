@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/payment-status-changed-v3.schema.json",
+  "title": "payment.status.changed payload v3 cumulative refund",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id", "payment_id", "payment_no", "order_id", "transaction_id", "transaction_type",
+    "previous_status", "current_status", "payable_amount_minor", "captured_amount_minor",
+    "refunded_amount_minor", "refund_amount_minor", "remaining_refundable_amount_minor",
+    "currency_code", "provider_code", "provider_transaction_id", "test_mode", "reason"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "payment_id": {"type": "string", "format": "uuid"},
+    "payment_no": {"type": "string", "minLength": 1, "maxLength": 32},
+    "order_id": {"type": "string", "format": "uuid"},
+    "transaction_id": {"type": "integer", "minimum": 1},
+    "transaction_type": {"type": "string", "const": "REFUND"},
+    "previous_status": {"type": "string", "enum": ["CAPTURED", "PARTIALLY_REFUNDED"]},
+    "current_status": {"type": "string", "enum": ["PARTIALLY_REFUNDED", "REFUNDED"]},
+    "payable_amount_minor": {"type": "integer", "minimum": 0},
+    "captured_amount_minor": {"type": "integer", "minimum": 1},
+    "refunded_amount_minor": {"type": "integer", "minimum": 1},
+    "refund_amount_minor": {"type": "integer", "minimum": 1},
+    "remaining_refundable_amount_minor": {"type": "integer", "minimum": 0},
+    "currency_code": {"type": "string", "const": "CNY"},
+    "provider_code": {"type": "string", "const": "INTERNAL_TEST"},
+    "provider_transaction_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "test_mode": {"type": "boolean", "const": true},
+    "reason": {"type": ["string", "null"], "maxLength": 255}
+  }
+}

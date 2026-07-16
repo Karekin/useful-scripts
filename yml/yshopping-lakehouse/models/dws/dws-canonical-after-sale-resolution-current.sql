@@ -91,13 +91,24 @@ SELECT
     COALESCE(inventory_return.inventory_return_idempotency_count, 0) AS inventory_return_idempotency_count,
     COALESCE(inventory_return.inventory_return_quantity, 0) AS inventory_return_quantity,
     order_current.current_status AS order_status, order_current.aggregate_version AS current_order_version,
-    payment.current_status AS payment_status, payment.refunded_amount_minor AS payment_refunded_amount_minor,
+    payment_current.current_status AS payment_status,
+    payment_current.refunded_amount_minor AS payment_refunded_amount_minor,
+    payment_effect.schema_version AS payment_effect_schema_version,
+    payment_effect.transaction_type AS payment_effect_transaction_type,
+    payment_effect.previous_status AS payment_effect_previous_status,
+    payment_effect.current_status AS payment_effect_status,
+    payment_effect.captured_amount_minor AS payment_effect_captured_amount_minor,
+    payment_effect.refund_amount_minor AS payment_effect_refund_amount_minor,
+    payment_effect.refunded_amount_minor AS payment_effect_cumulative_refunded_amount_minor,
+    payment_effect.remaining_refundable_amount_minor AS payment_effect_remaining_refundable_amount_minor,
     saga.inventory_operation_id, saga.inventory_ledger_transaction_id,
     saga.benefit_reversal_status, saga.benefit_reversal_batch_id,
     saga.benefit_reversal_amount_minor,
     benefit_reversal.benefit_reversal_count,
     benefit_reversal.benefit_reversal_idempotency_count,
     benefit_reversal.entitlement_application_count,
+    benefit_reversal.entitlement_effect_count,
+    benefit_reversal.retained_entitlement_count,
     benefit_reversal.returned_entitlement_count,
     benefit_reversal.benefit_reversal_amount_minor AS recorded_benefit_reversal_amount_minor,
     benefit_reversal.funding_reversal_count,
@@ -105,15 +116,37 @@ SELECT
     benefit_reversal.allocation_reversal_mismatch_count,
     benefit_reversal.entitlement_effect_mismatch_count,
     benefit_reversal.funding_reversal_mismatch_count,
-    saga.payment_refund_transaction_id, saga.order_refund_operation_id, saga.order_return_operation_id,
+    saga.payment_refund_transaction_id,
+    saga.order_settlement_effect_id, saga.order_settlement_version, saga.order_return_full,
+    settlement.settlement_effect_id AS recorded_order_settlement_effect_id,
+    settlement.aggregate_version AS recorded_order_settlement_version,
+    settlement.after_sale_item_id AS settlement_after_sale_item_id,
+    settlement.order_item_id AS settlement_order_item_id,
+    settlement.quantity AS settlement_quantity,
+    settlement.gross_amount_minor AS settlement_gross_amount_minor,
+    settlement.benefit_amount_minor AS settlement_benefit_amount_minor,
+    settlement.net_amount_minor AS settlement_net_amount_minor,
+    settlement.inventory_operation_id AS settlement_inventory_operation_id,
+    settlement.inventory_ledger_transaction_id AS settlement_inventory_ledger_transaction_id,
+    settlement.payment_refund_transaction_id AS settlement_payment_refund_transaction_id,
+    settlement.benefit_reversal_batch_id AS settlement_benefit_reversal_batch_id,
+    settlement.item_returned_quantity, settlement.item_ordered_quantity,
+    settlement.order_returned_quantity, settlement.order_total_quantity,
+    settlement.refunded_net_amount_minor AS settlement_cumulative_refunded_net_amount_minor,
+    settlement.reversed_benefit_amount_minor AS settlement_cumulative_reversed_benefit_amount_minor,
+    settlement.settlement_status, settlement.full_return AS settlement_full_return,
+    saga.order_refund_operation_id, saga.order_return_operation_id,
     saga.order_version AS reported_order_version, saga.error_code, saga.error_message, saga.next_retry_at,
     return_events.return_accepted_recorded_at,
     inventory_return.inventory_returned_recorded_at,
     benefit_reversal.benefit_reversal_recorded_at,
+    payment_effect.recorded_at AS payment_refunded_recorded_at,
     refund_events.refund_succeeded_recorded_at,
+    settlement.recorded_at AS order_settled_recorded_at,
     order_current.recorded_at AS order_returned_recorded_at,
     case_events.after_sale_completed_recorded_at,
-    return_events.return_accepted_recorded_at IS NOT NULL
+    ((saga.schema_version IN (1, 2)
+      AND return_events.return_accepted_recorded_at IS NOT NULL
       AND inventory_return.inventory_returned_recorded_at IS NOT NULL
       AND (saga.benefit_amount_minor = 0 OR benefit_reversal.benefit_reversal_recorded_at IS NOT NULL)
       AND refund_events.refund_succeeded_recorded_at IS NOT NULL
@@ -126,9 +159,32 @@ SELECT
         OR benefit_reversal.benefit_reversal_recorded_at <= refund_events.refund_succeeded_recorded_at)
       AND inventory_return.inventory_returned_recorded_at <= refund_events.refund_succeeded_recorded_at
       AND refund_events.refund_succeeded_recorded_at <= order_current.recorded_at
-      AND order_current.recorded_at <= case_events.after_sale_completed_recorded_at AS recorded_order_valid,
+      AND order_current.recorded_at <= case_events.after_sale_completed_recorded_at)
+     OR
+     (saga.schema_version = 3
+      AND return_events.return_accepted_recorded_at IS NOT NULL
+      AND inventory_return.inventory_returned_recorded_at IS NOT NULL
+      AND (saga.benefit_amount_minor = 0 OR benefit_reversal.benefit_reversal_recorded_at IS NOT NULL)
+      AND payment_effect.recorded_at IS NOT NULL
+      AND refund_events.refund_succeeded_recorded_at IS NOT NULL
+      AND settlement.recorded_at IS NOT NULL
+      AND case_events.after_sale_completed_recorded_at IS NOT NULL
+      AND return_events.return_accepted_recorded_at <= inventory_return.inventory_returned_recorded_at
+      AND (saga.benefit_amount_minor = 0
+        OR inventory_return.inventory_returned_recorded_at <= benefit_reversal.benefit_reversal_recorded_at)
+      AND (saga.benefit_amount_minor = 0
+        OR benefit_reversal.benefit_reversal_recorded_at <= payment_effect.recorded_at)
+      AND inventory_return.inventory_returned_recorded_at <= payment_effect.recorded_at
+      AND payment_effect.recorded_at <= refund_events.refund_succeeded_recorded_at
+      AND refund_events.refund_succeeded_recorded_at <= settlement.recorded_at
+      AND settlement.recorded_at <= case_events.after_sale_completed_recorded_at
+      AND (saga.order_return_full = FALSE
+        OR (order_current.recorded_at IS NOT NULL
+          AND settlement.recorded_at <= order_current.recorded_at
+          AND order_current.recorded_at <= case_events.after_sale_completed_recorded_at)))) AS recorded_order_valid,
     GREATEST(saga.recorded_at, after_sale.recorded_at, return_fulfillment.recorded_at,
-             inspection.recorded_at, COALESCE(refund.recorded_at, saga.recorded_at)) AS data_freshness_at
+             inspection.recorded_at, COALESCE(refund.recorded_at, saga.recorded_at),
+             COALESCE(settlement.recorded_at, saga.recorded_at)) AS data_freshness_at
 FROM yshopping_dim.dim_canonical_after_sale_resolution_saga_current saga
 JOIN yshopping_dim.dim_canonical_after_sale_current after_sale
   ON after_sale.tenant_id = saga.tenant_id AND after_sale.after_sale_id = saga.after_sale_id
@@ -166,5 +222,15 @@ LEFT JOIN yshopping_dws.dws_canonical_after_sale_benefit_reversal_current benefi
   ON benefit_reversal.tenant_id = saga.tenant_id
  AND benefit_reversal.after_sale_id = saga.after_sale_id
  AND benefit_reversal.reversal_batch_id = saga.benefit_reversal_batch_id
-LEFT JOIN yshopping_dim.dim_canonical_payment_current payment
-  ON payment.tenant_id = saga.tenant_id AND payment.payment_id = saga.payment_id;
+LEFT JOIN yshopping_dwd.dwd_canonical_payment_status_event payment_effect
+  ON payment_effect.tenant_id = saga.tenant_id
+ AND payment_effect.payment_id = saga.payment_id
+ AND payment_effect.transaction_id = saga.payment_refund_transaction_id
+ AND payment_effect.transaction_type = 'REFUND'
+LEFT JOIN yshopping_dim.dim_canonical_payment_current payment_current
+  ON payment_current.tenant_id = saga.tenant_id AND payment_current.payment_id = saga.payment_id
+LEFT JOIN yshopping_dwd.dwd_canonical_order_after_sale_settlement_event settlement
+  ON settlement.tenant_id = saga.tenant_id
+ AND settlement.order_id = saga.order_id
+ AND settlement.after_sale_id = saga.after_sale_id
+ AND settlement.settlement_effect_id = saga.order_settlement_effect_id;

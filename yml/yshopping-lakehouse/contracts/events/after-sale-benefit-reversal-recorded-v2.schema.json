@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/after-sale-benefit-reversal-recorded-v2.schema.json",
+  "title": "after_sale.benefit_reversal.recorded payload v2 partial entitlement",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["run_id", "reversal_batch_id", "benefit_reversal_id", "after_sale_id", "after_sale_item_id", "order_id", "order_item_id", "benefit_application_id", "benefit_allocation_id", "benefit_type", "benefit_source_type", "benefit_source_id", "benefit_source_version", "entitlement_id", "entitlement_effect_status", "amount_minor", "currency_code", "funding"],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "reversal_batch_id": {"type": "string", "format": "uuid"},
+    "benefit_reversal_id": {"type": "string", "format": "uuid"},
+    "after_sale_id": {"type": "string", "format": "uuid"},
+    "after_sale_item_id": {"type": "string", "format": "uuid"},
+    "order_id": {"type": "string", "format": "uuid"},
+    "order_item_id": {"type": "string", "format": "uuid"},
+    "benefit_application_id": {"type": "string", "format": "uuid"},
+    "benefit_allocation_id": {"type": "string", "format": "uuid"},
+    "benefit_type": {"type": "string", "enum": ["COUPON", "PROMOTION", "ALLOWANCE", "CAMPAIGN"]},
+    "benefit_source_type": {"type": "string", "minLength": 1, "maxLength": 32},
+    "benefit_source_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "benefit_source_version": {"type": "integer", "minimum": 1},
+    "entitlement_id": {"type": ["string", "null"], "format": "uuid"},
+    "entitlement_effect_status": {"type": "string", "enum": ["NOT_REQUIRED", "RETAINED_PARTIAL", "RETURNED"]},
+    "amount_minor": {"type": "integer", "minimum": 1},
+    "currency_code": {"const": "CNY"},
+    "funding": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["funding_reversal_id", "benefit_funding_id", "funder_type", "funder_id", "amount_minor", "currency_code"],
+        "properties": {
+          "funding_reversal_id": {"type": "string", "format": "uuid"},
+          "benefit_funding_id": {"type": "string", "format": "uuid"},
+          "funder_type": {"type": "string", "enum": ["PLATFORM", "MERCHANT", "PARTNER"]},
+          "funder_id": {"type": "string", "minLength": 1, "maxLength": 128},
+          "amount_minor": {"type": "integer", "minimum": 1},
+          "currency_code": {"const": "CNY"}
+        }
+      }
+    }
+  },
+  "oneOf": [
+    {"properties": {"entitlement_id": {"type": "null"}, "entitlement_effect_status": {"const": "NOT_REQUIRED"}}},
+    {"properties": {"benefit_type": {"const": "COUPON"}, "benefit_source_type": {"const": "COUPON_ENTITLEMENT"}, "entitlement_id": {"type": "string", "format": "uuid"}, "entitlement_effect_status": {"enum": ["RETAINED_PARTIAL", "RETURNED"]}}}
+  ]
+}

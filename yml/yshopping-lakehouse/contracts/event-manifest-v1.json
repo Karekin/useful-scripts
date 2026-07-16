@@ -360,6 +360,12 @@
       "payload_schema": "events/order-benefit-application-recorded-v1.schema.json",
       "example": "examples/order-benefit-application-recorded-v1.json"
     },
+    "order.after_sale_settlement.recorded": {
+      "schema_version": 1,
+      "aggregate_type": "order_return_settlement",
+      "payload_schema": "events/order-after-sale-settlement-recorded-v1.schema.json",
+      "example": "examples/order-after-sale-settlement-recorded-v1.json"
+    },
     "order.cancellation_saga.status_changed": {
       "aggregate_type": "order_cancellation_saga",
       "versions": [
@@ -404,14 +410,16 @@
       "aggregate_type": "after_sale_resolution_saga",
       "versions": [
         {"schema_version": 1, "payload_schema": "events/after-sale-resolution-saga-status-changed-v1.schema.json", "example": "examples/after-sale-resolution-saga-status-changed-v1.json"},
-        {"schema_version": 2, "payload_schema": "events/after-sale-resolution-saga-status-changed-v2.schema.json", "example": "examples/after-sale-resolution-saga-status-changed-v2.json"}
+        {"schema_version": 2, "payload_schema": "events/after-sale-resolution-saga-status-changed-v2.schema.json", "example": "examples/after-sale-resolution-saga-status-changed-v2.json"},
+        {"schema_version": 3, "payload_schema": "events/after-sale-resolution-saga-status-changed-v3.schema.json", "example": "examples/after-sale-resolution-saga-status-changed-v3.json"}
       ]
     },
     "after_sale.benefit_reversal.recorded": {
-      "schema_version": 1,
       "aggregate_type": "after_sale_benefit_reversal",
-      "payload_schema": "events/after-sale-benefit-reversal-recorded-v1.schema.json",
-      "example": "examples/after-sale-benefit-reversal-recorded-v1.json"
+      "versions": [
+        {"schema_version": 1, "payload_schema": "events/after-sale-benefit-reversal-recorded-v1.schema.json", "example": "examples/after-sale-benefit-reversal-recorded-v1.json"},
+        {"schema_version": 2, "payload_schema": "events/after-sale-benefit-reversal-recorded-v2.schema.json", "example": "examples/after-sale-benefit-reversal-recorded-v2.json"}
+      ]
     },
     "listing.status.changed": {
       "schema_version": 1,
@@ -458,6 +466,11 @@
           "schema_version": 2,
           "payload_schema": "events/payment-status-changed-v2.schema.json",
           "example": "examples/payment-status-changed-v2.json"
+        },
+        {
+          "schema_version": 3,
+          "payload_schema": "events/payment-status-changed-v3.schema.json",
+          "example": "examples/payment-status-changed-v3.json"
         }
       ]
     },

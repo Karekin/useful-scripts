@@ -6,7 +6,7 @@ COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
 STARROCKS_CONTAINER=${STARROCKS_CONTAINER:-yshopping-starrocks}
 
 usage() {
-  echo "usage: lakehousectl {config-check|contract-test|source-assets|source-disposition-status|semantic-status|start|submit-cdc|submit-catalog-cdc|submit-legacy-mall-cdc|submit-event-cdc|apply-models|health|test|reconcile|reconcile-canonical-inventory|reconcile-canonical-inventory-lot|reconcile-canonical-inventory-migration|reconcile-canonical-catalog|reconcile-canonical-commerce|reconcile-canonical-commerce-v2|reconcile-canonical-order-benefit|reconcile-canonical-cancellation-saga|reconcile-canonical-paid-cancellation-saga|reconcile-canonical-aftersales|reconcile-canonical-listing-unpublish-saga|reconcile-canonical-merchant|reconcile-canonical-merchant-deposit|reconcile-canonical-warehouse-network} [--tenant ID] [--run-id ID] [--saga-id UUID] [--merchant-id UUID] [--warehouse-id UUID] [--source-system CODE] [--source-type CODE] [--source-id ID]"
+  echo "usage: lakehousectl {config-check|contract-test|source-assets|source-disposition-status|semantic-status|start|submit-cdc|submit-catalog-cdc|submit-legacy-mall-cdc|submit-event-cdc|apply-models|health|test|reconcile|reconcile-canonical-inventory|reconcile-canonical-inventory-lot|reconcile-canonical-inventory-migration|reconcile-canonical-catalog|reconcile-canonical-commerce|reconcile-canonical-commerce-v2|reconcile-canonical-order-benefit|reconcile-canonical-cancellation-saga|reconcile-canonical-paid-cancellation-saga|reconcile-canonical-aftersales|reconcile-canonical-listing-unpublish-saga|reconcile-canonical-merchant|reconcile-canonical-merchant-deposit|reconcile-canonical-warehouse-network} [--tenant ID] [--run-id ID] [--after-sale-id UUID] [--saga-id UUID] [--merchant-id UUID] [--warehouse-id UUID] [--source-system CODE] [--source-type CODE] [--source-id ID]"
 }
 
 sql() {
@@ -63,6 +63,7 @@ run_tests() {
 
 TENANT_ID=""
 RUN_ID=""
+AFTER_SALE_ID=""
 SAGA_ID=""
 MERCHANT_ID=""
 WAREHOUSE_ID=""
@@ -75,6 +76,7 @@ while (( $# )); do
   case "$1" in
     --tenant) TENANT_ID=${2:?missing tenant}; shift 2 ;;
     --run-id) RUN_ID=${2:?missing run id}; shift 2 ;;
+    --after-sale-id) AFTER_SALE_ID=${2:?missing after-sale id}; shift 2 ;;
     --saga-id) SAGA_ID=${2:?missing saga id}; shift 2 ;;
     --merchant-id) MERCHANT_ID=${2:?missing merchant id}; shift 2 ;;
     --warehouse-id) WAREHOUSE_ID=${2:?missing warehouse id}; shift 2 ;;
@@ -91,6 +93,10 @@ if [[ -n "$TENANT_ID" && ! "$TENANT_ID" =~ ^[1-9][0-9]*$ ]]; then
 fi
 if [[ -n "$MERCHANT_ID" && ! "$MERCHANT_ID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$ ]]; then
   echo "--merchant-id must be a UUID" >&2
+  exit 2
+fi
+if [[ -n "$AFTER_SALE_ID" && ! "$AFTER_SALE_ID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$ ]]; then
+  echo "--after-sale-id must be a UUID" >&2
   exit 2
 fi
 if [[ -n "$SAGA_ID" && ! "$SAGA_ID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$ ]]; then
@@ -526,39 +532,65 @@ case "$COMMAND" in
     test -n "$RUN_ID" || { echo "--run-id is required" >&2; exit 2; }
     require_running
     safe_run_id=${RUN_ID//\'/\'\'}
+    after_sale_filter=""
+    if [[ -n "$AFTER_SALE_ID" ]]; then
+      after_sale_filter=" AND after_sale_id='$AFTER_SALE_ID'"
+    fi
     result=$(sql --skip-column-names -e "
       SELECT saga_event_count, saga_version, saga_status, after_sale_status, refund_status,
              return_fulfillment_status, inspection_result,
              requested_quantity, accepted_quantity, inventory_return_quantity,
              reported_gross_amount_minor, reported_benefit_amount_minor, reported_net_amount_minor,
-             approved_amount_minor, refunded_amount_minor, payment_refunded_amount_minor,
+             approved_amount_minor, refunded_amount_minor, payment_effect_refund_amount_minor,
+             payment_effect_cumulative_refunded_amount_minor,
+             payment_effect_remaining_refundable_amount_minor, payment_effect_status,
              benefit_reversal_status, benefit_reversal_amount_minor,
              recorded_benefit_reversal_amount_minor, funding_reversal_amount_minor,
              benefit_reversal_count, funding_reversal_count,
-             entitlement_application_count, returned_entitlement_count,
-             order_status, payment_status, recorded_order_valid, readiness_status, recovery_status
+             entitlement_application_count, entitlement_effect_count,
+             retained_entitlement_count, returned_entitlement_count,
+             settlement_status, order_return_full, settlement_quantity,
+             settlement_cumulative_refunded_net_amount_minor,
+             order_returned_quantity, order_total_quantity,
+             order_status, recorded_order_valid, readiness_status, recovery_status
       FROM yshopping_ads.ads_canonical_after_sale_readiness
-      WHERE tenant_id=$TENANT_ID AND run_id='$safe_run_id';")
+      WHERE tenant_id=$TENANT_ID AND run_id='$safe_run_id'$after_sale_filter;")
     require_single_row "$result" "canonical after-sales reconciliation"
-    echo -e "saga_events\tsaga_version\tsaga_status\tafter_sale_status\trefund_status\treturn_status\tinspection\trequested_qty\taccepted_qty\tinventory_return_qty\tgross\tbenefit\tnet\tapproved\trefunded\tpayment_refunded\tbenefit_reversal_status\tbenefit_reversed\trecorded_benefit\tfunding_reversed\tbenefit_rows\tfunding_rows\tentitlement_apps\treturned_entitlements\torder_status\tpayment_status\trecorded_order_valid\treadiness\trecovery"
+    echo -e "saga_events\tsaga_version\tsaga_status\tafter_sale_status\trefund_status\treturn_status\tinspection\trequested_qty\taccepted_qty\tinventory_return_qty\tgross\tbenefit\tnet\tapproved\trefunded\tpayment_delta\tpayment_cumulative\tpayment_remaining\tpayment_effect_status\tbenefit_reversal_status\tbenefit_reversed\trecorded_benefit\tfunding_reversed\tbenefit_rows\tfunding_rows\tentitlement_apps\tentitlement_effects\tretained_entitlements\treturned_entitlements\tsettlement_status\torder_return_full\tsettlement_qty\tsettlement_refunded\torder_returned_qty\torder_total_qty\torder_status\trecorded_order_valid\treadiness\trecovery"
     echo "$result"
     IFS=$'\t' read -r saga_events saga_version saga_status after_sale_status refund_status return_status inspection \
-      requested_qty accepted_qty inventory_return_qty gross benefit net approved refunded payment_refunded \
+      requested_qty accepted_qty inventory_return_qty gross benefit net approved refunded payment_delta \
+      payment_cumulative payment_remaining payment_effect_status \
       benefit_reversal_status benefit_reversed recorded_benefit funding_reversed benefit_rows funding_rows \
-      entitlement_apps returned_entitlements \
-      order_status payment_status recorded_order_valid readiness recovery <<< "$result"
-    saga_baseline=10
+      entitlement_apps entitlement_effects retained_entitlements returned_entitlements \
+      settlement_status order_return_full settlement_qty settlement_refunded \
+      order_returned_qty order_total_qty order_status recorded_order_valid readiness recovery <<< "$result"
+    saga_baseline=8
     benefit_reconciled=false
     if [[ "$benefit" =~ ^[0-9]+$ && "$benefit" -gt 0 ]]; then
-      saga_baseline=12
+      saga_baseline=10
       [[ "$benefit_reversal_status" == "RECORDED" && "$benefit_reversed" == "$benefit" \
          && "$recorded_benefit" == "$benefit" && "$funding_reversed" == "$benefit" \
          && "$benefit_rows" =~ ^[1-9][0-9]*$ && "$funding_rows" =~ ^[1-9][0-9]*$ \
-         && "$entitlement_apps" == "$returned_entitlements" ]] \
+         && "$entitlement_apps" == "$entitlement_effects" \
+         && $((retained_entitlements + returned_entitlements)) -eq "$entitlement_effects" ]] \
         && benefit_reconciled=true
     elif [[ "$benefit" == "0" && "$benefit_reversal_status" == "NOT_REQUIRED" \
             && "$benefit_reversed" == "0" ]]; then
       benefit_reconciled=true
+    fi
+    terminal_reconciled=false
+    if [[ "$order_return_full" == "1" && "$settlement_status" == "FULL" \
+          && "$order_returned_qty" == "$order_total_qty" \
+          && "$payment_effect_status" == "REFUNDED" && "$payment_remaining" == "0" \
+          && "$order_status" == "RETURNED" ]]; then
+      saga_baseline=$((saga_baseline + 4))
+      terminal_reconciled=true
+    elif [[ "$order_return_full" == "0" && "$settlement_status" == "PARTIAL" \
+            && "$order_returned_qty" != "$order_total_qty" \
+            && "$payment_effect_status" == "PARTIALLY_REFUNDED" \
+            && "$payment_remaining" =~ ^[1-9][0-9]*$ ]]; then
+      terminal_reconciled=true
     fi
     [[ "$saga_events" == "$saga_version" && "$saga_version" =~ ^[0-9]+$ \
        && "$saga_version" -ge "$saga_baseline" \
@@ -568,9 +600,11 @@ case "$COMMAND" in
        && "$return_status" == "INSPECTION_ACCEPTED" && "$inspection" == "ACCEPTED" \
        && "$requested_qty" == "$accepted_qty" && "$accepted_qty" == "$inventory_return_qty" \
        && "$gross" -eq $((benefit + net)) && "$net" == "$approved" \
-       && "$approved" == "$refunded" && "$refunded" == "$payment_refunded" \
+       && "$approved" == "$refunded" && "$refunded" == "$payment_delta" \
+       && "$payment_cumulative" == "$settlement_refunded" \
+       && "$settlement_qty" == "$requested_qty" \
        && "$benefit_reconciled" == "true" \
-       && "$order_status" == "RETURNED" && "$payment_status" == "REFUNDED" \
+       && "$terminal_reconciled" == "true" \
        && "$recorded_order_valid" == "1" && "$readiness" == "RECONCILED" ]] || {
       echo "canonical after-sales reconciliation failed" >&2
       exit 1

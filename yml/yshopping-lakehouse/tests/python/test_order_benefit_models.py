@@ -147,7 +147,10 @@ class OrderBenefitModelsTest(unittest.TestCase):
         dqc = (ROOT / "tests/sql/28-canonical-after-sale-benefit-reversal-contract.sql").read_text(
             encoding="utf-8")
 
-        for field in ("entitlement_application_count", "returned_entitlement_count"):
+        for field in (
+            "entitlement_application_count", "entitlement_effect_count",
+            "retained_entitlement_count", "returned_entitlement_count",
+        ):
             self.assertIn(field, reversal)
             self.assertIn(field, resolution)
             self.assertIn(field, readiness)
@@ -155,7 +158,29 @@ class OrderBenefitModelsTest(unittest.TestCase):
         self.assertIn("WITH expected_entitlements AS", reversal)
         self.assertIn("application.entitlement_id IS NOT NULL", reversal)
         self.assertIn("COUNT(DISTINCT application.benefit_application_id)", reversal)
-        self.assertIn("entitlement_application_count = returned_entitlement_count", readiness)
+        self.assertIn("entitlement_application_count = entitlement_effect_count", readiness)
+        self.assertIn("retained_entitlement_count + returned_entitlement_count", readiness)
+        self.assertIn("application_reversed_through_event < application.amount_minor", reversal)
+        self.assertIn("application_reversed_through_event = application.amount_minor", reversal)
+
+    def test_after_sale_readiness_validates_legacy_and_cumulative_contracts_separately(self):
+        resolution = (ROOT / "models/dws/dws-canonical-after-sale-resolution-current.sql").read_text(
+            encoding="utf-8")
+        readiness = (ROOT / "models/ads/ads-canonical-after-sale-readiness.sql").read_text(
+            encoding="utf-8")
+        dqc = (ROOT / "tests/sql/14-canonical-aftersales-return-refund-contract.sql").read_text(
+            encoding="utf-8")
+
+        self.assertIn("saga.schema_version IN (1, 2)", resolution)
+        self.assertIn("saga.schema_version = 3", resolution)
+        self.assertIn("saga_schema_version IN (1, 2)", readiness)
+        self.assertIn("saga_schema_version = 3", readiness)
+        self.assertIn("recorded_order_settlement_effect_id IS NULL", readiness)
+        self.assertIn("schema_version IN (1, 2) AND previous_status = 'PAYMENT_REFUNDED'", dqc)
+        self.assertIn("schema_version = 3 AND previous_status = 'PAYMENT_REFUNDED'", dqc)
+        self.assertIn("schema_version = 1 AND benefit_amount_minor = 0", dqc)
+        self.assertIn("schema_version = 2", dqc)
+        self.assertIn("schema_version = 3", dqc)
 
     def test_dqc_locks_conservation_identity_sequence_and_nonempty_readiness(self):
         dqc = (ROOT / "tests/sql/27-canonical-order-benefit-contract.sql").read_text(encoding="utf-8")

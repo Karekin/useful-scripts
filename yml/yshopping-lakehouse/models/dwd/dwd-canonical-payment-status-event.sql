@@ -20,6 +20,9 @@ SELECT
     CAST(get_json_string(payload, '$.payable_amount_minor') AS BIGINT) AS payable_amount_minor,
     CAST(get_json_string(payload, '$.captured_amount_minor') AS BIGINT) AS captured_amount_minor,
     CAST(get_json_string(payload, '$.refunded_amount_minor') AS BIGINT) AS refunded_amount_minor,
+    CAST(get_json_string(payload, '$.refund_amount_minor') AS BIGINT) AS refund_amount_minor,
+    CAST(get_json_string(payload, '$.remaining_refundable_amount_minor') AS BIGINT)
+        AS remaining_refundable_amount_minor,
     get_json_string(payload, '$.currency_code') AS currency_code,
     get_json_string(payload, '$.provider_code') AS provider_code,
     get_json_string(payload, '$.provider_transaction_id') AS provider_transaction_id,
@@ -29,5 +32,5 @@ SELECT
     ,CAST(get_json_string(payload, '$.step_ordinal') AS INT) AS step_ordinal
 FROM yshopping_dwd.dwd_domain_event
 WHERE event_type = 'payment.status.changed'
-  AND schema_version IN (1, 2)
+  AND schema_version IN (1, 2, 3)
   AND source_system = 'cloudmold-payment';

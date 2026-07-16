@@ -1,0 +1,32 @@
+{
+  "event_id": "98300000-0000-4000-8000-000000000001",
+  "event_type": "after_sale.resolution_saga.status.changed",
+  "schema_version": 3,
+  "tenant_id": 1,
+  "aggregate_type": "after_sale_resolution_saga",
+  "aggregate_id": "98300000-0000-4000-8000-000000000002",
+  "aggregate_version": 10,
+  "event_sequence": 1,
+  "idempotency_key": "after-sale-saga:98300000-0000-4000-8000-000000000002:event:10",
+  "correlation_id": "98300000-0000-4000-8000-000000000003",
+  "causation_id": "98300000-0000-4000-8000-000000000004",
+  "occurred_at": "2026-07-17T01:00:05.000Z",
+  "recorded_at": "2026-07-17T01:00:05.100Z",
+  "source_system": "cloudmold-aftersales",
+  "destination": "lakehouse",
+  "payload": {
+    "run_id": "partial-return-example", "saga_id": "98300000-0000-4000-8000-000000000002",
+    "after_sale_id": "98300000-0000-4000-8000-000000000005", "after_sale_item_id": "98300000-0000-4000-8000-000000000006",
+    "order_id": "98300000-0000-4000-8000-000000000007", "order_item_id": "98300000-0000-4000-8000-000000000008", "payment_id": "98300000-0000-4000-8000-000000000009",
+    "return_fulfillment_id": "98300000-0000-4000-8000-000000000010", "return_shipment_id": "98300000-0000-4000-8000-000000000011", "inspection_id": "98300000-0000-4000-8000-000000000012", "canonical_sku_id": "98300000-0000-4000-8000-000000000013",
+    "quantity": "1", "accepted_quantity": "1", "returned_quantity": "1", "uom_code": "PCS",
+    "approved_amount_minor": 967, "gross_amount_minor": 1000, "benefit_amount_minor": 33, "net_amount_minor": 967, "refunded_amount_minor": 967, "currency_code": "CNY",
+    "previous_status": "ORDER_SETTLED", "current_status": "COMPLETED", "active_step": "NONE", "step_ordinal": 7, "attempt": 1,
+    "inventory_operation_id": 101, "inventory_ledger_transaction_id": 102,
+    "benefit_reversal_status": "RECORDED", "benefit_reversal_batch_id": "98300000-0000-4000-8000-000000000014", "benefit_reversal_amount_minor": 33,
+    "payment_refund_transaction_id": 103, "order_settlement_effect_id": "98300000-0000-4000-8000-000000000015", "order_settlement_version": 1, "order_return_full": false,
+    "order_refund_operation_id": null, "order_return_operation_id": null, "order_version": 5,
+    "checkpoints": {"inventory_returned": true, "benefit_reversed": true, "payment_refunded": true, "order_settled": true, "order_refund_confirmed": false, "order_returned": false},
+    "error_code": null, "error_message": null, "next_retry_at": null
+  }
+}

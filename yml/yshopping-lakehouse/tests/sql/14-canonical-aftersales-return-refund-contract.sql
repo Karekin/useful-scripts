@@ -4,7 +4,8 @@ FROM (
   FROM yshopping_dwd.dwd_domain_event
   WHERE event_type IN ('after_sale.status.changed', 'after_sale.refund.status.changed',
                        'return_fulfillment.status.changed', 'return_fulfillment.inspection.decided',
-                       'after_sale.resolution_saga.status.changed')
+                       'after_sale.resolution_saga.status.changed',
+                       'order.after_sale_settlement.recorded')
   GROUP BY event_type, tenant_id, aggregate_id
   HAVING MIN(aggregate_version) <> 1 OR MAX(aggregate_version) <> COUNT(*)
 ) gap
@@ -15,7 +16,8 @@ FROM (
   FROM yshopping_dwd.dwd_domain_event
   WHERE event_type IN ('after_sale.status.changed', 'after_sale.refund.status.changed',
                        'return_fulfillment.status.changed', 'return_fulfillment.inspection.decided',
-                       'after_sale.resolution_saga.status.changed')
+                       'after_sale.resolution_saga.status.changed',
+                       'order.after_sale_settlement.recorded')
   GROUP BY event_id HAVING COUNT(*) > 1
 ) duplicate_event
 UNION ALL
@@ -25,7 +27,8 @@ FROM (
   FROM yshopping_dwd.dwd_domain_event
   WHERE event_type IN ('after_sale.status.changed', 'after_sale.refund.status.changed',
                        'return_fulfillment.status.changed', 'return_fulfillment.inspection.decided',
-                       'after_sale.resolution_saga.status.changed')
+                       'after_sale.resolution_saga.status.changed',
+                       'order.after_sale_settlement.recorded')
   GROUP BY tenant_id, event_type, idempotency_key HAVING COUNT(*) > 1
 ) duplicate_replay
 UNION ALL
@@ -97,30 +100,61 @@ WHERE NOT (
     OR (previous_status = 'REVERSING_BENEFITS' AND current_status IN ('BENEFITS_REVERSED', 'RETRY_SCHEDULED', 'MANUAL_REVIEW'))
     OR (previous_status = 'BENEFITS_REVERSED' AND current_status = 'REFUNDING_PAYMENT')
     OR (previous_status = 'REFUNDING_PAYMENT' AND current_status IN ('PAYMENT_REFUNDED', 'RETRY_SCHEDULED', 'MANUAL_REVIEW'))
-    OR (previous_status = 'PAYMENT_REFUNDED' AND current_status = 'CONFIRMING_ORDER_REFUND')
+    OR (schema_version IN (1, 2) AND previous_status = 'PAYMENT_REFUNDED'
+        AND current_status = 'CONFIRMING_ORDER_REFUND')
+    OR (schema_version = 3 AND previous_status = 'PAYMENT_REFUNDED'
+        AND current_status = 'SETTLING_ORDER')
+    OR (previous_status = 'SETTLING_ORDER' AND current_status IN ('ORDER_SETTLED', 'RETRY_SCHEDULED', 'MANUAL_REVIEW'))
+    OR (previous_status = 'ORDER_SETTLED' AND current_status IN ('CONFIRMING_ORDER_REFUND', 'COMPLETED'))
     OR (previous_status = 'CONFIRMING_ORDER_REFUND' AND current_status IN ('ORDER_REFUNDED', 'RETRY_SCHEDULED', 'MANUAL_REVIEW'))
     OR (previous_status = 'ORDER_REFUNDED' AND current_status = 'RETURNING_ORDER')
     OR (previous_status = 'RETURNING_ORDER' AND current_status IN ('ORDER_RETURNED', 'RETRY_SCHEDULED', 'MANUAL_REVIEW'))
     OR (previous_status = 'ORDER_RETURNED' AND current_status = 'COMPLETED')
-    OR (previous_status = 'RETRY_SCHEDULED' AND current_status IN ('RETURNING_INVENTORY', 'REVERSING_BENEFITS', 'REFUNDING_PAYMENT', 'CONFIRMING_ORDER_REFUND', 'RETURNING_ORDER', 'MANUAL_REVIEW'))
+    OR (previous_status = 'RETRY_SCHEDULED' AND current_status IN ('RETURNING_INVENTORY', 'REVERSING_BENEFITS', 'REFUNDING_PAYMENT', 'SETTLING_ORDER', 'CONFIRMING_ORDER_REFUND', 'RETURNING_ORDER', 'MANUAL_REVIEW'))
     OR (previous_status = 'MANUAL_REVIEW' AND current_status = 'RETRY_SCHEDULED')
 )
 UNION ALL
 SELECT 'canonical_after_sale_saga_terminal_shape', COUNT(*)
 FROM yshopping_dwd.dwd_canonical_after_sale_resolution_saga_event
 WHERE current_status = 'COMPLETED' AND (
-      aggregate_version < IF(benefit_amount_minor = 0, 10, 12)
-   OR MOD(aggregate_version - IF(benefit_amount_minor = 0, 10, 12), 2) <> 0
-   OR active_step <> 'NONE' OR step_ordinal <> IF(benefit_amount_minor = 0, 5, 6)
+      NOT (
+         (schema_version = 1 AND benefit_amount_minor = 0
+           AND aggregate_version >= 10 AND MOD(aggregate_version - 10, 2) = 0
+           AND step_ordinal = 5)
+      OR (schema_version = 2
+           AND aggregate_version >= IF(benefit_amount_minor = 0, 10, 12)
+           AND MOD(aggregate_version - IF(benefit_amount_minor = 0, 10, 12), 2) = 0
+           AND step_ordinal = 6)
+      OR (schema_version = 3
+           AND aggregate_version >= IF(benefit_amount_minor = 0, 8, 10)
+                                    + IF(order_return_full, 4, 0)
+           AND MOD(aggregate_version - IF(benefit_amount_minor = 0, 8, 10)
+                                 - IF(order_return_full, 4, 0), 2) = 0
+           AND step_ordinal = 7)
+      )
+   OR active_step <> 'NONE'
    OR accepted_quantity <> quantity OR returned_quantity <> quantity
    OR approved_amount_minor <> refunded_amount_minor
    OR inventory_operation_id IS NULL OR inventory_ledger_transaction_id IS NULL
-   OR payment_refund_transaction_id IS NULL OR order_refund_operation_id IS NULL
-   OR order_return_operation_id IS NULL OR order_version IS NULL
+   OR payment_refund_transaction_id IS NULL OR order_version IS NULL
+   OR (schema_version IN (1, 2)
+       AND (order_refund_operation_id IS NULL OR order_return_operation_id IS NULL))
+   OR (schema_version = 3 AND (
+          order_settlement_effect_id IS NULL OR order_settlement_version IS NULL
+       OR order_return_full IS NULL
+       OR (order_return_full = TRUE
+           AND (order_refund_operation_id IS NULL OR order_return_operation_id IS NULL))
+       OR (order_return_full = FALSE
+           AND (order_refund_operation_id IS NOT NULL OR order_return_operation_id IS NOT NULL))))
    OR get_json_bool(checkpoints, '$.inventory_returned') <> TRUE
    OR get_json_bool(checkpoints, '$.payment_refunded') <> TRUE
-   OR get_json_bool(checkpoints, '$.order_refund_confirmed') <> TRUE
-   OR get_json_bool(checkpoints, '$.order_returned') <> TRUE
+   OR (schema_version IN (1, 2) AND (
+          get_json_bool(checkpoints, '$.order_refund_confirmed') <> TRUE
+       OR get_json_bool(checkpoints, '$.order_returned') <> TRUE))
+   OR (schema_version = 3 AND (
+          get_json_bool(checkpoints, '$.order_settled') <> TRUE
+       OR get_json_bool(checkpoints, '$.order_refund_confirmed') <> order_return_full
+       OR get_json_bool(checkpoints, '$.order_returned') <> order_return_full))
    OR error_code IS NOT NULL OR error_message IS NOT NULL OR next_retry_at IS NOT NULL
 );
 
@@ -164,9 +198,8 @@ WHERE after_sale_id IS NULL OR order_id IS NULL OR order_item_id IS NULL OR paym
    OR inspection_after_sale_item_id <> after_sale_item_id
    OR refund_after_sale_item_id <> after_sale_item_id
    OR original_order_sku_id IS NULL OR original_order_sku_id <> canonical_sku_id
-   OR original_order_quantity <> requested_quantity
+   OR requested_quantity <= 0 OR requested_quantity > original_order_quantity
    OR original_order_line_amount_minor <> original_order_discount_amount_minor + original_order_net_amount_minor
-   OR original_order_net_amount_minor <> approved_amount_minor
    OR original_listing_id <> listing_id OR original_offer_id <> offer_id
    OR return_fulfillment_id IS NULL OR inspection_id IS NULL
    OR requested_quantity <> received_quantity
@@ -179,6 +212,8 @@ WHERE after_sale_id IS NULL OR order_id IS NULL OR order_item_id IS NULL OR paym
    OR reported_returned_quantity <> inventory_return_quantity
    OR reported_uom_code <> return_uom_code
    OR reported_approved_amount_minor <> approved_amount_minor
+   OR reported_approved_amount_minor <> reported_net_amount_minor
+   OR reported_gross_amount_minor <> reported_benefit_amount_minor + reported_net_amount_minor
    OR reported_refunded_amount_minor <> refunded_amount_minor
    OR reported_currency_code <> currency_code
 UNION ALL
@@ -202,7 +237,8 @@ SELECT 'canonical_aftersales_pii_isolation', COUNT(*)
 FROM yshopping_dwd.dwd_domain_event
 WHERE event_type IN ('after_sale.status.changed', 'after_sale.refund.status.changed',
                      'return_fulfillment.status.changed', 'return_fulfillment.inspection.decided',
-                     'after_sale.resolution_saga.status.changed')
+                     'after_sale.resolution_saga.status.changed',
+                     'order.after_sale_settlement.recorded')
   AND (LOWER(CAST(payload AS STRING)) LIKE '%buyer_phone%'
     OR LOWER(CAST(payload AS STRING)) LIKE '%receiver_phone%'
     OR LOWER(CAST(payload AS STRING)) LIKE '%receiver_name%'

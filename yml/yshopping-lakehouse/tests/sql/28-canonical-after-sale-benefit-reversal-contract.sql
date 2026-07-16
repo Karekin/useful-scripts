@@ -7,12 +7,15 @@ UNION ALL
 SELECT 'after_sale_benefit_reversal_payload_identity_invalid', COUNT(*)
 FROM yshopping_dwd.dwd_canonical_after_sale_benefit_reversal_event
 WHERE payload_benefit_reversal_id <> benefit_reversal_id
-   OR aggregate_version <> 1 OR schema_version <> 1
+   OR aggregate_version <> 1 OR schema_version NOT IN (1, 2)
    OR amount_minor <= 0 OR currency_code <> 'CNY'
-   OR NOT ((entitlement_id IS NULL AND entitlement_effect_status = 'NOT_REQUIRED')
-       OR (entitlement_id IS NOT NULL AND entitlement_effect_status = 'RETURNED'
-           AND benefit_type = 'COUPON' AND benefit_source_type = 'COUPON_ENTITLEMENT'
-           AND benefit_source_id = entitlement_id));
+   OR NOT (
+        (entitlement_id IS NULL AND entitlement_effect_status = 'NOT_REQUIRED')
+     OR (entitlement_id IS NOT NULL
+         AND entitlement_effect_status IN ('RETAINED_PARTIAL', 'RETURNED')
+         AND benefit_type = 'COUPON' AND benefit_source_type = 'COUPON_ENTITLEMENT'
+         AND benefit_source_id = entitlement_id)
+   );
 
 SELECT 'after_sale_benefit_reversal_allocation_not_exact', COUNT(*)
 FROM yshopping_dws.dws_canonical_after_sale_benefit_reversal_current
@@ -24,7 +27,8 @@ WHERE entitlement_effect_mismatch_count <> 0
 UNION ALL
 SELECT 'after_sale_benefit_reversal_entitlement_cardinality_invalid', COUNT(*)
 FROM yshopping_dws.dws_canonical_after_sale_benefit_reversal_current
-WHERE entitlement_application_count <> returned_entitlement_count
+WHERE entitlement_application_count <> entitlement_effect_count
+   OR retained_entitlement_count + returned_entitlement_count <> entitlement_effect_count
 UNION ALL
 SELECT 'after_sale_benefit_reversal_funding_not_exact', COUNT(*)
 FROM yshopping_dws.dws_canonical_after_sale_benefit_reversal_current
@@ -50,7 +54,7 @@ SELECT 'after_sale_benefit_reversal_effect_order_invalid', COUNT(*)
 FROM yshopping_dws.dws_canonical_after_sale_resolution_current
 WHERE reported_benefit_amount_minor > 0 AND saga_status = 'COMPLETED'
   AND (inventory_returned_recorded_at > benefit_reversal_recorded_at
-    OR benefit_reversal_recorded_at > refund_succeeded_recorded_at);
+    OR benefit_reversal_recorded_at > payment_refunded_recorded_at);
 
 SELECT 'after_sale_benefit_reversal_completed_unreconciled', COUNT(*)
 FROM yshopping_ads.ads_canonical_after_sale_readiness

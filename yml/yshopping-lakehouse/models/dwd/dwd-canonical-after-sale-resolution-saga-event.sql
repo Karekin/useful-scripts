@@ -38,6 +38,9 @@ SELECT
     COALESCE(CAST(get_json_string(payload, '$.benefit_reversal_amount_minor') AS BIGINT), 0)
         AS benefit_reversal_amount_minor,
     CAST(get_json_string(payload, '$.payment_refund_transaction_id') AS BIGINT) AS payment_refund_transaction_id,
+    get_json_string(payload, '$.order_settlement_effect_id') AS order_settlement_effect_id,
+    CAST(get_json_string(payload, '$.order_settlement_version') AS BIGINT) AS order_settlement_version,
+    get_json_bool(payload, '$.order_return_full') AS order_return_full,
     CAST(get_json_string(payload, '$.order_refund_operation_id') AS BIGINT) AS order_refund_operation_id,
     CAST(get_json_string(payload, '$.order_return_operation_id') AS BIGINT) AS order_return_operation_id,
     CAST(get_json_string(payload, '$.order_version') AS BIGINT) AS order_version,
@@ -46,5 +49,5 @@ SELECT
     get_json_string(payload, '$.next_retry_at') AS next_retry_at
 FROM yshopping_dwd.dwd_domain_event
 WHERE event_type = 'after_sale.resolution_saga.status.changed'
-  AND schema_version IN (1, 2)
+  AND schema_version IN (1, 2, 3)
   AND source_system = 'cloudmold-aftersales';

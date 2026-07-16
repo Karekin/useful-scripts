@@ -22,5 +22,5 @@ SELECT
     json_query(payload, '$.funding') AS funding
 FROM yshopping_dwd.dwd_domain_event
 WHERE event_type = 'after_sale.benefit_reversal.recorded'
-  AND schema_version = 1
+  AND schema_version IN (1, 2)
   AND source_system = 'cloudmold-aftersales';

@@ -1,7 +1,7 @@
 name: canonical-aftersales-return-refund
-version: 1
+version: 2
 owner: CloudMold
-scope: delivered-order-full-return-and-refund
+scope: delivered-order-partial-multi-line-and-full-return-refund
 
 identity:
   tenant_key: tenant_id
@@ -13,36 +13,46 @@ identity:
   resolution_saga_key: [tenant_id, saga_id]
   benefit_reversal_key: [tenant_id, benefit_reversal_id]
   benefit_funding_reversal_key: [tenant_id, funding_reversal_id]
+  order_return_settlement_key: [tenant_id, order_id]
+  order_item_return_settlement_key: [tenant_id, order_item_id]
+  order_return_effect_key: [tenant_id, settlement_effect_id]
 
 events:
   - {type: after_sale.status.changed, schema_version: 1, source_system: cloudmold-aftersales}
   - {type: after_sale.refund.status.changed, schema_version: 2, source_system: cloudmold-aftersales}
   - {type: return_fulfillment.status.changed, schema_version: 1, source_system: cloudmold-fulfillment}
   - {type: return_fulfillment.inspection.decided, schema_version: 1, source_system: cloudmold-fulfillment}
-  - {type: after_sale.resolution_saga.status.changed, schema_version: 2, source_system: cloudmold-aftersales}
-  - {type: after_sale.benefit_reversal.recorded, schema_version: 1, source_system: cloudmold-aftersales}
+  - {type: after_sale.resolution_saga.status.changed, schema_version: 3, source_system: cloudmold-aftersales}
+  - {type: after_sale.benefit_reversal.recorded, schema_version: 2, source_system: cloudmold-aftersales}
+  - {type: payment.status.changed, schema_version: 3, source_system: cloudmold-payment}
+  - {type: order.after_sale_settlement.recorded, schema_version: 1, source_system: cloudmold-order}
 
 effect_order:
   - RETURN_ACCEPTED
   - INVENTORY_RETURNED
   - BENEFIT_REVERSED
   - PAYMENT_REFUNDED
-  - ORDER_RETURNED
+  - ORDER_RETURN_SETTLED
+  - ORDER_TERMINALIZED_IF_FULL
   - AFTER_SALE_COMPLETED
 
 invariants:
   - all participant references are exact tenant-scoped identifiers rather than inferred from run_id
   - after_sale_item_id identifies the return fact while order_item_id only links back to the original sale line
   - received quantity equals accepted quantity plus rejected quantity
-  - a completed full return has accepted quantity equal to returned quantity equal to requested quantity
+  - each completed return case has accepted quantity equal to returned quantity equal to requested quantity
+  - requested case quantity is positive and never exceeds the order item's remaining returnable quantity
+  - multiple immutable return effects may target one order item and multiple items may settle independently
   - gross amount equals benefit amount plus net cash amount and the approved refund equals net cash only
-  - every benefit reversal exactly reproduces one original immutable order benefit allocation
-  - every benefit funding reversal exactly reproduces the original funding share and conserves the allocation total
-  - controlled promotion benefits without entitlements are reversible; entitlement-backed benefits fail closed until Promotion return ownership is integrated
-  - refunded minor amount never exceeds the approved net cash entitlement and currency is stable
+  - cumulative benefit reversal per allocation never exceeds the immutable original and the final slice absorbs rounding residuals
+  - every benefit funding reversal is proportional to the original funding share and each case conserves its allocation delta
+  - entitlement-backed benefits remain retained during partial reversal and return only when the application is fully reversed
+  - each refund transaction equals the case net entitlement while cumulative refunded money never exceeds capture
   - inventory return is recorded only after an accepted inspection
   - benefit reversal is recorded after inventory return and before payment refund when benefit amount is positive
-  - payment refund is recorded only after inventory and benefit reversal checkpoints and before order return
+  - payment refund is recorded only after inventory and benefit reversal checkpoints and before order settlement
+  - partial settlement leaves commercial order status COMPLETED and payment status PARTIALLY_REFUNDED
+  - only an order-wide fully reconciled settlement may transition payment to REFUNDED and order to REFUNDED then RETURNED
   - cancellation and after-sale return events never share the same resolution Saga
   - every idempotency key creates at most one published event per tenant and event type
   - return shipping money uses integer minor units and the same three-letter currency code

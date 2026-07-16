@@ -30,15 +30,35 @@ class LakehouseCtlContractTest(unittest.TestCase):
         self.assertIn('"$funding_amount" == "$item_discount"', script)
         self.assertIn('"$readiness" == "RECONCILED"', script)
 
-    def test_aftersales_reconciliation_accepts_even_retry_versions_and_exact_benefit_reversal(self):
+    def test_aftersales_reconciliation_accepts_partial_and_full_cumulative_returns(self):
         script = SCRIPT.read_text(encoding="utf-8")
-        self.assertIn('saga_baseline=12', script)
+        self.assertIn('saga_baseline=8', script)
+        self.assertIn('saga_baseline=10', script)
+        self.assertIn('saga_baseline=$((saga_baseline + 4))', script)
         self.assertIn('$(((saga_version - saga_baseline) % 2)) -eq 0', script)
         self.assertIn('"$gross" -eq $((benefit + net))', script)
         self.assertIn('"$benefit_reversal_status" == "RECORDED"', script)
         self.assertIn('"$recorded_benefit" == "$benefit"', script)
         self.assertIn('"$funding_reversed" == "$benefit"', script)
-        self.assertIn('"$entitlement_apps" == "$returned_entitlements"', script)
+        self.assertIn('"$entitlement_apps" == "$entitlement_effects"', script)
+        self.assertIn('"$payment_effect_status" == "PARTIALLY_REFUNDED"', script)
+        self.assertIn('"$payment_effect_status" == "REFUNDED"', script)
+        self.assertIn('"$settlement_qty" == "$requested_qty"', script)
+
+    def test_aftersales_reconciliation_rejects_non_uuid_after_sale_id(self):
+        result = self.run_ctl(
+            "reconcile-canonical-aftersales",
+            "--tenant", "1",
+            "--run-id", "run-1",
+            "--after-sale-id", "not-a-uuid",
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--after-sale-id must be a UUID", result.stderr)
+
+    def test_aftersales_reconciliation_can_select_one_case_from_a_multi_case_run(self):
+        script = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn("after_sale_filter=\" AND after_sale_id='$AFTER_SALE_ID'\"", script)
+        self.assertIn("run_id='$safe_run_id'$after_sale_filter", script)
 
     def test_merchant_reconciliation_rejects_non_uuid_before_querying(self):
         result = self.run_ctl(

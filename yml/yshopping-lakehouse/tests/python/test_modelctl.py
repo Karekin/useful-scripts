@@ -62,9 +62,9 @@ class ModelCtlTest(unittest.TestCase):
             positions["models/dws/dws-canonical-paid-order-cancellation-saga-current.sql"],
         )
 
-    def test_models_extend_manifest_to_one_hundred_seventy_two_in_dependency_order(self):
+    def test_models_extend_manifest_to_one_hundred_seventy_five_in_dependency_order(self):
         order = MODEL.load_order()
-        self.assertEqual(len(order), 172)
+        self.assertEqual(len(order), 175)
         positions = {entry: index for index, entry in enumerate(order)}
         paid_dws = "models/dws/dws-canonical-paid-order-cancellation-saga-current.sql"
         paid_ads = "models/ads/ads-canonical-paid-order-cancellation-saga-readiness.sql"
@@ -90,6 +90,13 @@ class ModelCtlTest(unittest.TestCase):
         self.assertLess(positions[benefit_reversal_dwd], positions[benefit_reversal_dim])
         self.assertLess(positions[benefit_reversal_dim], positions[benefit_reversal_dws])
         self.assertLess(positions[benefit_reversal_dws], positions[after_sale_dws])
+        settlement_dwd = "models/dwd/dwd-canonical-order-after-sale-settlement-event.sql"
+        order_settlement_dim = "models/dim/dim-canonical-order-return-settlement-current.sql"
+        item_settlement_dim = "models/dim/dim-canonical-order-item-return-settlement-current.sql"
+        self.assertLess(positions[settlement_dwd], positions[order_settlement_dim])
+        self.assertLess(positions[settlement_dwd], positions[item_settlement_dim])
+        self.assertLess(positions[order_settlement_dim], positions[after_sale_dws])
+        self.assertLess(positions[item_settlement_dim], positions[after_sale_dws])
 
         migration_qualification_dwd = "models/dwd/dwd-canonical-inventory-migration-qualification-event.sql"
         migration_qualification_dim = "models/dim/dim-canonical-inventory-migration-qualification-current.sql"

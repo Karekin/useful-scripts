@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/order-after-sale-settlement-recorded-v1.schema.json",
+  "title": "order.after_sale_settlement.recorded payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["run_id", "settlement_effect_id", "after_sale_id", "after_sale_item_id", "order_id", "order_item_id", "quantity", "gross_amount_minor", "benefit_amount_minor", "net_amount_minor", "inventory_operation_id", "inventory_ledger_transaction_id", "payment_refund_transaction_id", "benefit_reversal_batch_id", "item_returned_quantity", "item_ordered_quantity", "order_returned_quantity", "order_total_quantity", "refunded_net_amount_minor", "reversed_benefit_amount_minor", "settlement_status", "full_return"],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "settlement_effect_id": {"type": "string", "format": "uuid"},
+    "after_sale_id": {"type": "string", "format": "uuid"},
+    "after_sale_item_id": {"type": "string", "format": "uuid"},
+    "order_id": {"type": "string", "format": "uuid"},
+    "order_item_id": {"type": "string", "format": "uuid"},
+    "quantity": {"type": "string", "pattern": "^[1-9][0-9]*(\\.0{1,6})?$"},
+    "gross_amount_minor": {"type": "integer", "minimum": 0},
+    "benefit_amount_minor": {"type": "integer", "minimum": 0},
+    "net_amount_minor": {"type": "integer", "minimum": 1},
+    "inventory_operation_id": {"type": "integer", "minimum": 1},
+    "inventory_ledger_transaction_id": {"type": "integer", "minimum": 1},
+    "payment_refund_transaction_id": {"type": "integer", "minimum": 1},
+    "benefit_reversal_batch_id": {"type": ["string", "null"], "format": "uuid"},
+    "item_returned_quantity": {"type": "string", "pattern": "^[1-9][0-9]*(\\.[0-9]{1,6})?$"},
+    "item_ordered_quantity": {"type": "string", "pattern": "^[1-9][0-9]*(\\.[0-9]{1,6})?$"},
+    "order_returned_quantity": {"type": "string", "pattern": "^[1-9][0-9]*(\\.[0-9]{1,6})?$"},
+    "order_total_quantity": {"type": "string", "pattern": "^[1-9][0-9]*(\\.[0-9]{1,6})?$"},
+    "refunded_net_amount_minor": {"type": "integer", "minimum": 1},
+    "reversed_benefit_amount_minor": {"type": "integer", "minimum": 0},
+    "settlement_status": {"type": "string", "enum": ["PARTIAL", "FULL"]},
+    "full_return": {"type": "boolean"}
+  }
+}
