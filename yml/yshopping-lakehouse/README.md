@@ -93,7 +93,7 @@ zero-difference checks, and a separately checksummed independent verifier.
 Documentation volume estimates (for example “15.96 亿”) are never used as a
 denominator. A merely non-empty JSON file can no longer promote any of the 718
 assets to `verified`.
-The governed detailed-disposition numerator is now 75/718. The Product
+The governed detailed-disposition numerator is now 76/718. The Product
 slice covers all ten authoritative 商品 overview assets: nine DDL-backed assets
 are specified across Catalog, Listing, workflow, Identity/Merchant and Quality
 boundaries; the personnel salary asset remains provisional because its detailed
@@ -140,6 +140,14 @@ attempt and receipt remain distinct; coupon ids cannot fabricate entitlements.
 Favorite and reminder behavior is append-only, SPU/SKU require canonical
 mappings, and all price observations remain quarantined until currency and
 minor-unit semantics are proven. These four assets remain runtime-unverified.
+The Compensation slice governs all three 赔付 overview assets while granting
+strict detail credit only to the same-name compensation bill DDL. A bill is
+split into Customer Service case/decision, typed compensation entitlement,
+Order/AfterSale references and separate Payment, Promotion or Ledger execution;
+approval never proves those effects. Detail and customer-service transfer stay
+provisional without schemas. The unadvertised reason-table DDL becomes a
+versioned taxonomy but receives no 718-denominator credit. Currency, unit,
+named funder, account-token and exact execution evidence remain mandatory.
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%

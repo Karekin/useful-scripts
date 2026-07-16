@@ -1,0 +1,45 @@
+{
+  "contract_version": 1,
+  "contract_id": "yshopping.compensation.source-disposition.v1",
+  "source_scope": {
+    "domain": "赔付",
+    "authoritative_document": "ODS语兴好物（y shopping）电商数据表.md",
+    "authoritative_overview_lines": "151-154",
+    "expected_asset_count": 3,
+    "expected_source_evidence_counts": {"ddl_backed": 1, "overview_only": 2},
+    "unadvertised_detailed_asset_count": 1,
+    "source_detail_limit": "Only the compensation bill has same-name DDL. Compensation detail and customer-service transfer have no schema. The detailed section additionally defines ods_repay_repay_reason_df, which is absent from the overview and cannot silently replace either missing asset."
+  },
+  "verification_policy": {
+    "specified_definition": "A compensation source has same-name DDL plus explicit Case/Decision/Entitlement/Payment/Promotion/AfterSale/Order authority, money/currency rules, identities, security, lifecycle and runtime gate.",
+    "verified_definition": "Verification requires non-empty production full-denominator reconciliation through exact compensation case, order/item, entitlement type, payment or coupon effect, named funder, currency and independent evidence.",
+    "empty_tables_are_evidence": false,
+    "allowed_decisions": ["reuse", "merge", "split", "derive", "correct", "reject"],
+    "allowed_model_statuses": ["partial", "missing", "rejected"],
+    "runtime_statuses": ["missing", "pending", "verified"]
+  },
+  "lifecycle_policy_defaults": {
+    "history_policy": "Compensation request, approval decision, entitlement authorization and each execution attempt append; mutable status is only a projection.",
+    "delete_policy": "Cancellation or logical deletion retires visibility but never erases approval, coupon grant, payment transfer, ledger, Order/AfterSale linkage or audit history.",
+    "backfill_policy": "Resolve tenant, buyer Principal, seller Merchant, Ticket, Order/Item, AfterSale, reason taxonomy version, entitlement type, currency/unit, named funder and exact execution evidence before replay; quarantine ambiguity."
+  },
+  "ddl_backed_assets": [
+    {
+      "source_asset":"ods_repay_repay_bill_df","source_label":"赔付单","source_anchor":{"document":"ODS语兴好物（y shopping）电商数据表.md","line":152},
+      "source_evidence":{"status":"ddl_backed","detail_anchor":{"heading_line":1499,"end_line":1544,"source_asset":"ods_repay_repay_bill_df"}},"source_grain":"one mutable compensation bill snapshot per source id/bill_no",
+      "decision":"split","canonical_entities":["customer_service.CompensationCase","customer_service.CompensationDecision","customer_service.CompensationEntitlement","customer_service.CompensationExecutionReference","order.OrderReference","aftersales.AfterSaleReference","payment.PaymentTransferReference","promotion.CouponGrantReference","workflow.ProcessReference","identity.PrincipalReference","merchant.MerchantReference"],
+      "semantic_rules":{"grain":"one stable compensation case with immutable decisions and one or more typed entitlement/execution facts","identity":"bill, ticket, process, order/sub-order, AfterSale, buyer Principal, seller Merchant, coupon entitlement and payment transfer ids remain distinct qualified identities","money_or_quantity":"order_amount and cash/coin/coupon rules require ISO currency, minor-unit or typed points unit, exact approved amount, named funder and conservation; no cross-unit sum","history":"request/approve/reject/cancel, entitlement authorization, execution attempts and settlement append; is_del/status/pay_status never erase facts","security":"buyer/seller names, remarks, reject reason, payment account and logistics number are restricted/tokenized and excluded from general analytics","authority":"Customer Service owns compensation case/decision; Order and AfterSale own commercial facts; Payment owns cash transfer; Promotion owns coupon; Ledger owns coin; workflow owns approval process"},
+      "corrections":["do not equate compensation with AfterSale or Payment refund","split pay_way 1 coupon, 2 cash and 3 platform coin into typed entitlements with separate execution authorities","quarantine order_amount and coupon_rule amounts until currency, unit, rounding and named funder are proven","replace status/pay_status numeric fields with independently versioned dictionaries","tokenize pay_account, express_no and actor display names"],"model_status":"partial",
+      "backend_refs":["yudao-cloud/cloudmold-module-customer-service/cloudmold-module-customer-service-server/src/main/java/cn/iocoder/yudao/module/cloudmold/customerservice/dal/dataobject/CustomerServiceClaimDO.java","yudao-cloud/cloudmold-module-customer-service/cloudmold-module-customer-service-server/src/main/java/cn/iocoder/yudao/module/cloudmold/customerservice/dal/dataobject/CustomerServiceCompensationEntryDO.java","yudao-cloud/cloudmold-module-aftersales/cloudmold-module-aftersales-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aftersale/dal/dataobject/AfterSaleCaseDO.java","yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/dal/dataobject/PaymentTransactionDO.java","yudao-cloud/cloudmold-module-promotion/cloudmold-module-promotion-server/src/main/java/cn/iocoder/yudao/module/cloudmold/promotion/dal/dataobject/CouponEntitlementDO.java"],
+      "lakehouse_refs":["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-customer-service-event.sql","useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-after-sale-refund-status-event.sql","useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-payment-status-event.sql","useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-promotion-event.sql"],
+      "runtime_nonempty_reconciliation":{"gate_ref":"useful-scripts/yml/yshopping-lakehouse/tests/sql/23-canonical-promotion-engagement-customer-service-contract.sql","evidence_ref":null,"run_id":null,"row_count":0,"tenant_count":0,"status":"missing"},"specification_status":"specified","verification_status":"unverified"
+    }
+  ],
+  "overview_only_assets": [
+    {"source_asset":"ods_repay_repay_bill_detail_df","source_label":"赔付详情","source_anchor":{"document":"ODS语兴好物（y shopping）电商数据表.md","line":153},"decision":"split","target_boundary":"Compensation entitlement/allocation lines linked to one exact case, Order item and execution","required_schema_semantics":["detail_primary_key_case_key_and_tenant_key","order_item_after_sale_item_and_entitlement_type_identity","approved_amount_iso_currency_or_typed_non_money_unit","named_funder_allocation_and_sum_to_case_conservation","status_event_time_delete_and_execution_reference"],"specification_status":"provisional"},
+    {"source_asset":"ods_repay_repay_transfer_bill_df","source_label":"客服转账","source_anchor":{"document":"ODS语兴好物（y shopping）电商数据表.md","line":154},"decision":"split","target_boundary":"Approved compensation transfer instruction, Payment execution attempts and balanced ledger reference","required_schema_semantics":["transfer_bill_instruction_case_and_tenant_keys","payer_payee_tokenized_account_and_principal_or_merchant_mapping","principal_fee_tax_minor_units_and_iso_currency","approval_execution_provider_status_dictionaries_and_timestamps","payment_transaction_ledger_compensation_and_idempotency_references"],"specification_status":"provisional"}
+  ],
+  "unadvertised_detailed_assets": [
+    {"source_asset":"ods_repay_repay_reason_df","source_evidence":{"status":"ddl_backed_unadvertised","detail_anchor":{"heading_line":1546,"end_line":1569,"source_asset":"ods_repay_repay_reason_df"}},"decision":"correct","canonical_entities":["customer_service.CompensationReasonTaxonomy","customer_service.CompensationReasonTaxonomyVersion"],"semantic_rule":"Three-level mutable labels become an immutable versioned taxonomy; each case freezes exact reason id and version, and deletion retires future selection only.","denominator_credit":false}
+  ]
+}

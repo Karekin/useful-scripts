@@ -54,6 +54,9 @@ PAYMENT_SOURCE_SCHEMA_REQUEST = (
 ENGAGEMENT_SOURCE_DISPOSITIONS = (
     ROOT / "contracts" / "yshopping-engagement-source-disposition-v1.json"
 )
+COMPENSATION_SOURCE_DISPOSITIONS = (
+    ROOT / "contracts" / "yshopping-compensation-source-disposition-v1.json"
+)
 TRADE_HISTORY_ADMISSION = (
     ROOT / "contracts" / "yshopping-trade-history-admission-v1.json"
 )
@@ -287,6 +290,12 @@ def load_engagement_source_dispositions(
     path: Path = ENGAGEMENT_SOURCE_DISPOSITIONS,
 ) -> dict[str, Any]:
     return _load_json_object(path, "engagement source dispositions")
+
+
+def load_compensation_source_dispositions(
+    path: Path = COMPENSATION_SOURCE_DISPOSITIONS,
+) -> dict[str, Any]:
+    return _load_json_object(path, "compensation source dispositions")
 
 
 def _heading_path(headings: dict[int, str]) -> list[str]:
@@ -3001,6 +3010,199 @@ def engagement_disposition_status(
     }
 
 
+def validate_compensation_source_dispositions(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    """Validate Compensation Case/Entitlement/Execution authority boundaries."""
+    errors: list[str] = []
+    contract = contract or load_compensation_source_dispositions()
+    expected = authoritative_ods_domain_assets(inventory, "赔付")
+    scope = contract.get("source_scope")
+    if not isinstance(scope, dict):
+        return ["compensation source dispositions requires source_scope"]
+    if scope.get("domain") != "赔付" or scope.get("expected_asset_count") != len(expected):
+        errors.append("compensation source scope differs from authoritative 赔付 overview")
+    if scope.get("expected_source_evidence_counts") != {"ddl_backed": 1, "overview_only": 2}:
+        errors.append("compensation source evidence counts must remain 1 DDL and 2 overview-only")
+    if scope.get("unadvertised_detailed_asset_count") != 1:
+        errors.append("compensation must retain the unadvertised reason-table finding")
+    if not isinstance(scope.get("source_detail_limit"), str) or not scope["source_detail_limit"].strip():
+        errors.append("compensation source dispositions must state source detail limits")
+    policy = contract.get("verification_policy")
+    if not isinstance(policy, dict):
+        return errors + ["compensation source dispositions requires verification_policy"]
+    decisions = set(policy.get("allowed_decisions") or [])
+    model_statuses = set(policy.get("allowed_model_statuses") or [])
+    runtime_statuses = set(policy.get("runtime_statuses") or [])
+    if decisions != {"reuse", "merge", "split", "derive", "correct", "reject"}:
+        errors.append("compensation has invalid decision vocabulary")
+    if model_statuses != {"partial", "missing", "rejected"}:
+        errors.append("compensation has invalid model-status vocabulary")
+    if runtime_statuses != {"missing", "pending", "verified"}:
+        errors.append("compensation has invalid runtime-status vocabulary")
+    if policy.get("empty_tables_are_evidence") is not False:
+        errors.append("compensation must reject empty tables as evidence")
+    lifecycle = contract.get("lifecycle_policy_defaults")
+    if not isinstance(lifecycle, dict) or set(lifecycle) != {"history_policy", "delete_policy", "backfill_policy"}:
+        errors.append("compensation lifecycle defaults are incomplete")
+
+    source_document = (
+        Path(inventory.get("reference_root", DEFAULT_REFERENCE_ROOT))
+        / scope.get("authoritative_document", "")
+    )
+    try:
+        source_lines = source_document.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        errors.append(f"cannot read compensation source document {source_document}: {exc}")
+        source_lines = []
+    detailed = contract.get("ddl_backed_assets")
+    overview_only = contract.get("overview_only_assets")
+    unadvertised = contract.get("unadvertised_detailed_assets")
+    if not isinstance(detailed, list) or len(detailed) != 1:
+        return errors + ["compensation requires exactly one DDL-backed overview asset"]
+    if not isinstance(overview_only, list) or len(overview_only) != 2:
+        return errors + ["compensation requires exactly two overview-only assets"]
+    if not isinstance(unadvertised, list) or len(unadvertised) != 1:
+        return errors + ["compensation requires exactly one unadvertised detailed asset"]
+    seen: set[str] = set()
+    asset = detailed[0]
+    name = asset.get("source_asset") if isinstance(asset, dict) else None
+    if name != "ods_repay_repay_bill_df":
+        errors.append("compensation DDL-backed asset must be ods_repay_repay_bill_df")
+    else:
+        seen.add(name)
+        observed = expected.get(name)
+        if observed is None or [asset.get("source_label")] != observed["source_labels"]:
+            errors.append("compensation bill label differs from ODS overview")
+        anchor = asset.get("source_anchor", {})
+        if (anchor.get("document"), anchor.get("line")) not in observed["anchors"]:
+            errors.append("compensation bill anchor differs from ODS overview")
+        expected_detail = {"heading_line": 1499, "end_line": 1544, "source_asset": name}
+        evidence = asset.get("source_evidence", {})
+        if evidence.get("status") != "ddl_backed" or evidence.get("detail_anchor") != expected_detail:
+            errors.append("compensation bill detailed evidence differs")
+        if source_lines and (
+            name.replace("_", r"\_") not in source_lines[1498]
+            or name not in "\n".join(source_lines[1499:1544])
+        ):
+            errors.append("compensation bill DDL is not proven at the locked lines")
+        semantic_keys = {"grain", "identity", "money_or_quantity", "history", "security", "authority"}
+        if set(asset.get("semantic_rules", {})) != semantic_keys:
+            errors.append("compensation bill semantic rules are incomplete")
+        if asset.get("decision") not in decisions or asset.get("model_status") not in model_statuses:
+            errors.append("compensation bill decision/model status is invalid")
+        if not _nonempty_strings(asset.get("canonical_entities")) or not _nonempty_strings(asset.get("corrections")):
+            errors.append("compensation bill requires canonical entities and corrections")
+        for ref_key in ("backend_refs", "lakehouse_refs"):
+            references = asset.get(ref_key)
+            if not _nonempty_strings(references):
+                errors.append(f"compensation bill requires {ref_key}")
+                continue
+            for reference in references:
+                reference_error = _contract_reference_error(reference)
+                if reference_error:
+                    errors.append(f"compensation bill invalid {ref_key[:-1]} {reference}: {reference_error}")
+        runtime = asset.get("runtime_nonempty_reconciliation")
+        if not isinstance(runtime, dict) or runtime.get("status") not in runtime_statuses:
+            errors.append("compensation bill runtime reconciliation is invalid")
+        else:
+            gate_ref = runtime.get("gate_ref")
+            if not isinstance(gate_ref, str) or not _resolve_contract_reference(gate_ref).is_file():
+                errors.append("compensation bill runtime gate does not exist")
+            if runtime.get("status") == "verified" and not _runtime_reconciliation_verified(runtime, name):
+                errors.append("compensation bill verified reconciliation lacks governed production evidence")
+        if asset.get("specification_status") != "specified":
+            errors.append("compensation bill must be specified")
+        if asset.get("verification_status") == "verified" and not _runtime_reconciliation_verified(runtime, name):
+            errors.append("compensation bill final verification is forbidden without governed reconciliation")
+        corrections = " ".join(asset.get("corrections", []))
+        if "do not equate compensation with AfterSale or Payment refund" not in corrections:
+            errors.append("compensation must remain distinct from AfterSale and Payment refund")
+        if "typed entitlements" not in corrections or "named funder" not in corrections:
+            errors.append("compensation must split typed entitlements and named funding")
+
+    required_overview_fields = {
+        "source_asset", "source_label", "source_anchor", "decision", "target_boundary",
+        "required_schema_semantics", "specification_status"
+    }
+    for index, item in enumerate(overview_only):
+        label = f"compensation overview_only_assets[{index}]"
+        if not isinstance(item, dict) or set(item) != required_overview_fields:
+            errors.append(f"{label}: fields differ")
+            continue
+        item_name = item.get("source_asset")
+        if item_name in seen:
+            errors.append(f"{label}: duplicate source_asset {item_name}")
+        seen.add(item_name)
+        observed = expected.get(item_name)
+        if observed is None:
+            errors.append(f"{label}: not an authoritative 赔付 asset")
+            continue
+        if [item.get("source_label")] != observed["source_labels"]:
+            errors.append(f"{label}: source label differs")
+        anchor = item.get("source_anchor", {})
+        if (anchor.get("document"), anchor.get("line")) not in observed["anchors"]:
+            errors.append(f"{label}: source anchor differs")
+        if item.get("decision") not in decisions or item.get("specification_status") != "provisional":
+            errors.append(f"{label}: must remain a provisional governed decision")
+        if not isinstance(item.get("target_boundary"), str) or not item["target_boundary"].strip():
+            errors.append(f"{label}: requires target_boundary")
+        semantics = item.get("required_schema_semantics")
+        if not _nonempty_strings(semantics) or len(semantics) < 5:
+            errors.append(f"{label}: requires at least five schema semantics")
+    if seen != set(expected):
+        errors.append(
+            "compensation dispositions differ from authoritative overview: "
+            f"missing={sorted(set(expected) - seen)}, extra={sorted(seen - set(expected))}"
+        )
+
+    orphan = unadvertised[0]
+    orphan_name = orphan.get("source_asset") if isinstance(orphan, dict) else None
+    orphan_evidence = orphan.get("source_evidence", {}) if isinstance(orphan, dict) else {}
+    expected_orphan_anchor = {
+        "heading_line": 1546, "end_line": 1569, "source_asset": "ods_repay_repay_reason_df"
+    }
+    if (
+        orphan_name != "ods_repay_repay_reason_df"
+        or orphan_name in expected
+        or orphan_evidence.get("status") != "ddl_backed_unadvertised"
+        or orphan_evidence.get("detail_anchor") != expected_orphan_anchor
+        or orphan.get("denominator_credit") is not False
+        or orphan.get("decision") != "correct"
+    ):
+        errors.append("compensation unadvertised reason table governance differs")
+    if source_lines and (
+        "ods_repay_repay_reason_df" not in "\n".join(source_lines[1545:1569])
+    ):
+        errors.append("compensation unadvertised reason DDL is not proven")
+    return errors
+
+
+def compensation_disposition_status(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    contract = contract or load_compensation_source_dispositions()
+    expected_count = len(authoritative_ods_domain_assets(inventory, "赔付"))
+    assets = contract.get("ddl_backed_assets", []) if isinstance(contract, dict) else []
+    specified = [asset for asset in assets if isinstance(asset, dict) and asset.get("specification_status") == "specified"]
+    reconciled = [
+        asset for asset in assets
+        if isinstance(asset, dict)
+        and _runtime_reconciliation_verified(asset.get("runtime_nonempty_reconciliation"), asset.get("source_asset", ""))
+    ]
+    verified = [asset for asset in reconciled if asset.get("verification_status") == "verified"]
+    denominator = expected_count or 1
+    return {
+        "compensation_source_asset_count": expected_count,
+        "compensation_detailed_disposition_specified_count": len(specified),
+        "compensation_runtime_nonempty_reconciled_count": len(reconciled),
+        "compensation_final_disposition_verified_count": len(verified),
+        "compensation_detailed_disposition_percent": round(len(specified) * 100.0 / denominator, 2),
+        "compensation_runtime_nonempty_reconciled_percent": round(len(reconciled) * 100.0 / denominator, 2),
+        "compensation_final_disposition_verified_percent": round(len(verified) * 100.0 / denominator, 2),
+    }
+
+
 def disposition_status(
     inventory: dict[str, Any], policy: dict[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -3044,6 +3246,7 @@ def disposition_status(
     coupon_status = coupon_disposition_status(inventory)
     user_status = user_disposition_status(inventory)
     engagement_status = engagement_disposition_status(inventory)
+    compensation_status = compensation_disposition_status(inventory)
     detailed_count = (
         game_status["game_detailed_disposition_specified_count"]
         + metadata_status["metadata_detailed_disposition_specified_count"]
@@ -3053,6 +3256,7 @@ def disposition_status(
         + coupon_status["coupon_detailed_disposition_specified_count"]
         + user_status["user_detailed_disposition_specified_count"]
         + engagement_status["engagement_detailed_disposition_specified_count"]
+        + compensation_status["compensation_detailed_disposition_specified_count"]
     )
     runtime_count = (
         game_status["game_runtime_nonempty_reconciled_count"]
@@ -3063,6 +3267,7 @@ def disposition_status(
         + coupon_status["coupon_runtime_nonempty_reconciled_count"]
         + user_status["user_runtime_nonempty_reconciled_count"]
         + engagement_status["engagement_runtime_nonempty_reconciled_count"]
+        + compensation_status["compensation_runtime_nonempty_reconciled_count"]
     )
     verified_count = (
         game_status["game_final_disposition_verified_count"]
@@ -3073,6 +3278,7 @@ def disposition_status(
         + coupon_status["coupon_final_disposition_verified_count"]
         + user_status["user_final_disposition_verified_count"]
         + engagement_status["engagement_final_disposition_verified_count"]
+        + compensation_status["compensation_final_disposition_verified_count"]
     )
     return {
         "candidate_asset_count": candidate_count,
@@ -3113,6 +3319,7 @@ def disposition_status(
         **coupon_status,
         **user_status,
         **engagement_status,
+        **compensation_status,
     }
 
 
@@ -3233,7 +3440,10 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"({status['user_detailed_disposition_percent']:.2f}%); "
         f"engagement={status['engagement_detailed_disposition_specified_count']}/"
         f"{status['engagement_source_asset_count']} "
-        f"({status['engagement_detailed_disposition_percent']:.2f}%)"
+        f"({status['engagement_detailed_disposition_percent']:.2f}%); "
+        f"compensation={status['compensation_detailed_disposition_specified_count']}/"
+        f"{status['compensation_source_asset_count']} "
+        f"({status['compensation_detailed_disposition_percent']:.2f}%)"
     )
     yield (
         "non-empty runtime reconciliations: "
@@ -3262,7 +3472,10 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"({status['user_runtime_nonempty_reconciled_percent']:.2f}%); "
         f"engagement={status['engagement_runtime_nonempty_reconciled_count']}/"
         f"{status['engagement_source_asset_count']} "
-        f"({status['engagement_runtime_nonempty_reconciled_percent']:.2f}%)"
+        f"({status['engagement_runtime_nonempty_reconciled_percent']:.2f}%); "
+        f"compensation={status['compensation_runtime_nonempty_reconciled_count']}/"
+        f"{status['compensation_source_asset_count']} "
+        f"({status['compensation_runtime_nonempty_reconciled_percent']:.2f}%)"
     )
     yield (
         "final semantic dispositions verified: "
@@ -3283,7 +3496,9 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"user={status['user_final_disposition_verified_count']}/"
         f"{status['user_source_asset_count']}, "
         f"engagement={status['engagement_final_disposition_verified_count']}/"
-        f"{status['engagement_source_asset_count']}; routing is not completion"
+        f"{status['engagement_source_asset_count']}, "
+        f"compensation={status['compensation_final_disposition_verified_count']}/"
+        f"{status['compensation_source_asset_count']}; routing is not completion"
     )
 
 
@@ -3307,6 +3522,7 @@ def main() -> int:
     errors.extend(validate_user_source_dispositions(inventory))
     errors.extend(validate_payment_source_schema_request(inventory))
     errors.extend(validate_engagement_source_dispositions(inventory))
+    errors.extend(validate_compensation_source_dispositions(inventory))
     errors.extend(
         validate_trade_admission(
             TRADE_HISTORY_ADMISSION,

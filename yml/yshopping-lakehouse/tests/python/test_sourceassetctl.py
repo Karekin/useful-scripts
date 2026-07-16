@@ -154,6 +154,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_user_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_payment_source_schema_request(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_engagement_source_dispositions(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_compensation_source_dispositions(self.inventory))
         self.assertEqual(
             [],
             validate_trade_admission(
@@ -266,12 +267,12 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual(110, status["bounded_domain_asset_count"])
         self.assertEqual(6, status["explicit_rejection_count"])
         self.assertEqual(718, status["preliminary_handled_count"])
-        self.assertEqual(75, status["detailed_disposition_specified_count"])
+        self.assertEqual(76, status["detailed_disposition_specified_count"])
         self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
         self.assertEqual(99.16, status["routing_percent"])
         self.assertEqual(100.0, status["preliminary_handled_percent"])
-        self.assertEqual(10.45, status["detailed_disposition_specified_percent"])
+        self.assertEqual(10.58, status["detailed_disposition_specified_percent"])
         self.assertEqual(0.0, status["runtime_nonempty_reconciled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
         self.assertIn(
@@ -301,7 +302,9 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertTrue(any("user=0/30 (0.00%)" in line for line in lines))
         self.assertTrue(any("engagement=4/4 (100.00%)" in line for line in lines))
         self.assertTrue(any("engagement=0/4 (0.00%)" in line for line in lines))
-        self.assertTrue(any("engagement=0/4; routing is not completion" in line for line in lines))
+        self.assertTrue(any("compensation=1/3 (33.33%)" in line for line in lines))
+        self.assertTrue(any("compensation=0/3 (0.00%)" in line for line in lines))
+        self.assertTrue(any("compensation=0/3; routing is not completion" in line for line in lines))
 
     def test_game_dispositions_cover_exact_authoritative_overview_rows(self):
         observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "游戏")
@@ -1331,6 +1334,69 @@ class SourceAssetCtlTest(unittest.TestCase):
         references = [
             reference
             for asset in contract["assets"]
+            for key in ("backend_refs", "lakehouse_refs")
+            for reference in asset[key]
+        ]
+        self.assertEqual(
+            [],
+            [(reference, SOURCE_ASSETS._contract_reference_error(reference)) for reference in references if SOURCE_ASSETS._contract_reference_error(reference)],
+        )
+
+    def test_compensation_dispositions_cover_overview_and_unadvertised_reason_table(self):
+        contract = SOURCE_ASSETS.load_compensation_source_dispositions()
+        observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "赔付")
+        governed = {asset["source_asset"] for asset in contract["ddl_backed_assets"]}
+        governed.update(asset["source_asset"] for asset in contract["overview_only_assets"])
+        self.assertEqual(3, len(observed))
+        self.assertEqual(set(observed), governed)
+        self.assertEqual("ods_repay_repay_reason_df", contract["unadvertised_detailed_assets"][0]["source_asset"])
+        self.assertFalse(contract["unadvertised_detailed_assets"][0]["denominator_credit"])
+        self.assertEqual([], SOURCE_ASSETS.validate_compensation_source_dispositions(self.inventory))
+
+    def test_compensation_bill_splits_case_entitlement_execution_and_refund_authority(self):
+        contract = SOURCE_ASSETS.load_compensation_source_dispositions()
+        bill = contract["ddl_backed_assets"][0]
+        corrections = " ".join(bill["corrections"])
+        self.assertIn("do not equate compensation with AfterSale or Payment refund", corrections)
+        self.assertIn("typed entitlements", corrections)
+        self.assertIn("named funder", corrections)
+        self.assertIn("Customer Service owns compensation case", bill["semantic_rules"]["authority"])
+        self.assertIn("no cross-unit sum", bill["semantic_rules"]["money_or_quantity"])
+
+    def test_compensation_status_is_ddl_limited_and_not_runtime_verified(self):
+        self.assertEqual(
+            {
+                "compensation_source_asset_count": 3,
+                "compensation_detailed_disposition_specified_count": 1,
+                "compensation_runtime_nonempty_reconciled_count": 0,
+                "compensation_final_disposition_verified_count": 0,
+                "compensation_detailed_disposition_percent": 33.33,
+                "compensation_runtime_nonempty_reconciled_percent": 0.0,
+                "compensation_final_disposition_verified_percent": 0.0,
+            },
+            SOURCE_ASSETS.compensation_disposition_status(self.inventory),
+        )
+
+    def test_compensation_contract_rejects_missing_duplicate_or_false_verification(self):
+        contract = SOURCE_ASSETS.load_compensation_source_dispositions()
+        missing = json.loads(json.dumps(contract))
+        missing["overview_only_assets"].pop()
+        errors = SOURCE_ASSETS.validate_compensation_source_dispositions(self.inventory, missing)
+        self.assertTrue(any("exactly two overview-only" in error for error in errors))
+        duplicate = json.loads(json.dumps(contract))
+        duplicate["overview_only_assets"][1] = json.loads(json.dumps(duplicate["overview_only_assets"][0]))
+        errors = SOURCE_ASSETS.validate_compensation_source_dispositions(self.inventory, duplicate)
+        self.assertTrue(any("duplicate source_asset" in error for error in errors))
+        false_verification = json.loads(json.dumps(contract))
+        false_verification["ddl_backed_assets"][0]["verification_status"] = "verified"
+        errors = SOURCE_ASSETS.validate_compensation_source_dispositions(self.inventory, false_verification)
+        self.assertTrue(any("forbidden without governed reconciliation" in error for error in errors))
+
+    def test_all_compensation_implementation_references_resolve(self):
+        contract = SOURCE_ASSETS.load_compensation_source_dispositions()
+        references = [
+            reference
+            for asset in contract["ddl_backed_assets"]
             for key in ("backend_refs", "lakehouse_refs")
             for reference in asset[key]
         ]
