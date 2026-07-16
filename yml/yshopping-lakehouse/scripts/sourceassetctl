@@ -60,6 +60,9 @@ COMPENSATION_SOURCE_DISPOSITIONS = (
 TICKET_SOURCE_DISPOSITIONS = (
     ROOT / "contracts" / "yshopping-ticket-source-disposition-v1.json"
 )
+SUPPLY_CHAIN_SOURCE_DISPOSITIONS = (
+    ROOT / "contracts" / "yshopping-supply-chain-source-disposition-v1.json"
+)
 TRADE_HISTORY_ADMISSION = (
     ROOT / "contracts" / "yshopping-trade-history-admission-v1.json"
 )
@@ -305,6 +308,12 @@ def load_ticket_source_dispositions(
     path: Path = TICKET_SOURCE_DISPOSITIONS,
 ) -> dict[str, Any]:
     return _load_json_object(path, "ticket source dispositions")
+
+
+def load_supply_chain_source_dispositions(
+    path: Path = SUPPLY_CHAIN_SOURCE_DISPOSITIONS,
+) -> dict[str, Any]:
+    return _load_json_object(path, "supply-chain source dispositions")
 
 
 def _heading_path(headings: dict[int, str]) -> list[str]:
@@ -3452,6 +3461,226 @@ def ticket_disposition_status(
     }
 
 
+def validate_supply_chain_source_dispositions(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    """Validate governed SCM/WMS/Quality/AI semantics without fabricating stock authority."""
+    errors: list[str] = []
+    contract = contract or load_supply_chain_source_dispositions()
+    expected = authoritative_ods_domain_assets(inventory, "供应链")
+    scope = contract.get("source_scope")
+    if not isinstance(scope, dict):
+        return ["supply-chain source dispositions requires source_scope"]
+    if scope.get("domain") != "供应链" or scope.get("expected_asset_count") != len(expected):
+        errors.append("supply-chain source scope differs from authoritative 供应链 overview")
+    if scope.get("expected_source_evidence_counts") != {"ddl_backed": 23, "name_conflict": 0}:
+        errors.append("supply-chain source evidence counts must remain 23 DDL and 0 conflicts")
+    if not isinstance(scope.get("source_detail_limit"), str) or not scope["source_detail_limit"].strip():
+        errors.append("supply-chain source dispositions must state source detail limits")
+
+    policy = contract.get("verification_policy")
+    if not isinstance(policy, dict):
+        return errors + ["supply-chain source dispositions requires verification_policy"]
+    decisions = set(policy.get("allowed_decisions") or [])
+    model_statuses = set(policy.get("allowed_model_statuses") or [])
+    runtime_statuses = set(policy.get("runtime_statuses") or [])
+    if decisions != {"reuse", "merge", "split", "derive", "correct", "reject"}:
+        errors.append("supply-chain has invalid decision vocabulary")
+    if model_statuses != {"partial", "missing", "rejected"}:
+        errors.append("supply-chain has invalid model-status vocabulary")
+    if runtime_statuses != {"missing", "pending", "verified"}:
+        errors.append("supply-chain has invalid runtime-status vocabulary")
+    if policy.get("empty_tables_are_evidence") is not False:
+        errors.append("supply-chain must reject empty tables as evidence")
+    lifecycle = contract.get("lifecycle_policy_defaults")
+    if not isinstance(lifecycle, dict) or set(lifecycle) != {"history_policy", "delete_policy", "backfill_policy"}:
+        errors.append("supply-chain lifecycle defaults are incomplete")
+
+    required_profiles = {
+        "receipt_line", "receipt_header", "warehouse_operation", "quality_decision",
+        "quality_taxonomy", "shipment_handoff", "warehouse_master",
+        "workforce_assignment", "ai_case", "image_evidence", "ai_observation",
+        "human_review", "report_projection", "feedback", "policy_config",
+        "model_version", "model_lifecycle", "rule_decision",
+    }
+    semantic_keys = {"grain", "identity", "money_or_quantity", "history", "security", "authority"}
+    profiles = contract.get("semantic_profiles")
+    if not isinstance(profiles, dict) or set(profiles) != required_profiles:
+        errors.append(f"supply-chain semantic profiles must define exactly {sorted(required_profiles)}")
+        profiles = {}
+    else:
+        for profile_name, profile in profiles.items():
+            if not isinstance(profile, dict) or set(profile) != semantic_keys:
+                errors.append(f"supply-chain semantic profile {profile_name} must define exactly {sorted(semantic_keys)}")
+            elif any(not isinstance(value, str) or not value.strip() for value in profile.values()):
+                errors.append(f"supply-chain semantic profile {profile_name} contains empty rules")
+
+    detail_expectations = {
+        "ods_scm_inbound_di": (6732, 6767),
+        "ods_scm_inbound_header_di": (6768, 6809),
+        "ods_scm_sorting_di": (6810, 6841),
+        "ods_scm_quality_operate_di": (6842, 6882),
+        "ods_scm_quality_check_result_di": (6883, 6918),
+        "ods_scm_quality_reason_df": (6919, 6948),
+        "ods_scm_quality_identify_result_di": (6949, 6980),
+        "ods_scm_outbound_di": (6981, 7009),
+        "ods_scm_warehouse_df": (7010, 7036),
+        "ods_scm_user_info_df": (7037, 7067),
+        "ods_scm_quality_ai_identify_apply_di": (7068, 7113),
+        "ods_scm_quality_ai_identify_image_di": (7114, 7144),
+        "ods_scm_quality_ai_image_quality_check_di": (7145, 7171),
+        "ods_scm_quality_ai_part_feature_result_di": (7172, 7198),
+        "ods_scm_quality_ai_analyze_result_di": (7199, 7234),
+        "ods_scm_quality_ai_manual_review_di": (7235, 7262),
+        "ods_scm_quality_ai_report_post_di": (7263, 7289),
+        "ods_scm_quality_ai_feedback_di": (7290, 7311),
+        "ods_scm_quality_ai_product_config_df": (7312, 7351),
+        "ods_scm_quality_ai_rule_config_df": (7352, 7384),
+        "ods_scm_quality_ai_model_version_df": (7385, 7414),
+        "ods_scm_quality_ai_model_lifecycle_di": (7415, 7437),
+        "ods_scm_quality_ai_rule_decision_di": (7438, 7466),
+    }
+    source_document = (
+        Path(inventory.get("reference_root", DEFAULT_REFERENCE_ROOT))
+        / scope.get("authoritative_document", "")
+    )
+    try:
+        source_lines = source_document.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        errors.append(f"cannot read supply-chain source document {source_document}: {exc}")
+        source_lines = []
+    assets = contract.get("ddl_backed_assets")
+    if not isinstance(assets, list) or len(assets) != 23:
+        return errors + ["supply-chain requires exactly twenty-three DDL-backed assets"]
+
+    seen: set[str] = set()
+    by_name: dict[str, dict[str, Any]] = {}
+    for index, asset in enumerate(assets):
+        label = f"supply-chain ddl_backed_assets[{index}]"
+        if not isinstance(asset, dict):
+            errors.append(f"{label}: must be an object")
+            continue
+        name = asset.get("source_asset")
+        if not isinstance(name, str) or not name:
+            errors.append(f"{label}: requires source_asset")
+            continue
+        if name in seen:
+            errors.append(f"{label}: duplicate source_asset {name}")
+        seen.add(name)
+        by_name[name] = asset
+        observed = expected.get(name)
+        if observed is None:
+            errors.append(f"{label}: not an authoritative 供应链 asset")
+            continue
+        if asset.get("source_labels") != observed["source_labels"]:
+            errors.append(f"{label}: source labels differ")
+        actual_anchors = [
+            (anchor.get("document"), anchor.get("line"))
+            for anchor in asset.get("source_anchors", []) if isinstance(anchor, dict)
+        ]
+        if actual_anchors != observed["anchors"]:
+            errors.append(f"{label}: source anchors differ")
+        expectation = detail_expectations.get(name)
+        evidence = asset.get("source_evidence")
+        if expectation is None or not isinstance(evidence, dict):
+            errors.append(f"{label}: requires locked DDL evidence")
+        else:
+            heading_line, end_line = expectation
+            expected_anchor = {"heading_line": heading_line, "end_line": end_line, "source_asset": name}
+            if evidence.get("status") != "ddl_backed" or evidence.get("detail_anchor") != expected_anchor:
+                errors.append(f"{label}: detailed evidence differs")
+            if source_lines and (
+                name.replace("_", r"\_") not in source_lines[heading_line - 1]
+                or name not in "\n".join(source_lines[heading_line:end_line])
+            ):
+                errors.append(f"{label}: same-name DDL is not proven")
+        if asset.get("semantic_profile") not in profiles:
+            errors.append(f"{label}: invalid semantic profile")
+        if not isinstance(asset.get("table_rule"), str) or not asset["table_rule"].strip():
+            errors.append(f"{label}: requires table_rule")
+        if asset.get("decision") not in decisions or asset.get("model_status") not in model_statuses:
+            errors.append(f"{label}: invalid decision/model status")
+        if not _nonempty_strings(asset.get("canonical_entities")) or not _nonempty_strings(asset.get("corrections")):
+            errors.append(f"{label}: requires canonical entities and corrections")
+        for ref_key in ("backend_refs", "lakehouse_refs"):
+            references = asset.get(ref_key)
+            if not _nonempty_strings(references):
+                errors.append(f"{label}: requires {ref_key}")
+                continue
+            for reference in references:
+                reference_error = _contract_reference_error(reference)
+                if reference_error:
+                    errors.append(f"{label}: invalid {ref_key[:-1]} {reference}: {reference_error}")
+        runtime = asset.get("runtime_nonempty_reconciliation")
+        if not isinstance(runtime, dict) or runtime.get("status") not in runtime_statuses:
+            errors.append(f"{label}: invalid runtime reconciliation")
+        else:
+            gate_ref = runtime.get("gate_ref")
+            if not isinstance(gate_ref, str) or not _resolve_contract_reference(gate_ref).is_file():
+                errors.append(f"{label}: runtime gate does not exist")
+            for count_key in ("row_count", "tenant_count"):
+                value = runtime.get(count_key)
+                if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                    errors.append(f"{label}: {count_key} must be non-negative integer")
+            if runtime.get("status") == "verified" and not _runtime_reconciliation_verified(runtime, name):
+                errors.append(f"{label}: verified runtime lacks governed production evidence")
+        if asset.get("specification_status") != "specified":
+            errors.append(f"{label}: must be specified")
+        if asset.get("verification_status") == "verified" and not _runtime_reconciliation_verified(runtime, name):
+            errors.append(f"{label}: final verification is forbidden without governed reconciliation")
+    if seen != set(expected):
+        errors.append(
+            "supply-chain dispositions differ from authoritative overview: "
+            f"missing={sorted(set(expected) - seen)}, extra={sorted(seen - set(expected))}"
+        )
+
+    locked_corrections = {
+        "ods_scm_inbound_di": "do not equate P-code unique_id with canonical Lot or SKU",
+        "ods_scm_sorting_di": "source prose says repeated sorting is overwritten so history is incomplete",
+        "ods_scm_quality_operate_di": "repair DDL/sample drift task_no versus task_detail_no duplicated unique_id and omitted identify_pass_type_code",
+        "ods_scm_quality_check_result_di": "repair DDL/sample drift for check_status check_time qc_time and inbound_id versus inbound_detail_id",
+        "ods_scm_outbound_di": "repair DDL/sample drift type versus reference_type and missing modify_time sample value",
+        "ods_scm_user_info_df": "repair trailing comma in DDL before execution",
+        "ods_scm_quality_ai_analyze_result_di": "do not promote suggest_action_code or ai_result_code to business decision",
+        "ods_scm_quality_ai_rule_decision_di": "do not promote final_action_code to Inventory pass reject callback or publication effect",
+    }
+    for name, correction in locked_corrections.items():
+        if correction not in by_name.get(name, {}).get("corrections", []):
+            errors.append(f"supply-chain locked correction missing for {name}")
+    warehouse_entities = set(by_name.get("ods_scm_warehouse_df", {}).get("canonical_entities", []))
+    if not {"warehouse.Warehouse", "warehouse.WarehouseSourceMapping", "warehouse.WarehouseLocation"} <= warehouse_entities:
+        errors.append("supply-chain Warehouse must retain canonical identity, mapping and Location boundaries")
+    operation_authority = profiles.get("warehouse_operation", {}).get("authority", "")
+    if "Inventory owns accepted movement ledger" not in operation_authority:
+        errors.append("supply-chain physical operations must not become Inventory authority")
+    return errors
+
+
+def supply_chain_disposition_status(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    contract = contract or load_supply_chain_source_dispositions()
+    expected_count = len(authoritative_ods_domain_assets(inventory, "供应链"))
+    assets = contract.get("ddl_backed_assets", []) if isinstance(contract, dict) else []
+    specified = [asset for asset in assets if isinstance(asset, dict) and asset.get("specification_status") == "specified"]
+    reconciled = [
+        asset for asset in assets
+        if isinstance(asset, dict)
+        and _runtime_reconciliation_verified(asset.get("runtime_nonempty_reconciliation"), asset.get("source_asset", ""))
+    ]
+    verified = [asset for asset in reconciled if asset.get("verification_status") == "verified"]
+    denominator = expected_count or 1
+    return {
+        "supply_chain_source_asset_count": expected_count,
+        "supply_chain_detailed_disposition_specified_count": len(specified),
+        "supply_chain_runtime_nonempty_reconciled_count": len(reconciled),
+        "supply_chain_final_disposition_verified_count": len(verified),
+        "supply_chain_detailed_disposition_percent": round(len(specified) * 100.0 / denominator, 2),
+        "supply_chain_runtime_nonempty_reconciled_percent": round(len(reconciled) * 100.0 / denominator, 2),
+        "supply_chain_final_disposition_verified_percent": round(len(verified) * 100.0 / denominator, 2),
+    }
+
+
 def disposition_status(
     inventory: dict[str, Any], policy: dict[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -3497,6 +3726,7 @@ def disposition_status(
     engagement_status = engagement_disposition_status(inventory)
     compensation_status = compensation_disposition_status(inventory)
     ticket_status = ticket_disposition_status(inventory)
+    supply_chain_status = supply_chain_disposition_status(inventory)
     detailed_count = (
         game_status["game_detailed_disposition_specified_count"]
         + metadata_status["metadata_detailed_disposition_specified_count"]
@@ -3508,6 +3738,7 @@ def disposition_status(
         + engagement_status["engagement_detailed_disposition_specified_count"]
         + compensation_status["compensation_detailed_disposition_specified_count"]
         + ticket_status["ticket_detailed_disposition_specified_count"]
+        + supply_chain_status["supply_chain_detailed_disposition_specified_count"]
     )
     runtime_count = (
         game_status["game_runtime_nonempty_reconciled_count"]
@@ -3520,6 +3751,7 @@ def disposition_status(
         + engagement_status["engagement_runtime_nonempty_reconciled_count"]
         + compensation_status["compensation_runtime_nonempty_reconciled_count"]
         + ticket_status["ticket_runtime_nonempty_reconciled_count"]
+        + supply_chain_status["supply_chain_runtime_nonempty_reconciled_count"]
     )
     verified_count = (
         game_status["game_final_disposition_verified_count"]
@@ -3532,6 +3764,7 @@ def disposition_status(
         + engagement_status["engagement_final_disposition_verified_count"]
         + compensation_status["compensation_final_disposition_verified_count"]
         + ticket_status["ticket_final_disposition_verified_count"]
+        + supply_chain_status["supply_chain_final_disposition_verified_count"]
     )
     return {
         "candidate_asset_count": candidate_count,
@@ -3574,6 +3807,7 @@ def disposition_status(
         **engagement_status,
         **compensation_status,
         **ticket_status,
+        **supply_chain_status,
     }
 
 
@@ -3700,7 +3934,10 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"({status['compensation_detailed_disposition_percent']:.2f}%); "
         f"ticket={status['ticket_detailed_disposition_specified_count']}/"
         f"{status['ticket_source_asset_count']} "
-        f"({status['ticket_detailed_disposition_percent']:.2f}%)"
+        f"({status['ticket_detailed_disposition_percent']:.2f}%); "
+        f"supply_chain={status['supply_chain_detailed_disposition_specified_count']}/"
+        f"{status['supply_chain_source_asset_count']} "
+        f"({status['supply_chain_detailed_disposition_percent']:.2f}%)"
     )
     yield (
         "non-empty runtime reconciliations: "
@@ -3735,7 +3972,10 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"({status['compensation_runtime_nonempty_reconciled_percent']:.2f}%); "
         f"ticket={status['ticket_runtime_nonempty_reconciled_count']}/"
         f"{status['ticket_source_asset_count']} "
-        f"({status['ticket_runtime_nonempty_reconciled_percent']:.2f}%)"
+        f"({status['ticket_runtime_nonempty_reconciled_percent']:.2f}%); "
+        f"supply_chain={status['supply_chain_runtime_nonempty_reconciled_count']}/"
+        f"{status['supply_chain_source_asset_count']} "
+        f"({status['supply_chain_runtime_nonempty_reconciled_percent']:.2f}%)"
     )
     yield (
         "final semantic dispositions verified: "
@@ -3760,7 +4000,9 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"compensation={status['compensation_final_disposition_verified_count']}/"
         f"{status['compensation_source_asset_count']}, "
         f"ticket={status['ticket_final_disposition_verified_count']}/"
-        f"{status['ticket_source_asset_count']}; routing is not completion"
+        f"{status['ticket_source_asset_count']}, "
+        f"supply_chain={status['supply_chain_final_disposition_verified_count']}/"
+        f"{status['supply_chain_source_asset_count']}; routing is not completion"
     )
 
 
@@ -3786,6 +4028,7 @@ def main() -> int:
     errors.extend(validate_engagement_source_dispositions(inventory))
     errors.extend(validate_compensation_source_dispositions(inventory))
     errors.extend(validate_ticket_source_dispositions(inventory))
+    errors.extend(validate_supply_chain_source_dispositions(inventory))
     errors.extend(
         validate_trade_admission(
             TRADE_HISTORY_ADMISSION,

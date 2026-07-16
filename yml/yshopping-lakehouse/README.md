@@ -93,7 +93,7 @@ zero-difference checks, and a separately checksummed independent verifier.
 Documentation volume estimates (for example “15.96 亿”) are never used as a
 denominator. A merely non-empty JSON file can no longer promote any of the 718
 assets to `verified`.
-The governed detailed-disposition numerator is now 87/718. The Product
+The governed detailed-disposition numerator is now 110/718. The Product
 slice covers all ten authoritative 商品 overview assets: nine DDL-backed assets
 are specified across Catalog, Listing, workflow, Identity/Merchant and Quality
 boundaries; the personnel salary asset remains provisional because its detailed
@@ -156,6 +156,17 @@ and three AI overview `ri` names are detailed as `di`; all four remain
 name-conflict provisional. Password ingestion is rejected, content/files/PII
 and raw AI payloads stay restricted, and model/risk outputs cannot directly
 create block, refund, compensation or other owning-domain effects.
+The Supply Chain slice covers all twenty-three 供应链 overview assets with
+same-name detailed DDL. Physical inbound, sorting, quality and outbound rows
+remain Warehouse/WMS observations until an explicit Inventory command writes
+the immutable quantity ledger; P-codes are not canonical SKU or Lot ids, and a
+quality/AI result is not saleability, refund or publication authority. The
+contract also freezes the source's latest-only sorting limitation, DDL/sample
+column drift in quality and outbound examples, and the operator DDL trailing
+comma as explicit correction gates. Warehouse identity, workforce/pay data,
+restricted images, versioned model/policy evidence and accepted human decisions
+stay separate. All twenty-three are definition-specified but still have zero
+non-empty production reconciliations, so runtime and final credit remain zero.
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%

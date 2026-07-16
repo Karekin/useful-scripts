@@ -156,6 +156,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_engagement_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_compensation_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_ticket_source_dispositions(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_supply_chain_source_dispositions(self.inventory))
         self.assertEqual(
             [],
             validate_trade_admission(
@@ -268,12 +269,12 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual(110, status["bounded_domain_asset_count"])
         self.assertEqual(6, status["explicit_rejection_count"])
         self.assertEqual(718, status["preliminary_handled_count"])
-        self.assertEqual(87, status["detailed_disposition_specified_count"])
+        self.assertEqual(110, status["detailed_disposition_specified_count"])
         self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
         self.assertEqual(99.16, status["routing_percent"])
         self.assertEqual(100.0, status["preliminary_handled_percent"])
-        self.assertEqual(12.12, status["detailed_disposition_specified_percent"])
+        self.assertEqual(15.32, status["detailed_disposition_specified_percent"])
         self.assertEqual(0.0, status["runtime_nonempty_reconciled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
         self.assertIn(
@@ -307,7 +308,9 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertTrue(any("compensation=0/3 (0.00%)" in line for line in lines))
         self.assertTrue(any("ticket=11/15 (73.33%)" in line for line in lines))
         self.assertTrue(any("ticket=0/15 (0.00%)" in line for line in lines))
-        self.assertTrue(any("ticket=0/15; routing is not completion" in line for line in lines))
+        self.assertTrue(any("supply_chain=23/23 (100.00%)" in line for line in lines))
+        self.assertTrue(any("supply_chain=0/23 (0.00%)" in line for line in lines))
+        self.assertTrue(any("supply_chain=0/23; routing is not completion" in line for line in lines))
 
     def test_game_dispositions_cover_exact_authoritative_overview_rows(self):
         observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "游戏")
@@ -1458,6 +1461,63 @@ class SourceAssetCtlTest(unittest.TestCase):
 
     def test_all_ticket_implementation_references_resolve(self):
         contract = SOURCE_ASSETS.load_ticket_source_dispositions()
+        references = [reference for asset in contract["ddl_backed_assets"] for key in ("backend_refs", "lakehouse_refs") for reference in asset[key]]
+        self.assertEqual([], [(reference, SOURCE_ASSETS._contract_reference_error(reference)) for reference in references if SOURCE_ASSETS._contract_reference_error(reference)])
+
+    def test_supply_chain_dispositions_cover_all_twenty_three_same_name_ddls(self):
+        contract = SOURCE_ASSETS.load_supply_chain_source_dispositions()
+        observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "供应链")
+        detailed = {asset["source_asset"] for asset in contract["ddl_backed_assets"]}
+        self.assertEqual(23, len(observed))
+        self.assertEqual(set(observed), detailed)
+        self.assertEqual({"ddl_backed": 23, "name_conflict": 0}, contract["source_scope"]["expected_source_evidence_counts"])
+        self.assertEqual([], SOURCE_ASSETS.validate_supply_chain_source_dispositions(self.inventory))
+
+    def test_supply_chain_boundaries_reject_stock_and_ai_authority_fabrication(self):
+        contract = SOURCE_ASSETS.load_supply_chain_source_dispositions()
+        by_name = {asset["source_asset"]: asset for asset in contract["ddl_backed_assets"]}
+        self.assertIn("do not equate P-code unique_id with canonical Lot or SKU", by_name["ods_scm_inbound_di"]["corrections"])
+        self.assertIn("source prose says repeated sorting is overwritten so history is incomplete", by_name["ods_scm_sorting_di"]["corrections"])
+        self.assertIn("repair trailing comma in DDL before execution", by_name["ods_scm_user_info_df"]["corrections"])
+        self.assertIn("do not promote suggest_action_code or ai_result_code to business decision", by_name["ods_scm_quality_ai_analyze_result_di"]["corrections"])
+        self.assertIn("Inventory alone accepts the stock movement", contract["semantic_profiles"]["receipt_line"]["authority"])
+        self.assertIn("Inventory owns accepted movement ledger", contract["semantic_profiles"]["warehouse_operation"]["authority"])
+
+    def test_supply_chain_status_is_definition_complete_but_not_runtime_verified(self):
+        self.assertEqual(
+            {
+                "supply_chain_source_asset_count": 23,
+                "supply_chain_detailed_disposition_specified_count": 23,
+                "supply_chain_runtime_nonempty_reconciled_count": 0,
+                "supply_chain_final_disposition_verified_count": 0,
+                "supply_chain_detailed_disposition_percent": 100.0,
+                "supply_chain_runtime_nonempty_reconciled_percent": 0.0,
+                "supply_chain_final_disposition_verified_percent": 0.0,
+            },
+            SOURCE_ASSETS.supply_chain_disposition_status(self.inventory),
+        )
+
+    def test_supply_chain_contract_rejects_missing_duplicate_and_false_verification(self):
+        contract = SOURCE_ASSETS.load_supply_chain_source_dispositions()
+        missing = json.loads(json.dumps(contract))
+        missing["ddl_backed_assets"].pop()
+        errors = SOURCE_ASSETS.validate_supply_chain_source_dispositions(self.inventory, missing)
+        self.assertTrue(any("exactly twenty-three" in error for error in errors))
+        duplicate = json.loads(json.dumps(contract))
+        duplicate["ddl_backed_assets"][1] = json.loads(json.dumps(duplicate["ddl_backed_assets"][0]))
+        errors = SOURCE_ASSETS.validate_supply_chain_source_dispositions(self.inventory, duplicate)
+        self.assertTrue(any("duplicate source_asset" in error for error in errors))
+        false_verification = json.loads(json.dumps(contract))
+        false_verification["ddl_backed_assets"][0]["verification_status"] = "verified"
+        errors = SOURCE_ASSETS.validate_supply_chain_source_dispositions(self.inventory, false_verification)
+        self.assertTrue(any("forbidden without governed reconciliation" in error for error in errors))
+        fabricated_authority = json.loads(json.dumps(contract))
+        fabricated_authority["semantic_profiles"]["warehouse_operation"]["authority"] = "WMS owns all stock balances"
+        errors = SOURCE_ASSETS.validate_supply_chain_source_dispositions(self.inventory, fabricated_authority)
+        self.assertTrue(any("must not become Inventory authority" in error for error in errors))
+
+    def test_all_supply_chain_implementation_references_resolve(self):
+        contract = SOURCE_ASSETS.load_supply_chain_source_dispositions()
         references = [reference for asset in contract["ddl_backed_assets"] for key in ("backend_refs", "lakehouse_refs") for reference in asset[key]]
         self.assertEqual([], [(reference, SOURCE_ASSETS._contract_reference_error(reference)) for reference in references if SOURCE_ASSETS._contract_reference_error(reference)])
 

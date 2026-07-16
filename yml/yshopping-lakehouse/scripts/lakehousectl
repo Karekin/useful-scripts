@@ -139,6 +139,7 @@ case "$COMMAND" in
     test -f "$ROOT_DIR/contracts/yshopping-engagement-source-disposition-v1.json"
     test -f "$ROOT_DIR/contracts/yshopping-compensation-source-disposition-v1.json"
     test -f "$ROOT_DIR/contracts/yshopping-ticket-source-disposition-v1.json"
+    test -f "$ROOT_DIR/contracts/yshopping-supply-chain-source-disposition-v1.json"
     find "$ROOT_DIR/models" "$ROOT_DIR/tests/sql" -type f -name '*.sql' -size 0 | grep . && exit 1 || true
     "$ROOT_DIR/scripts/contractctl" validate
     "$ROOT_DIR/scripts/alignmentctl" validate
