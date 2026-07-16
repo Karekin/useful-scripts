@@ -151,6 +151,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_product_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_merchant_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_coupon_source_dispositions(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_user_source_dispositions(self.inventory))
         self.assertEqual(
             [],
             validate_trade_admission(
@@ -263,12 +264,12 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual(110, status["bounded_domain_asset_count"])
         self.assertEqual(6, status["explicit_rejection_count"])
         self.assertEqual(718, status["preliminary_handled_count"])
-        self.assertEqual(69, status["detailed_disposition_specified_count"])
+        self.assertEqual(71, status["detailed_disposition_specified_count"])
         self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
         self.assertEqual(99.16, status["routing_percent"])
         self.assertEqual(100.0, status["preliminary_handled_percent"])
-        self.assertEqual(9.61, status["detailed_disposition_specified_percent"])
+        self.assertEqual(9.89, status["detailed_disposition_specified_percent"])
         self.assertEqual(0.0, status["runtime_nonempty_reconciled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
         self.assertIn(
@@ -294,7 +295,9 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertTrue(any("merchant=0/7 (0.00%)" in line for line in lines))
         self.assertTrue(any("coupon=6/6 (100.00%)" in line for line in lines))
         self.assertTrue(any("coupon=0/6 (0.00%)" in line for line in lines))
-        self.assertTrue(any("coupon=0/6; routing is not completion" in line for line in lines))
+        self.assertTrue(any("user=2/30 (6.67%)" in line for line in lines))
+        self.assertTrue(any("user=0/30 (0.00%)" in line for line in lines))
+        self.assertTrue(any("user=0/30; routing is not completion" in line for line in lines))
 
     def test_game_dispositions_cover_exact_authoritative_overview_rows(self):
         observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "游戏")
@@ -1131,6 +1134,98 @@ class SourceAssetCtlTest(unittest.TestCase):
         references = [
             reference
             for asset in contract["assets"]
+            for key in ("backend_refs", "lakehouse_refs")
+            for reference in asset[key]
+        ]
+        self.assertEqual(
+            [],
+            [
+                (reference, SOURCE_ASSETS._contract_reference_error(reference))
+                for reference in references
+                if SOURCE_ASSETS._contract_reference_error(reference)
+            ],
+        )
+
+    def test_user_dispositions_cover_every_authoritative_ods_asset(self):
+        observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "用户")
+        contract = SOURCE_ASSETS.load_user_source_dispositions()
+        detailed = [asset["source_asset"] for asset in contract["ddl_backed_assets"]]
+        provisional = [
+            asset["source_asset"]
+            for group in contract["overview_only_groups"]
+            for asset in group["assets"]
+        ]
+        self.assertEqual(30, len(observed))
+        self.assertEqual(2, len(detailed))
+        self.assertEqual(28, len(provisional))
+        self.assertEqual(set(observed), set(detailed + provisional))
+        self.assertEqual([], SOURCE_ASSETS.validate_user_source_dispositions(self.inventory))
+
+    def test_user_dispositions_bind_identity_privacy_and_authentication_boundaries(self):
+        contract = SOURCE_ASSETS.load_user_source_dispositions()
+        by_name = {asset["source_asset"]: asset for asset in contract["ddl_backed_assets"]}
+        profile = by_name["ods_user_user_detail_df"]
+        login = by_name["ods_user_user_login_di"]
+        profile_text = " ".join(profile["corrections"] + list(profile["semantic_rules"].values()))
+        login_text = " ".join(login["corrections"] + list(login["semantic_rules"].values()))
+        self.assertIn("is_complete", profile_text)
+        self.assertIn("idcard", profile_text)
+        self.assertIn("immutable authentication observation", login_text)
+        self.assertIn("tokenize mobile, IP, device and geolocation", login_text)
+        group_rules = {
+            asset["source_asset"]: asset["table_rule"]
+            for group in contract["overview_only_groups"]
+            for asset in group["assets"]
+        }
+        self.assertIn("Reject password migration", group_rules["ods_userpassword_df"])
+        self.assertIn("Order stores an immutable accepted delivery snapshot", group_rules["ods_tb_user_address_df"])
+        self.assertIn("biometric material remains outside", group_rules["ods_yshopping_user_ext_tb_ua_authentication_log_df"])
+
+    def test_user_status_is_ddl_limited_and_not_runtime_verified(self):
+        self.assertEqual(
+            {
+                "user_source_asset_count": 30,
+                "user_detailed_disposition_specified_count": 2,
+                "user_runtime_nonempty_reconciled_count": 0,
+                "user_final_disposition_verified_count": 0,
+                "user_detailed_disposition_percent": 6.67,
+                "user_runtime_nonempty_reconciled_percent": 0.0,
+                "user_final_disposition_verified_percent": 0.0,
+            },
+            SOURCE_ASSETS.user_disposition_status(self.inventory),
+        )
+
+    def test_user_contract_rejects_missing_duplicate_mislabeled_and_false_verification(self):
+        contract = SOURCE_ASSETS.load_user_source_dispositions()
+        missing = json.loads(json.dumps(contract))
+        missing["overview_only_groups"][0]["assets"].pop()
+        errors = SOURCE_ASSETS.validate_user_source_dispositions(self.inventory, missing)
+        self.assertTrue(any("differ from authoritative ODS overview" in error for error in errors))
+
+        duplicate = json.loads(json.dumps(contract))
+        duplicate["overview_only_groups"][1]["assets"][0] = json.loads(
+            json.dumps(duplicate["overview_only_groups"][0]["assets"][0])
+        )
+        errors = SOURCE_ASSETS.validate_user_source_dispositions(self.inventory, duplicate)
+        self.assertTrue(any("duplicate source_asset" in error for error in errors))
+
+        mislabeled = json.loads(json.dumps(contract))
+        mislabeled["ddl_backed_assets"][0]["source_label"] = "用户"
+        errors = SOURCE_ASSETS.validate_user_source_dispositions(self.inventory, mislabeled)
+        self.assertTrue(any("source label differs" in error for error in errors))
+
+        false_verification = json.loads(json.dumps(contract))
+        false_verification["ddl_backed_assets"][0]["verification_status"] = "verified"
+        errors = SOURCE_ASSETS.validate_user_source_dispositions(
+            self.inventory, false_verification
+        )
+        self.assertTrue(any("forbidden without governed reconciliation" in error for error in errors))
+
+    def test_all_user_implementation_references_resolve(self):
+        contract = SOURCE_ASSETS.load_user_source_dispositions()
+        references = [
+            reference
+            for asset in contract["ddl_backed_assets"]
             for key in ("backend_refs", "lakehouse_refs")
             for reference in asset[key]
         ]

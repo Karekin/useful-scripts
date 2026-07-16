@@ -93,7 +93,7 @@ zero-difference checks, and a separately checksummed independent verifier.
 Documentation volume estimates (for example “15.96 亿”) are never used as a
 denominator. A merely non-empty JSON file can no longer promote any of the 718
 assets to `verified`.
-The governed detailed-disposition numerator is now 69/718. The Product
+The governed detailed-disposition numerator is now 71/718. The Product
 slice covers all ten authoritative 商品 overview assets: nine DDL-backed assets
 are specified across Catalog, Listing, workflow, Identity/Merchant and Quality
 boundaries; the personnel salary asset remains provisional because its detailed
@@ -119,6 +119,16 @@ Order benefit allocation and AfterSale reversal. The platform-allowance label
 does not prove the funder when `seller_id` is present, and JSON/STRING amounts
 remain quarantined until currency, unit, rounding and conservation are proven.
 All six assets are specified but runtime and final verification remain zero.
+The User slice inventories all thirty authoritative 用户 assets. Only the
+profile snapshot and Kafka login stream have same-name detailed DDL, so they
+are specified while the other twenty-eight remain explicit overview-only
+provisional dispositions. The wide profile row is split into Principal/source
+identity, versioned Member profile/tier/address, Consent and Verification
+claims; login is an immutable authentication observation rather than a mutable
+profile. Legal ids, names, phones, addresses, payment/social accounts, IP,
+device, education, OCR and biometric evidence stay tokenized or restricted.
+Account closure revokes access but cannot erase Order, Payment or Ledger
+history. User runtime and final verification remain zero.
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%

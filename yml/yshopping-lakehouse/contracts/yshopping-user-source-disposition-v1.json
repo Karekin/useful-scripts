@@ -1,0 +1,107 @@
+{
+  "contract_version": 1,
+  "contract_id": "yshopping.user.source-disposition.v1",
+  "source_scope": {
+    "domain": "用户",
+    "authoritative_document": "ODS语兴好物（y shopping）电商数据表.md",
+    "authoritative_overview_lines": "169-199",
+    "expected_asset_count": 30,
+    "expected_source_evidence_counts": {"ddl_backed": 2, "overview_only": 28},
+    "source_detail_limit": "Only the profile snapshot and login stream have detailed DDL. The other 28 assets are overview names without keys, columns, types, status dictionaries, retention, tenant grain, or source-system schemas and therefore remain provisional."
+  },
+  "verification_policy": {
+    "specified_definition": "A user source has same-name DDL evidence plus explicit Principal/Profile/Authentication/Verification/Consent authority, field classification, lifecycle, corrections and a runtime gate.",
+    "verified_definition": "Verification requires non-empty production evidence, tenant-scoped identity mapping, restricted-data controls and full-denominator independent reconciliation without exposing raw secrets or verification evidence.",
+    "empty_tables_are_evidence": false,
+    "allowed_decisions": ["reuse", "merge", "split", "derive", "correct", "reject"],
+    "allowed_model_statuses": ["partial", "missing", "rejected"],
+    "runtime_statuses": ["missing", "pending", "verified"]
+  },
+  "lifecycle_policy_defaults": {
+    "history_policy": "Principal identity is stable; Profile, Consent, Membership and Verification claims are immutable versions; authentication and security observations append.",
+    "delete_policy": "Account closure revokes access and minimizes mutable projections while retaining legally required tokenized audit/financial references; it never hard-deletes Order, Payment or Ledger history.",
+    "backfill_policy": "Resolve tenant and qualified source identity before replay; tokenize restricted identifiers, separate consent/verification/profile/address/authentication and quarantine ambiguous status or raw-secret payloads."
+  },
+  "ddl_backed_assets": [
+    {
+      "source_asset": "ods_user_user_detail_df", "source_label": "用户信息表", "source_anchor": {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 170},
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 1856, "end_line": 1908, "source_asset": "ods_user_user_detail_df"}},
+      "source_grain": "one mutable user/profile snapshot per source id and partition",
+      "decision": "split", "canonical_entities": ["identity.Principal", "identity.SourceIdentity", "member.MemberProfileVersion", "member.MembershipTierAssignment", "member.AddressBookEntry", "identity.VerificationClaimReference", "audit.ConsentVersion"],
+      "semantic_rules": {"grain": "one stable tenant-scoped Principal plus separately versioned profile, membership, address, consent and verification claims", "identity": "source user, visitor, social account, payment account and verified natural person identifiers remain qualified mappings and never collapse by value", "money_or_quantity": "VIP/SVIP levels are typed membership assignments, not money or identity; no balance is inferred", "history": "profile snapshot changes publish versions; register facts append; consent and verification keep exact policy/provider versions", "security": "idcard, legal name, phone, email, address, Alipay/WeChat ids, IP, device id, education and biometrics are tokenized/restricted and excluded from general events", "authority": "Identity owns Principal/source links; Member owns profile/tier/address; verification provider owns raw evidence; Consent owns acceptance; Order freezes delivery snapshot"},
+      "corrections": ["split the wide row instead of creating a universal user aggregate", "replace is_complete with exact agreement id/version, accepted_at and proof", "do not retain raw idcard, payment account, phone, address_json, IP or device id in canonical events", "derive age only from governed date-of-birth access when permitted rather than treating mutable age as authority"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-identity/cloudmold-module-identity-server/src/main/java/cn/iocoder/yudao/module/cloudmold/identity/dal/dataobject/PrincipalDO.java", "yudao-cloud/cloudmold-module-identity/cloudmold-module-identity-server/src/main/java/cn/iocoder/yudao/module/cloudmold/identity/dal/dataobject/SourceIdentityDO.java", "yudao-cloud/yudao-module-member/yudao-module-member-server/src/main/java/cn/iocoder/yudao/module/member/dal/dataobject/user/MemberUserDO.java", "yudao-cloud/yudao-module-member/yudao-module-member-server/src/main/java/cn/iocoder/yudao/module/member/dal/dataobject/address/MemberAddressDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-principal-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-identity-source-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/15-canonical-identity-merchant-warehouse-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_user_user_login_di", "source_label": "用户登陆表", "source_anchor": {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 171},
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 1910, "end_line": 1931, "source_asset": "ods_user_user_login_di"}},
+      "source_grain": "one append-only Kafka login observation per source id",
+      "decision": "split", "canonical_entities": ["identity.PrincipalReference", "identity.SourceIdentityReference", "security.AuthenticationObservation", "security.RiskSignalToken"],
+      "semantic_rules": {"grain": "one immutable authentication observation with outcome, method, source, observed time and optional mapped Principal", "identity": "login row, source user, Principal, device token and session are distinct; mobile never acts as a global key", "money_or_quantity": "no money, points, tier or balance authority", "history": "observations append and late Kafka events retain source event time, ingestion time and deterministic idempotency", "security": "raw mobile, IP, device data and address_json stay tokenized/restricted with purpose-bound retention and never enter public analytics", "authority": "authentication provider owns outcome/session; Identity owns Principal mapping; Security owns normalized risk signals"},
+      "corrections": ["repair the prototype identifier that incorrectly embeds Markdown bold markers", "require an explicit login outcome and authentication method because the source DDL omits both", "tokenize mobile, IP, device and geolocation before canonical publication", "do not treat modify_time as a mutable replacement for an immutable login observation"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-identity/cloudmold-module-identity-server/src/main/java/cn/iocoder/yudao/module/cloudmold/identity/dal/dataobject/PrincipalDO.java", "yudao-cloud/cloudmold-module-identity/cloudmold-module-identity-server/src/main/java/cn/iocoder/yudao/module/cloudmold/identity/dal/dataobject/IdentityOperationDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-domain-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-principal-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/15-canonical-identity-merchant-warehouse-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    }
+  ],
+  "overview_only_groups": [
+    {
+      "group": "identity_verification", "decision": "split", "canonical_entities": ["identity.VerificationCase", "identity.VerificationClaim", "identity.RestrictedEvidenceToken", "audit.ConsentVersion"],
+      "authority": "Verification providers own raw evidence; Identity stores only typed claims, status/version and restricted evidence tokens; no source result self-asserts legal identity.",
+      "security": "Reject raw legal ids, faces, OCR images/text, bank identity payloads and education evidence from ordinary events or dimensions.",
+      "assets": [
+        {"source_asset":"ods_tb_user_info_df","source_label":"用户实名信息","line":172,"table_rule":"Separate natural-person claim from source account; require issuer, method, assurance level and validity."},
+        {"source_asset":"ods_yshopping_user_certify_result_ri_v2","source_label":"实名认证实时结果表","line":173,"table_rule":"Treat provider result as an append-only observation, not the final Principal identity without case linkage."},
+        {"source_asset":"ods_tb_student_certification_log_df","source_label":"学生认证记录表","line":186,"table_rule":"Version student eligibility claim and expiry; keep institution evidence restricted."},
+        {"source_asset":"ods_tb_alipay_certify_df","source_label":"支付宝认证记录表","line":188,"table_rule":"Store provider case/token and typed outcome; never ingest Alipay account or raw response as identity authority."},
+        {"source_asset":"ods_tb_certification_log_df","source_label":"认证流水表","line":189,"table_rule":"Map each attempt to one VerificationCase and retain retry/outcome chronology."},
+        {"source_asset":"ods_tb_ocr_log_df","source_label":"ocr流水表","line":190,"table_rule":"OCR output is restricted evidence with model/version/confidence, never an unqualified profile update."},
+        {"source_asset":"ods_yshopping_user_ext_tb_ua_person_authentication_df","source_label":"自然人认证信息","line":192,"table_rule":"Keep legal-person claim distinct from source account and tokenize all document identifiers."},
+        {"source_asset":"ods_yshopping_user_ext_tb_ua_2_person_authentication_df","source_label":"自然人认证映射关系表","line":193,"table_rule":"Represent a qualified source mapping with validity and provenance, never equality by numeric id."},
+        {"source_asset":"ods_yshopping_user_ext_tb_ua_authentication_log_df","source_label":"用户活体认证日志","line":194,"table_rule":"Retain typed liveness result/model/version; biometric material remains outside canonical storage."},
+        {"source_asset":"ods_yshopping_user_ext_tb_ua_ocr_log_df","source_label":"用户认证OCR日志","line":195,"table_rule":"Bind OCR evidence token to exact case/attempt and prohibit raw image or extracted legal id in events."}
+      ]
+    },
+    {
+      "group": "authentication_and_account_security", "decision": "split", "canonical_entities": ["security.AuthenticationObservation", "security.AccountRecoveryCase", "identity.SourceIdentityLink", "audit.ConsentVersion"],
+      "authority": "Authentication/Security own attempts, credential lifecycle and recovery; Identity owns source links; provider vaults own secrets.",
+      "security": "Passwords, OTP values, PAN/account details, biometrics, raw mobile/IP/device data and provider credentials are never canonical payloads.",
+      "assets": [
+        {"source_asset":"ods_usersloginlog_df","source_label":"用户登录注册日志","line":174,"table_rule":"Separate registration from authentication attempts and retain explicit outcome, method and idempotency."},
+        {"source_asset":"ods_tb_user_mobile_record_df","source_label":"用户换绑记录","line":180,"table_rule":"Model verified mobile-link replacement with old/new opaque tokens, consent and revocation chronology."},
+        {"source_asset":"ods_tb_user_unions_df","source_label":"三方登录","line":181,"table_rule":"Create provider-qualified SourceIdentity links; never merge Principals solely on provider identifier equality."},
+        {"source_asset":"ods_risk_union_user_unbind_ri","source_label":"第三方解绑","line":182,"table_rule":"Append a revocation event against the exact source link/version and retain risk decision provenance."},
+        {"source_asset":"ods_tb_user_mobile_captcha_df","source_label":"用户手机号验证码记录","line":185,"table_rule":"Retain challenge metadata/outcome only; OTP value and raw mobile are forbidden."},
+        {"source_asset":"ods_user_face_fingerprint_conf_df","source_label":"用户面容指纹支付配置表","line":197,"table_rule":"Store consent/capability flags and provider token only; biometric templates belong to the secure device/provider."},
+        {"source_asset":"ods_tb_user_retrieve_account_log_df","source_label":"账号找回业务日志表","line":198,"table_rule":"Model a recovery case with assurance checks, decision and audit; never publish recovery evidence."},
+        {"source_asset":"ods_userpassword_df","source_label":"用户提现密码","line":199,"table_rule":"Reject password migration; replace with provider-held credential reference and versioned reset/revocation state."}
+      ]
+    },
+    {
+      "group": "profile_address_and_lifecycle", "decision": "split", "canonical_entities": ["identity.Principal", "member.MemberProfileVersion", "member.AddressBookEntry", "identity.AccountLifecycleEvent", "privacy.DataErasureCase"],
+      "authority": "Identity owns account lifecycle, Member owns profile/address, Privacy owns erasure decisions, and Order retains accepted delivery snapshots.",
+      "security": "Addresses, phones, installation lists, device identifiers and lifecycle reasons are purpose-limited restricted data.",
+      "assets": [
+        {"source_asset":"ods_tb_user_address_df","source_label":"用户地址管理","line":175,"table_rule":"Version address book entries; Order stores an immutable accepted delivery snapshot rather than a live reference."},
+        {"source_asset":"ods_user_log_off_df","source_label":"用户注销","line":176,"table_rule":"Map to one account-closure case and terminal access revocation without deleting financial history."},
+        {"source_asset":"ods_user_log_off_detail_df","source_label":"用户注销明细","line":177,"table_rule":"Keep closure-step audit separate from closure case and restrict reason/evidence."},
+        {"source_asset":"ods_tb_user_log_off_df","source_label":"用户注销","line":178,"table_rule":"Reconcile as an alternate source namespace; do not merge with ods_user_log_off_df without keys and provenance."},
+        {"source_asset":"ods_tb_user_log_off_detail_df","source_label":"用户注销明细","line":179,"table_rule":"Reconcile alternate closure detail to exact case/step; quarantine unmatched rows."},
+        {"source_asset":"ods_tb_visitor_client_df","source_label":"游客","line":183,"table_rule":"Use a revocable anonymous Principal/source link; merge into a member only through explicit verified linking."},
+        {"source_asset":"ods_user_app_list_df","source_label":"用户安装app表","line":187,"table_rule":"Classify as restricted consent-bound device observation, not Member profile or marketing entitlement."},
+        {"source_asset":"ods_noah_user_df","source_label":"noah用户","line":196,"table_rule":"Treat as a separate source identity namespace until schema and account purpose prove a governed link."}
+      ]
+    },
+    {
+      "group": "payment_identity_and_entitlement", "decision": "split", "canonical_entities": ["payment.PaymentInstrumentToken", "identity.PrincipalReference", "promotion.EntitlementReference", "ledger.AccountReference"],
+      "authority": "Payment/provider vault owns payment instrument tokens; Promotion or Ledger owns entitlement/balance; Member only references them.",
+      "security": "Raw Alipay/account credentials and payment identifiers are PCI/restricted and cannot enter Member profile or analytics.",
+      "assets": [
+        {"source_asset":"ods_setaccountlog_df","source_label":"支付宝账户设置","line":184,"table_rule":"Store opaque provider instrument/account token plus consent lifecycle; reject raw account migration."},
+        {"source_asset":"ods_usersredpacket_df","source_label":"用户红包","line":191,"table_rule":"Do not model as a user-profile field; map to exact versioned entitlement and immutable grant/use/expiry ledger."}
+      ]
+    }
+  ]
+}
