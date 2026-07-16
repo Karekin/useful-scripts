@@ -155,6 +155,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_payment_source_schema_request(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_advertising_source_schema_request(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_community_source_dispositions(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_activity_source_schema_request(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_engagement_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_compensation_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_ticket_source_dispositions(self.inventory))
@@ -309,6 +310,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertTrue(any("advertising=0/7 (0.00%)" in line for line in lines))
         self.assertTrue(any("community=30/33 (90.91%)" in line for line in lines))
         self.assertTrue(any("community=0/33 (0.00%)" in line for line in lines))
+        self.assertTrue(any("activity=0/56 (0.00%)" in line for line in lines))
         self.assertTrue(any("engagement=4/4 (100.00%)" in line for line in lines))
         self.assertTrue(any("engagement=0/4 (0.00%)" in line for line in lines))
         self.assertTrue(any("compensation=1/3 (33.33%)" in line for line in lines))
@@ -1480,6 +1482,98 @@ class SourceAssetCtlTest(unittest.TestCase):
             for reference in profile[key]
         ]
         references.append(contract["runtime_nonempty_reconciliation"]["gate_ref"])
+        self.assertEqual(
+            [],
+            [
+                (reference, SOURCE_ASSETS._contract_reference_error(reference))
+                for reference in references
+                if SOURCE_ASSETS._contract_reference_error(reference)
+            ],
+        )
+
+    def test_activity_schema_request_covers_all_56_overview_only_assets(self):
+        contract = SOURCE_ASSETS.load_activity_source_schema_request()
+        observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "活动")
+        requested = {asset["source_asset"] for asset in contract["assets"]}
+        self.assertEqual(56, len(observed))
+        self.assertEqual(set(observed), requested)
+        self.assertEqual([], SOURCE_ASSETS.validate_activity_source_schema_request(self.inventory))
+        for name in requested:
+            logical = next(
+                asset for asset in self.inventory["logical_assets"]
+                if asset["normalized_name"] == name
+            )
+            self.assertEqual(1, len(logical["occurrences"]))
+            self.assertEqual("candidate", logical["occurrences"][0]["role"])
+
+    def test_activity_profiles_separate_reward_order_ledger_risk_and_behavior_authority(self):
+        contract = SOURCE_ASSETS.load_activity_source_schema_request()
+        profiles = contract["semantic_profiles"]
+        self.assertEqual(9, len(profiles))
+        participation = " ".join(profiles["participation_task"]["required_semantics"])
+        prize = " ".join(profiles["prize_entitlement"]["required_semantics"])
+        commerce = " ".join(profiles["commerce_order"]["required_semantics"])
+        ledger = " ".join(profiles["reward_ledger"]["required_semantics"])
+        self.assertIn("without_direct_grant_authority", participation)
+        self.assertIn("randomness_seed_commitment_and_audit", prize)
+        for token in ("iso_currency", "payment_attempt", "inventory_reservation"):
+            self.assertIn(token, commerce)
+        for token in ("counter_entry", "signed_integer", "zero_sum"):
+            self.assertIn(token, ledger)
+        self.assertFalse(contract["admission_policy"]["participation_proves_qualification_or_reward"])
+        self.assertFalse(contract["admission_policy"]["promotion_row_proves_order_payment_inventory_or_ledger_effect"])
+
+    def test_activity_status_is_zero_until_exact_schemas_arrive(self):
+        status = SOURCE_ASSETS.activity_disposition_status(self.inventory)
+        self.assertEqual(56, status["activity_source_asset_count"])
+        self.assertEqual(0, status["activity_detailed_disposition_specified_count"])
+        self.assertEqual(0, status["activity_runtime_nonempty_reconciled_count"])
+        self.assertEqual(0, status["activity_final_disposition_verified_count"])
+        self.assertEqual(0.0, status["activity_detailed_disposition_percent"])
+
+    def test_activity_schema_request_rejects_missing_duplicate_weakened_and_evidence_drift(self):
+        contract = SOURCE_ASSETS.load_activity_source_schema_request()
+        missing = json.loads(json.dumps(contract))
+        missing["assets"].pop()
+        errors = SOURCE_ASSETS.validate_activity_source_schema_request(self.inventory, missing)
+        self.assertTrue(any("differ from authoritative overview" in error for error in errors))
+
+        duplicate = json.loads(json.dumps(contract))
+        duplicate["assets"][1] = json.loads(json.dumps(duplicate["assets"][0]))
+        errors = SOURCE_ASSETS.validate_activity_source_schema_request(self.inventory, duplicate)
+        self.assertTrue(any("duplicate source_asset" in error for error in errors))
+
+        weakened = json.loads(json.dumps(contract))
+        weakened["admission_policy"]["award_or_send_row_proves_entitlement_or_delivery"] = True
+        errors = SOURCE_ASSETS.validate_activity_source_schema_request(self.inventory, weakened)
+        self.assertTrue(any("award_or_send_row" in error for error in errors))
+
+        drifted_inventory = json.loads(json.dumps(self.inventory))
+        logical = next(
+            asset for asset in drifted_inventory["logical_assets"]
+            if asset["normalized_name"] == "ods_mission_df"
+        )
+        logical["occurrences"].append(
+            {
+                "role": "create_target",
+                "document": "ODS语兴好物（y shopping）电商数据表.md",
+                "line": 9998,
+                "qualified_name": "ods_mission_df",
+                "heading_path": ["活动", "ods_mission_df"],
+            }
+        )
+        errors = SOURCE_ASSETS.validate_activity_source_schema_request(
+            drifted_inventory, contract
+        )
+        self.assertTrue(any("field-level evidence may now exist" in error for error in errors))
+
+    def test_all_activity_implementation_references_resolve(self):
+        contract = SOURCE_ASSETS.load_activity_source_schema_request()
+        references = [
+            reference
+            for values in contract["implementation_refs"].values()
+            for reference in values
+        ]
         self.assertEqual(
             [],
             [

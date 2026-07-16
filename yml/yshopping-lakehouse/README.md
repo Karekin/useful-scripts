@@ -212,6 +212,17 @@ recharge/tips/commission require exact Payment/Ledger entries with ISO currency
 and integer minor units. AI blue-team rows cannot impersonate users or authorize
 production attacks. Community is therefore 30/33 detailed but 0/33 runtime and
 final; the global governed numerator is 159/718 (22.14%).
+The Activity overview contains fifty-six assets and every one occurs exactly
+once in the six-document snapshot, only as an ODS overview name. A grouped
+schema request keeps all fifty-six at `BLOCKED_MISSING_SOURCE_SCHEMA` across
+campaign definition, participation/task, prize entitlement, commerce order,
+merchant enrollment, notification, reward ledger, risk education and sensitive
+behavior boundaries. Participation cannot prove qualification or reward;
+award/send rows cannot prove entitlement delivery; campaign rows cannot create
+Order, Payment, Inventory or Ledger effects. Points and mall coin require typed
+units and immutable balanced entries, prize draws require auditable randomness,
+and raw keywords/answers remain restricted. Activity receives 0/56 detailed,
+runtime and final credit, so the global numerator remains 159/718 (22.14%).
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%

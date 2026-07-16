@@ -1,0 +1,149 @@
+{
+  "contract_version": 1,
+  "contract_id": "yshopping.activity.source-schema-request.v1",
+  "source_scope": {
+    "domain": "活动",
+    "authoritative_document": "ODS语兴好物（y shopping）电商数据表.md",
+    "overview_lines": "68-124",
+    "authoritative_unique_asset_count": 56,
+    "requested_schema_asset_count": 56,
+    "status": "BLOCKED_MISSING_SOURCE_SCHEMA",
+    "evidence_limit": "Every Activity asset occurs exactly once in the six-document snapshot, only as an ODS overview candidate. No same-name CREATE, dependency or downstream definition exists."
+  },
+  "delivery_requirements": {
+    "source_identity": ["source_system", "source_database_topic_or_api", "qualified_asset", "owner", "business_description", "schema_or_api_version"],
+    "schema": ["full_create_table_ddl_or_event_schema", "primary_and_business_keys", "tenant_and_principal_keys", "column_name_type_nullability_comment", "status_and_type_dictionaries", "cross_domain_mapping_keys"],
+    "change_semantics": ["snapshot_incremental_or_event_mode", "event_effective_and_ingestion_times", "timezone", "soft_delete_hard_delete_or_tombstone", "cdc_watermark_cursor_or_offset", "late_arrival_deduplication_replay_and_correction", "schema_change_policy"],
+    "governance": ["pii_secret_and_behavior_classification", "consent_and_processing_purpose", "retention", "freshness_slo", "expected_volume", "least_privilege_read_role", "source_audit_attestation"],
+    "reconciliation": ["complete_denominator_query", "tenant_partition_counts", "stable_business_key_digest", "state_and_event_conservation", "money_points_inventory_and_entitlement_conservation", "duplicate_orphan_and_unmapped_rules"]
+  },
+  "admission_policy": {
+    "overview_name_is_schema_evidence": false,
+    "table_name_implies_grain": false,
+    "sampled_rows_are_final_evidence": false,
+    "empty_extract_is_evidence": false,
+    "participation_proves_qualification_or_reward": false,
+    "award_or_send_row_proves_entitlement_or_delivery": false,
+    "promotion_row_proves_order_payment_inventory_or_ledger_effect": false,
+    "points_or_coin_without_unit_and_ledger_is_accepted": false,
+    "risk_answer_proves_reviewed_decision": false,
+    "raw_keyword_answer_or_behavior_is_broadly_exposed": false,
+    "promotion_rule": "No Activity asset may move from provisional to specified until its exact source schema, profile semantics, cross-domain references and checksummed evidence are delivered.",
+    "runtime_rule": "No Activity asset may move to verified until a non-empty production full-denominator reconciliation proves each source asset independently, including reversals, expiry and owning-domain effects."
+  },
+  "semantic_profiles": {
+    "campaign_definition": {
+      "target_boundary": "Promotion Campaign and immutable CampaignVersion, rule/version, eligibility policy, Catalog/Listing binding and separately owned inventory budget",
+      "required_semantics": ["campaign_id_version_type_status_and_effective_window", "rule_policy_and_asset_template_version", "catalog_spu_sku_listing_offer_mapping", "eligibility_audience_channel_and_tenant_scope", "inventory_budget_reservation_release_and_owning_inventory_reference", "approval_publish_pause_close_and_rollback_history"]
+    },
+    "participation_task": {
+      "target_boundary": "Participant Task/Attempt/Assistance history and Qualification decision; participation never creates a reward by itself",
+      "required_semantics": ["task_definition_version_instance_attempt_and_operation_ids", "actor_inviter_invitee_helper_and_subject_principal_mappings", "qualification_policy_version_and_evaluation_result", "idempotency_retry_duplicate_and_abuse_controls", "event_time_expiry_revocation_and_compensation_history", "reward_entitlement_reference_without_direct_grant_authority"]
+    },
+    "prize_entitlement": {
+      "target_boundary": "Versioned Prize/Draw definition, immutable DrawAttempt/Outcome and separately issued RewardEntitlement with delivery evidence",
+      "required_semantics": ["prize_pool_prize_version_draw_attempt_and_outcome_ids", "selection_algorithm_randomness_seed_commitment_and_audit", "probability_weight_quota_limit_and_exhaustion_semantics", "winner_principal_qualification_and_duplicate_prevention", "entitlement_issue_claim_expire_revoke_and_reversal_history", "coupon_goods_points_coin_or_cash_delivery_reference_to_owning_domain"]
+    },
+    "commerce_order": {
+      "target_boundary": "Promotion reservation or purchase intent referencing canonical Order, Payment, Listing, Inventory and Fulfillment without duplicating their authority",
+      "required_semantics": ["reservation_purchase_order_and_order_item_business_keys", "campaign_version_listing_offer_sku_and_merchant_mappings", "requested_payable_discount_and_refund_minor_units_with_iso_currency", "payment_attempt_capture_refund_and_settlement_references", "inventory_reservation_allocation_release_and_fulfillment_references", "cancel_expire_refund_and_compensation_state_machine"]
+    },
+    "merchant_enrollment": {
+      "target_boundary": "Merchant campaign enrollment application, review and eligibility decision; Merchant and Listing remain independent authorities",
+      "required_semantics": ["merchant_shop_campaign_version_and_application_ids", "applicant_reviewer_and_approver_principal_mappings", "submitted_terms_policy_version_and_evidence_refs", "review_decision_reason_effective_window_and_appeal", "listing_offer_scope_and_sales_eligibility_recheck", "withdraw_suspend_expire_and_audit_history"]
+    },
+    "notification": {
+      "target_boundary": "Notification intent, preference evaluation, delivery attempts and receipts; notice does not prove participation or purchase",
+      "required_semantics": ["campaign_version_notification_intent_and_recipient_principal", "template_version_channel_locale_and_render_digest", "preference_consent_quiet_hours_and_suppression_reason", "attempt_provider_message_receipt_and_failure_identity", "scheduled_sent_delivered_read_expired_and_cancelled_times", "proof_that_delivery_does_not_create_participation_order_or_reward"]
+    },
+    "reward_ledger": {
+      "target_boundary": "Reward Entitlement plus immutable points/coin/coupon ledger and external Payment reference; summaries never replace ledger entries",
+      "required_semantics": ["entitlement_transaction_entry_account_and_counter_entry_ids", "reward_type_typed_unit_iso_currency_or_points_coin_definition_version", "signed_integer_quantity_minor_units_and_precision", "earn_hold_spend_expire_revoke_refund_and_compensation_entries", "coupon_entitlement_payment_or_catalog_delivery_reference", "per_unit_zero_sum_or_issuance_redemption_conservation"]
+    },
+    "risk_education": {
+      "target_boundary": "Versioned education Question/Answer taxonomy, user Attempt, Risk signal/review and separately issued coupon entitlement",
+      "required_semantics": ["question_answer_policy_and_content_version_ids", "participant_attempt_response_and_scoring_identity", "correct_answer_access_classification_and_leak_prevention", "risk_signal_review_policy_version_and_decision_reference", "coupon_entitlement_issue_reference_without_row_level_self_grant", "attempt_retry_expiry_revocation_and_audit_history"]
+    },
+    "sensitive_behavior": {
+      "target_boundary": "Restricted keyword/code observation with purpose, consent and retention; never a credential, profile or automatic reward authority",
+      "required_semantics": ["observation_event_session_and_principal_pseudonymous_identity", "keyword_or_code_type_schema_version_and_digest", "purpose_consent_legal_basis_and_retention", "event_client_server_ingestion_times_and_timezone", "secret_credential_token_and_personal_content_exclusion", "qualification_review_and_reward_entitlement_references_without_inference"]
+    }
+  },
+  "implementation_refs": {
+    "backend_refs": [
+      "yudao-cloud/cloudmold-module-promotion/cloudmold-module-promotion-server/src/main/java/cn/iocoder/yudao/module/cloudmold/promotion/dal/dataobject/PromotionCampaignDO.java",
+      "yudao-cloud/cloudmold-module-promotion/cloudmold-module-promotion-server/src/main/java/cn/iocoder/yudao/module/cloudmold/promotion/dal/dataobject/CouponEntitlementDO.java",
+      "yudao-cloud/cloudmold-module-gamification/cloudmold-module-gamification-server/src/main/java/cn/iocoder/yudao/module/cloudmold/gamification/dal/dataobject/GamificationRecords.java",
+      "yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/dal/dataobject/OrderHeaderDO.java",
+      "yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/dal/dataobject/PaymentTransactionDO.java",
+      "yudao-cloud/cloudmold-module-risk/cloudmold-module-risk-server/src/main/java/cn/iocoder/yudao/module/cloudmold/risk/dal/dataobject/RiskRecords.java",
+      "yudao-cloud/cloudmold-module-engagement/cloudmold-module-engagement-server/src/main/java/cn/iocoder/yudao/module/cloudmold/engagement/dal/dataobject/NotificationCampaignDO.java"
+    ],
+    "lakehouse_refs": [
+      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-promotion-event.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-gamification-event.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-status-event.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-payment-status-event.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-risk-event.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-engagement-event.sql"
+    ]
+  },
+  "assets": [
+    {"source_asset":"ods_activity_discount_detail_df","source_label":"折扣活动","overview_line":68,"profile":"campaign_definition"},
+    {"source_asset":"ods_yshopping_activity_ps_collect_discount_info_df","source_label":"活动配置表","overview_line":69,"profile":"campaign_definition"},
+    {"source_asset":"ods_yshoppingactivity_raffle_commodity_df","source_label":"活动商品表","overview_line":70,"profile":"campaign_definition"},
+    {"source_asset":"ods_user_task_instance_df","source_label":"任务实例表 任务发起者的记录信息","overview_line":71,"profile":"participation_task"},
+    {"source_asset":"ods_user_task_instance_record_df","source_label":"助力记录表需求优先级","overview_line":72,"profile":"participation_task"},
+    {"source_asset":"ods_lottery_prize_award_record_df","source_label":"抽奖活动奖品中奖记录表","overview_line":73,"profile":"prize_entitlement"},
+    {"source_asset":"ods_activity_stock_df","source_label":"活动库存","overview_line":74,"profile":"campaign_definition"},
+    {"source_asset":"ods_promotion_activity_detail_df","source_label":"促销活动玩法","overview_line":75,"profile":"campaign_definition"},
+    {"source_asset":"ods_yshoppingmarketing_merchant_sign_up_record_detail_df","source_label":"商家报名记录","overview_line":76,"profile":"merchant_enrollment"},
+    {"source_asset":"ods_merchant_invitation_relation_df","source_label":"商家拉新活动用户邀请关系","overview_line":77,"profile":"participation_task"},
+    {"source_asset":"ods_originalraffle_df","source_label":"原价购抽奖","overview_line":78,"profile":"commerce_order"},
+    {"source_asset":"ods_originalrafflecoderecord_df","source_label":"原价购抽奖码助力关系","overview_line":79,"profile":"participation_task"},
+    {"source_asset":"ods_originalraffleorder_df","source_label":"原价购订单","overview_line":80,"profile":"commerce_order"},
+    {"source_asset":"ods_seckill_activity_notice_df","source_label":"秒杀活动通知","overview_line":81,"profile":"notification"},
+    {"source_asset":"ods_yshopping_marketing_user_promo_user_record_df","source_label":"促销活动用户记录","overview_line":82,"profile":"participation_task"},
+    {"source_asset":"ods_yshopping_marketing_user_promo_user_record_di","source_label":"促销活动用户记录","overview_line":83,"profile":"participation_task"},
+    {"source_asset":"ods_seckill_activity_award_df","source_label":"秒杀活动奖品表","overview_line":84,"profile":"prize_entitlement"},
+    {"source_asset":"ods_seckill_activity_info_df","source_label":"秒杀活动定义表","overview_line":85,"profile":"campaign_definition"},
+    {"source_asset":"ods_mission_df","source_label":"活动表","overview_line":86,"profile":"campaign_definition"},
+    {"source_asset":"ods_yshopping_coupon_activity_discount_send_record_df","source_label":"活动发券流水表","overview_line":87,"profile":"reward_ledger"},
+    {"source_asset":"ods_promo_config_acitivity_df","source_label":"活动配置表","overview_line":88,"profile":"campaign_definition"},
+    {"source_asset":"ods_promo_config_prize_df","source_label":"奖品配置表","overview_line":89,"profile":"prize_entitlement"},
+    {"source_asset":"ods_shop_main_order_df","source_label":"预约主单","overview_line":90,"profile":"commerce_order"},
+    {"source_asset":"ods_promo_user_prize_send_record_df","source_label":"发奖记录表","overview_line":91,"profile":"prize_entitlement"},
+    {"source_asset":"ods_bargain_df","source_label":"砍价","overview_line":92,"profile":"participation_task"},
+    {"source_asset":"ods_bargainrecord_df","source_label":"砍价记录","overview_line":93,"profile":"participation_task"},
+    {"source_asset":"ods_yshopping_hacking_card_hacking_card_user_lottery_df","source_label":"用户抽卡信息","overview_line":95,"profile":"prize_entitlement"},
+    {"source_asset":"ods_yshopping_game_mall_mount_mall_coin_log_df","source_label":"盲盒对接商城兑换表","overview_line":96,"profile":"reward_ledger"},
+    {"source_asset":"ods_promo_user_lottery_code_record_df","source_label":"用户抽奖码记录","overview_line":97,"profile":"participation_task"},
+    {"source_asset":"ods_promo_user_share_boost_record_df","source_label":"分享助力记录","overview_line":98,"profile":"participation_task"},
+    {"source_asset":"ods_yshopping_growth_lottery_zero_lottery_activity_df","source_label":"0元抽奖-0元抽奖活动主表","overview_line":99,"profile":"campaign_definition"},
+    {"source_asset":"ods_yshopping_growth_lottery_zero_lottery_lucky_user_df","source_label":"0元抽奖-中签用户信息","overview_line":100,"profile":"prize_entitlement"},
+    {"source_asset":"ods_yshopping_growth_lottery_zero_lottery_prize_ext_df","source_label":"0元抽奖-活动附加奖品表","overview_line":101,"profile":"prize_entitlement"},
+    {"source_asset":"ods_yshopping_growth_lottery_zero_lottery_qualification_df","source_label":"0元抽奖-活动资格表","overview_line":102,"profile":"participation_task"},
+    {"source_asset":"ods_yshopping_growth_lottery_zero_lottery_qual_incr_trace_df","source_label":"0元抽奖用户任务记录表","overview_line":103,"profile":"participation_task"},
+    {"source_asset":"ods_growth_buzhou_fortune_chance_df","source_label":"开盒机会表","overview_line":104,"profile":"prize_entitlement"},
+    {"source_asset":"ods_asset_template_df","source_label":"资产模版表","overview_line":105,"profile":"campaign_definition"},
+    {"source_asset":"ods_discount_rule_df","source_label":"活动&奖品包规则","overview_line":106,"profile":"campaign_definition"},
+    {"source_asset":"ods_yshopping_member_user_task_df","source_label":"任务发放","overview_line":107,"profile":"participation_task"},
+    {"source_asset":"ods_yshopping_member_user_task_record_df","source_label":"任务发放流水","overview_line":108,"profile":"participation_task"},
+    {"source_asset":"ods_yshopping_memer_user_points_df","source_label":"积分发放","overview_line":109,"profile":"reward_ledger"},
+    {"source_asset":"ods_yshopping_member_user_points_record_df","source_label":"积分使用流水(单次汇总)","overview_line":110,"profile":"reward_ledger"},
+    {"source_asset":"ods_yshopping_member_user_points_record_item_df","source_label":"积分使用流水(明细）","overview_line":111,"profile":"reward_ledger"},
+    {"source_asset":"ods_yshopping_member_user_prize_record_df","source_label":"奖品兑换记录","overview_line":112,"profile":"reward_ledger"},
+    {"source_asset":"ods_yshopping_member_prize_config_df","source_label":"奖品信息","overview_line":113,"profile":"prize_entitlement"},
+    {"source_asset":"ods_stone_limit_activity_df","source_label":"限时折扣活动表","overview_line":114,"profile":"campaign_definition"},
+    {"source_asset":"ods_stone_limit_activity_proyshoppingct_df","source_label":"限时折扣活动商品表","overview_line":115,"profile":"campaign_definition"},
+    {"source_asset":"ods_stone_limit_activity_round_df","source_label":"限时折扣活动场次表","overview_line":116,"profile":"campaign_definition"},
+    {"source_asset":"ods_prize_send_record_ri","source_label":"发奖记录实时表","overview_line":117,"profile":"prize_entitlement"},
+    {"source_asset":"ods_risk_security_question_df","source_label":"安全问题详情表","overview_line":118,"profile":"risk_education"},
+    {"source_asset":"ods_risk_security_answer_df","source_label":"安全中心有奖问答答案详情表","overview_line":119,"profile":"risk_education"},
+    {"source_asset":"ods_risk_security_answer_record_df","source_label":"用户答题记录表","overview_line":120,"profile":"risk_education"},
+    {"source_asset":"ods_risk_security_coupon_record_df","source_label":"用户领券记录表","overview_line":121,"profile":"risk_education"},
+    {"source_asset":"ods_risk_security_user_log_df","source_label":"用户参与答题流水记录","overview_line":122,"profile":"risk_education"},
+    {"source_asset":"ods_touch_normal_task_population_df","source_label":"人群、任务关联表","overview_line":123,"profile":"participation_task"},
+    {"source_asset":"ods_keyword_logs_df","source_label":"用户口令记录表","overview_line":124,"profile":"sensitive_behavior"}
+  ]
+}
