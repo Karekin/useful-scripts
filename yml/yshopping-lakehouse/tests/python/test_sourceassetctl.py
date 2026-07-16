@@ -157,6 +157,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_compensation_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_ticket_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_supply_chain_source_dispositions(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_llm_source_dispositions(self.inventory))
         self.assertEqual(
             [],
             validate_trade_admission(
@@ -269,12 +270,12 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual(110, status["bounded_domain_asset_count"])
         self.assertEqual(6, status["explicit_rejection_count"])
         self.assertEqual(718, status["preliminary_handled_count"])
-        self.assertEqual(110, status["detailed_disposition_specified_count"])
+        self.assertEqual(114, status["detailed_disposition_specified_count"])
         self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
         self.assertEqual(99.16, status["routing_percent"])
         self.assertEqual(100.0, status["preliminary_handled_percent"])
-        self.assertEqual(15.32, status["detailed_disposition_specified_percent"])
+        self.assertEqual(15.88, status["detailed_disposition_specified_percent"])
         self.assertEqual(0.0, status["runtime_nonempty_reconciled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
         self.assertIn(
@@ -310,7 +311,9 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertTrue(any("ticket=0/15 (0.00%)" in line for line in lines))
         self.assertTrue(any("supply_chain=23/23 (100.00%)" in line for line in lines))
         self.assertTrue(any("supply_chain=0/23 (0.00%)" in line for line in lines))
-        self.assertTrue(any("supply_chain=0/23; routing is not completion" in line for line in lines))
+        self.assertTrue(any("llm=4/16 (25.00%)" in line for line in lines))
+        self.assertTrue(any("llm=0/16 (0.00%)" in line for line in lines))
+        self.assertTrue(any("llm=0/16; routing is not completion" in line for line in lines))
 
     def test_game_dispositions_cover_exact_authoritative_overview_rows(self):
         observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "游戏")
@@ -1520,6 +1523,96 @@ class SourceAssetCtlTest(unittest.TestCase):
         contract = SOURCE_ASSETS.load_supply_chain_source_dispositions()
         references = [reference for asset in contract["ddl_backed_assets"] for key in ("backend_refs", "lakehouse_refs") for reference in asset[key]]
         self.assertEqual([], [(reference, SOURCE_ASSETS._contract_reference_error(reference)) for reference in references if SOURCE_ASSETS._contract_reference_error(reference)])
+
+    def test_llm_dispositions_lock_all_sixteen_overview_assets_without_alias_inference(self):
+        contract = SOURCE_ASSETS.load_llm_source_dispositions()
+        observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "大模型")
+        detailed = {asset["source_asset"] for asset in contract["ddl_backed_assets"]}
+        conflicts = {asset["source_asset"] for asset in contract["name_conflict_assets"]}
+        overview_only = {
+            asset["source_asset"]
+            for group in contract["overview_only_groups"]
+            for asset in group["assets"]
+        }
+        self.assertEqual(16, len(observed))
+        self.assertEqual(set(observed), detailed | conflicts | overview_only)
+        self.assertEqual((4, 2, 10), (len(detailed), len(conflicts), len(overview_only)))
+        self.assertEqual([], SOURCE_ASSETS.validate_llm_source_dispositions(self.inventory))
+
+    def test_llm_boundaries_reject_secret_attempt_payment_and_ai_authority_fabrication(self):
+        contract = SOURCE_ASSETS.load_llm_source_dispositions()
+        detailed = {asset["source_asset"]: asset for asset in contract["ddl_backed_assets"]}
+        overview = {
+            asset["source_asset"]: asset
+            for group in contract["overview_only_groups"]
+            for asset in group["assets"]
+        }
+        self.assertIn(
+            "source samples reuse id across multiple index values",
+            " ".join(detailed["ods_ai_workflow_node_executions_di"]["corrections"]),
+        )
+        self.assertIn(
+            "secret values remain in a vault",
+            detailed["ods_ai_workflow_workflow_df"]["semantic_rules"]["security"],
+        )
+        self.assertIn(
+            "a top-up row alone is not payment success",
+            overview["ods_paimon_ytoken_top_up_ri"]["table_rule"],
+        )
+        finding = contract["unadvertised_detailed_findings"][0]
+        self.assertEqual("reject", finding["decision"])
+        self.assertFalse(finding["denominator_credit"])
+        self.assertIn("password_salt", finding["finding"])
+
+    def test_llm_status_credits_only_four_same_name_ddls_and_no_runtime_evidence(self):
+        self.assertEqual(
+            {
+                "llm_source_asset_count": 16,
+                "llm_detailed_disposition_specified_count": 4,
+                "llm_runtime_nonempty_reconciled_count": 0,
+                "llm_final_disposition_verified_count": 0,
+                "llm_detailed_disposition_percent": 25.0,
+                "llm_runtime_nonempty_reconciled_percent": 0.0,
+                "llm_final_disposition_verified_percent": 0.0,
+            },
+            SOURCE_ASSETS.llm_disposition_status(self.inventory),
+        )
+
+    def test_llm_contract_rejects_missing_duplicate_false_verification_and_security_drift(self):
+        contract = SOURCE_ASSETS.load_llm_source_dispositions()
+        missing = json.loads(json.dumps(contract))
+        missing["ddl_backed_assets"].pop()
+        errors = SOURCE_ASSETS.validate_llm_source_dispositions(self.inventory, missing)
+        self.assertTrue(any("exactly four" in error for error in errors))
+        duplicate = json.loads(json.dumps(contract))
+        duplicate["ddl_backed_assets"][1] = json.loads(json.dumps(duplicate["ddl_backed_assets"][0]))
+        errors = SOURCE_ASSETS.validate_llm_source_dispositions(self.inventory, duplicate)
+        self.assertTrue(any("duplicate source_asset" in error for error in errors))
+        false_verification = json.loads(json.dumps(contract))
+        false_verification["ddl_backed_assets"][0]["verification_status"] = "verified"
+        errors = SOURCE_ASSETS.validate_llm_source_dispositions(self.inventory, false_verification)
+        self.assertTrue(any("forbidden without governed reconciliation" in error for error in errors))
+        security_drift = json.loads(json.dumps(contract))
+        security_drift["unadvertised_detailed_findings"][0]["decision"] = "reuse"
+        errors = SOURCE_ASSETS.validate_llm_source_dispositions(self.inventory, security_drift)
+        self.assertTrue(any("account credential finding differs" in error for error in errors))
+
+    def test_all_llm_implementation_references_resolve(self):
+        contract = SOURCE_ASSETS.load_llm_source_dispositions()
+        references = [
+            reference
+            for asset in contract["ddl_backed_assets"]
+            for key in ("backend_refs", "lakehouse_refs")
+            for reference in asset[key]
+        ]
+        self.assertEqual(
+            [],
+            [
+                (reference, SOURCE_ASSETS._contract_reference_error(reference))
+                for reference in references
+                if SOURCE_ASSETS._contract_reference_error(reference)
+            ],
+        )
 
     def test_qualified_names_and_markdown_bold_are_parsed_without_losing_source_location(self):
         assets = {item["asset_id"]: item for item in self.inventory["assets"]}

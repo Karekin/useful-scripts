@@ -1,0 +1,97 @@
+{
+  "contract_version": 1,
+  "contract_id": "yshopping.llm.source-disposition.v1",
+  "source_scope": {
+    "domain": "大模型",
+    "authoritative_document": "ODS语兴好物（y shopping）电商数据表.md",
+    "authoritative_overview_lines": "265-280",
+    "expected_asset_count": 16,
+    "expected_source_evidence_counts": {"ddl_backed": 4, "name_conflict": 2, "overview_only": 10},
+    "unadvertised_detailed_finding_count": 1,
+    "source_detail_limit": "Four workflow assets have same-name DDL. The advertised agent table creates ods_dwd_risk_ai_apps_df and the advertised realtime request log is detailed as incremental di. Ten ytoken assets have overview names only. An unadvertised account heading creates ods_ai_workflow_app_log_df and exposes password fields; it receives no denominator credit."
+  },
+  "verification_policy": {
+    "specified_definition": "Same-name DDL plus explicit AI application, immutable workflow version, run, node attempt, invocation, Identity, token/quota ledger, model offering, image evidence and Skill marketplace boundaries.",
+    "verified_definition": "Non-empty production full-denominator reconciliation with exact tenant, Principal, application/workflow/version/run/node/invocation/provider/model/pricing/credential/quota/ledger/asset/Skill identities, immutable payload digests and independently accepted business effects.",
+    "empty_tables_are_evidence": false,
+    "allowed_decisions": ["reuse", "merge", "split", "derive", "correct", "reject"],
+    "allowed_model_statuses": ["partial", "missing", "rejected"],
+    "runtime_statuses": ["missing", "pending", "verified"]
+  },
+  "lifecycle_policy_defaults": {
+    "history_policy": "Applications, workflow definitions, models, pricing and Skills publish immutable versions; runs, node attempts, invocations, usage, quota ledger, top-ups, downloads and generated assets append.",
+    "delete_policy": "Disable/retire revokes future use while retaining audit, billing, decision and evidence lineage; credentials are revoked, never exposed or reconstructed.",
+    "backfill_policy": "Resolve tenant, Principal, application, workflow/version, model offering/pricing, credential metadata, quota account, invocation and asset identities; quarantine raw secrets, unversioned graphs, ambiguous realtime/incremental names and unsupported financial semantics."
+  },
+  "ddl_backed_assets": [
+    {
+      "source_asset":"ods_ai_workflow_workflow_runs_df","source_label":"大模型底层工作流执行表","source_anchor":{"document":"ODS语兴好物（y shopping）电商数据表.md","line":265},
+      "source_evidence":{"status":"ddl_backed","detail_anchor":{"heading_line":4156,"end_line":4195,"source_asset":"ods_ai_workflow_workflow_runs_df"}},
+      "source_grain":"one workflow-run snapshot carrying graph/input/output/error and aggregate usage",
+      "decision":"split","canonical_entities":["ai_operations.WorkflowRun","ai_operations.WorkflowVersionReference","ai_operations.InvocationAttempt","token_platform.InvocationUsage","identity.PrincipalReference"],
+      "semantic_rules":{"grain":"one immutable tenant-scoped run attempt bound to one application and immutable workflow version","identity":"run, sequence, application, workflow definition/version, invocation, provider request and creator Principal remain distinct","money_or_quantity":"tokens/steps/duration require typed units and per-invocation reconciliation; no quota or charge is inferred from aggregate total_tokens","history":"start, node attempts, retry, terminal status and feedback append; a mutable full-row snapshot cannot replace run history","security":"graph, inputs, outputs, errors, images and creator data are restricted; canonical events expose schema/version plus digests and typed outcomes","authority":"AI Operations owns run/invocation evidence; Token Platform owns metering/quota; owning business domain accepts effects"},
+      "corrections":["repair commnt and missing COMMENT syntax before execution","repair sample/DDL typos tentant/workfolw/imputs and validate version as an immutable workflow version rather than the sample timestamp","do not store raw graph inputs outputs errors or image URLs in broad analytics","do not turn total_tokens into quota deduction or billing without exact invocation and pricing version"],
+      "model_status":"partial","backend_refs":["yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aioperations/dal/dataobject/AiWorkflowRunDO.java","yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aioperations/dal/dataobject/AiInvocationAttemptDO.java","yudao-cloud/cloudmold-module-token-platform/cloudmold-module-token-platform-server/src/main/java/cn/iocoder/yudao/module/cloudmold/tokenplatform/dal/dataobject/InvocationUsageDO.java"],
+      "lakehouse_refs":["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-ai-operations-event.sql","useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-token-platform-event.sql"],
+      "runtime_nonempty_reconciliation":{"gate_ref":"useful-scripts/yml/yshopping-lakehouse/tests/sql/24-canonical-ai-token-risk-contract.sql","evidence_ref":null,"run_id":null,"row_count":0,"tenant_count":0,"status":"missing"},"specification_status":"specified","verification_status":"unverified"
+    },
+    {
+      "source_asset":"ods_ai_workflow_workflow_df","source_label":"大模型底层工作流表","source_anchor":{"document":"ODS语兴好物（y shopping）电商数据表.md","line":266},
+      "source_evidence":{"status":"ddl_backed","detail_anchor":{"heading_line":4196,"end_line":4227,"source_asset":"ods_ai_workflow_workflow_df"}},
+      "source_grain":"one mutable workflow-definition snapshot per source workflow/application",
+      "decision":"split","canonical_entities":["ai_operations.WorkflowDefinition","ai_operations.WorkflowVersion","ai_operations.ApplicationReference","identity.PrincipalReference","security.SecretReference"],
+      "semantic_rules":{"grain":"one stable workflow definition plus immutable approved graph/config version","identity":"workflow definition, version, application, graph node and creator/updater Principal identities remain distinct","money_or_quantity":"no token, quota, price or business amount authority","history":"graph/features/variables changes create immutable versions with approval, activation and rollback history","security":"graphs, features, environment and conversation variables are restricted; secret values remain in a vault and only opaque references enter versions","authority":"AI Operations owns workflow definition/version; Security owns secrets; application owner controls activation"},
+      "corrections":["split the source row that is described as both dimension and fact into definition and immutable version","repair sample/DDL spelling drift and reject linked documentation as graph/features payload","never persist environment-variable secret values in the workflow version","require approval activation rollback and content digest absent from source"],
+      "model_status":"partial","backend_refs":["yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aioperations/dal/dataobject/AiWorkflowDefinitionDO.java","yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aioperations/dal/dataobject/AiWorkflowVersionDO.java"],
+      "lakehouse_refs":["useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-ai-operations-current.sql"],
+      "runtime_nonempty_reconciliation":{"gate_ref":"useful-scripts/yml/yshopping-lakehouse/tests/sql/24-canonical-ai-token-risk-contract.sql","evidence_ref":null,"run_id":null,"row_count":0,"tenant_count":0,"status":"missing"},"specification_status":"specified","verification_status":"unverified"
+    },
+    {
+      "source_asset":"ods_ai_workflow_node_executions_di","source_label":"大模型底层工作流节点执行表","source_anchor":{"document":"ODS语兴好物（y shopping）电商数据表.md","line":267},
+      "source_evidence":{"status":"ddl_backed","detail_anchor":{"heading_line":4228,"end_line":4268,"source_asset":"ods_ai_workflow_node_executions_di"}},
+      "source_grain":"one node-execution observation per workflow run and node attempt",
+      "decision":"correct","canonical_entities":["ai_operations.WorkflowNodeAttempt","ai_operations.WorkflowRunReference","ai_operations.InvocationAttemptReference","identity.PrincipalReference"],
+      "semantic_rules":{"grain":"one immutable attempt keyed by tenant/run/node/attempt rather than source id alone","identity":"source row id, run, node definition/version, predecessor, attempt, provider invocation and creator Principal remain distinct","money_or_quantity":"duration uses a declared unit; node token/cost requires exact invocation usage and is absent from this source","history":"every retry and branch attempt appends; predecessor edges freeze the executed graph version","security":"node inputs/outputs/errors/titles may contain prompts, PII and secrets and remain restricted with payload digests","authority":"AI Operations owns node execution evidence; workflow version owns graph; business domains own accepted decisions"},
+      "corrections":["source samples reuse id across multiple index values so id cannot be trusted as a unique attempt key","validate predecessor edges against the frozen workflow version and retain branch/retry attempt ordinal","do not publish raw node inputs outputs errors or image URLs","triggered_from comment is incorrect and cannot substitute workflow_id or run_id"],
+      "model_status":"partial","backend_refs":["yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aioperations/dal/dataobject/AiInvocationAttemptDO.java","yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aioperations/dal/dataobject/AiWorkflowRunDO.java"],
+      "lakehouse_refs":["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-ai-operations-event.sql"],
+      "runtime_nonempty_reconciliation":{"gate_ref":"useful-scripts/yml/yshopping-lakehouse/tests/sql/24-canonical-ai-token-risk-contract.sql","evidence_ref":null,"run_id":null,"row_count":0,"tenant_count":0,"status":"missing"},"specification_status":"specified","verification_status":"unverified"
+    },
+    {
+      "source_asset":"ods_ai_workflow_app_log_di","source_label":"大模型底层工作流日志表","source_anchor":{"document":"ODS语兴好物（y shopping）电商数据表.md","line":268},
+      "source_evidence":{"status":"ddl_backed","detail_anchor":{"heading_line":4269,"end_line":4295,"source_asset":"ods_ai_workflow_app_log_di"}},
+      "source_grain":"one underspecified application/workflow run log observation",
+      "decision":"correct","canonical_entities":["ai_operations.InvocationAuditObservation","ai_operations.ApplicationReference","ai_operations.WorkflowRunReference","identity.PrincipalReference"],
+      "semantic_rules":{"grain":"one immutable audit observation with explicit event kind, run, actor and event time","identity":"log id, application, workflow, run and actor Principal remain distinct and tenant-scoped","money_or_quantity":"no usage, quota, token or financial authority","history":"observations append and cannot overwrite workflow/node/invocation history","security":"actor and contextual payload remain restricted; the log must not duplicate prompts/responses or credentials","authority":"AI Operations owns audit evidence only; workflow/run tables own execution state"},
+      "corrections":["repair double comma and misspelled workfolw_runs_id before execution","resolve sample/DDL drift for sequence_number workflow_id and created_user field names","require explicit event type and source event id because the current row is semantically underspecified","do not use this thin log as a replacement for workflow run node attempt or invocation evidence"],
+      "model_status":"missing","backend_refs":["yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aioperations/dal/dataobject/AiStatusHistoryDO.java"],
+      "lakehouse_refs":["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-ai-operations-event.sql"],
+      "runtime_nonempty_reconciliation":{"gate_ref":"useful-scripts/yml/yshopping-lakehouse/tests/sql/24-canonical-ai-token-risk-contract.sql","evidence_ref":null,"run_id":null,"row_count":0,"tenant_count":0,"status":"missing"},"specification_status":"specified","verification_status":"unverified"
+    }
+  ],
+  "name_conflict_assets": [
+    {"source_asset":"ods_ai_workflow_request_log_ri","source_label":"客服大模型请求日志表","line":269,"detail_anchor":{"heading_line":4352,"end_line":4376,"actual_create_asset":"ods_ai_workflow_request_log_di"},"decision":"correct","target_boundary":"Restricted AI invocation request/result with exact Ticket/business case, application/workflow/model/provider identities, versioned payload schema and separately accepted Customer Service decision","conflict_rule":"Do not equate realtime ri and incremental di names; require physical source, CDC mode, business key and full-denominator reconciliation before credit.","specification_status":"provisional"},
+    {"source_asset":"ods_ai_workflow_app_df","source_label":"大模型agent表","line":270,"detail_anchor":{"heading_line":4326,"end_line":4351,"actual_create_asset":"ods_dwd_risk_ai_apps_df"},"decision":"correct","target_boundary":"Tenant-scoped AI Application plus immutable workflow assignment and lifecycle, distinct from Risk application projection","conflict_rule":"Do not treat ods_dwd_risk_ai_apps_df as the advertised ODS AI application or infer an alias from similar fields.","specification_status":"provisional"}
+  ],
+  "overview_only_groups": [
+    {"group":"identity_and_access","decision":"split","canonical_entities":["identity.PrincipalReference","security.AuthenticationObservation","token_platform.AccessCredential","token_platform.CredentialGrant"],"authority":"Identity owns Principal; Authentication owns login observations; Token Platform stores credential metadata, grants and revocation while a secret vault owns secret material.","security":"Passwords, API keys, bearer tokens, raw email/IP/device/session and credential payloads are forbidden from canonical events and broad analytics.","assets":[
+      {"source_asset":"ods_paimon_ytoken_login_ri","source_label":"用户登录表","line":271,"table_rule":"Require immutable authentication outcome/method/session evidence and tokenized actor/device data; login is not credential authority."},
+      {"source_asset":"ods_paimon_ytoken_user_ri","source_label":"用户表","line":272,"table_rule":"Map source user to canonical Principal without importing credentials or collapsing profile, quota and billing accounts."},
+      {"source_asset":"ods_paimon_ytoken_configure_ri","source_label":"令牌表","line":273,"table_rule":"Treat as credential configuration metadata only after schema proves key type, scope, vault reference, lifecycle and revocation; raw token is rejected."},
+      {"source_asset":"ods_paimon_ytoken_token_ri","source_label":"用户配置令牌表","line":275,"table_rule":"Model a Principal-to-credential grant with scope, validity and revocation; never expose or hash-match raw bearer tokens as identity."}
+    ]},
+    {"group":"quota_billing_and_usage","decision":"split","canonical_entities":["token_platform.QuotaAccount","token_platform.QuotaLedgerEntry","token_platform.InvocationUsage","payment.PaymentReference","token_platform.PricingVersionReference"],"authority":"Token Platform owns quota and immutable usage ledger; Payment owns settled top-up money; model pricing is an immutable version; aggregate logs never replace double-entry or conservation checks.","security":"Payment references, provider request ids and cost details are restricted; no raw instrument or credential material is accepted.","assets":[
+      {"source_asset":"ods_paimon_ytoken_top_up_ri","source_label":"充值表","line":274,"table_rule":"Require ISO currency/minor unit, Payment settlement reference, quota unit, pricing/conversion version and immutable ledger conservation; a top-up row alone is not payment success."},
+      {"source_asset":"ods_paimon_ytoken_operate_log_ri","source_label":"使用日志表","line":277,"table_rule":"Bind each usage fact to exact invocation, model offering, pricing version, credential metadata and quota ledger entry; reject aggregate-only deduction."}
+    ]},
+    {"group":"model_asset_and_skill_marketplace","decision":"split","canonical_entities":["token_platform.ModelOffering","token_platform.PricingVersion","ai_operations.GeneratedAsset","storage.RestrictedObjectReference","marketplace.SkillPackageVersion","marketplace.SkillDownloadEntitlement"],"authority":"Token Platform owns model offerings/pricing; AI Operations owns generation evidence; secure storage owns bytes; Skill Marketplace owns signed package versions and entitlements, never executable trust by download count.","security":"Generated images/prompts, package artifacts, manifests, signatures, malware reports, license/author data and download identities require restricted storage and supply-chain verification.","assets":[
+      {"source_asset":"ods_paimon_ytoken_model_ri","source_label":"模型广场表","line":276,"table_rule":"Separate immutable provider/model offering identity, capabilities, lifecycle and effective-dated pricing; display names are not model ids."},
+      {"source_asset":"ods_paimon_ytoken_image_create_ri","source_label":"AI画布表","line":278,"table_rule":"Store generation invocation plus secure object/digest/moderation/licensing evidence; raw prompts and URLs remain restricted."},
+      {"source_asset":"ods_paimon_ytoken_skill_skill_info_ri","source_label":"Skill商城skill信息表","line":279,"table_rule":"Require immutable package version, manifest, publisher identity, signature, permissions, dependency lock, license and security scan before marketplace admission."},
+      {"source_asset":"ods_paimon_ytoken_skill_download_ri","source_label":"Skill商城skill下载表","line":280,"table_rule":"Record download entitlement and signed package digest; download does not grant runtime permissions, approval or trust."}
+    ]}
+  ],
+  "unadvertised_detailed_findings": [
+    {"heading_asset":"ods_ai_workflow_account_df","heading_line":4296,"end_line":4325,"actual_create_asset":"ods_ai_workflow_app_log_df","decision":"reject","finding":"The non-overview account heading creates a log-named table and includes password and password_salt; reject credential ingestion and require a qualified Identity source plus vault-held credential lifecycle.","denominator_credit":false}
+  ]
+}

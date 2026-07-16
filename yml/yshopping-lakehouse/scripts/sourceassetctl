@@ -63,6 +63,9 @@ TICKET_SOURCE_DISPOSITIONS = (
 SUPPLY_CHAIN_SOURCE_DISPOSITIONS = (
     ROOT / "contracts" / "yshopping-supply-chain-source-disposition-v1.json"
 )
+LLM_SOURCE_DISPOSITIONS = (
+    ROOT / "contracts" / "yshopping-llm-source-disposition-v1.json"
+)
 TRADE_HISTORY_ADMISSION = (
     ROOT / "contracts" / "yshopping-trade-history-admission-v1.json"
 )
@@ -314,6 +317,12 @@ def load_supply_chain_source_dispositions(
     path: Path = SUPPLY_CHAIN_SOURCE_DISPOSITIONS,
 ) -> dict[str, Any]:
     return _load_json_object(path, "supply-chain source dispositions")
+
+
+def load_llm_source_dispositions(
+    path: Path = LLM_SOURCE_DISPOSITIONS,
+) -> dict[str, Any]:
+    return _load_json_object(path, "LLM source dispositions")
 
 
 def _heading_path(headings: dict[int, str]) -> list[str]:
@@ -3626,6 +3635,8 @@ def validate_supply_chain_source_dispositions(
                 errors.append(f"{label}: verified runtime lacks governed production evidence")
         if asset.get("specification_status") != "specified":
             errors.append(f"{label}: must be specified")
+        if asset.get("verification_status") not in {"unverified", "verified"}:
+            errors.append(f"{label}: invalid verification status")
         if asset.get("verification_status") == "verified" and not _runtime_reconciliation_verified(runtime, name):
             errors.append(f"{label}: final verification is forbidden without governed reconciliation")
     if seen != set(expected):
@@ -3681,6 +3692,276 @@ def supply_chain_disposition_status(
     }
 
 
+def validate_llm_source_dispositions(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    """Validate AI workflow and token-platform sources without inventing schemas or effects."""
+    errors: list[str] = []
+    contract = contract or load_llm_source_dispositions()
+    expected = authoritative_ods_domain_assets(inventory, "大模型")
+    scope = contract.get("source_scope")
+    if not isinstance(scope, dict):
+        return ["LLM source dispositions requires source_scope"]
+    if scope.get("domain") != "大模型" or scope.get("expected_asset_count") != len(expected):
+        errors.append("LLM source scope differs from authoritative 大模型 overview")
+    locked_counts = {"ddl_backed": 4, "name_conflict": 2, "overview_only": 10}
+    if scope.get("expected_source_evidence_counts") != locked_counts:
+        errors.append("LLM source evidence counts must remain 4 DDL, 2 conflicts and 10 overview-only")
+    if scope.get("unadvertised_detailed_finding_count") != 1:
+        errors.append("LLM must retain the unadvertised account credential finding")
+    if not isinstance(scope.get("source_detail_limit"), str) or not scope["source_detail_limit"].strip():
+        errors.append("LLM source dispositions must state source detail limits")
+    policy = contract.get("verification_policy")
+    if not isinstance(policy, dict):
+        return errors + ["LLM source dispositions requires verification_policy"]
+    decisions = set(policy.get("allowed_decisions") or [])
+    model_statuses = set(policy.get("allowed_model_statuses") or [])
+    runtime_statuses = set(policy.get("runtime_statuses") or [])
+    if decisions != {"reuse", "merge", "split", "derive", "correct", "reject"}:
+        errors.append("LLM has invalid decision vocabulary")
+    if model_statuses != {"partial", "missing", "rejected"}:
+        errors.append("LLM has invalid model-status vocabulary")
+    if runtime_statuses != {"missing", "pending", "verified"}:
+        errors.append("LLM has invalid runtime-status vocabulary")
+    if policy.get("empty_tables_are_evidence") is not False:
+        errors.append("LLM must reject empty tables as evidence")
+    lifecycle = contract.get("lifecycle_policy_defaults")
+    if not isinstance(lifecycle, dict) or set(lifecycle) != {"history_policy", "delete_policy", "backfill_policy"}:
+        errors.append("LLM lifecycle defaults are incomplete")
+
+    source_document = Path(inventory.get("reference_root", DEFAULT_REFERENCE_ROOT)) / scope.get("authoritative_document", "")
+    try:
+        source_lines = source_document.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        errors.append(f"cannot read LLM source document {source_document}: {exc}")
+        source_lines = []
+    detail_expectations = {
+        "ods_ai_workflow_workflow_runs_df": (4156, 4195),
+        "ods_ai_workflow_workflow_df": (4196, 4227),
+        "ods_ai_workflow_node_executions_di": (4228, 4268),
+        "ods_ai_workflow_app_log_di": (4269, 4295),
+    }
+    conflict_expectations = {
+        "ods_ai_workflow_request_log_ri": (4352, 4376, "ods_ai_workflow_request_log_di"),
+        "ods_ai_workflow_app_df": (4326, 4351, "ods_dwd_risk_ai_apps_df"),
+    }
+    seen: set[str] = set()
+    evidence_counts: Counter[str] = Counter()
+    semantic_keys = {"grain", "identity", "money_or_quantity", "history", "security", "authority"}
+    detailed = contract.get("ddl_backed_assets")
+    conflicts = contract.get("name_conflict_assets")
+    groups = contract.get("overview_only_groups")
+    findings = contract.get("unadvertised_detailed_findings")
+    if not isinstance(detailed, list) or len(detailed) != 4:
+        return errors + ["LLM requires exactly four DDL-backed assets"]
+    if not isinstance(conflicts, list) or len(conflicts) != 2:
+        return errors + ["LLM requires exactly two name-conflict assets"]
+    if not isinstance(groups, list) or not groups:
+        return errors + ["LLM requires overview-only groups"]
+
+    by_name: dict[str, dict[str, Any]] = {}
+    for index, asset in enumerate(detailed):
+        label = f"LLM ddl_backed_assets[{index}]"
+        if not isinstance(asset, dict):
+            errors.append(f"{label}: must be an object")
+            continue
+        name = asset.get("source_asset")
+        if not isinstance(name, str) or not name:
+            errors.append(f"{label}: requires source_asset")
+            continue
+        if name in seen:
+            errors.append(f"{label}: duplicate source_asset {name}")
+        seen.add(name)
+        by_name[name] = asset
+        observed = expected.get(name)
+        if observed is None:
+            errors.append(f"{label}: not an authoritative 大模型 asset")
+        else:
+            if [asset.get("source_label")] != observed["source_labels"]:
+                errors.append(f"{label}: source label differs")
+            anchor = asset.get("source_anchor")
+            actual_anchor = (anchor.get("document"), anchor.get("line")) if isinstance(anchor, dict) else None
+            if actual_anchor not in observed["anchors"]:
+                errors.append(f"{label}: source anchor differs")
+        expectation = detail_expectations.get(name)
+        evidence = asset.get("source_evidence")
+        if expectation is None or not isinstance(evidence, dict):
+            errors.append(f"{label}: requires locked DDL evidence")
+        else:
+            heading_line, end_line = expectation
+            expected_anchor = {"heading_line": heading_line, "end_line": end_line, "source_asset": name}
+            if evidence.get("status") != "ddl_backed" or evidence.get("detail_anchor") != expected_anchor:
+                errors.append(f"{label}: detailed evidence differs")
+            else:
+                evidence_counts["ddl_backed"] += 1
+            if source_lines and (
+                name.replace("_", r"\_") not in source_lines[heading_line - 1]
+                or name not in "\n".join(source_lines[heading_line:end_line])
+            ):
+                errors.append(f"{label}: same-name DDL is not proven")
+        if not isinstance(asset.get("source_grain"), str) or not asset["source_grain"].strip():
+            errors.append(f"{label}: requires source_grain")
+        if asset.get("decision") not in decisions or asset.get("model_status") not in model_statuses:
+            errors.append(f"{label}: invalid decision/model status")
+        if not _nonempty_strings(asset.get("canonical_entities")) or not _nonempty_strings(asset.get("corrections")):
+            errors.append(f"{label}: requires canonical entities and corrections")
+        semantic_rules = asset.get("semantic_rules")
+        if not isinstance(semantic_rules, dict) or set(semantic_rules) != semantic_keys:
+            errors.append(f"{label}: semantic_rules must define exactly {sorted(semantic_keys)}")
+        elif any(not isinstance(value, str) or not value.strip() for value in semantic_rules.values()):
+            errors.append(f"{label}: semantic rules contain empty values")
+        for ref_key in ("backend_refs", "lakehouse_refs"):
+            references = asset.get(ref_key)
+            if not _nonempty_strings(references):
+                errors.append(f"{label}: requires {ref_key}")
+                continue
+            for reference in references:
+                reference_error = _contract_reference_error(reference)
+                if reference_error:
+                    errors.append(f"{label}: invalid {ref_key[:-1]} {reference}: {reference_error}")
+        runtime = asset.get("runtime_nonempty_reconciliation")
+        if not isinstance(runtime, dict) or runtime.get("status") not in runtime_statuses:
+            errors.append(f"{label}: invalid runtime reconciliation")
+        else:
+            gate_ref = runtime.get("gate_ref")
+            if not isinstance(gate_ref, str) or not _resolve_contract_reference(gate_ref).is_file():
+                errors.append(f"{label}: runtime gate does not exist")
+            for count_key in ("row_count", "tenant_count"):
+                value = runtime.get(count_key)
+                if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                    errors.append(f"{label}: {count_key} must be non-negative integer")
+            if runtime.get("status") == "verified" and not _runtime_reconciliation_verified(runtime, name):
+                errors.append(f"{label}: verified runtime lacks governed production evidence")
+        if asset.get("specification_status") != "specified":
+            errors.append(f"{label}: must be specified")
+        if asset.get("verification_status") not in {"unverified", "verified"}:
+            errors.append(f"{label}: invalid verification status")
+        if asset.get("verification_status") == "verified" and not _runtime_reconciliation_verified(runtime, name):
+            errors.append(f"{label}: final verification is forbidden without governed reconciliation")
+
+    required_conflict_fields = {"source_asset", "source_label", "line", "detail_anchor", "decision", "target_boundary", "conflict_rule", "specification_status"}
+    for index, asset in enumerate(conflicts):
+        label = f"LLM name_conflict_assets[{index}]"
+        if not isinstance(asset, dict) or set(asset) != required_conflict_fields:
+            errors.append(f"{label}: fields differ from contract")
+            continue
+        name = asset.get("source_asset")
+        if name in seen:
+            errors.append(f"{label}: duplicate source_asset {name}")
+        seen.add(name)
+        observed = expected.get(name)
+        if observed is None:
+            errors.append(f"{label}: not an authoritative 大模型 asset")
+            continue
+        if [asset.get("source_label")] != observed["source_labels"] or (scope.get("authoritative_document"), asset.get("line")) not in observed["anchors"]:
+            errors.append(f"{label}: source overview evidence differs")
+        expectation = conflict_expectations.get(name)
+        if expectation is None:
+            errors.append(f"{label}: unexpected conflict asset")
+            continue
+        heading_line, end_line, actual_create = expectation
+        expected_anchor = {"heading_line": heading_line, "end_line": end_line, "actual_create_asset": actual_create}
+        if asset.get("detail_anchor") != expected_anchor or asset.get("specification_status") != "provisional":
+            errors.append(f"{label}: conflict evidence/status differs")
+        if asset.get("decision") not in decisions or not all(isinstance(asset.get(key), str) and asset[key].strip() for key in ("target_boundary", "conflict_rule")):
+            errors.append(f"{label}: conflict governance is incomplete")
+        heading_asset = (
+            actual_create
+            if name == "ods_ai_workflow_request_log_ri"
+            else name
+        )
+        if source_lines and (
+            heading_asset.replace("_", r"\_") not in source_lines[heading_line - 1]
+            or actual_create not in "\n".join(source_lines[heading_line:end_line])
+        ):
+            errors.append(f"{label}: name conflict is not proven")
+        evidence_counts["name_conflict"] += 1
+
+    required_group_fields = {"group", "decision", "canonical_entities", "authority", "security", "assets"}
+    for group_index, group in enumerate(groups):
+        label = f"LLM overview_only_groups[{group_index}]"
+        if not isinstance(group, dict) or set(group) != required_group_fields:
+            errors.append(f"{label}: fields differ from contract")
+            continue
+        if group.get("decision") not in decisions or not _nonempty_strings(group.get("canonical_entities")):
+            errors.append(f"{label}: invalid decision/entities")
+        if not all(isinstance(group.get(key), str) and group[key].strip() for key in ("group", "authority", "security")):
+            errors.append(f"{label}: requires group authority and security")
+        assets = group.get("assets")
+        if not isinstance(assets, list) or not assets:
+            errors.append(f"{label}: requires assets")
+            continue
+        for asset_index, asset in enumerate(assets):
+            asset_label = f"{label}.assets[{asset_index}]"
+            if not isinstance(asset, dict) or set(asset) != {"source_asset", "source_label", "line", "table_rule"}:
+                errors.append(f"{asset_label}: fields differ from contract")
+                continue
+            name = asset.get("source_asset")
+            if name in seen:
+                errors.append(f"{asset_label}: duplicate source_asset {name}")
+            seen.add(name)
+            observed = expected.get(name)
+            if observed is None:
+                errors.append(f"{asset_label}: not an authoritative 大模型 asset")
+                continue
+            if [asset.get("source_label")] != observed["source_labels"] or (scope.get("authoritative_document"), asset.get("line")) not in observed["anchors"]:
+                errors.append(f"{asset_label}: source evidence differs")
+            if not isinstance(asset.get("table_rule"), str) or not asset["table_rule"].strip():
+                errors.append(f"{asset_label}: requires table_rule")
+            evidence_counts["overview_only"] += 1
+    if seen != set(expected):
+        errors.append(f"LLM dispositions differ from authoritative overview: missing={sorted(set(expected)-seen)}, extra={sorted(seen-set(expected))}")
+    if dict(evidence_counts) != locked_counts:
+        errors.append(f"LLM source evidence counts differ: observed={dict(evidence_counts)}")
+
+    if not isinstance(findings, list) or len(findings) != 1:
+        errors.append("LLM requires exactly one unadvertised detailed finding")
+    else:
+        finding = findings[0]
+        expected_finding = {
+            "heading_asset":"ods_ai_workflow_account_df", "heading_line":4296, "end_line":4325,
+            "actual_create_asset":"ods_ai_workflow_app_log_df", "decision":"reject",
+            "finding":"The non-overview account heading creates a log-named table and includes password and password_salt; reject credential ingestion and require a qualified Identity source plus vault-held credential lifecycle.",
+            "denominator_credit":False,
+        }
+        if finding != expected_finding:
+            errors.append("LLM unadvertised account credential finding differs")
+        elif source_lines and (
+            "ods\\_ai\\_workflow\\_account\\_df" not in source_lines[4295]
+            or "ods_ai_workflow_app_log_df" not in "\n".join(source_lines[4296:4325])
+            or "password_salt" not in "\n".join(source_lines[4296:4325])
+        ):
+            errors.append("LLM unadvertised account/password source finding is not proven")
+    node_corrections = " ".join(by_name.get("ods_ai_workflow_node_executions_di", {}).get("corrections", []))
+    if "reuse id across multiple index" not in node_corrections:
+        errors.append("LLM node attempts must reject source id as a unique attempt key")
+    workflow_security = by_name.get("ods_ai_workflow_workflow_df", {}).get("semantic_rules", {}).get("security", "")
+    if "secret values remain in a vault" not in workflow_security:
+        errors.append("LLM workflow versions must not ingest environment secrets")
+    return errors
+
+
+def llm_disposition_status(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    contract = contract or load_llm_source_dispositions()
+    expected_count = len(authoritative_ods_domain_assets(inventory, "大模型"))
+    assets = contract.get("ddl_backed_assets", []) if isinstance(contract, dict) else []
+    specified = [asset for asset in assets if isinstance(asset, dict) and asset.get("specification_status") == "specified"]
+    reconciled = [asset for asset in assets if isinstance(asset, dict) and _runtime_reconciliation_verified(asset.get("runtime_nonempty_reconciliation"), asset.get("source_asset", ""))]
+    verified = [asset for asset in reconciled if asset.get("verification_status") == "verified"]
+    denominator = expected_count or 1
+    return {
+        "llm_source_asset_count": expected_count,
+        "llm_detailed_disposition_specified_count": len(specified),
+        "llm_runtime_nonempty_reconciled_count": len(reconciled),
+        "llm_final_disposition_verified_count": len(verified),
+        "llm_detailed_disposition_percent": round(len(specified) * 100.0 / denominator, 2),
+        "llm_runtime_nonempty_reconciled_percent": round(len(reconciled) * 100.0 / denominator, 2),
+        "llm_final_disposition_verified_percent": round(len(verified) * 100.0 / denominator, 2),
+    }
+
+
 def disposition_status(
     inventory: dict[str, Any], policy: dict[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -3727,6 +4008,7 @@ def disposition_status(
     compensation_status = compensation_disposition_status(inventory)
     ticket_status = ticket_disposition_status(inventory)
     supply_chain_status = supply_chain_disposition_status(inventory)
+    llm_status = llm_disposition_status(inventory)
     detailed_count = (
         game_status["game_detailed_disposition_specified_count"]
         + metadata_status["metadata_detailed_disposition_specified_count"]
@@ -3739,6 +4021,7 @@ def disposition_status(
         + compensation_status["compensation_detailed_disposition_specified_count"]
         + ticket_status["ticket_detailed_disposition_specified_count"]
         + supply_chain_status["supply_chain_detailed_disposition_specified_count"]
+        + llm_status["llm_detailed_disposition_specified_count"]
     )
     runtime_count = (
         game_status["game_runtime_nonempty_reconciled_count"]
@@ -3752,6 +4035,7 @@ def disposition_status(
         + compensation_status["compensation_runtime_nonempty_reconciled_count"]
         + ticket_status["ticket_runtime_nonempty_reconciled_count"]
         + supply_chain_status["supply_chain_runtime_nonempty_reconciled_count"]
+        + llm_status["llm_runtime_nonempty_reconciled_count"]
     )
     verified_count = (
         game_status["game_final_disposition_verified_count"]
@@ -3765,6 +4049,7 @@ def disposition_status(
         + compensation_status["compensation_final_disposition_verified_count"]
         + ticket_status["ticket_final_disposition_verified_count"]
         + supply_chain_status["supply_chain_final_disposition_verified_count"]
+        + llm_status["llm_final_disposition_verified_count"]
     )
     return {
         "candidate_asset_count": candidate_count,
@@ -3808,6 +4093,7 @@ def disposition_status(
         **compensation_status,
         **ticket_status,
         **supply_chain_status,
+        **llm_status,
     }
 
 
@@ -3937,7 +4223,10 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"({status['ticket_detailed_disposition_percent']:.2f}%); "
         f"supply_chain={status['supply_chain_detailed_disposition_specified_count']}/"
         f"{status['supply_chain_source_asset_count']} "
-        f"({status['supply_chain_detailed_disposition_percent']:.2f}%)"
+        f"({status['supply_chain_detailed_disposition_percent']:.2f}%); "
+        f"llm={status['llm_detailed_disposition_specified_count']}/"
+        f"{status['llm_source_asset_count']} "
+        f"({status['llm_detailed_disposition_percent']:.2f}%)"
     )
     yield (
         "non-empty runtime reconciliations: "
@@ -3975,7 +4264,10 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"({status['ticket_runtime_nonempty_reconciled_percent']:.2f}%); "
         f"supply_chain={status['supply_chain_runtime_nonempty_reconciled_count']}/"
         f"{status['supply_chain_source_asset_count']} "
-        f"({status['supply_chain_runtime_nonempty_reconciled_percent']:.2f}%)"
+        f"({status['supply_chain_runtime_nonempty_reconciled_percent']:.2f}%); "
+        f"llm={status['llm_runtime_nonempty_reconciled_count']}/"
+        f"{status['llm_source_asset_count']} "
+        f"({status['llm_runtime_nonempty_reconciled_percent']:.2f}%)"
     )
     yield (
         "final semantic dispositions verified: "
@@ -4002,7 +4294,9 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"ticket={status['ticket_final_disposition_verified_count']}/"
         f"{status['ticket_source_asset_count']}, "
         f"supply_chain={status['supply_chain_final_disposition_verified_count']}/"
-        f"{status['supply_chain_source_asset_count']}; routing is not completion"
+        f"{status['supply_chain_source_asset_count']}, "
+        f"llm={status['llm_final_disposition_verified_count']}/"
+        f"{status['llm_source_asset_count']}; routing is not completion"
     )
 
 
@@ -4029,6 +4323,7 @@ def main() -> int:
     errors.extend(validate_compensation_source_dispositions(inventory))
     errors.extend(validate_ticket_source_dispositions(inventory))
     errors.extend(validate_supply_chain_source_dispositions(inventory))
+    errors.extend(validate_llm_source_dispositions(inventory))
     errors.extend(
         validate_trade_admission(
             TRADE_HISTORY_ADMISSION,

@@ -93,7 +93,7 @@ zero-difference checks, and a separately checksummed independent verifier.
 Documentation volume estimates (for example “15.96 亿”) are never used as a
 denominator. A merely non-empty JSON file can no longer promote any of the 718
 assets to `verified`.
-The governed detailed-disposition numerator is now 110/718. The Product
+The governed detailed-disposition numerator is now 114/718. The Product
 slice covers all ten authoritative 商品 overview assets: nine DDL-backed assets
 are specified across Catalog, Listing, workflow, Identity/Merchant and Quality
 boundaries; the personnel salary asset remains provisional because its detailed
@@ -167,6 +167,17 @@ comma as explicit correction gates. Warehouse identity, workforce/pay data,
 restricted images, versioned model/policy evidence and accepted human decisions
 stay separate. All twenty-three are definition-specified but still have zero
 non-empty production reconciliations, so runtime and final credit remain zero.
+The Large Model slice covers all sixteen 大模型 overview assets without
+inventing aliases or missing schemas. Four same-name workflow DDLs are
+definition-specified as immutable workflow versions, runs, node attempts and
+audit observations; two advertised names conflict with their detailed table
+names, and ten ytoken assets remain overview-only. Workflow graphs, prompts,
+responses and generated assets stay restricted, environment secrets remain in
+a vault, source node ids cannot masquerade as unique attempt ids, and token
+totals or top-up rows cannot fabricate quota deductions, pricing or Payment
+settlement. An unadvertised account heading that exposes password fields is
+explicitly rejected and receives no denominator credit. Large Model runtime
+and final verification remain zero.
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%
