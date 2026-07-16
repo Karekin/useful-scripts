@@ -22,6 +22,7 @@ class SourceAssetCtlTest(unittest.TestCase):
     def test_checked_in_source_snapshot_validates(self):
         self.assertEqual([], SOURCE_ASSETS.validate_inventory(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_source_domain_policy(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_source_asset_routes(self.inventory))
         self.assertEqual(6, len(self.inventory["documents"]))
 
     def test_inventory_is_complete_and_deterministic_for_the_locked_snapshot(self):
@@ -121,12 +122,15 @@ class SourceAssetCtlTest(unittest.TestCase):
         status = SOURCE_ASSETS.disposition_status(self.inventory)
         self.assertEqual(718, status["candidate_asset_count"])
         self.assertEqual(281, status["authoritative_ods_overview_asset_count"])
-        self.assertEqual(603, status["domain_routed_asset_count"])
+        self.assertEqual(713, status["domain_routed_asset_count"])
         self.assertEqual(322, status["heading_lineage_inferred_asset_count"])
-        self.assertEqual(58, status["bounded_domain_asset_count"])
+        self.assertEqual(112, status["explicit_asset_route_count"])
+        self.assertEqual(110, status["bounded_domain_asset_count"])
         self.assertEqual(5, status["explicit_rejection_count"])
+        self.assertEqual(718, status["preliminary_handled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
-        self.assertEqual(83.98, status["routing_percent"])
+        self.assertEqual(99.3, status["routing_percent"])
+        self.assertEqual(100.0, status["preliminary_handled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
         inferred = SOURCE_ASSETS.infer_source_domains(self.inventory)
         self.assertEqual(

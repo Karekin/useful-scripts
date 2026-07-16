@@ -75,6 +75,10 @@ progress and final disposition progress. The ODS overview currently provides
 authoritative Chinese-domain evidence for 281 of the 718 names; routing those
 assets does not grant completion credit until row-level split decisions, grains,
 SoR, field handling, targets and reconciliation evidence are all recorded.
+Bounded heading lineage and an explicit reviewed route registry now give every
+candidate a preliminary route or a reasoned placeholder rejection. This is 100%
+inventory handling, not 100% semantic completion: final disposition remains zero
+until the stronger evidence above exists.
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The older 95.24%

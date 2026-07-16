@@ -22,6 +22,7 @@ from typing import Any, Iterable
 ROOT = Path(__file__).resolve().parents[1]
 ALIGNMENT_MANIFEST = ROOT / "contracts" / "yshopping-model-alignment-v1.json"
 SOURCE_DOMAIN_POLICY = ROOT / "contracts" / "yshopping-source-domain-policy-v1.json"
+SOURCE_ASSET_ROUTES = ROOT / "contracts" / "yshopping-source-asset-routes-v1.json"
 DEFAULT_REFERENCE_ROOT = Path(
     "/Users/karekin/Library/Mobile Documents/iCloud~md~obsidian/Documents/project/"
     "语兴好物（y shopping）-电商数仓搭建"
@@ -123,6 +124,16 @@ def load_source_domain_policy(path: Path = SOURCE_DOMAIN_POLICY) -> dict[str, An
         value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise SourceAssetError(f"cannot load source domain policy {path}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise SourceAssetError(f"{path}: root must be an object")
+    return value
+
+
+def load_source_asset_routes(path: Path = SOURCE_ASSET_ROUTES) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SourceAssetError(f"cannot load source asset routes {path}: {exc}") from exc
     if not isinstance(value, dict):
         raise SourceAssetError(f"{path}: root must be an object")
     return value
@@ -653,6 +664,48 @@ def validate_source_domain_policy(
     return errors
 
 
+def validate_source_asset_routes(
+    inventory: dict[str, Any],
+    routes_contract: dict[str, Any] | None = None,
+    policy: dict[str, Any] | None = None,
+) -> list[str]:
+    errors: list[str] = []
+    routes_contract = routes_contract or load_source_asset_routes()
+    policy = policy or load_source_domain_policy()
+    routes = routes_contract.get("routes")
+    if not isinstance(routes, list) or not routes:
+        return ["source asset routes requires routes"]
+    logical_names = {item["normalized_name"] for item in inventory["logical_assets"]}
+    allowed_domains = set(policy["domains"])
+    rejected_names = set(policy.get("explicit_rejections", {}))
+    seen: set[str] = set()
+    for index, route in enumerate(routes):
+        label = f"source asset routes[{index}]"
+        if not isinstance(route, dict):
+            errors.append(f"{label}: must be an object")
+            continue
+        domains = route.get("source_domains")
+        assets = route.get("assets")
+        if not isinstance(domains, list) or not domains:
+            errors.append(f"{label}: requires source_domains")
+        elif set(domains) - allowed_domains:
+            errors.append(f"{label}: unknown domains {sorted(set(domains) - allowed_domains)}")
+        if not isinstance(assets, list) or not assets:
+            errors.append(f"{label}: requires assets")
+            continue
+        if not isinstance(route.get("decision_basis"), str) or not route["decision_basis"].strip():
+            errors.append(f"{label}: requires decision_basis")
+        for name in assets:
+            if name in seen:
+                errors.append(f"{label}: duplicate routed asset {name}")
+            seen.add(name)
+            if name not in logical_names:
+                errors.append(f"{label}: unknown source asset {name}")
+            if name in rejected_names:
+                errors.append(f"{label}: rejected placeholder cannot be routed {name}")
+    return errors
+
+
 def disposition_status(
     inventory: dict[str, Any], policy: dict[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -663,9 +716,11 @@ def disposition_status(
         item for item in inventory["logical_assets"] if "candidate" in item.get("roles", [])
     ]
     source_assets = [item for item in candidate_assets if item.get("source_domains")]
+    rejected_names = set(policy.get("explicit_rejections", {}))
     routed = [
         item
         for item in candidate_assets
+        if item["normalized_name"] not in rejected_names
         if inferred[item["logical_asset_id"]]["domains"]
         and all(
             domain in domains
@@ -680,12 +735,12 @@ def disposition_status(
             for domain in inferred[item["logical_asset_id"]]["domains"]
         )
     ]
-    rejected_names = set(policy.get("explicit_rejections", {}))
     rejected = [
         item for item in inventory["logical_assets"]
         if item["normalized_name"] in rejected_names
     ]
     candidate_count = inventory["summary"]["unique_by_kind"]["candidate"]
+    preliminary_count = len(routed) + len(rejected)
     return {
         "candidate_asset_count": candidate_count,
         "authoritative_ods_overview_asset_count": len(source_assets),
@@ -694,16 +749,25 @@ def disposition_status(
             for item in candidate_assets
             if "heading_lineage" in inferred[item["logical_asset_id"]]["evidence_kinds"]
         ),
+        "explicit_asset_route_count": sum(
+            1
+            for item in candidate_assets
+            if "explicit_asset_route" in inferred[item["logical_asset_id"]]["evidence_kinds"]
+        ),
         "domain_routed_asset_count": len(routed),
         "bounded_domain_asset_count": len(bounded),
         "explicit_rejection_count": len(rejected),
+        "preliminary_handled_count": preliminary_count,
         "final_disposition_verified_count": 0,
         "routing_percent": round(len(routed) * 100.0 / candidate_count, 2),
+        "preliminary_handled_percent": round(preliminary_count * 100.0 / candidate_count, 2),
         "final_disposition_percent": 0.0,
     }
 
 
-def infer_source_domains(inventory: dict[str, Any]) -> dict[str, dict[str, Any]]:
+def infer_source_domains(
+    inventory: dict[str, Any], asset_routes: dict[str, Any] | None = None
+) -> dict[str, dict[str, Any]]:
     """Propagate authoritative ODS domains through bounded table-heading lineage.
 
     A heading group is accepted only when it is narrow (2-25 assets) and carries
@@ -743,6 +807,18 @@ def infer_source_domains(inventory: dict[str, Any]) -> dict[str, dict[str, Any]]
                 if len(result[asset_id]["domains"]) != before:
                     result[asset_id]["evidence_kinds"].add("heading_lineage")
                     changed = True
+    asset_routes = asset_routes or load_source_asset_routes()
+    logical_by_name = {
+        item["normalized_name"]: item["logical_asset_id"]
+        for item in inventory["logical_assets"]
+    }
+    for route in asset_routes.get("routes", []):
+        for name in route.get("assets", []):
+            asset_id = logical_by_name.get(name)
+            if asset_id is None:
+                continue
+            result[asset_id]["domains"].update(route.get("source_domains", []))
+            result[asset_id]["evidence_kinds"].add("explicit_asset_route")
     for value in result.values():
         value["domains"] = sorted(value["domains"])
         value["evidence_kinds"] = sorted(value["evidence_kinds"])
@@ -770,8 +846,14 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"{status['domain_routed_asset_count']}/{status['candidate_asset_count']} "
         f"assets domain-routed ({status['routing_percent']:.2f}%), "
         f"{status['heading_lineage_inferred_asset_count']} inherited through bounded headings, "
+        f"{status['explicit_asset_route_count']} explicitly reviewed routes, "
         f"{status['bounded_domain_asset_count']} have a bounded single-domain route, "
         f"{status['explicit_rejection_count']} placeholders explicitly rejected"
+    )
+    yield (
+        "preliminary source handling: "
+        f"{status['preliminary_handled_count']}/{status['candidate_asset_count']} "
+        f"({status['preliminary_handled_percent']:.2f}%) routed or rejected"
     )
     yield (
         "final semantic dispositions verified: "
@@ -790,6 +872,7 @@ def main() -> int:
     inventory = extract_inventory(args.reference_root)
     errors = validate_inventory(inventory)
     errors.extend(validate_source_domain_policy(inventory))
+    errors.extend(validate_source_asset_routes(inventory))
     if errors:
         raise SourceAssetError("; ".join(errors))
     if args.command == "inventory":

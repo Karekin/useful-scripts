@@ -1,0 +1,94 @@
+{
+  "contract_version": 1,
+  "purpose": "Explicitly route isolated or typo-bearing source assets that cannot inherit an authoritative ODS overview domain through bounded heading lineage.",
+  "completion_rule": "These reviewed routes identify a business domain only; they do not assert final grain, SoR, field disposition, canonical target, or runtime reconciliation.",
+  "routes": [
+    {
+      "source_domains": ["情报系统"],
+      "decision_basis": "Reviewed intelligence, opinion-monitoring and intelligence-platform headings and their engine-specific physical variants.",
+      "assets": [
+        "ads_intelligence_ai_category_target", "ads_intelligence_ai_overview_target", "ads_intelligence_com_monitor_task", "ads_intelligence_com_monitor_task_2kafka", "ads_intelligence_com_trend_detail", "ads_intelligence_com_trend_detail_2kafka", "ads_intelligence_com_trend_detail_2kafka_ri", "ads_intelligence_com_trend_detail_di", "ads_intelligence_com_trend_detail_oss", "ads_intelligence_com_trend_detail_ri", "dwd_com_trend_detail_ri", "dwd_platform_intelligence_clue_detail_df", "dwd_platform_intelligence_clue_detail_ri", "dwd_platform_intelligence_clue_detail_ri_hive", "dwd_platform_intelligence_clue_detail_ri_kafka", "dwd_platform_intelligence_collect_result_di", "dwd_platform_intelligence_collect_result_ri", "dwd_platform_intelligence_model_result_detail_ri", "dwd_platform_intelligence_model_result_detail_ri_hive", "dwd_platform_intelligence_model_result_detail_ri_kafka", "dwd_platform_intelligence_monitor_task_record_di", "dwd_platform_intelligence_monitor_task_record_ri", "dwd_platform_intelligence_trend_di", "dwd_platform_intelligence_trend_ri", "dwm_platform_intelligence_ai_detail_di", "dwm_platform_intelligence_ai_detail_ri", "dwm_platform_intelligence_ai_detail_ri_doris", "dwm_platform_intelligence_ai_detail_ri_hive", "ods_community_monitor_collect_result_ri", "ods_community_monitor_task_ri", "ods_community_opinion_trend_di", "ods_community_opinion_trend_ri", "ods_intelligence_clue_ri", "ods_intelligence_model_result_ri"
+      ]
+    },
+    {
+      "source_domains": ["元数据"],
+      "decision_basis": "Reviewed metadata, DQC, report-dataset and platform-catalog headings; AI helper remains a metadata consumer, not AI Operations authority.",
+      "assets": [
+        "ads_meta_ai_helper_input", "ads_meta_ai_helper_input_2kafka", "ads_meta_ai_helper_input_table", "ads_meta_dq_dqc_target_90d", "dwd_meta_ai_helper_task_result_output_df", "dwd_meta_dq_dqc_detail_df", "dwd_meta_dq_dqc_instance_df", "dwd_meta_table_datasource_df", "dwd_meta_table_doris_df", "dwd_meta_table_report_dataset_df", "dwm_meta_dq_dqc_df", "ods_meta_datasource_df", "ods_meta_doris_information_schema_tables", "ods_meta_report_dataset", "ods_meta_report_dataset_df", "ods_meta_task_instance_mi"
+      ]
+    },
+    {
+      "source_domains": ["社区"],
+      "decision_basis": "Reviewed community operation, moderation, live and AI-blue-team headings.",
+      "assets": [
+        "ads_operation_com_ai_blue_2kafka", "ads_operation_com_ai_blue_ovewview_target", "ads_operation_com_ovewview_target", "dwd_com_audit_ecology__commercial_order_result_df", "dwd_com_audit_quilty_check_detail_df", "dwd_com_live_audit_detail_df", "dwd_com_live_products_df", "dwd_com_live_recharge_df", "dwd_com_live_reply_result_di", "dwd_com_live_user_gift_log_di", "dwm_com_audit_ai_blue_input_detail_di", "dwm_com_audit_ai_blue_output_detail_di", "dwm_com_audit_ai_blue_output_detail_ri"
+      ]
+    },
+    {
+      "source_domains": ["大模型"],
+      "decision_basis": "Reviewed workflow/request-log headings and their Kafka/Doris physical adapters.",
+      "assets": [
+        "dwd_ai_workflow_cs_request_log_di", "dwd_ai_workflow_request_log_ri_doris", "dwd_ai_workflow_request_log_ri_kafka", "dwd_ai_workflow_workflows_detail_df", "dwm_ai_workflow_detail_ri", "ods_ai_workflow_workflows_df"
+      ]
+    },
+    {
+      "source_domains": ["商品"],
+      "decision_basis": "Reviewed product-operation and commodity SKU/property headings; these still require Catalog versus Listing row-level separation.",
+      "assets": [
+        "dim_yshopping_product", "dwd_goods_operate_log_df", "ods_commodity_commodity_productfit_df", "ods_commodity_commodity_property_value_df", "ods_commodity_commodity_sku_df", "ods_commodity_commodity_sku_property_relation_df", "ods_commodity_commodity_trade_sku_df"
+      ]
+    },
+    {
+      "source_domains": ["工单"],
+      "decision_basis": "Reviewed customer-service, ticket AI/risk and compensation-detail headings; compensation still requires a payment-ledger split.",
+      "assets": [
+        "dim_yshopping_service", "dim_yshopping_ticket", "dwd_cs_repay_bill_detail_df", "dwd_cs_ticket_message_unit_detail_di", "dwd_cs_ticket_problem_attribution_di", "dwd_cs_ticket_tag_detail_di", "dwm_cs_repay_detail_di", "dwm_cs_ticket_ai_detail_ri", "ods_ticket_ticket_message_unit_di", "ods_ticket_ticket_problem_attribution_di", "ods_ticket_ticket_tag_di"
+      ]
+    },
+    {
+      "source_domains": ["正向订单"],
+      "decision_basis": "Reviewed order discount, log and payment-detail headings; payment detail remains subject to Order versus Payment split.",
+      "assets": ["dwd_trade_order_discount_detail_df", "dwd_trade_order_log_di", "dwd_trade_order_payment_detail_di", "ods_trade_trade_discount_df"]
+    },
+    {
+      "source_domains": ["逆向订单"],
+      "decision_basis": "Reviewed refund bill and reason headings, including known singular/plural source variants.",
+      "assets": ["dwd_trade_refund_bill_log_di", "dwd_trade_refund_reason_detail_df", "dwd_trade_refund_trade_reason_detail_df", "ods_refund_refund_reason_df", "ods_refund_trade_reason_df"]
+    },
+    {
+      "source_domains": ["供应链"],
+      "decision_basis": "Reviewed supply-chain quality and BPO-effect headings.",
+      "assets": ["ads_scm_effect_bpo_profile", "dim_scm_quality_ai_rule_config_df", "dwd_scm_quality_control_result_di", "dwd_scm_qualityidentify_result_detail_di"]
+    },
+    {
+      "source_domains": ["中台"],
+      "decision_basis": "Reviewed platform event and YEyes observability headings.",
+      "assets": ["ads_operation_platform_yeyes_ovewview_target", "dim_platform_event_param_df", "dwd_platform_yeyes_alarm_detail_df"]
+    },
+    {
+      "source_domains": ["商家"],
+      "decision_basis": "Reviewed merchant AI output and conceptual seller dimension.",
+      "assets": ["ads_merchant_ai_target", "dim_yshopping_seller"]
+    },
+    {
+      "source_domains": ["活动"],
+      "decision_basis": "Reviewed conceptual activity and prize dimensions; prize still requires Promotion versus Gamification separation.",
+      "assets": ["dim_yshopping_activity", "dim_yshopping_prize"]
+    },
+    {
+      "source_domains": ["优惠券"],
+      "decision_basis": "Reviewed conceptual coupon dimension.",
+      "assets": ["dim_yshopping_coupons"]
+    },
+    {
+      "source_domains": ["用户"],
+      "decision_basis": "Reviewed conceptual user/address dimensions and source user variant.",
+      "assets": ["dim_yshopping_user", "dim_yshopping_user_address", "ods_user_user_detail_di"]
+    },
+    {
+      "source_domains": ["推送"],
+      "decision_basis": "Reviewed push log heading.",
+      "assets": ["dwd_push_log_di"]
+    }
+  ]
+}
