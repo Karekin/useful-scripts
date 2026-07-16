@@ -1334,6 +1334,56 @@ def validate_metadata_source_dispositions(
     if policy.get("empty_tables_are_evidence") is not False:
         errors.append("metadata source dispositions must reject empty tables as evidence")
 
+    runtime_policy = contract.get("runtime_evidence_policy")
+    required_runtime_policy_fields = {
+        "contract_id", "requires_production", "requires_nonempty_admitted_rows",
+        "authorization", "common_required_checks", "assets",
+    }
+    if not isinstance(runtime_policy, dict) or set(runtime_policy) != required_runtime_policy_fields:
+        errors.append("metadata runtime evidence policy fields differ")
+        runtime_policy = {}
+    else:
+        if runtime_policy.get("contract_id") != "yshopping.metadata.runtime-evidence-policy.v1":
+            errors.append("metadata runtime evidence policy contract_id differs")
+        if runtime_policy.get("requires_production") is not True:
+            errors.append("metadata runtime evidence must require production")
+        if runtime_policy.get("requires_nonempty_admitted_rows") is not True:
+            errors.append("metadata runtime evidence must require admitted rows")
+        if runtime_policy.get("authorization") != {
+            "import_enabled": False, "cutover_enabled": False
+        }:
+            errors.append("metadata runtime evidence cannot authorize import or cutover")
+        common_checks = runtime_policy.get("common_required_checks")
+        if not _nonempty_strings(common_checks) or len(common_checks) < 10:
+            errors.append("metadata runtime evidence requires common zero-difference checks")
+        runtime_assets = runtime_policy.get("assets")
+        if not isinstance(runtime_assets, dict) or set(runtime_assets) != set(expected):
+            errors.append("metadata runtime evidence assets differ from authoritative scope")
+        else:
+            model_sql = "\n".join(
+                path.read_text(encoding="utf-8") for path in sorted((ROOT / "models").glob("**/*.sql"))
+            )
+            for name, requirement in runtime_assets.items():
+                requirement_label = f"metadata runtime evidence {name}"
+                if not isinstance(requirement, dict) or set(requirement) != {
+                    "required_outputs", "required_checks"
+                }:
+                    errors.append(f"{requirement_label}: fields differ")
+                    continue
+                outputs = requirement.get("required_outputs")
+                checks = requirement.get("required_checks")
+                if not _nonempty_strings(outputs) or len(outputs) < 4:
+                    errors.append(f"{requirement_label}: requires all canonical layers")
+                else:
+                    layers = {output.split(".", 1)[0] for output in outputs}
+                    if layers != {"yshopping_dwd", "yshopping_dim", "yshopping_dws", "yshopping_ads"}:
+                        errors.append(f"{requirement_label}: must bind DWD, DIM, DWS and ADS")
+                    for output in outputs:
+                        if not re.search(rf"\b{re.escape(output)}\b", model_sql):
+                            errors.append(f"{requirement_label}: missing model target {output}")
+                if not _nonempty_strings(checks) or len(checks) < 2:
+                    errors.append(f"{requirement_label}: requires source-specific checks")
+
     assets = contract.get("assets")
     if not isinstance(assets, list):
         return errors + ["metadata source dispositions requires assets"]

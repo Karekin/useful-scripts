@@ -742,6 +742,66 @@ class SourceAssetCtlTest(unittest.TestCase):
         errors = SOURCE_ASSETS.validate_metadata_source_dispositions(self.inventory, incomplete)
         self.assertTrue(any("positive row/tenant counts" in error for error in errors))
 
+    def test_metadata_runtime_policy_binds_every_asset_to_dwd_dim_dws_and_ads(self):
+        contract = SOURCE_ASSETS.load_metadata_source_dispositions()
+        policy = contract["runtime_evidence_policy"]
+        self.assertEqual(
+            {asset["source_asset"] for asset in contract["assets"]},
+            set(policy["assets"]),
+        )
+        self.assertFalse(policy["authorization"]["import_enabled"])
+        self.assertFalse(policy["authorization"]["cutover_enabled"])
+        for requirement in policy["assets"].values():
+            self.assertEqual(
+                {"yshopping_dwd", "yshopping_dim", "yshopping_dws", "yshopping_ads"},
+                {target.split(".", 1)[0] for target in requirement["required_outputs"]},
+            )
+            self.assertGreaterEqual(len(requirement["required_checks"]), 2)
+
+        weakened = json.loads(json.dumps(contract))
+        weakened["runtime_evidence_policy"]["assets"]["ods_meta_task_instance_di"]["required_outputs"].pop()
+        errors = SOURCE_ASSETS.validate_metadata_source_dispositions(self.inventory, weakened)
+        self.assertTrue(any("requires all canonical layers" in error for error in errors))
+
+    def test_metadata_reconciliation_requires_nonempty_four_layer_zero_difference_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source_asset = "ods_meta_task_instance_di"
+            evidence_path = write_valid_reconciliation(
+                root,
+                source_asset=source_asset,
+                run_id="metadata-runtime-001",
+                row_count=7,
+                tenant_count=1,
+            )
+            errors = validate_reconciliation(evidence_path)
+            self.assertTrue(any("Metadata canonical outputs missing" in error for error in errors))
+            self.assertTrue(any("Metadata semantic checks missing" in error for error in errors))
+
+            contract = SOURCE_ASSETS.load_metadata_source_dispositions()
+            policy = contract["runtime_evidence_policy"]
+            requirement = policy["assets"][source_asset]
+            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+            evidence["canonical_outputs"] = [
+                {"target": target, "row_count": 7}
+                for target in requirement["required_outputs"]
+            ]
+            evidence["semantic_checks"] = [
+                {"name": name, "checked_count": 7, "mismatch_count": 0}
+                for name in policy["common_required_checks"] + requirement["required_checks"]
+            ]
+            evidence["evidence_sha256"] = canonical_sha256(evidence, "evidence_sha256")
+            evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+            self.assertEqual([], validate_reconciliation(evidence_path))
+
+            evidence["canonical_outputs"][0]["row_count"] = 0
+            evidence["authorization"]["cutover_enabled"] = True
+            evidence["evidence_sha256"] = canonical_sha256(evidence, "evidence_sha256")
+            evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+            errors = validate_reconciliation(evidence_path)
+            self.assertTrue(any("canonical outputs must be non-empty" in error for error in errors))
+            self.assertTrue(any("cannot authorize import or cutover" in error for error in errors))
+
     def test_metadata_contract_rejects_missing_duplicate_or_mislabeled_assets(self):
         contract = SOURCE_ASSETS.load_metadata_source_dispositions()
         missing = json.loads(json.dumps(contract))

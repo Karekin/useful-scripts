@@ -299,6 +299,13 @@ models, and validation fails if any required target reference disappears. Its
 status is deliberately only `partial`: all ten authoritative Metadata source
 assets still have zero non-empty runtime reconciliations, so this implementation
 evidence grants no runtime or final semantic credit.
+Metadata runtime credit is additionally bound to a source-specific evidence
+policy. Every one of the ten assets must provide a production, full-denominator
+bundle with non-empty admitted rows; non-empty DWD, DIM, DWS and ADS outputs;
+the common schema/tenant/key/CDC/delete/layer/security/quarantine checks; and its
+own graph, version, lineage, DQC or metric checks. The independent evidence run
+cannot enable import or cutover. A generic reconciliation with arbitrary output
+names therefore cannot earn Metadata credit.
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%

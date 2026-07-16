@@ -15,6 +15,118 @@
     "runtime_statuses": ["missing", "pending", "verified"],
     "allowed_decisions": ["reuse", "merge", "split", "derive", "correct", "reject"]
   },
+  "runtime_evidence_policy": {
+    "contract_id": "yshopping.metadata.runtime-evidence-policy.v1",
+    "requires_production": true,
+    "requires_nonempty_admitted_rows": true,
+    "authorization": {"import_enabled": false, "cutover_enabled": false},
+    "common_required_checks": [
+      "schema_fingerprint_match",
+      "tenant_scope_full_coverage",
+      "source_business_key_full_coverage",
+      "cdc_watermark_replay",
+      "delete_correction_semantics",
+      "source_to_dwd_identity_coverage",
+      "dwd_to_dim_version_selection",
+      "dim_to_dws_reference_integrity",
+      "dws_to_ads_tenant_coverage",
+      "restricted_field_exclusion",
+      "quarantine_accounting"
+    ],
+    "assets": {
+      "ods_meta_task_instance_di": {
+        "required_outputs": [
+          "yshopping_dwd.dwd_canonical_metadata_task_run_observation_event",
+          "yshopping_dim.dim_canonical_metadata_task_run_current",
+          "yshopping_dws.dws_canonical_metadata_task_run_current",
+          "yshopping_ads.ads_canonical_metadata_readiness"
+        ],
+        "required_checks": ["observation_sequence_monotonic", "exact_task_version_resolution"]
+      },
+      "ods_meta_task_node_df": {
+        "required_outputs": [
+          "yshopping_dwd.dwd_canonical_metadata_task_version_event",
+          "yshopping_dim.dim_canonical_metadata_task_current",
+          "yshopping_dws.dws_canonical_metadata_tenant_coverage_current",
+          "yshopping_ads.ads_canonical_metadata_readiness"
+        ],
+        "required_checks": ["immutable_task_version", "direct_dependency_inventory", "exact_output_dataset_version"]
+      },
+      "ods_sla_parent_child_nodes_df": {
+        "required_outputs": [
+          "yshopping_dwd.dwd_canonical_metadata_task_dependency_version_event",
+          "yshopping_dim.dim_canonical_metadata_task_dependency_current",
+          "yshopping_dws.dws_canonical_metadata_task_dependency_edge_current",
+          "yshopping_ads.ads_canonical_metadata_readiness"
+        ],
+        "required_checks": ["direct_edge_direction", "acyclic_direct_dependency_graph", "derived_closure_consistency"]
+      },
+      "ods_sla_sla_task_df": {
+        "required_outputs": [
+          "yshopping_dwd.dwd_canonical_metadata_task_version_event",
+          "yshopping_dim.dim_canonical_metadata_task_current",
+          "yshopping_dws.dws_canonical_metadata_tenant_coverage_current",
+          "yshopping_ads.ads_canonical_metadata_readiness"
+        ],
+        "required_checks": ["sla_objective_observation_separation", "exact_task_version_sla"]
+      },
+      "ods_meta_table_df": {
+        "required_outputs": [
+          "yshopping_dwd.dwd_canonical_metadata_datasource_version_event",
+          "yshopping_dwd.dwd_canonical_metadata_dataset_version_event",
+          "yshopping_dim.dim_canonical_metadata_dataset_current",
+          "yshopping_dws.dws_canonical_metadata_dataset_governance_current",
+          "yshopping_ads.ads_canonical_metadata_readiness"
+        ],
+        "required_checks": ["exact_datasource_version_resolution", "dataset_identity_stability"]
+      },
+      "ods_meta_table_columns_df": {
+        "required_outputs": [
+          "yshopping_dwd.dwd_canonical_metadata_dataset_field_version_event",
+          "yshopping_dim.dim_canonical_metadata_dataset_field_current",
+          "yshopping_dws.dws_canonical_metadata_dataset_field_current",
+          "yshopping_ads.ads_canonical_metadata_readiness"
+        ],
+        "required_checks": ["field_inventory_replayable", "field_classification_complete"]
+      },
+      "ods_meta_table_lineage_df": {
+        "required_outputs": [
+          "yshopping_dwd.dwd_canonical_metadata_lineage_version_event",
+          "yshopping_dim.dim_canonical_metadata_lineage_current",
+          "yshopping_dws.dws_canonical_metadata_lineage_edge_current",
+          "yshopping_ads.ads_canonical_metadata_readiness"
+        ],
+        "required_checks": ["source_to_target_direction", "exact_lineage_endpoint_versions"]
+      },
+      "ods_meta_dq_dqc_df": {
+        "required_outputs": [
+          "yshopping_dwd.dwd_canonical_metadata_dqc_rule_version_event",
+          "yshopping_dim.dim_canonical_metadata_dqc_rule_current",
+          "yshopping_dws.dws_canonical_metadata_tenant_coverage_current",
+          "yshopping_ads.ads_canonical_metadata_readiness"
+        ],
+        "required_checks": ["dqc_definition_execution_result_separation", "exact_dqc_target_version"]
+      },
+      "ods_meta_dq_dqc_instance_df": {
+        "required_outputs": [
+          "yshopping_dwd.dwd_canonical_metadata_dqc_result_event",
+          "yshopping_dim.dim_canonical_metadata_dqc_result_current",
+          "yshopping_dws.dws_canonical_metadata_dqc_evaluation_current",
+          "yshopping_ads.ads_canonical_metadata_readiness"
+        ],
+        "required_checks": ["exact_dqc_rule_and_task_run_sequence", "evaluated_row_count_conservation"]
+      },
+      "ods_metrics_metrics_info_df": {
+        "required_outputs": [
+          "yshopping_dwd.dwd_canonical_metadata_metric_version_event",
+          "yshopping_dim.dim_canonical_metadata_metric_current",
+          "yshopping_dws.dws_canonical_metadata_tenant_coverage_current",
+          "yshopping_ads.ads_canonical_metadata_readiness"
+        ],
+        "required_checks": ["metric_grain_unit_separation", "immutable_metric_semantic_version"]
+      }
+    }
+  },
   "assets": [
     {
       "source_asset": "ods_meta_task_instance_di",

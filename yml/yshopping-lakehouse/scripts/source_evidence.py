@@ -19,6 +19,7 @@ from typing import Any
 BUNDLE_CONTRACT_ID = "yshopping.source-evidence-bundle.v1"
 RECONCILIATION_CONTRACT_ID = "yshopping.source-reconciliation-evidence.v1"
 TRADE_ADMISSION_CONTRACT_ID = "yshopping.trade-history-admission.v1"
+METADATA_RUNTIME_POLICY_CONTRACT_ID = "yshopping.metadata.runtime-evidence-policy.v1"
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 REQUIRED_SEMANTIC_ARTIFACTS = {
     "money": "currency_unit",
@@ -31,6 +32,23 @@ TRADE_ADMISSION_PATH = (
     / "contracts"
     / "yshopping-trade-history-admission-v1.json"
 )
+METADATA_DISPOSITION_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "contracts"
+    / "yshopping-metadata-source-disposition-v1.json"
+)
+METADATA_SOURCE_ASSETS = {
+    "ods_meta_task_instance_di",
+    "ods_meta_task_node_df",
+    "ods_sla_parent_child_nodes_df",
+    "ods_sla_sla_task_df",
+    "ods_meta_table_df",
+    "ods_meta_table_columns_df",
+    "ods_meta_table_lineage_df",
+    "ods_meta_dq_dqc_df",
+    "ods_meta_dq_dqc_instance_df",
+    "ods_metrics_metrics_info_df",
+}
 ALLOWED_SEMANTIC_ARTIFACT_KINDS = {
     "currency_unit", "quantity_unit", "timezone", "status_dictionary",
     "tenant_mapping", "identity_mapping", "catalog_mapping", "listing_mapping",
@@ -81,6 +99,20 @@ def _trade_admission_asset(source_asset: Any) -> dict[str, Any] | None:
         if isinstance(asset, dict) and asset.get("source_asset") == source_asset:
             return asset
     return None
+
+
+def _metadata_runtime_policy(source_asset: Any) -> tuple[dict[str, Any], dict[str, Any]] | None:
+    if source_asset not in METADATA_SOURCE_ASSETS:
+        return None
+    contract = load_json_object(METADATA_DISPOSITION_PATH)
+    policy = contract.get("runtime_evidence_policy")
+    if not isinstance(policy, dict) or policy.get("contract_id") != METADATA_RUNTIME_POLICY_CONTRACT_ID:
+        raise SourceEvidenceError("Metadata runtime evidence policy is missing or invalid")
+    requirements = policy.get("assets")
+    requirement = requirements.get(source_asset) if isinstance(requirements, dict) else None
+    if not isinstance(requirement, dict):
+        raise SourceEvidenceError(f"Metadata runtime evidence requirement is missing for {source_asset}")
+    return policy, requirement
 
 
 def _nonempty_string(value: Any) -> bool:
@@ -573,6 +605,48 @@ def validate_reconciliation(
         for key in ("import_enabled", "cutover_enabled")
     ):
         errors.append(f"{label}: authorization must declare boolean import and cutover flags")
+
+    metadata_policy: tuple[dict[str, Any], dict[str, Any]] | None = None
+    try:
+        metadata_policy = _metadata_runtime_policy(evidence.get("source_asset"))
+    except SourceEvidenceError as exc:
+        errors.append(f"{label}: {exc}")
+    if metadata_policy is not None:
+        policy, requirement = metadata_policy
+        if bundle.get("source_environment") != "production":
+            errors.append(f"{label}: Metadata runtime evidence requires production")
+        if bundle.get("source", {}).get("qualified_table") != f"yshopping.{evidence.get('source_asset')}":
+            errors.append(f"{label}: Metadata qualified source table differs")
+        if not _positive_int(coverage.get("admitted_source_row_count")):
+            errors.append(f"{label}: Metadata runtime evidence requires non-empty admitted rows")
+        output_rows = {
+            output.get("target"): output.get("row_count")
+            for output in outputs or [] if isinstance(output, dict)
+        }
+        required_outputs = set(requirement.get("required_outputs") or [])
+        missing_outputs = required_outputs - set(output_rows)
+        if missing_outputs:
+            errors.append(f"{label}: Metadata canonical outputs missing {sorted(missing_outputs)}")
+        nonempty_output_failures = sorted(
+            target for target in required_outputs
+            if target in output_rows and not _positive_int(output_rows[target])
+        )
+        if nonempty_output_failures:
+            errors.append(
+                f"{label}: Metadata canonical outputs must be non-empty "
+                f"{nonempty_output_failures}"
+            )
+        observed_checks = {
+            check.get("name") for check in checks or [] if isinstance(check, dict)
+        }
+        required_checks = set(policy.get("common_required_checks") or []) | set(
+            requirement.get("required_checks") or []
+        )
+        missing_checks = required_checks - observed_checks
+        if missing_checks:
+            errors.append(f"{label}: Metadata semantic checks missing {sorted(missing_checks)}")
+        if authorization != policy.get("authorization"):
+            errors.append(f"{label}: Metadata evidence cannot authorize import or cutover")
     return errors
 
 
