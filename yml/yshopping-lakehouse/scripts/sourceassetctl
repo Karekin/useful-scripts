@@ -63,6 +63,9 @@ ACTIVITY_SOURCE_SCHEMA_REQUEST = (
 DWS_DERIVED_SOURCE_DISPOSITIONS = (
     ROOT / "contracts" / "yshopping-dws-derived-source-disposition-v1.json"
 )
+DIM_DERIVED_SOURCE_DISPOSITIONS = (
+    ROOT / "contracts" / "yshopping-dim-derived-source-disposition-v1.json"
+)
 ENGAGEMENT_SOURCE_DISPOSITIONS = (
     ROOT / "contracts" / "yshopping-engagement-source-disposition-v1.json"
 )
@@ -332,6 +335,12 @@ def load_dws_derived_source_dispositions(
     path: Path = DWS_DERIVED_SOURCE_DISPOSITIONS,
 ) -> dict[str, Any]:
     return _load_json_object(path, "DWS derived source dispositions")
+
+
+def load_dim_derived_source_dispositions(
+    path: Path = DIM_DERIVED_SOURCE_DISPOSITIONS,
+) -> dict[str, Any]:
+    return _load_json_object(path, "DIM derived source dispositions")
 
 
 def load_engagement_source_dispositions(
@@ -3593,6 +3602,184 @@ def dws_derived_disposition_status(
     }
 
 
+def validate_dim_derived_source_dispositions(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    """Validate corrected canonical dimensions and reject raw connectors in DIM."""
+    errors: list[str] = []
+    contract = contract or load_dim_derived_source_dispositions()
+    document = LAYER_DOCUMENTS["DIM"]
+    expected: dict[str, list[int]] = {}
+    logical_by_name = {
+        asset["normalized_name"]: asset for asset in inventory.get("logical_assets", [])
+    }
+    for name, logical in logical_by_name.items():
+        if "candidate" not in logical.get("roles", []) or logical.get("source_domains"):
+            continue
+        lines: list[int] = []
+        for occurrence in logical.get("occurrences", []):
+            if occurrence.get("role") != "create_target" or occurrence.get("document") != document:
+                continue
+            try:
+                normalized = normalize_identifier(occurrence.get("qualified_name", ""))[1]
+            except SourceAssetError:
+                continue
+            if normalized == name:
+                lines.append(occurrence.get("line"))
+        if lines:
+            expected[name] = lines
+    dim_names = {name for name in expected if name.startswith("dim_")}
+    ods_names = {name for name in expected if name.startswith("ods_")}
+    scope = contract.get("source_scope")
+    expected_evidence = {
+        "same_name_dim_create": len(dim_names),
+        "wrong_layer_ods_create": len(ods_names),
+    }
+    if not isinstance(scope, dict) or scope.get("authoritative_document") != document:
+        errors.append("DIM derived source scope document differs")
+    elif scope.get("expected_asset_count") != len(expected) or len(expected) != 43:
+        errors.append("DIM derived source asset count differs")
+    elif expected_evidence != {"same_name_dim_create": 40, "wrong_layer_ods_create": 3}:
+        errors.append("DIM derived observed evidence count differs")
+    elif scope.get("expected_source_evidence_counts") != expected_evidence:
+        errors.append("DIM derived evidence count differs")
+
+    policy = contract.get("verification_policy")
+    decisions: set[str] = set()
+    if not isinstance(policy, dict) or policy.get("empty_tables_are_evidence") is not False:
+        errors.append("DIM derived empty tables must not be evidence")
+    else:
+        decisions = set(policy.get("allowed_decisions") or [])
+        if decisions != {"derive", "correct", "reject"}:
+            errors.append("DIM derived allowed decisions differ")
+        for key in ("specified_definition", "verified_definition"):
+            if not isinstance(policy.get(key), str) or not policy[key].strip():
+                errors.append(f"DIM derived verification policy requires {key}")
+
+    profiles = contract.get("semantic_profiles")
+    expected_profiles = {
+        "reference_taxonomy_version", "catalog_product_version",
+        "coupon_definition_version", "restricted_principal_projection",
+        "policy_rule_version", "ai_workflow_projection",
+        "token_marketplace_projection", "warehouse_reference",
+        "quality_ai_reference", "merchant_projection", "wrong_layer_raw_source",
+    }
+    profile_fields = {
+        "canonical_entities", "grain", "history_rules", "security", "authority",
+        "model_status",
+    }
+    if not isinstance(profiles, dict) or set(profiles) != expected_profiles:
+        errors.append(f"DIM derived profiles must define exactly {sorted(expected_profiles)}")
+        profiles = {}
+    for name, profile in profiles.items():
+        if not isinstance(profile, dict) or set(profile) != profile_fields:
+            errors.append(f"DIM derived profile {name} fields differ")
+            continue
+        if not _nonempty_strings(profile.get("canonical_entities")):
+            errors.append(f"DIM derived profile {name} requires canonical entities")
+        rules = profile.get("history_rules")
+        if not _nonempty_strings(rules) or len(rules) < 6 or len(set(rules)) != len(rules):
+            errors.append(f"DIM derived profile {name} requires six unique history rules")
+        for field in ("grain", "security", "authority"):
+            if not isinstance(profile.get(field), str) or not profile[field].strip():
+                errors.append(f"DIM derived profile {name} requires {field}")
+        if profile.get("model_status") not in {"partial", "missing", "rejected"}:
+            errors.append(f"DIM derived profile {name} has invalid model_status")
+
+    references = contract.get("implementation_refs")
+    if not isinstance(references, dict) or set(references) != {"backend_refs", "lakehouse_refs"}:
+        errors.append("DIM derived implementation references differ")
+    else:
+        for kind, values in references.items():
+            if not _nonempty_strings(values):
+                errors.append(f"DIM derived {kind} must contain references")
+                continue
+            for value in values:
+                reference_error = _contract_reference_error(value)
+                if reference_error:
+                    errors.append(f"DIM derived {kind} reference {value!r}: {reference_error}")
+
+    assets = contract.get("assets")
+    asset_fields = {"source_asset", "detail_line", "profile", "decision", "corrections"}
+    if not isinstance(assets, list):
+        return errors + ["DIM derived source dispositions require assets"]
+    seen: set[str] = set()
+    for index, asset in enumerate(assets):
+        label = f"DIM derived assets[{index}]"
+        if not isinstance(asset, dict) or set(asset) != asset_fields:
+            errors.append(f"{label}: fields differ")
+            continue
+        name = asset.get("source_asset")
+        if name in seen:
+            errors.append(f"{label}: duplicate source_asset {name}")
+        seen.add(name)
+        if name not in expected or asset.get("detail_line") not in expected.get(name, []):
+            errors.append(f"{label}: same-name DIM CREATE evidence differs for {name}")
+        if asset.get("profile") not in expected_profiles or asset.get("decision") not in decisions:
+            errors.append(f"{label}: invalid profile or decision")
+        corrections = asset.get("corrections")
+        if not _nonempty_strings(corrections) or len(corrections) < 3 or len(set(corrections)) != len(corrections):
+            errors.append(f"{label}: requires three unique corrections")
+        if isinstance(name, str) and name.startswith("ods_"):
+            if asset.get("profile") != "wrong_layer_raw_source" or asset.get("decision") != "reject":
+                errors.append(f"{label}: wrong-layer ODS asset must be rejected as DIM authority")
+        elif asset.get("profile") == "wrong_layer_raw_source":
+            errors.append(f"{label}: only wrong-layer ODS assets may use raw-source profile")
+    if seen != set(expected):
+        errors.append(
+            "DIM derived dispositions differ from same-name CREATE assets: "
+            f"missing={sorted(set(expected)-seen)}, extra={sorted(seen-set(expected))}"
+        )
+
+    runtime = contract.get("runtime_nonempty_reconciliation")
+    runtime_fields = {"gate_ref", "evidence_ref", "run_id", "row_count", "tenant_count", "status"}
+    if not isinstance(runtime, dict) or set(runtime) != runtime_fields:
+        errors.append("DIM derived runtime reconciliation fields differ")
+    elif runtime.get("status") != "missing" or runtime.get("row_count") != 0 or runtime.get("tenant_count") != 0 or runtime.get("evidence_ref") is not None or runtime.get("run_id") is not None:
+        errors.append("DIM derived runtime evidence must remain missing and empty")
+
+    by_name = {asset.get("source_asset"): asset for asset in assets if isinstance(asset, dict)}
+    coupon = " ".join(by_name.get("dim_coupon_template_df", {}).get("corrections", []))
+    if "dim_cs_ticket_source_df" not in coupon or "ticket-source rows" not in coupon:
+        errors.append("DIM coupon template must repair wrong target and source authority")
+    operator = " ".join(by_name.get("dim_scm_user_df", {}).get("corrections", []))
+    if "dim_scm_warhouse_df" not in operator or "Principal" not in operator:
+        errors.append("DIM SCM user must repair warehouse target and operator identity")
+    principal = " ".join(profiles.get("restricted_principal_projection", {}).get("history_rules", []))
+    principal_security = profiles.get("restricted_principal_projection", {}).get("security", "")
+    if "raw legal identifiers are excluded" not in principal or "tokenized or vaulted" not in principal_security:
+        errors.append("DIM principal profiles must exclude and protect sensitive identity data")
+    ai_security = profiles.get("ai_workflow_projection", {}).get("security", "")
+    if "Passwords, salts, API keys and Redis credentials are excluded" not in ai_security:
+        errors.append("DIM AI projections must exclude credentials")
+    merchant = " ".join(by_name.get("dim_merchant_df", {}).get("corrections", []))
+    if "split merchant account shop legal entity operator and source mapping" not in merchant or "tokenize bank" not in merchant:
+        errors.append("DIM merchant must split identities and tokenize financial data")
+    warehouse = " ".join(by_name.get("dim_scm_warhouse_df", {}).get("corrections", []))
+    if "misspelled source alias" not in warehouse or "inventory quantity" not in warehouse:
+        errors.append("DIM warehouse must correct naming without claiming Inventory authority")
+    return errors
+
+
+def dim_derived_disposition_status(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    contract = contract or load_dim_derived_source_dispositions()
+    expected_count = contract.get("source_scope", {}).get("expected_asset_count", 0)
+    assets = contract.get("assets", []) if isinstance(contract, dict) else []
+    specified = len(assets) if isinstance(assets, list) else 0
+    denominator = expected_count or 1
+    return {
+        "dim_derived_source_asset_count": expected_count,
+        "dim_derived_detailed_disposition_specified_count": specified,
+        "dim_derived_runtime_nonempty_reconciled_count": 0,
+        "dim_derived_final_disposition_verified_count": 0,
+        "dim_derived_detailed_disposition_percent": round(specified * 100.0 / denominator, 2),
+        "dim_derived_runtime_nonempty_reconciled_percent": 0.0,
+        "dim_derived_final_disposition_verified_percent": 0.0,
+    }
+
+
 def validate_engagement_source_dispositions(
     inventory: dict[str, Any], contract: dict[str, Any] | None = None
 ) -> list[str]:
@@ -5056,6 +5243,7 @@ def disposition_status(
     community_status = community_disposition_status(inventory)
     activity_status = activity_disposition_status(inventory)
     dws_derived_status = dws_derived_disposition_status(inventory)
+    dim_derived_status = dim_derived_disposition_status(inventory)
     engagement_status = engagement_disposition_status(inventory)
     compensation_status = compensation_disposition_status(inventory)
     ticket_status = ticket_disposition_status(inventory)
@@ -5074,6 +5262,7 @@ def disposition_status(
         + community_status["community_detailed_disposition_specified_count"]
         + activity_status["activity_detailed_disposition_specified_count"]
         + dws_derived_status["dws_derived_detailed_disposition_specified_count"]
+        + dim_derived_status["dim_derived_detailed_disposition_specified_count"]
         + engagement_status["engagement_detailed_disposition_specified_count"]
         + compensation_status["compensation_detailed_disposition_specified_count"]
         + ticket_status["ticket_detailed_disposition_specified_count"]
@@ -5093,6 +5282,7 @@ def disposition_status(
         + community_status["community_runtime_nonempty_reconciled_count"]
         + activity_status["activity_runtime_nonempty_reconciled_count"]
         + dws_derived_status["dws_derived_runtime_nonempty_reconciled_count"]
+        + dim_derived_status["dim_derived_runtime_nonempty_reconciled_count"]
         + engagement_status["engagement_runtime_nonempty_reconciled_count"]
         + compensation_status["compensation_runtime_nonempty_reconciled_count"]
         + ticket_status["ticket_runtime_nonempty_reconciled_count"]
@@ -5112,6 +5302,7 @@ def disposition_status(
         + community_status["community_final_disposition_verified_count"]
         + activity_status["activity_final_disposition_verified_count"]
         + dws_derived_status["dws_derived_final_disposition_verified_count"]
+        + dim_derived_status["dim_derived_final_disposition_verified_count"]
         + engagement_status["engagement_final_disposition_verified_count"]
         + compensation_status["compensation_final_disposition_verified_count"]
         + ticket_status["ticket_final_disposition_verified_count"]
@@ -5161,6 +5352,7 @@ def disposition_status(
         **community_status,
         **activity_status,
         **dws_derived_status,
+        **dim_derived_status,
         **engagement_status,
         **compensation_status,
         **ticket_status,
@@ -5297,6 +5489,9 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"dws_derived={status['dws_derived_detailed_disposition_specified_count']}/"
         f"{status['dws_derived_source_asset_count']} "
         f"({status['dws_derived_detailed_disposition_percent']:.2f}%); "
+        f"dim_derived={status['dim_derived_detailed_disposition_specified_count']}/"
+        f"{status['dim_derived_source_asset_count']} "
+        f"({status['dim_derived_detailed_disposition_percent']:.2f}%); "
         f"engagement={status['engagement_detailed_disposition_specified_count']}/"
         f"{status['engagement_source_asset_count']} "
         f"({status['engagement_detailed_disposition_percent']:.2f}%); "
@@ -5353,6 +5548,9 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"dws_derived={status['dws_derived_runtime_nonempty_reconciled_count']}/"
         f"{status['dws_derived_source_asset_count']} "
         f"({status['dws_derived_runtime_nonempty_reconciled_percent']:.2f}%); "
+        f"dim_derived={status['dim_derived_runtime_nonempty_reconciled_count']}/"
+        f"{status['dim_derived_source_asset_count']} "
+        f"({status['dim_derived_runtime_nonempty_reconciled_percent']:.2f}%); "
         f"engagement={status['engagement_runtime_nonempty_reconciled_count']}/"
         f"{status['engagement_source_asset_count']} "
         f"({status['engagement_runtime_nonempty_reconciled_percent']:.2f}%); "
@@ -5398,6 +5596,8 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"{status['activity_source_asset_count']}, "
         f"dws_derived={status['dws_derived_final_disposition_verified_count']}/"
         f"{status['dws_derived_source_asset_count']}, "
+        f"dim_derived={status['dim_derived_final_disposition_verified_count']}/"
+        f"{status['dim_derived_source_asset_count']}, "
         f"engagement={status['engagement_final_disposition_verified_count']}/"
         f"{status['engagement_source_asset_count']}, "
         f"compensation={status['compensation_final_disposition_verified_count']}/"
@@ -5436,6 +5636,7 @@ def main() -> int:
     errors.extend(validate_community_source_dispositions(inventory))
     errors.extend(validate_activity_source_schema_request(inventory))
     errors.extend(validate_dws_derived_source_dispositions(inventory))
+    errors.extend(validate_dim_derived_source_dispositions(inventory))
     errors.extend(validate_engagement_source_dispositions(inventory))
     errors.extend(validate_compensation_source_dispositions(inventory))
     errors.extend(validate_ticket_source_dispositions(inventory))

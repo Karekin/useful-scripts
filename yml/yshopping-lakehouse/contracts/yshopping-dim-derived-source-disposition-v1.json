@@ -1,0 +1,173 @@
+{
+  "contract_version": 1,
+  "contract_id": "yshopping.dim-derived.source-disposition.v1",
+  "source_scope": {
+    "authoritative_document": "DIM语兴好物（y shopping）电商数据表.md",
+    "expected_asset_count": 43,
+    "expected_source_evidence_counts": {"same_name_dim_create": 40, "wrong_layer_ods_create": 3},
+    "scope_rule": "This slice covers candidate assets without an authoritative ODS domain that have a same-name CREATE in the DIM document. It preserves source meaning through governed versions or projections, while rejecting wrong-layer raw connectors and preventing dimensions from becoming business or security authority."
+  },
+  "verification_policy": {
+    "specified_definition": "Same-name CREATE plus explicit canonical entity split, source mapping, grain, history, security boundary, authority and defect correction.",
+    "verified_definition": "Non-empty production source-to-canonical reconciliation with stable source keys, effective-time version selection, restricted-field controls, independent row/content checks and zero unexplained differences.",
+    "empty_tables_are_evidence": false,
+    "allowed_decisions": ["derive", "correct", "reject"],
+    "runtime_statuses": ["missing", "pending", "verified"]
+  },
+  "semantic_profiles": {
+    "reference_taxonomy_version": {
+      "canonical_entities": ["reference.ReferenceDictionary", "reference.ReferenceValueVersion", "governance.DefinitionApproval"],
+      "grain": "one tenant, namespace, reference value and immutable effective-time version",
+      "history_rules": ["namespace prevents the source table and field name from becoming a global business key", "effective_from and effective_to are non-overlapping and evaluated at the fact event time", "code and description types are explicit and locale-aware", "owner, approval, provenance and deprecation are retained", "unknown and deleted values remain auditable rather than being silently relabelled", "a reference label never grants entitlement or changes source-domain state"],
+      "security": "Public labels may be projected broadly; ownership, moderation and operational metadata remain least-privilege.",
+      "authority": "The owning domain approves meanings; the dimension only versions and resolves them.",
+      "model_status": "partial"
+    },
+    "catalog_product_version": {
+      "canonical_entities": ["catalog.ProductStyle", "catalog.ProductVariant", "catalog.CategoryVersionReference", "catalog.BrandVersionReference", "catalog.BarcodeReference"],
+      "grain": "one tenant, canonical style or variant and immutable catalog version",
+      "history_rules": ["source SPU maps to ProductStyle and source SKU maps to ProductVariant", "category brand fit and attribute values bind to their effective versions", "money uses integer minor units and ISO currency", "article numbers and barcodes are typed source mappings rather than alternate primary keys", "JSON attributes are normalized into versioned typed values", "catalog status does not imply listing saleability, price availability or inventory"],
+      "security": "Media and descriptive attributes are publishable only through listing policy; source lineage remains internal.",
+      "authority": "Catalog owns style and variant identity; Listing, Pricing and Inventory retain their own authority.",
+      "model_status": "partial"
+    },
+    "coupon_definition_version": {
+      "canonical_entities": ["promotion.CouponTemplateVersion", "promotion.PromotionCampaignVersion", "identity.PrincipalReference"],
+      "grain": "one tenant, coupon template or campaign and immutable approved version",
+      "history_rules": ["template and campaign are separate entities with stable source mappings", "benefit money uses integer minor units and ISO currency", "threshold is a typed eligibility rule rather than an unqualified number", "validity uses declared timezone and half-open boundaries", "creator is a Principal reference and display name is not identity", "configuration never proves issuance entitlement redemption or settlement"],
+      "security": "Creator contact and internal remarks are restricted; no credential or payment instrument is copied.",
+      "authority": "Promotion owns approved definitions and Coupon Entitlement owns user effects.",
+      "model_status": "partial"
+    },
+    "restricted_principal_projection": {
+      "canonical_entities": ["identity.Principal", "identity.SourceIdentity", "identity.ProfileVersion", "identity.ConsentVersion", "workforce.WorkerAssignmentReference"],
+      "grain": "one tenant, canonical Principal and purpose-limited effective profile version",
+      "history_rules": ["source user employee and operator identifiers map through SourceIdentity", "display profile, consent, verification, membership and workforce assignment are separate versioned concepts", "age is not reconstructed from a national identifier in the general dimension", "address, receiver, contact, device and payment-handle data remain purpose-bound restricted projections", "credentials, password material and raw legal identifiers are excluded", "staff KOL student VIP and test flags never create authorization by themselves"],
+      "security": "PII is tokenized or vaulted, access is purpose-bound and audited, and analytics receives minimized or pseudonymous attributes.",
+      "authority": "Identity resolves Principals; Membership, Workforce, Verification and Authorization own their effects.",
+      "model_status": "partial"
+    },
+    "policy_rule_version": {
+      "canonical_entities": ["governance.PolicyDefinition", "governance.PolicyVersion", "governance.PolicyApproval", "governance.RollbackReference"],
+      "grain": "one tenant, policy key and immutable approved effective version",
+      "history_rules": ["rule input, expected parameters and outputs use a typed schema", "owner reviewer approval and change reason are mandatory", "effective windows are non-overlapping and timezone explicit", "manual uploads retain file digest and source-row lineage", "rollback points to an earlier immutable version", "configuration and allowlist membership never prove an enforced decision"],
+      "security": "Policy internals and allowlists are restricted; secrets and credentials are external vault references only.",
+      "authority": "Governance versions policy; the owning operational domain records enforcement decisions and effects.",
+      "model_status": "missing"
+    },
+    "ai_workflow_projection": {
+      "canonical_entities": ["identity.PrincipalReference", "ai_operations.AiApplication", "ai_operations.AiWorkflowDefinition", "ai_operations.AiWorkflowVersion", "ai_operations.WorkflowCacheProjection"],
+      "grain": "one tenant and immutable AI account, application or workflow version; realtime cache rows are disposable projections",
+      "history_rules": ["account identity, application and workflow are separate entities", "creator joins use canonical Principal mappings rather than mutable names", "workflow_id binds to an immutable workflow version", "offline snapshots and realtime Redis cache projections expose the same stable source identity", "cache keys are namespaced by tenant and source system", "deletion disablement and cache expiry do not erase historical workflow runs"],
+      "security": "Passwords, salts, API keys and Redis credentials are excluded and managed in an external secret store; email and login IP are restricted.",
+      "authority": "Identity owns account resolution and AI Operations owns application/workflow lifecycle; Redis projections are never authoritative.",
+      "model_status": "partial"
+    },
+    "token_marketplace_projection": {
+      "canonical_entities": ["identity.PrincipalReference", "token_platform.ModelOfferingVersion", "token_platform.PricingVersion", "token_platform.AccessCredentialReference", "marketplace.SkillPackageVersion", "marketplace.SkillEntitlementReference"],
+      "grain": "one tenant and immutable user mapping, model/configuration version or signed Skill package version",
+      "history_rules": ["username is display data and Principal mapping uses stable source identity", "model capability, provider route and pricing are independently versioned", "price and quota use integer units with ISO currency where monetary", "Skill content is a signed digest-addressed package with publisher and provenance", "installation access is represented by a separate entitlement", "definitions do not debit quota, settle top-ups or create access"],
+      "security": "Passwords, API keys and provider secrets are external vault references; user contact and package internals are least-privilege.",
+      "authority": "Token Platform owns usage/quota/model access, Marketplace owns packages and entitlements, Payment owns settlement.",
+      "model_status": "partial"
+    },
+    "warehouse_reference": {
+      "canonical_entities": ["warehouse.Warehouse", "warehouse.WarehouseLocation", "warehouse.WarehouseSourceMapping"],
+      "grain": "one tenant, canonical warehouse and effective source mapping version",
+      "history_rules": ["the misspelled warhouse name is retained only as a source alias", "warehouse code and source id are mappings rather than universal identifiers", "address and contact are purpose-bound attributes", "status changes are versioned and do not rewrite history", "location and zone hierarchy are separate canonical entities", "warehouse existence never proves inventory quantity or availability"],
+      "security": "Operational contacts and precise addresses are restricted to fulfillment purposes.",
+      "authority": "Warehouse Network owns nodes and mappings; Inventory owns quantities and Fulfillment owns routing effects.",
+      "model_status": "partial"
+    },
+    "quality_ai_reference": {
+      "canonical_entities": ["quality.QualityReasonVersion", "ai_operations.ModelVersionReference", "quality.IdentificationPartVersion", "quality.HumanReviewReference"],
+      "grain": "one tenant, quality reason, model, identification part or result enum and immutable version",
+      "history_rules": ["model version includes artifact digest, provider and reproducible configuration", "product and rule configuration bind to approved policy versions", "identification parts and enums are typed reference versions", "AI output and human ground truth remain distinct evidence", "thresholds are effective policy versions rather than hard-coded truth", "reference rows never directly block a listing, refund or warehouse operation"],
+      "security": "Model artifacts, prompts and review evidence are access-controlled; no raw customer content is copied into reference dimensions.",
+      "authority": "AI Operations owns attempts/models, Quality owns accepted review and owning domains apply business effects.",
+      "model_status": "partial"
+    },
+    "merchant_projection": {
+      "canonical_entities": ["merchant.MerchantAccount", "merchant.MerchantShop", "merchant.MerchantLegalEntity", "merchant.MerchantOperatorAssignment", "merchant.MerchantSourceMapping"],
+      "grain": "one tenant and one canonical merchant account, shop, legal entity, operator assignment or source mapping version",
+      "history_rules": ["merchant account, shop and legal entity are separate stable identities", "operator identity uses Principal assignment with effective dates", "legal registration and settlement references are purpose-bound subrecords", "bank accounts are tokenized payment-instrument references rather than copied strings", "status and audit histories remain immutable", "merchant projection does not grant listing, settlement, deposit or withdrawal effects"],
+      "security": "Legal identifiers, bank data, phones, emails and addresses are vaulted or tokenized and available only to approved purposes.",
+      "authority": "Merchant owns onboarding and identity; Payment/Ledger owns settlement and Catalog/Listing owns sellable offers.",
+      "model_status": "partial"
+    },
+    "wrong_layer_raw_source": {
+      "canonical_entities": ["source.RawChangeEnvelope", "source.SourceSchemaVersion", "source.IngestionCheckpoint"],
+      "grain": "one source topic, partition, offset and immutable raw change envelope",
+      "history_rules": ["the ODS connector remains a raw ingestion concern and is rejected as DIM authority", "source schema version and payload digest are retained", "tenant and source identity are validated before projection", "offsets and event time support deterministic replay", "poison messages quarantine without disappearing", "only governed canonical projections may serve dimensions"],
+      "security": "Raw payload access is restricted and connector credentials are external secrets.",
+      "authority": "ODS records source evidence only; it cannot define AI account, application or policy semantics.",
+      "model_status": "rejected"
+    }
+  },
+  "implementation_refs": {
+    "backend_refs": [
+      "yudao-cloud/cloudmold-module-catalog/cloudmold-module-catalog-server/src/main/java/cn/iocoder/yudao/module/cloudmold/catalog/dal/dataobject/CatalogSpuDO.java",
+      "yudao-cloud/cloudmold-module-promotion/cloudmold-module-promotion-server/src/main/java/cn/iocoder/yudao/module/cloudmold/promotion/dal/dataobject/CouponTemplateDO.java",
+      "yudao-cloud/cloudmold-module-identity/cloudmold-module-identity-server/src/main/java/cn/iocoder/yudao/module/cloudmold/identity/dal/dataobject/PrincipalDO.java",
+      "yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aioperations/dal/dataobject/AiWorkflowVersionDO.java",
+      "yudao-cloud/cloudmold-module-token-platform/cloudmold-module-token-platform-server/src/main/java/cn/iocoder/yudao/module/cloudmold/tokenplatform/dal/dataobject/PricingVersionDO.java",
+      "yudao-cloud/cloudmold-module-warehouse/cloudmold-module-warehouse-server/src/main/java/cn/iocoder/yudao/module/cloudmold/warehouse/dal/dataobject/WarehouseSourceMappingDO.java",
+      "yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantLegalEntityDO.java"
+    ],
+    "lakehouse_refs": [
+      "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-catalog-sku-current.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-promotion-current.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-principal-current.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-ai-operations-current.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-token-platform-current.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-warehouse-current.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-merchant-current.sql"
+    ]
+  },
+  "assets": [
+    {"source_asset":"dim_ai_governance_task_whitelist_df","detail_line":1759,"profile":"policy_rule_version","decision":"correct","corrections":["replace mutable Excel overwrite with immutable signed policy versions","require owner reviewer approval reason and effective window","treat allowlist membership as configuration rather than proof of enforcement"]},
+    {"source_asset":"dim_ai_workflow_account_df","detail_line":1547,"profile":"ai_workflow_projection","decision":"correct","corrections":["exclude password and password_salt from every dimension","map source account to canonical Principal rather than treating name as identity","retain test-account classification as governed metadata rather than regex deletion"]},
+    {"source_asset":"dim_ai_workflow_account_ri","detail_line":1620,"profile":"ai_workflow_projection","decision":"correct","corrections":["treat Redis content as a disposable cache projection","namespace keys by tenant and source system instead of md5 id alone","remove inline Redis endpoint and password configuration"]},
+    {"source_asset":"dim_ai_workflow_app_df","detail_line":1651,"profile":"ai_workflow_projection","decision":"correct","corrections":["separate application identity from immutable workflow version","resolve creator through canonical Principal mapping","prevent mutable account-name join from rewriting historical creator display"]},
+    {"source_asset":"dim_ai_workflow_app_ri","detail_line":1723,"profile":"ai_workflow_projection","decision":"correct","corrections":["treat Redis content as a disposable cache projection","project application and workflow-version identities separately","remove inline Redis endpoint and password configuration"]},
+    {"source_asset":"dim_code_desc","detail_line":10,"profile":"reference_taxonomy_version","decision":"correct","corrections":["replace one mutable 2000-code table with namespaced immutable versions","add effective time owner approval locale and deprecation lineage","reject table and field names as globally stable business keys"]},
+    {"source_asset":"dim_com_audit_tag_df","detail_line":1332,"profile":"reference_taxonomy_version","decision":"derive","corrections":["version moderation tag definitions and owners","keep accepted moderation decisions outside the taxonomy","retain deleted and deprecated tag lineage"]},
+    {"source_asset":"dim_com_ecology_tag_df","detail_line":1291,"profile":"reference_taxonomy_version","decision":"derive","corrections":["version ecology taxonomy and hierarchy","bind labels to locale and effective time","do not infer content membership from taxonomy presence"]},
+    {"source_asset":"dim_com_trend_category_df","detail_line":1377,"profile":"reference_taxonomy_version","decision":"derive","corrections":["version category hierarchy and ownership","make source codes scoped mappings","keep trend selection decisions outside taxonomy"]},
+    {"source_asset":"dim_coupon_activity_df","detail_line":547,"profile":"coupon_definition_version","decision":"correct","corrections":["source campaign data from governed Promotion evidence rather than ticket-source rows","bind start and expiry to a declared timezone and version","keep issuance entitlement and settlement outside campaign definition"]},
+    {"source_asset":"dim_coupon_template_df","detail_line":500,"profile":"coupon_definition_version","decision":"correct","corrections":["repair INSERT target from dim_cs_ticket_source_df to the declared coupon template projection","reject ticket-source rows as coupon-template authority","type benefit money and threshold with currency and eligibility semantics"]},
+    {"source_asset":"dim_cs_repay_reason_df","detail_line":454,"profile":"reference_taxonomy_version","decision":"derive","corrections":["version compensation reason definitions","bind use to accepted Customer Service decisions","retain deprecated reason lineage"]},
+    {"source_asset":"dim_cs_ticket_source_df","detail_line":307,"profile":"reference_taxonomy_version","decision":"derive","corrections":["version ticket-source definitions","scope codes by tenant and source system","do not infer ticket existence from reference rows"]},
+    {"source_asset":"dim_cs_ticket_type_df","detail_line":350,"profile":"reference_taxonomy_version","decision":"derive","corrections":["version ticket-type definitions and ownership","retain hierarchy and deprecation lineage","do not infer SLA or entitlement solely from type"]},
+    {"source_asset":"dim_cs_ticket_user_df","detail_line":393,"profile":"restricted_principal_projection","decision":"correct","corrections":["map service users to canonical Principal and operator assignment","exclude credentials and unrestricted contact data","keep authorization and ticket assignment outside profile projection"]},
+    {"source_asset":"dim_goods_scene_df","detail_line":1425,"profile":"reference_taxonomy_version","decision":"derive","corrections":["version goods-scene taxonomy and ownership","bind labels to locale and effective time","do not infer listing eligibility from scene membership"]},
+    {"source_asset":"dim_goods_user_info_df","detail_line":1466,"profile":"restricted_principal_projection","decision":"correct","corrections":["map creator identities through canonical Principal","separate display profile from operator assignment","exclude unrestricted contact credential and authorization fields"]},
+    {"source_asset":"dim_hr_emp_df","detail_line":1989,"profile":"restricted_principal_projection","decision":"correct","corrections":["split Principal workforce assignment payroll and legal identity records","exclude salary national identifier and private contact fields from general analytics","use effective assignments rather than one mutable employee row"]},
+    {"source_asset":"dim_merchant_df","detail_line":2683,"profile":"merchant_projection","decision":"correct","corrections":["split merchant account shop legal entity operator and source mapping","tokenize bank and legal identifiers instead of copying them","keep listing settlement deposit and withdrawal effects outside the dimension"]},
+    {"source_asset":"dim_paimon_ai_ytoken_configure_df","detail_line":1842,"profile":"token_marketplace_projection","decision":"correct","corrections":["separate provider route model offering and pricing versions","replace embedded secrets with vault references","type quota and monetary configuration with units and currency"]},
+    {"source_asset":"dim_paimon_ai_ytoken_model_df","detail_line":1892,"profile":"token_marketplace_projection","decision":"derive","corrections":["version model capability provider and artifact identity","bind pricing by immutable PricingVersion","do not infer access entitlement from model availability"]},
+    {"source_asset":"dim_paimon_ai_ytoken_skill_info_df","detail_line":1933,"profile":"token_marketplace_projection","decision":"correct","corrections":["model Skill as signed digest-addressed package versions","separate publisher package and installation entitlement","exclude executable secrets and unreviewed code from broad dimensions"]},
+    {"source_asset":"dim_paimon_ai_ytoken_user_df","detail_line":1778,"profile":"token_marketplace_projection","decision":"correct","corrections":["replace username identity with canonical Principal source mapping","exclude password API key and provider secrets","separate user profile quota account and access credential"]},
+    {"source_asset":"dim_platform_discovery_indicator_rule_df","detail_line":728,"profile":"policy_rule_version","decision":"correct","corrections":["version typed indicator formulas inputs and outputs","require owner reviewer approval rollback and effective window","treat configured rules as definitions rather than enforced decisions"]},
+    {"source_asset":"dim_platform_event_df","detail_line":1135,"profile":"reference_taxonomy_version","decision":"derive","corrections":["version event-code definitions and schemas","scope event codes by producer and tenant","do not infer successful business effects from event labels"]},
+    {"source_asset":"dim_platform_event_param_hf","detail_line":1259,"profile":"reference_taxonomy_version","decision":"correct","corrections":["replace unexplained hf physical suffix with an explicit source alias","version expected parameter schemas by event-code version","distinguish absent null invalid and redacted values"]},
+    {"source_asset":"dim_platform_intelligence_event_code_level_df","detail_line":1172,"profile":"reference_taxonomy_version","decision":"derive","corrections":["version event-level taxonomy and severity","scope codes by policy and producer","keep enforcement decisions outside the reference dimension"]},
+    {"source_asset":"dim_platform_intelligence_event_code_level_ri","detail_line":1223,"profile":"reference_taxonomy_version","decision":"correct","corrections":["treat realtime content as a disposable projection of approved versions","namespace cache keys by tenant policy and code","prevent cache state from becoming enforcement authority"]},
+    {"source_asset":"dim_scm_quality_ai_enum_df","detail_line":2547,"profile":"quality_ai_reference","decision":"derive","corrections":["version typed AI result dictionaries","bind labels to model and policy versions","keep human review ground truth separate from AI output"]},
+    {"source_asset":"dim_scm_quality_ai_identify_part_df","detail_line":2494,"profile":"quality_ai_reference","decision":"derive","corrections":["version identification-part definitions and hierarchy","bind use to product and policy versions","do not infer accepted quality outcomes from part configuration"]},
+    {"source_asset":"dim_scm_quality_ai_model_version_df","detail_line":2424,"profile":"quality_ai_reference","decision":"correct","corrections":["add immutable artifact digest provider and reproducible configuration","version thresholds separately as approved policy","prevent model availability from directly changing saleability"]},
+    {"source_asset":"dim_scm_quality_ai_product_config_df","detail_line":2241,"profile":"policy_rule_version","decision":"correct","corrections":["bind product scope to canonical Catalog versions","version configuration approval and effective windows","keep AI configuration advisory until accepted Quality effects"]},
+    {"source_asset":"dim_scm_quality_ai_rule_config_df","detail_line":2341,"profile":"policy_rule_version","decision":"correct","corrections":["version rule input output and threshold schemas","require owner reviewer approval and rollback lineage","record enforcement separately from configuration"]},
+    {"source_asset":"dim_scm_quality_check_reason_df","detail_line":2081,"profile":"reference_taxonomy_version","decision":"derive","corrections":["version quality reason definitions and ownership","retain deprecation and replacement lineage","bind accepted review decisions separately"]},
+    {"source_asset":"dim_scm_user_df","detail_line":2184,"profile":"restricted_principal_projection","decision":"correct","corrections":["repair INSERT target from dim_scm_warhouse_df to the declared SCM user projection","map operators through canonical Principal assignments","exclude credentials and keep authorization outside the projection"]},
+    {"source_asset":"dim_scm_warhouse_df","detail_line":2143,"profile":"warehouse_reference","decision":"correct","corrections":["retain warhouse only as a misspelled source alias and publish canonical Warehouse naming","separate warehouse node location zone and source mapping","do not infer inventory quantity or availability"]},
+    {"source_asset":"dim_trade_commodity_sku_df","detail_line":125,"profile":"catalog_product_version","decision":"correct","corrections":["map source SKU to canonical ProductVariant version","normalize color size specification and barcode values","keep price listing and inventory authority outside Catalog"]},
+    {"source_asset":"dim_trade_commodity_spu_df","detail_line":26,"profile":"catalog_product_version","decision":"correct","corrections":["map source SPU to canonical ProductStyle version","bind category brand fit and status dictionaries at event-effective versions","type official price with integer minor units and ISO currency"]},
+    {"source_asset":"dim_trade_refund_reason_df","detail_line":239,"profile":"reference_taxonomy_version","decision":"derive","corrections":["version after-sale reason definitions and owner","retain deprecated and replacement reasons","do not infer refund eligibility or settlement from reason configuration"]},
+    {"source_asset":"dim_user_df","detail_line":593,"profile":"restricted_principal_projection","decision":"correct","corrections":["split Principal profile consent verification membership workforce and address concepts","exclude raw national id payment handles receiver contact IP and device identifiers from general dimension","do not derive age from national identifier or flags into authorization"]},
+    {"source_asset":"ods_ai_workflow_account_ri","detail_line":1605,"profile":"wrong_layer_raw_source","decision":"reject","corrections":["reject ODS Kafka connector as a DIM semantic authority","retain topic partition offset schema version and payload digest as raw evidence","project only governed Principal mappings without credentials"]},
+    {"source_asset":"ods_ai_workflow_app_ri","detail_line":1708,"profile":"wrong_layer_raw_source","decision":"reject","corrections":["reject ODS Kafka connector as a DIM semantic authority","retain replayable raw application events and schema versions","project governed application and workflow versions only"]},
+    {"source_asset":"ods_intelligence_event_code_level_ri","detail_line":1208,"profile":"wrong_layer_raw_source","decision":"reject","corrections":["reject ODS realtime source as a DIM semantic authority","retain source offset event time schema version and payload digest","derive approved event-level versions before serving lookups"]}
+  ],
+  "runtime_nonempty_reconciliation": {"gate_ref":"useful-scripts/yml/yshopping-lakehouse/tests/sql/26-canonical-metadata-contract.sql","evidence_ref":null,"run_id":null,"row_count":0,"tenant_count":0,"status":"missing"}
+}

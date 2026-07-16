@@ -93,7 +93,7 @@ zero-difference checks, and a separately checksummed independent verifier.
 Documentation volume estimates (for example “15.96 亿”) are never used as a
 denominator. A merely non-empty JSON file can no longer promote any of the 718
 assets to `verified`.
-The governed detailed-disposition numerator is now 176/718. The Product
+The governed detailed-disposition numerator is now 219/718. The Product
 slice covers all ten authoritative 商品 overview assets: nine DDL-backed assets
 are specified across Catalog, Listing, workflow, Identity/Merchant and Quality
 boundaries; the personnel salary asset remains provisional because its detailed
@@ -234,6 +234,18 @@ join fanout, random activity identifiers, unversioned AI thresholds, DOUBLE
 quota and top-up money without currency. DWS remains a derived projection and
 cannot mutate its owning domains. This slice receives 17/17 detailed credit but
 0/17 runtime/final credit, taking the global numerator to 176/718 (24.51%).
+The first DIM-derived slice governs forty same-name dimensions and explicitly
+rejects three same-name ODS connector tables misplaced in the DIM document.
+Reference taxonomies, Catalog style/variant, Promotion definitions, Principal
+projections, AI workflows, Token/Skill definitions, Warehouse, Quality AI and
+Merchant projections now have immutable version, source-mapping, security and
+authority rules. The corrected design repairs the Coupon-template INSERT into
+the ticket-source table and the SCM-user INSERT into the misspelled warehouse
+table; excludes passwords, salts, raw legal identifiers and unrestricted PII;
+splits Merchant/Shop/LegalEntity/Operator, and treats Redis rows as disposable
+cache projections rather than identity or policy authority. This slice receives
+43/43 detailed credit but 0/43 runtime/final credit, taking the global numerator
+to 219/718 (30.50%).
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%
