@@ -20,6 +20,11 @@ SELECT
     get_json_string(payload, '$.buyer_id') AS buyer_id,
     get_json_string(payload, '$.payment_id') AS payment_id,
     CAST(get_json_string(payload, '$.approved_amount_minor') AS BIGINT) AS approved_amount_minor,
+    COALESCE(CAST(get_json_string(payload, '$.gross_amount_minor') AS BIGINT),
+             CAST(get_json_string(payload, '$.approved_amount_minor') AS BIGINT)) AS gross_amount_minor,
+    COALESCE(CAST(get_json_string(payload, '$.benefit_amount_minor') AS BIGINT), 0) AS benefit_amount_minor,
+    COALESCE(CAST(get_json_string(payload, '$.net_amount_minor') AS BIGINT),
+             CAST(get_json_string(payload, '$.approved_amount_minor') AS BIGINT)) AS net_amount_minor,
     CAST(get_json_string(payload, '$.refunded_amount_minor') AS BIGINT) AS refunded_amount_minor,
     get_json_string(payload, '$.currency_code') AS currency_code,
     get_json_string(payload, '$.forward_fulfillment_id') AS forward_fulfillment_id,
@@ -36,5 +41,5 @@ SELECT
     get_json_string(payload, '$.current_status') AS current_status
 FROM yshopping_dwd.dwd_domain_event
 WHERE event_type = 'after_sale.refund.status.changed'
-  AND schema_version = 1
+  AND schema_version IN (1, 2)
   AND source_system = 'cloudmold-aftersales';

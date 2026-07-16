@@ -41,8 +41,12 @@ SELECT
     saga.accepted_quantity AS reported_accepted_quantity,
     saga.returned_quantity AS reported_returned_quantity, saga.uom_code AS reported_uom_code,
     saga.approved_amount_minor AS reported_approved_amount_minor,
+    saga.gross_amount_minor AS reported_gross_amount_minor,
+    saga.benefit_amount_minor AS reported_benefit_amount_minor,
+    saga.net_amount_minor AS reported_net_amount_minor,
     saga.refunded_amount_minor AS reported_refunded_amount_minor,
     saga.currency_code AS reported_currency_code, saga.checkpoints,
+    saga.schema_version AS saga_schema_version,
     saga.aggregate_version AS saga_version, saga.saga_event_count, saga.retry_event_count,
     saga.manual_review_event_count, saga.max_attempt, saga.previous_status AS saga_previous_status,
     saga.current_status AS saga_status, saga.active_step, saga.step_ordinal, saga.attempt,
@@ -56,6 +60,8 @@ SELECT
     order_item.canonical_sku_id AS original_order_sku_id,
     order_item.quantity AS original_order_quantity,
     order_item.line_amount_minor AS original_order_line_amount_minor,
+    COALESCE(order_benefit.discount_amount_minor, 0) AS original_order_discount_amount_minor,
+    COALESCE(order_benefit.net_amount_minor, order_item.line_amount_minor) AS original_order_net_amount_minor,
     order_item.listing_id AS original_listing_id,
     order_item.listing_offer_id AS original_offer_id,
     COALESCE(case_events.after_sale_event_count, 0) AS after_sale_event_count,
@@ -76,6 +82,9 @@ SELECT
     refund.current_status AS refund_status, refund.refund_transaction_id,
     refund.provider_code, refund.approved_amount_minor AS refund_entitlement_amount_minor,
     refund.refunded_amount_minor, refund.currency_code AS refund_currency_code,
+    refund.gross_amount_minor AS refund_gross_amount_minor,
+    refund.benefit_amount_minor AS refund_benefit_amount_minor,
+    refund.net_amount_minor AS refund_net_amount_minor,
     COALESCE(refund_events.refund_event_count, 0) AS refund_event_count,
     COALESCE(refund_events.refund_idempotency_count, 0) AS refund_idempotency_count,
     COALESCE(inventory_return.inventory_return_event_count, 0) AS inventory_return_event_count,
@@ -84,19 +93,34 @@ SELECT
     order_current.current_status AS order_status, order_current.aggregate_version AS current_order_version,
     payment.current_status AS payment_status, payment.refunded_amount_minor AS payment_refunded_amount_minor,
     saga.inventory_operation_id, saga.inventory_ledger_transaction_id,
+    saga.benefit_reversal_status, saga.benefit_reversal_batch_id,
+    saga.benefit_reversal_amount_minor,
+    benefit_reversal.benefit_reversal_count,
+    benefit_reversal.benefit_reversal_idempotency_count,
+    benefit_reversal.benefit_reversal_amount_minor AS recorded_benefit_reversal_amount_minor,
+    benefit_reversal.funding_reversal_count,
+    benefit_reversal.funding_reversal_amount_minor,
+    benefit_reversal.allocation_reversal_mismatch_count,
+    benefit_reversal.funding_reversal_mismatch_count,
     saga.payment_refund_transaction_id, saga.order_refund_operation_id, saga.order_return_operation_id,
     saga.order_version AS reported_order_version, saga.error_code, saga.error_message, saga.next_retry_at,
     return_events.return_accepted_recorded_at,
     inventory_return.inventory_returned_recorded_at,
+    benefit_reversal.benefit_reversal_recorded_at,
     refund_events.refund_succeeded_recorded_at,
     order_current.recorded_at AS order_returned_recorded_at,
     case_events.after_sale_completed_recorded_at,
     return_events.return_accepted_recorded_at IS NOT NULL
       AND inventory_return.inventory_returned_recorded_at IS NOT NULL
+      AND (saga.benefit_amount_minor = 0 OR benefit_reversal.benefit_reversal_recorded_at IS NOT NULL)
       AND refund_events.refund_succeeded_recorded_at IS NOT NULL
       AND order_current.recorded_at IS NOT NULL
       AND case_events.after_sale_completed_recorded_at IS NOT NULL
       AND return_events.return_accepted_recorded_at <= inventory_return.inventory_returned_recorded_at
+      AND (saga.benefit_amount_minor = 0
+        OR inventory_return.inventory_returned_recorded_at <= benefit_reversal.benefit_reversal_recorded_at)
+      AND (saga.benefit_amount_minor = 0
+        OR benefit_reversal.benefit_reversal_recorded_at <= refund_events.refund_succeeded_recorded_at)
       AND inventory_return.inventory_returned_recorded_at <= refund_events.refund_succeeded_recorded_at
       AND refund_events.refund_succeeded_recorded_at <= order_current.recorded_at
       AND order_current.recorded_at <= case_events.after_sale_completed_recorded_at AS recorded_order_valid,
@@ -132,5 +156,12 @@ LEFT JOIN yshopping_dim.dim_canonical_order_current order_current
 LEFT JOIN yshopping_dws.dws_canonical_order_item_current order_item
   ON order_item.tenant_id = saga.tenant_id AND order_item.order_id = saga.order_id
  AND order_item.order_item_id = saga.order_item_id
+LEFT JOIN yshopping_dws.dws_canonical_order_item_benefit_current order_benefit
+  ON order_benefit.tenant_id = saga.tenant_id AND order_benefit.order_id = saga.order_id
+ AND order_benefit.order_item_id = saga.order_item_id
+LEFT JOIN yshopping_dws.dws_canonical_after_sale_benefit_reversal_current benefit_reversal
+  ON benefit_reversal.tenant_id = saga.tenant_id
+ AND benefit_reversal.after_sale_id = saga.after_sale_id
+ AND benefit_reversal.reversal_batch_id = saga.benefit_reversal_batch_id
 LEFT JOIN yshopping_dim.dim_canonical_payment_current payment
   ON payment.tenant_id = saga.tenant_id AND payment.payment_id = saga.payment_id;

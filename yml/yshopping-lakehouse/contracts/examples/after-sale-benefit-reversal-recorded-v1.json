@@ -1,0 +1,40 @@
+{
+  "event_id": "96000000-0000-4000-8000-000000000001",
+  "event_type": "after_sale.benefit_reversal.recorded",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "after_sale_benefit_reversal",
+  "aggregate_id": "96000000-0000-4000-8000-000000000002",
+  "aggregate_version": 1,
+  "event_sequence": 1,
+  "idempotency_key": "after-sale-benefit-reversal-example",
+  "correlation_id": "96000000-0000-4000-8000-000000000003",
+  "causation_id": "96000000-0000-4000-8000-000000000004",
+  "occurred_at": "2026-07-16T04:00:02.000Z",
+  "recorded_at": "2026-07-16T04:00:02.100Z",
+  "source_system": "cloudmold-aftersales",
+  "destination": "lakehouse",
+  "payload": {
+    "run_id": "aftersale-benefit-example",
+    "reversal_batch_id": "96000000-0000-4000-8000-000000000005",
+    "benefit_reversal_id": "96000000-0000-4000-8000-000000000002",
+    "after_sale_id": "96000000-0000-4000-8000-000000000006",
+    "after_sale_item_id": "96000000-0000-4000-8000-000000000007",
+    "order_id": "96000000-0000-4000-8000-000000000008",
+    "order_item_id": "96000000-0000-4000-8000-000000000009",
+    "benefit_application_id": "96000000-0000-4000-8000-000000000010",
+    "benefit_allocation_id": "96000000-0000-4000-8000-000000000011",
+    "benefit_type": "PROMOTION",
+    "benefit_source_type": "CONTROLLED_PROMOTION",
+    "benefit_source_id": "promotion-example",
+    "benefit_source_version": 1,
+    "entitlement_id": null,
+    "entitlement_effect_status": "NOT_REQUIRED",
+    "amount_minor": 3800,
+    "currency_code": "CNY",
+    "funding": [
+      {"funding_reversal_id": "96000000-0000-4000-8000-000000000012", "benefit_funding_id": "96000000-0000-4000-8000-000000000013", "funder_type": "PLATFORM", "funder_id": "cloudmold-platform", "amount_minor": 2000, "currency_code": "CNY"},
+      {"funding_reversal_id": "96000000-0000-4000-8000-000000000014", "benefit_funding_id": "96000000-0000-4000-8000-000000000015", "funder_type": "MERCHANT", "funder_id": "merchant-example", "amount_minor": 1800, "currency_code": "CNY"}
+    ]
+  }
+}

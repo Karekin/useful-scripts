@@ -24,10 +24,19 @@ SELECT
     CAST(get_json_string(payload, '$.returned_quantity') AS DECIMAL(24,6)) AS returned_quantity,
     get_json_string(payload, '$.uom_code') AS uom_code,
     CAST(get_json_string(payload, '$.approved_amount_minor') AS BIGINT) AS approved_amount_minor,
+    COALESCE(CAST(get_json_string(payload, '$.gross_amount_minor') AS BIGINT),
+             CAST(get_json_string(payload, '$.approved_amount_minor') AS BIGINT)) AS gross_amount_minor,
+    COALESCE(CAST(get_json_string(payload, '$.benefit_amount_minor') AS BIGINT), 0) AS benefit_amount_minor,
+    COALESCE(CAST(get_json_string(payload, '$.net_amount_minor') AS BIGINT),
+             CAST(get_json_string(payload, '$.approved_amount_minor') AS BIGINT)) AS net_amount_minor,
     CAST(get_json_string(payload, '$.refunded_amount_minor') AS BIGINT) AS refunded_amount_minor,
     get_json_string(payload, '$.currency_code') AS currency_code,
     CAST(get_json_string(payload, '$.inventory_operation_id') AS BIGINT) AS inventory_operation_id,
     CAST(get_json_string(payload, '$.inventory_ledger_transaction_id') AS BIGINT) AS inventory_ledger_transaction_id,
+    COALESCE(get_json_string(payload, '$.benefit_reversal_status'), 'NOT_REQUIRED') AS benefit_reversal_status,
+    get_json_string(payload, '$.benefit_reversal_batch_id') AS benefit_reversal_batch_id,
+    COALESCE(CAST(get_json_string(payload, '$.benefit_reversal_amount_minor') AS BIGINT), 0)
+        AS benefit_reversal_amount_minor,
     CAST(get_json_string(payload, '$.payment_refund_transaction_id') AS BIGINT) AS payment_refund_transaction_id,
     CAST(get_json_string(payload, '$.order_refund_operation_id') AS BIGINT) AS order_refund_operation_id,
     CAST(get_json_string(payload, '$.order_return_operation_id') AS BIGINT) AS order_return_operation_id,
@@ -37,5 +46,5 @@ SELECT
     get_json_string(payload, '$.next_retry_at') AS next_retry_at
 FROM yshopping_dwd.dwd_domain_event
 WHERE event_type = 'after_sale.resolution_saga.status.changed'
-  AND schema_version = 1
+  AND schema_version IN (1, 2)
   AND source_system = 'cloudmold-aftersales';

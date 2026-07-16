@@ -382,10 +382,11 @@
       "example": "examples/after-sale-status-changed-v1.json"
     },
     "after_sale.refund.status.changed": {
-      "schema_version": 1,
       "aggregate_type": "after_sale_refund",
-      "payload_schema": "events/after-sale-refund-status-changed-v1.schema.json",
-      "example": "examples/after-sale-refund-status-changed-v1.json"
+      "versions": [
+        {"schema_version": 1, "payload_schema": "events/after-sale-refund-status-changed-v1.schema.json", "example": "examples/after-sale-refund-status-changed-v1.json"},
+        {"schema_version": 2, "payload_schema": "events/after-sale-refund-status-changed-v2.schema.json", "example": "examples/after-sale-refund-status-changed-v2.json"}
+      ]
     },
     "return_fulfillment.status.changed": {
       "schema_version": 1,
@@ -400,10 +401,17 @@
       "example": "examples/return-fulfillment-inspection-decided-v1.json"
     },
     "after_sale.resolution_saga.status.changed": {
-      "schema_version": 1,
       "aggregate_type": "after_sale_resolution_saga",
-      "payload_schema": "events/after-sale-resolution-saga-status-changed-v1.schema.json",
-      "example": "examples/after-sale-resolution-saga-status-changed-v1.json"
+      "versions": [
+        {"schema_version": 1, "payload_schema": "events/after-sale-resolution-saga-status-changed-v1.schema.json", "example": "examples/after-sale-resolution-saga-status-changed-v1.json"},
+        {"schema_version": 2, "payload_schema": "events/after-sale-resolution-saga-status-changed-v2.schema.json", "example": "examples/after-sale-resolution-saga-status-changed-v2.json"}
+      ]
+    },
+    "after_sale.benefit_reversal.recorded": {
+      "schema_version": 1,
+      "aggregate_type": "after_sale_benefit_reversal",
+      "payload_schema": "events/after-sale-benefit-reversal-recorded-v1.schema.json",
+      "example": "examples/after-sale-benefit-reversal-recorded-v1.json"
     },
     "listing.status.changed": {
       "schema_version": 1,

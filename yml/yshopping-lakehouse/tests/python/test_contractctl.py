@@ -119,13 +119,26 @@ class ContractCtlTest(unittest.TestCase):
             "return_fulfillment.status.changed",
             "return_fulfillment.inspection.decided",
             "after_sale.resolution_saga.status.changed",
+            "after_sale.benefit_reversal.recorded",
         }
         self.assertTrue(expected <= set(manifest["events"]))
         forbidden = {"buyer_name", "buyer_phone", "receiver_name", "receiver_phone", "address"}
         for event_type in expected:
             config = manifest["events"][event_type]
-            schema = CONTRACT.load(CONTRACT.CONTRACTS / config["payload_schema"])
-            self.assertFalse(forbidden & set(schema["properties"]))
+            for version in config.get("versions", [config]):
+                schema = CONTRACT.load(CONTRACT.CONTRACTS / version["payload_schema"])
+                self.assertFalse(forbidden & set(schema["properties"]))
+
+        benefit = CONTRACT.load(
+            CONTRACT.CONTRACTS / "events" / "after-sale-benefit-reversal-recorded-v1.schema.json"
+        )
+        self.assertEqual(benefit["properties"]["entitlement_effect_status"]["const"], "NOT_REQUIRED")
+        self.assertEqual(benefit["properties"]["funding"]["minItems"], 1)
+        saga_v2 = CONTRACT.load(
+            CONTRACT.CONTRACTS / "events" / "after-sale-resolution-saga-status-changed-v2.schema.json"
+        )
+        self.assertIn("REVERSE_BENEFITS", saga_v2["properties"]["active_step"]["enum"])
+        self.assertIn("benefit_reversed", saga_v2["properties"]["checkpoints"]["required"])
 
         return_schema = CONTRACT.load(
             CONTRACT.CONTRACTS / "events" / "return-fulfillment-status-changed-v1.schema.json"

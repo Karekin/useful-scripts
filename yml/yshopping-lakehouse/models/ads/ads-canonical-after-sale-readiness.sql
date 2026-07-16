@@ -9,7 +9,8 @@ SELECT resolution.*,
            OR refund_after_sale_item_id <> after_sale_item_id
            OR original_order_sku_id IS NULL OR original_order_sku_id <> canonical_sku_id
            OR original_order_quantity <> requested_quantity
-           OR original_order_line_amount_minor <> approved_amount_minor
+           OR original_order_line_amount_minor <> original_order_discount_amount_minor + original_order_net_amount_minor
+           OR original_order_net_amount_minor <> approved_amount_minor
            OR original_listing_id <> listing_id OR original_offer_id <> offer_id
            OR requested_quantity <= 0
            OR received_quantity <> accepted_quantity + rejected_quantity
@@ -32,12 +33,20 @@ SELECT resolution.*,
            OR reported_returned_quantity <> inventory_return_quantity
            OR reported_uom_code <> return_uom_code
            OR reported_approved_amount_minor <> approved_amount_minor
+           OR reported_gross_amount_minor <> original_order_line_amount_minor
+           OR reported_benefit_amount_minor <> original_order_discount_amount_minor
+           OR reported_net_amount_minor <> original_order_net_amount_minor
+           OR reported_gross_amount_minor <> reported_benefit_amount_minor + reported_net_amount_minor
            OR reported_refunded_amount_minor <> refunded_amount_minor
+           OR refund_gross_amount_minor <> reported_gross_amount_minor
+           OR refund_benefit_amount_minor <> reported_benefit_amount_minor
+           OR refund_net_amount_minor <> reported_net_amount_minor
            OR reported_currency_code <> currency_code
            OR resolution_saga_id <> saga_id
          THEN 'INCONSISTENT'
          WHEN saga_status = 'COMPLETED'
-           AND saga_version = 10 AND saga_event_count = 10
+           AND saga_version = IF(reported_benefit_amount_minor = 0, 10, 12)
+           AND saga_event_count = saga_version
            AND after_sale_status = 'COMPLETED' AND after_sale_event_count = 4
            AND return_fulfillment_status = 'INSPECTION_ACCEPTED' AND return_fulfillment_event_count = 5
            AND inspection_result = 'ACCEPTED' AND rejected_quantity = 0
@@ -45,14 +54,28 @@ SELECT resolution.*,
            AND accepted_quantity = inventory_return_quantity
            AND refund_status = 'SUCCEEDED' AND refund_event_count = 2
            AND approved_amount_minor = refunded_amount_minor
+           AND approved_amount_minor = reported_net_amount_minor
            AND refunded_amount_minor = payment_refunded_amount_minor
            AND payment_status = 'REFUNDED' AND order_status = 'RETURNED'
            AND reported_order_version = current_order_version
            AND inventory_ledger_transaction_id IS NOT NULL
            AND inventory_operation_id IS NOT NULL
+           AND ((reported_benefit_amount_minor = 0
+                  AND benefit_reversal_status = 'NOT_REQUIRED'
+                  AND benefit_reversal_amount_minor = 0)
+                OR (reported_benefit_amount_minor > 0
+                  AND benefit_reversal_status = 'RECORDED'
+                  AND benefit_reversal_batch_id IS NOT NULL
+                  AND benefit_reversal_amount_minor = reported_benefit_amount_minor
+                  AND recorded_benefit_reversal_amount_minor = reported_benefit_amount_minor
+                  AND funding_reversal_amount_minor = reported_benefit_amount_minor
+                  AND benefit_reversal_idempotency_count = benefit_reversal_count
+                  AND allocation_reversal_mismatch_count = 0
+                  AND funding_reversal_mismatch_count = 0))
            AND payment_refund_transaction_id = refund_transaction_id
            AND order_refund_operation_id IS NOT NULL AND order_return_operation_id IS NOT NULL
            AND get_json_bool(checkpoints, '$.inventory_returned') = TRUE
+           AND (saga_schema_version = 1 OR get_json_bool(checkpoints, '$.benefit_reversed') = TRUE)
            AND get_json_bool(checkpoints, '$.payment_refunded') = TRUE
            AND get_json_bool(checkpoints, '$.order_refund_confirmed') = TRUE
            AND get_json_bool(checkpoints, '$.order_returned') = TRUE

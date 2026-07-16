@@ -62,9 +62,9 @@ class ModelCtlTest(unittest.TestCase):
             positions["models/dws/dws-canonical-paid-order-cancellation-saga-current.sql"],
         )
 
-    def test_models_extend_manifest_to_one_hundred_sixty_eight_in_dependency_order(self):
+    def test_models_extend_manifest_to_one_hundred_seventy_two_in_dependency_order(self):
         order = MODEL.load_order()
-        self.assertEqual(len(order), 168)
+        self.assertEqual(len(order), 172)
         positions = {entry: index for index, entry in enumerate(order)}
         paid_dws = "models/dws/dws-canonical-paid-order-cancellation-saga-current.sql"
         paid_ads = "models/ads/ads-canonical-paid-order-cancellation-saga-readiness.sql"
@@ -81,6 +81,15 @@ class ModelCtlTest(unittest.TestCase):
         self.assertLess(positions[after_sale_dwd], positions[after_sale_dim])
         self.assertLess(positions[after_sale_dim], positions[after_sale_dws])
         self.assertLess(positions[after_sale_dws], positions[after_sale_ads])
+        benefit_reversal_dwd = "models/dwd/dwd-canonical-after-sale-benefit-reversal-event.sql"
+        benefit_funding_dwd = "models/dwd/dwd-canonical-after-sale-benefit-funding-reversal-event.sql"
+        benefit_reversal_dim = "models/dim/dim-canonical-after-sale-benefit-reversal-current.sql"
+        benefit_reversal_dws = "models/dws/dws-canonical-after-sale-benefit-reversal-current.sql"
+        self.assertLess(positions[after_sale_dwd], positions[benefit_reversal_dwd])
+        self.assertLess(positions[benefit_reversal_dwd], positions[benefit_funding_dwd])
+        self.assertLess(positions[benefit_reversal_dwd], positions[benefit_reversal_dim])
+        self.assertLess(positions[benefit_reversal_dim], positions[benefit_reversal_dws])
+        self.assertLess(positions[benefit_reversal_dws], positions[after_sale_dws])
 
         migration_qualification_dwd = "models/dwd/dwd-canonical-inventory-migration-qualification-event.sql"
         migration_qualification_dim = "models/dim/dim-canonical-inventory-migration-qualification-current.sql"

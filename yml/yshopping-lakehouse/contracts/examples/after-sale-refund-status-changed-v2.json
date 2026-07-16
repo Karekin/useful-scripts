@@ -1,0 +1,13 @@
+{
+  "event_id": "98000000-0000-4000-8000-000000000001", "event_type": "after_sale.refund.status.changed", "schema_version": 2,
+  "tenant_id": 1, "aggregate_type": "after_sale_refund", "aggregate_id": "98000000-0000-4000-8000-000000000002", "aggregate_version": 2, "event_sequence": 1,
+  "idempotency_key": "after-sale-refund-benefit-example", "correlation_id": "98000000-0000-4000-8000-000000000003", "causation_id": "98000000-0000-4000-8000-000000000004",
+  "occurred_at": "2026-07-16T04:00:03.000Z", "recorded_at": "2026-07-16T04:00:03.100Z", "source_system": "cloudmold-aftersales", "destination": "lakehouse",
+  "payload": {
+    "run_id": "aftersale-benefit-example", "after_sale_id": "98000000-0000-4000-8000-000000000002", "after_sale_no": "AS202607160001", "after_sale_item_id": "98000000-0000-4000-8000-000000000005", "after_sale_type": "RETURN_AND_REFUND", "reason_code": "QUALITY", "responsibility": "SELLER", "reason": "quality issue",
+    "order_id": "98000000-0000-4000-8000-000000000006", "order_item_id": "98000000-0000-4000-8000-000000000007", "canonical_sku_id": "98000000-0000-4000-8000-000000000008", "quantity": "1", "listing_id": "98000000-0000-4000-8000-000000000009", "listing_offer_id": "98000000-0000-4000-8000-000000000010", "buyer_id": "buyer-example",
+    "approved_amount_minor": 36000, "gross_amount_minor": 39800, "benefit_amount_minor": 3800, "net_amount_minor": 36000, "currency_code": "CNY", "payment_id": "98000000-0000-4000-8000-000000000011",
+    "forward_fulfillment_id": "98000000-0000-4000-8000-000000000012", "forward_shipment_id": "98000000-0000-4000-8000-000000000013", "return_fulfillment_id": "98000000-0000-4000-8000-000000000014", "return_shipment_id": "98000000-0000-4000-8000-000000000015", "inspection_id": "98000000-0000-4000-8000-000000000016", "resolution_saga_id": "98000000-0000-4000-8000-000000000017",
+    "refund_status": "SUCCEEDED", "payment_refund_transaction_id": 103, "refund_id": "98000000-0000-4000-8000-000000000002", "refunded_amount_minor": 36000, "provider_code": "INTERNAL_TEST", "step_ordinal": 3, "previous_status": "REQUESTED", "current_status": "SUCCEEDED"
+  }
+}
