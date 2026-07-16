@@ -125,20 +125,24 @@ class SourceAssetCtlTest(unittest.TestCase):
         status = SOURCE_ASSETS.disposition_status(self.inventory)
         self.assertEqual(718, status["candidate_asset_count"])
         self.assertEqual(281, status["authoritative_ods_overview_asset_count"])
-        self.assertEqual(713, status["domain_routed_asset_count"])
+        self.assertEqual(712, status["domain_routed_asset_count"])
         self.assertEqual(322, status["heading_lineage_inferred_asset_count"])
         self.assertEqual(112, status["explicit_asset_route_count"])
         self.assertEqual(110, status["bounded_domain_asset_count"])
-        self.assertEqual(5, status["explicit_rejection_count"])
+        self.assertEqual(6, status["explicit_rejection_count"])
         self.assertEqual(718, status["preliminary_handled_count"])
         self.assertEqual(48, status["detailed_disposition_specified_count"])
         self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
-        self.assertEqual(99.3, status["routing_percent"])
+        self.assertEqual(99.16, status["routing_percent"])
         self.assertEqual(100.0, status["preliminary_handled_percent"])
         self.assertEqual(6.69, status["detailed_disposition_specified_percent"])
         self.assertEqual(0.0, status["runtime_nonempty_reconciled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
+        self.assertIn(
+            "ods_trade_trade_discount_df",
+            SOURCE_ASSETS.load_source_domain_policy()["explicit_rejections"],
+        )
         inferred = SOURCE_ASSETS.infer_source_domains(self.inventory)
         self.assertEqual(
             ["游戏"], inferred["ods:object:ods_eliminate_user_coin_log_df"]["domains"]
@@ -547,6 +551,13 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertIn("order.OrderBenefitAllocation", discount["canonical_entities"])
         self.assertIn("order.OrderBenefitFunding", discount["canonical_entities"])
         self.assertEqual("partial", discount["model_status"])
+        self.assertTrue(
+            discount["runtime_nonempty_reconciliation"]["gate_ref"].endswith(
+                "27-canonical-order-benefit-contract.sql"
+            )
+        )
+        self.assertEqual("missing", discount["runtime_nonempty_reconciliation"]["status"])
+        self.assertEqual("unverified", discount["verification_status"])
         self.assertEqual(
             {
                 "id", "discount_no", "order_no", "sub_order_no", "buyer_id", "discount_type",

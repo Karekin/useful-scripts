@@ -48,7 +48,7 @@
     {
       "source_domains": ["正向订单"],
       "decision_basis": "Reviewed order discount, log and payment-detail headings; payment detail remains subject to Order versus Payment split.",
-      "assets": ["dwd_trade_order_discount_detail_df", "dwd_trade_order_log_di", "dwd_trade_order_payment_detail_di", "ods_trade_trade_discount_df"]
+      "assets": ["dwd_trade_order_discount_detail_df", "dwd_trade_order_log_di", "dwd_trade_order_payment_detail_di", "ods_trade_trade_discount_di"]
     },
     {
       "source_domains": ["逆向订单"],

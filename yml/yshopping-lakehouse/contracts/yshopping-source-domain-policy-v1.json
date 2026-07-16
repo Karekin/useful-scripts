@@ -31,6 +31,7 @@
     "dim__": "incomplete placeholder identifier",
     "dwd_xxx_xx": "teaching placeholder without a business grain",
     "ods_coupon_coupon_": "truncated teaching identifier without a source contract",
-    "ods_mysql_table_name_df": "generic template identifier without a source contract"
+    "ods_mysql_table_name_df": "generic template identifier without a source contract",
+    "ods_trade_trade_discount_df": "prototype matrix alias conflicts with the DDL-backed ods_trade_trade_discount_di authority"
   }
 }
