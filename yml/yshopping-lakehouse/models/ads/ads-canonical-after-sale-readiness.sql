@@ -72,6 +72,7 @@ SELECT resolution.*,
                   AND funding_reversal_amount_minor = reported_benefit_amount_minor
                   AND benefit_reversal_idempotency_count = benefit_reversal_count
                   AND allocation_reversal_mismatch_count = 0
+                  AND entitlement_effect_mismatch_count = 0
                   AND funding_reversal_mismatch_count = 0))
            AND payment_refund_transaction_id = refund_transaction_id
            AND order_refund_operation_id IS NOT NULL AND order_return_operation_id IS NOT NULL

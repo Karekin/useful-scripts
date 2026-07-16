@@ -101,6 +101,7 @@ SELECT
     benefit_reversal.funding_reversal_count,
     benefit_reversal.funding_reversal_amount_minor,
     benefit_reversal.allocation_reversal_mismatch_count,
+    benefit_reversal.entitlement_effect_mismatch_count,
     benefit_reversal.funding_reversal_mismatch_count,
     saga.payment_refund_transaction_id, saga.order_refund_operation_id, saga.order_return_operation_id,
     saga.order_version AS reported_order_version, saga.error_code, saga.error_message, saga.next_retry_at,

@@ -132,7 +132,11 @@ class ContractCtlTest(unittest.TestCase):
         benefit = CONTRACT.load(
             CONTRACT.CONTRACTS / "events" / "after-sale-benefit-reversal-recorded-v1.schema.json"
         )
-        self.assertEqual(benefit["properties"]["entitlement_effect_status"]["const"], "NOT_REQUIRED")
+        self.assertEqual(
+            benefit["properties"]["entitlement_effect_status"]["enum"],
+            ["NOT_REQUIRED", "RETURNED"],
+        )
+        self.assertEqual(len(benefit["oneOf"]), 2)
         self.assertEqual(benefit["properties"]["funding"]["minItems"], 1)
         saga_v2 = CONTRACT.load(
             CONTRACT.CONTRACTS / "events" / "after-sale-resolution-saga-status-changed-v2.schema.json"

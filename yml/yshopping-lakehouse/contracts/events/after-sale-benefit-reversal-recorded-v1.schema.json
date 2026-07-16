@@ -19,8 +19,8 @@
     "benefit_source_type": {"type": "string", "minLength": 1, "maxLength": 32},
     "benefit_source_id": {"type": "string", "minLength": 1, "maxLength": 128},
     "benefit_source_version": {"type": "integer", "minimum": 1},
-    "entitlement_id": {"type": "null"},
-    "entitlement_effect_status": {"const": "NOT_REQUIRED"},
+    "entitlement_id": {"type": ["string", "null"], "format": "uuid"},
+    "entitlement_effect_status": {"type": "string", "enum": ["NOT_REQUIRED", "RETURNED"]},
     "amount_minor": {"type": "integer", "minimum": 1},
     "currency_code": {"const": "CNY"},
     "funding": {
@@ -38,5 +38,21 @@
         }
       }
     }
-  }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "entitlement_id": {"type": "null"},
+        "entitlement_effect_status": {"const": "NOT_REQUIRED"}
+      }
+    },
+    {
+      "properties": {
+        "benefit_type": {"const": "COUPON"},
+        "benefit_source_type": {"const": "COUPON_ENTITLEMENT"},
+        "entitlement_id": {"type": "string", "format": "uuid"},
+        "entitlement_effect_status": {"const": "RETURNED"}
+      }
+    }
+  ]
 }

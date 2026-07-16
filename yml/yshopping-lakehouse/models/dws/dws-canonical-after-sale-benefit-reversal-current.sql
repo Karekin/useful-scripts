@@ -18,8 +18,19 @@ WITH reversal_exactness AS (
                   OR reversal.benefit_source_id <> application.benefit_source_id
                   OR reversal.benefit_source_version <> application.benefit_source_version
                   OR NOT (reversal.entitlement_id <=> application.entitlement_id)
-                  OR reversal.entitlement_effect_status <> 'NOT_REQUIRED'
                THEN 1 ELSE 0 END) AS allocation_reversal_mismatch_count,
+           SUM(CASE WHEN reversal.entitlement_id IS NULL
+                          AND reversal.entitlement_effect_status = 'NOT_REQUIRED' THEN 0
+                    WHEN reversal.entitlement_id IS NOT NULL
+                          AND reversal.entitlement_effect_status = 'RETURNED'
+                          AND reversal.benefit_type = 'COUPON'
+                          AND reversal.benefit_source_type = 'COUPON_ENTITLEMENT'
+                          AND reversal.benefit_source_id = reversal.entitlement_id
+                          AND entitlement.entitlement_id IS NOT NULL
+                          AND entitlement.current_status = 'RETURNED'
+                          AND entitlement.aggregate_version = reversal.benefit_source_version + 1
+                          AND entitlement.order_ref = reversal.run_id THEN 0
+                    ELSE 1 END) AS entitlement_effect_mismatch_count,
            MAX(reversal.recorded_at) AS benefit_reversal_recorded_at
     FROM yshopping_dim.dim_canonical_after_sale_benefit_reversal_current reversal
     LEFT JOIN yshopping_dwd.dwd_canonical_order_benefit_allocation_event allocation
@@ -30,6 +41,9 @@ WITH reversal_exactness AS (
       ON application.tenant_id = reversal.tenant_id
      AND application.order_id = reversal.order_id
      AND application.benefit_application_id = reversal.benefit_application_id
+    LEFT JOIN yshopping_dim.dim_canonical_coupon_entitlement_current entitlement
+      ON entitlement.tenant_id = reversal.tenant_id
+     AND entitlement.entitlement_id = reversal.entitlement_id
     GROUP BY reversal.tenant_id, reversal.after_sale_id, reversal.reversal_batch_id
 ), funding_exactness AS (
     SELECT funding.tenant_id, funding.after_sale_id, funding.reversal_batch_id,
