@@ -93,7 +93,7 @@ zero-difference checks, and a separately checksummed independent verifier.
 Documentation volume estimates (for example “15.96 亿”) are never used as a
 denominator. A merely non-empty JSON file can no longer promote any of the 718
 assets to `verified`.
-The governed detailed-disposition numerator is now 71/718. The Product
+The governed detailed-disposition numerator is now 75/718. The Product
 slice covers all ten authoritative 商品 overview assets: nine DDL-backed assets
 are specified across Catalog, Listing, workflow, Identity/Merchant and Quality
 boundaries; the personnel salary asset remains provisional because its detailed
@@ -129,6 +129,17 @@ profile. Legal ids, names, phones, addresses, payment/social accounts, IP,
 device, education, OCR and biometric evidence stay tokenized or restricted.
 Account closure revokes access but cannot erase Order, Payment or Ledger
 history. User runtime and final verification remain zero.
+The Payment overview contains fourteen unique assets. Twelve still have no
+detailed schema, so a separate source-schema request now locks the exact DDL,
+keys, tenant/time/delete/CDC semantics, dictionaries, PCI/PII classification,
+money conservation and full-denominator evidence required before they can move
+out of provisional status. This request grants no completion credit.
+The Engagement slice specifies both Push and both Collect assets. Unversioned
+Kafka `message` JSON must acquire a checksummed schema; delivery intent,
+attempt and receipt remain distinct; coupon ids cannot fabricate entitlements.
+Favorite and reminder behavior is append-only, SPU/SKU require canonical
+mappings, and all price observations remain quarantined until currency and
+minor-unit semantics are proven. These four assets remain runtime-unverified.
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%

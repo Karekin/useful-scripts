@@ -1,0 +1,43 @@
+{
+  "contract_version": 1,
+  "contract_id": "yshopping.payment.source-schema-request.v1",
+  "source_scope": {
+    "domain": "支付",
+    "authoritative_document": "ODS语兴好物（y shopping）电商数据表.md",
+    "overview_lines": "26-41",
+    "authoritative_unique_asset_count": 14,
+    "already_governed_elsewhere": ["ods_logistic_logistic_track_structure_di", "ods_trade_trade_invoice_apply_df"],
+    "requested_schema_asset_count": 12,
+    "status": "BLOCKED_MISSING_SOURCE_SCHEMA"
+  },
+  "delivery_requirements": {
+    "source_identity": ["source_system", "source_database", "qualified_table", "owner", "business_description"],
+    "schema": ["full_create_table_ddl", "primary_key", "tenant_key", "column_name_type_nullability_comment", "unique_keys", "foreign_key_or_mapping_keys", "enum_status_dictionaries"],
+    "change_semantics": ["snapshot_or_incremental_mode", "event_time", "timezone", "soft_delete_column", "hard_delete_or_tombstone_behavior", "cdc_watermark_or_offset", "schema_change_policy"],
+    "governance": ["pii_pci_secret_classification", "retention", "freshness_slo", "expected_volume", "least_privilege_read_role", "source_audit_attestation"],
+    "reconciliation": ["complete_denominator_query", "tenant_partition_counts", "stable_business_key_digest", "money_currency_conservation", "duplicate_and_orphan_rules"]
+  },
+  "admission_policy": {
+    "overview_name_is_schema_evidence": false,
+    "documentation_volume_is_denominator": false,
+    "sampled_rows_are_final_evidence": false,
+    "empty_extract_is_evidence": false,
+    "raw_pan_password_otp_or_bank_credentials_are_accepted": false,
+    "promotion_rule": "No requested asset may move from provisional to specified until its exact source schema and all table-specific semantic requirements are delivered and checksummed.",
+    "runtime_rule": "No requested asset may move to verified until a non-empty production full-denominator reconciliation passes the governed source-evidence protocol."
+  },
+  "assets": [
+    {"source_asset":"ods_pay_pay_log_di","source_label":"支付记录","overview_line":27,"target_boundary":"Payment intent, immutable attempt and provider observation","required_semantics":["payment_id_attempt_id_provider_transaction_id_business_entitlement_id","requested_authorized_captured_refunded_fee_amounts_and_iso_currency","provider_channel_instrument_token_and_status_dictionary","created_authorized_captured_failed_refunded_event_times","idempotency_key_and_provider_retry_identity"]},
+    {"source_asset":"ods_transferlog_df","source_label":"转账记录","overview_line":28,"target_boundary":"Transfer authorization, execution attempts and balanced ledger posting","required_semantics":["instruction_id_transfer_id_provider_transaction_id","payer_payee_account_tokens_and_owner_mappings","principal_fee_and_tax_minor_units_with_iso_currency","authorization_execution_settlement_failure_status_dictionary","ledger_transaction_and_compensation_references"]},
+    {"source_asset":"ods_transfer_queue_df","source_label":"转账队列","overview_line":29,"target_boundary":"Transport/outbox delivery only; never financial authority","required_semantics":["queue_item_id_instruction_id_payload_schema_version_and_digest","enqueue_lease_attempt_retry_and_terminal_timestamps","delivery_status_dictionary_and_error_classification","ordering_partition_and_idempotency_key","proof_that_amount_and_beneficiary_are_validated_against_instruction"]},
+    {"source_asset":"ods_userscashaccount_df","source_label":"用户现金账户","overview_line":30,"target_boundary":"Wallet account identity and balance projection derived from ledger","required_semantics":["account_id_owner_principal_mapping_account_type_and_iso_currency","available_held_frozen_and_total_balance_units","opening_balance_provenance_and_version","account_status_dictionary_and_close_semantics","ledger_cutover_and_snapshot_watermark"]},
+    {"source_asset":"ods_userscashaccountdetail_df","source_label":"用户现金账户明细","overview_line":31,"target_boundary":"Immutable balanced wallet transaction and entries","required_semantics":["detail_id_transaction_id_account_id_counter_entry_id","signed_minor_units_iso_currency_and_posting_direction","before_after_balance_as_reconciliation_not_authority","business_entitlement_payment_and_reversal_references","posting_status_event_time_and_compensation_identity"]},
+    {"source_asset":"ods_fin_bind_card_df","source_label":"用户绑卡","overview_line":32,"target_boundary":"Opaque payment-instrument token and consent lifecycle","required_semantics":["binding_id_principal_mapping_provider_vault_and_opaque_token","instrument_brand_type_last4_and_expiry_metadata_only","consent_policy_version_granted_at_and_revoked_at","binding_status_dictionary_and_provider_case_id","proof_that_pan_cvv_bank_account_and_credential_are_excluded_or_tokenized"]},
+    {"source_asset":"ods_yshoppingcashier_cashier_pay_log_extra_df","source_label":"支付记录扩展","overview_line":33,"target_boundary":"Restricted provider evidence bound to one payment attempt","required_semantics":["extension_id_parent_payment_attempt_id_and_provider_observation_id","payload_schema_version_digest_content_type_and_restricted_storage_ref","typed_amount_currency_status_fields_and_parent_consistency","observed_at_ingested_at_and_provider_event_id","pii_pci_secret_redaction_and_retention_policy"]},
+    {"source_asset":"ods_acc_pay_order_df","source_label":"支付业务单表","overview_line":34,"target_boundary":"Payment intent referencing one exact business entitlement","required_semantics":["payment_id_business_domain_business_order_id_and_version","payer_payee_principal_or_merchant_mappings","requested_payable_captured_refunded_minor_units_and_iso_currency","intent_status_dictionary_expiry_and_close_reason","attempt_count_idempotency_key_and_entitlement_validity"]},
+    {"source_asset":"ods_acc_personal_detail_df","source_label":"个体账户流水表","overview_line":35,"target_boundary":"Double-entry personal-account ledger transaction","required_semantics":["transaction_id_entry_id_account_id_and_owner_principal_mapping","debit_credit_direction_signed_minor_units_and_iso_currency","counter_account_entry_and_per_currency_zero_sum","business_provenance_payment_transfer_or_adjustment_reference","posting_time_status_reversal_and_compensation_identity"]},
+    {"source_asset":"ods_acc_personal_balance_df","source_label":"个体账户余额表","overview_line":36,"target_boundary":"Derived account balance projection and migration evidence","required_semantics":["account_id_owner_principal_account_purpose_and_iso_currency","available_held_frozen_total_components_and_precision","projection_version_as_of_time_and_source_watermark","opening_or_correction_provenance","ledger_to_snapshot_difference_and_tolerance_rule"]},
+    {"source_asset":"ods_fin_trans_order_pay_tool_df","source_label":"支付工具交易表","overview_line":39,"target_boundary":"Payment attempt tool allocation and provider instrument token","required_semantics":["attempt_id_tool_allocation_id_tool_type_and_provider_transaction_id","opaque_instrument_token_without_pan_or_secret","allocated_principal_fee_minor_units_and_iso_currency","multi_tool_allocation_sum_conservation","tool_status_dictionary_provider_observation_and_reversal_identity"]},
+    {"source_asset":"ods_bom_wallet_flow_log_df","source_label":"钱包流水表","overview_line":41,"target_boundary":"Immutable balanced wallet ledger transaction","required_semantics":["wallet_id_transaction_id_entry_id_and_owner_mapping","signed_minor_units_iso_currency_and_counter_entry","business_payment_entitlement_and_reversal_provenance","event_time_posting_status_idempotency_and_compensation","before_after_balance_reconciliation_and_per_currency_zero_sum"]}
+  ]
+}

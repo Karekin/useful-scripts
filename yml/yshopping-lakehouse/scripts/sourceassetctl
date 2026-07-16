@@ -48,6 +48,12 @@ COUPON_SOURCE_DISPOSITIONS = (
 USER_SOURCE_DISPOSITIONS = (
     ROOT / "contracts" / "yshopping-user-source-disposition-v1.json"
 )
+PAYMENT_SOURCE_SCHEMA_REQUEST = (
+    ROOT / "contracts" / "yshopping-payment-source-schema-request-v1.json"
+)
+ENGAGEMENT_SOURCE_DISPOSITIONS = (
+    ROOT / "contracts" / "yshopping-engagement-source-disposition-v1.json"
+)
 TRADE_HISTORY_ADMISSION = (
     ROOT / "contracts" / "yshopping-trade-history-admission-v1.json"
 )
@@ -259,6 +265,28 @@ def load_user_source_dispositions(
     if not isinstance(value, dict):
         raise SourceAssetError(f"{path}: root must be an object")
     return value
+
+
+def _load_json_object(path: Path, description: str) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SourceAssetError(f"cannot load {description} {path}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise SourceAssetError(f"{path}: root must be an object")
+    return value
+
+
+def load_payment_source_schema_request(
+    path: Path = PAYMENT_SOURCE_SCHEMA_REQUEST,
+) -> dict[str, Any]:
+    return _load_json_object(path, "payment source schema request")
+
+
+def load_engagement_source_dispositions(
+    path: Path = ENGAGEMENT_SOURCE_DISPOSITIONS,
+) -> dict[str, Any]:
+    return _load_json_object(path, "engagement source dispositions")
 
 
 def _heading_path(headings: dict[int, str]) -> list[str]:
@@ -2697,6 +2725,282 @@ def user_disposition_status(
     }
 
 
+def validate_payment_source_schema_request(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    """Keep overview-only payment assets blocked behind exact schema delivery."""
+    errors: list[str] = []
+    contract = contract or load_payment_source_schema_request()
+    expected = authoritative_ods_domain_assets(inventory, "支付")
+    scope = contract.get("source_scope")
+    if not isinstance(scope, dict):
+        return ["payment source schema request requires source_scope"]
+    governed = set(scope.get("already_governed_elsewhere") or [])
+    requested = set(expected) - governed
+    if scope.get("domain") != "支付" or scope.get("status") != "BLOCKED_MISSING_SOURCE_SCHEMA":
+        errors.append("payment source schema request must remain blocked for 支付")
+    if scope.get("authoritative_unique_asset_count") != len(expected):
+        errors.append("payment source schema request authoritative count differs")
+    if scope.get("requested_schema_asset_count") != len(requested):
+        errors.append("payment source schema request missing-schema count differs")
+    if governed != {"ods_logistic_logistic_track_structure_di", "ods_trade_trade_invoice_apply_df"}:
+        errors.append("payment source schema request governed exclusions differ")
+    delivery = contract.get("delivery_requirements")
+    required_delivery_groups = {
+        "source_identity", "schema", "change_semantics", "governance", "reconciliation"
+    }
+    if not isinstance(delivery, dict) or set(delivery) != required_delivery_groups:
+        errors.append(f"payment delivery requirements must define exactly {sorted(required_delivery_groups)}")
+    elif any(not _nonempty_strings(value) for value in delivery.values()):
+        errors.append("payment delivery requirement groups must contain non-empty fields")
+    admission = contract.get("admission_policy")
+    false_gates = {
+        "overview_name_is_schema_evidence",
+        "documentation_volume_is_denominator",
+        "sampled_rows_are_final_evidence",
+        "empty_extract_is_evidence",
+        "raw_pan_password_otp_or_bank_credentials_are_accepted",
+    }
+    if not isinstance(admission, dict):
+        errors.append("payment source schema request requires admission_policy")
+    else:
+        for gate in false_gates:
+            if admission.get(gate) is not False:
+                errors.append(f"payment admission gate {gate} must be false")
+        for rule in ("promotion_rule", "runtime_rule"):
+            if not isinstance(admission.get(rule), str) or not admission[rule].strip():
+                errors.append(f"payment admission policy requires {rule}")
+    assets = contract.get("assets")
+    if not isinstance(assets, list):
+        return errors + ["payment source schema request requires assets"]
+    seen: set[str] = set()
+    for index, asset in enumerate(assets):
+        label = f"payment source schema request assets[{index}]"
+        required_fields = {
+            "source_asset", "source_label", "overview_line", "target_boundary", "required_semantics"
+        }
+        if not isinstance(asset, dict) or set(asset) != required_fields:
+            errors.append(f"{label}: must define exactly {sorted(required_fields)}")
+            continue
+        name = asset.get("source_asset")
+        if name in seen:
+            errors.append(f"{label}: duplicate source_asset {name}")
+        seen.add(name)
+        observed = expected.get(name)
+        if observed is None or name not in requested:
+            errors.append(f"{label}: not a missing-schema 支付 asset: {name}")
+            continue
+        if [asset.get("source_label")] != observed["source_labels"]:
+            errors.append(f"{label}: source label differs from ODS overview for {name}")
+        if (scope.get("authoritative_document"), asset.get("overview_line")) not in observed["anchors"]:
+            errors.append(f"{label}: source anchor differs from ODS overview for {name}")
+        if not isinstance(asset.get("target_boundary"), str) or not asset["target_boundary"].strip():
+            errors.append(f"{label}: requires target_boundary")
+        semantics = asset.get("required_semantics")
+        if not _nonempty_strings(semantics) or len(semantics) < 5 or len(set(semantics)) != len(semantics):
+            errors.append(f"{label}: requires at least five unique table-specific semantics")
+    if seen != requested:
+        errors.append(
+            "payment source schema requests differ from missing-schema overview assets: "
+            f"missing={sorted(requested - seen)}, extra={sorted(seen - requested)}"
+        )
+    by_name = {asset.get("source_asset"): asset for asset in assets if isinstance(asset, dict)}
+    bind_card = " ".join(by_name.get("ods_fin_bind_card_df", {}).get("required_semantics", []))
+    if "pan_cvv" not in bind_card:
+        errors.append("payment card schema request must explicitly exclude PAN/CVV secrets")
+    queue = " ".join(by_name.get("ods_transfer_queue_df", {}).get("required_semantics", []))
+    if "validated_against_instruction" not in queue:
+        errors.append("payment transfer queue must remain transport rather than financial authority")
+    for name in ("ods_userscashaccountdetail_df", "ods_acc_personal_detail_df", "ods_bom_wallet_flow_log_df"):
+        if " ".join(by_name.get(name, {}).get("required_semantics", [])).find("counter") < 0:
+            errors.append(f"payment ledger source request must require counter-entry evidence for {name}")
+    return errors
+
+
+def validate_engagement_source_dispositions(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    """Validate Notification/Favorite/Reminder source semantics."""
+    errors: list[str] = []
+    contract = contract or load_engagement_source_dispositions()
+    expected_by_domain = {
+        domain: authoritative_ods_domain_assets(inventory, domain)
+        for domain in ("推送", "收藏")
+    }
+    expected = {
+        name: value
+        for domain_assets in expected_by_domain.values()
+        for name, value in domain_assets.items()
+    }
+    scope = contract.get("source_scope")
+    if not isinstance(scope, dict):
+        return ["engagement source dispositions requires source_scope"]
+    observed_domain_counts = {domain: len(assets) for domain, assets in expected_by_domain.items()}
+    if scope.get("domains") != observed_domain_counts:
+        errors.append("engagement source domain counts differ from ODS overview")
+    if scope.get("expected_asset_count") != len(expected):
+        errors.append("engagement source expected count differs from ODS overview")
+    if not isinstance(scope.get("source_detail_limit"), str) or not scope["source_detail_limit"].strip():
+        errors.append("engagement source dispositions must state source detail limits")
+    policy = contract.get("verification_policy")
+    if not isinstance(policy, dict):
+        return errors + ["engagement source dispositions requires verification_policy"]
+    allowed_decisions = set(policy.get("allowed_decisions") or [])
+    model_statuses = set(policy.get("allowed_model_statuses") or [])
+    runtime_statuses = set(policy.get("runtime_statuses") or [])
+    if allowed_decisions != {"reuse", "merge", "split", "derive", "correct", "reject"}:
+        errors.append("engagement source dispositions has an invalid decision vocabulary")
+    if model_statuses != {"partial", "missing", "rejected"}:
+        errors.append("engagement source dispositions has an invalid model-status vocabulary")
+    if runtime_statuses != {"missing", "pending", "verified"}:
+        errors.append("engagement source dispositions has an invalid runtime-status vocabulary")
+    if policy.get("empty_tables_are_evidence") is not False:
+        errors.append("engagement source dispositions must reject empty tables as evidence")
+    lifecycle = contract.get("lifecycle_policy_defaults")
+    required_lifecycle = {"history_policy", "delete_policy", "backfill_policy"}
+    if (
+        not isinstance(lifecycle, dict)
+        or set(lifecycle) != required_lifecycle
+        or any(not isinstance(value, str) or not value.strip() for value in lifecycle.values())
+    ):
+        errors.append(f"engagement lifecycle defaults must define exactly {sorted(required_lifecycle)}")
+    detail_expectations = {
+        "ods_push_push_message_log_di": (1818, 1833),
+        "ods_push_push_app_log_di": (1835, 1852),
+        "ods_collect_collect_spu_di": (1935, 1954),
+        "ods_collect_collect_remind_di": (1956, 1979),
+    }
+    source_document = (
+        Path(inventory.get("reference_root", DEFAULT_REFERENCE_ROOT))
+        / scope.get("authoritative_document", "")
+    )
+    try:
+        source_lines = source_document.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        errors.append(f"cannot read engagement source document {source_document}: {exc}")
+        source_lines = []
+    assets = contract.get("assets")
+    if not isinstance(assets, list):
+        return errors + ["engagement source dispositions requires assets"]
+    seen: set[str] = set()
+    evidence_counts: Counter[str] = Counter()
+    semantic_keys = {"grain", "identity", "money_or_quantity", "history", "security", "authority"}
+    for index, asset in enumerate(assets):
+        label = f"engagement source dispositions assets[{index}]"
+        if not isinstance(asset, dict):
+            errors.append(f"{label}: must be an object")
+            continue
+        name = asset.get("source_asset")
+        if name in seen:
+            errors.append(f"{label}: duplicate source_asset {name}")
+        seen.add(name)
+        observed = expected.get(name)
+        if observed is None:
+            errors.append(f"{label}: not an authoritative Push/Collect asset: {name}")
+        else:
+            if asset.get("source_labels") != observed["source_labels"]:
+                errors.append(f"{label}: source labels differ from ODS overview for {name}")
+            actual_anchors = [
+                (anchor.get("document"), anchor.get("line"))
+                for anchor in asset.get("source_anchors", [])
+                if isinstance(anchor, dict)
+            ]
+            if actual_anchors != observed["anchors"]:
+                errors.append(f"{label}: source anchors differ from ODS overview for {name}")
+        expectation = detail_expectations.get(name)
+        evidence = asset.get("source_evidence")
+        if expectation is None or not isinstance(evidence, dict):
+            errors.append(f"{label}: requires governed DDL evidence")
+        else:
+            heading_line, end_line = expectation
+            expected_anchor = {"heading_line": heading_line, "end_line": end_line, "source_asset": name}
+            if evidence.get("status") != "ddl_backed" or evidence.get("detail_anchor") != expected_anchor:
+                errors.append(f"{label}: source detail evidence differs for {name}")
+            else:
+                evidence_counts["ddl_backed"] += 1
+            if source_lines and (
+                name.replace("_", r"\_") not in source_lines[heading_line - 1]
+                or name not in "\n".join(source_lines[heading_line:end_line])
+            ):
+                errors.append(f"{label}: detailed DDL does not prove {name}")
+        for text_key in ("source_grain",):
+            if not isinstance(asset.get(text_key), str) or not asset[text_key].strip():
+                errors.append(f"{label}: requires {text_key}")
+        if asset.get("decision") not in allowed_decisions:
+            errors.append(f"{label}: invalid decision")
+        if not _nonempty_strings(asset.get("canonical_entities")):
+            errors.append(f"{label}: requires canonical_entities")
+        semantic_rules = asset.get("semantic_rules")
+        if not isinstance(semantic_rules, dict) or set(semantic_rules) != semantic_keys:
+            errors.append(f"{label}: semantic_rules must define exactly {sorted(semantic_keys)}")
+        if not _nonempty_strings(asset.get("corrections")):
+            errors.append(f"{label}: requires corrections")
+        if asset.get("model_status") not in model_statuses:
+            errors.append(f"{label}: invalid model_status")
+        for ref_key in ("backend_refs", "lakehouse_refs"):
+            for reference in asset.get(ref_key, []):
+                reference_error = _contract_reference_error(reference)
+                if reference_error:
+                    errors.append(f"{label}: invalid {ref_key[:-1]} {reference}: {reference_error}")
+            if not _nonempty_strings(asset.get(ref_key)):
+                errors.append(f"{label}: requires {ref_key}")
+        runtime = asset.get("runtime_nonempty_reconciliation")
+        if not isinstance(runtime, dict) or runtime.get("status") not in runtime_statuses:
+            errors.append(f"{label}: invalid runtime reconciliation")
+        else:
+            gate_ref = runtime.get("gate_ref")
+            if not isinstance(gate_ref, str) or not _resolve_contract_reference(gate_ref).is_file():
+                errors.append(f"{label}: runtime reconciliation requires an existing gate_ref")
+            if runtime.get("status") == "verified" and not _runtime_reconciliation_verified(runtime, name):
+                errors.append(f"{label}: verified runtime reconciliation lacks governed production evidence")
+        if asset.get("specification_status") != "specified":
+            errors.append(f"{label}: DDL-backed engagement source must be specified")
+        if asset.get("verification_status") == "verified" and not _runtime_reconciliation_verified(runtime, name):
+            errors.append(f"{label}: final verification is forbidden without governed reconciliation")
+    if seen != set(expected):
+        errors.append(
+            "engagement source dispositions differ from authoritative ODS overview: "
+            f"missing={sorted(set(expected) - seen)}, extra={sorted(seen - set(expected))}"
+        )
+    if dict(evidence_counts) != scope.get("expected_source_evidence_counts"):
+        errors.append("engagement source evidence counts differ")
+    by_name = {asset.get("source_asset"): asset for asset in assets if isinstance(asset, dict)}
+    for name in ("ods_push_push_message_log_di", "ods_push_push_app_log_di"):
+        if "versioned JSON schema" not in " ".join(by_name.get(name, {}).get("corrections", [])):
+            errors.append(f"push source must require versioned JSON schema for {name}")
+    for name in ("ods_collect_collect_spu_di", "ods_collect_collect_remind_di"):
+        if "trailing comma" not in " ".join(by_name.get(name, {}).get("corrections", [])):
+            errors.append(f"collect source must repair prototype syntax for {name}")
+    return errors
+
+
+def engagement_disposition_status(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    contract = contract or load_engagement_source_dispositions()
+    expected_count = sum(
+        len(authoritative_ods_domain_assets(inventory, domain)) for domain in ("推送", "收藏")
+    )
+    assets = contract.get("assets", []) if isinstance(contract, dict) else []
+    specified = [asset for asset in assets if isinstance(asset, dict) and asset.get("specification_status") == "specified"]
+    reconciled = [
+        asset for asset in assets
+        if isinstance(asset, dict)
+        and _runtime_reconciliation_verified(asset.get("runtime_nonempty_reconciliation"), asset.get("source_asset", ""))
+    ]
+    verified = [asset for asset in reconciled if asset.get("verification_status") == "verified"]
+    denominator = expected_count or 1
+    return {
+        "engagement_source_asset_count": expected_count,
+        "engagement_detailed_disposition_specified_count": len(specified),
+        "engagement_runtime_nonempty_reconciled_count": len(reconciled),
+        "engagement_final_disposition_verified_count": len(verified),
+        "engagement_detailed_disposition_percent": round(len(specified) * 100.0 / denominator, 2),
+        "engagement_runtime_nonempty_reconciled_percent": round(len(reconciled) * 100.0 / denominator, 2),
+        "engagement_final_disposition_verified_percent": round(len(verified) * 100.0 / denominator, 2),
+    }
+
+
 def disposition_status(
     inventory: dict[str, Any], policy: dict[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -2739,6 +3043,7 @@ def disposition_status(
     merchant_status = merchant_disposition_status(inventory)
     coupon_status = coupon_disposition_status(inventory)
     user_status = user_disposition_status(inventory)
+    engagement_status = engagement_disposition_status(inventory)
     detailed_count = (
         game_status["game_detailed_disposition_specified_count"]
         + metadata_status["metadata_detailed_disposition_specified_count"]
@@ -2747,6 +3052,7 @@ def disposition_status(
         + merchant_status["merchant_detailed_disposition_specified_count"]
         + coupon_status["coupon_detailed_disposition_specified_count"]
         + user_status["user_detailed_disposition_specified_count"]
+        + engagement_status["engagement_detailed_disposition_specified_count"]
     )
     runtime_count = (
         game_status["game_runtime_nonempty_reconciled_count"]
@@ -2756,6 +3062,7 @@ def disposition_status(
         + merchant_status["merchant_runtime_nonempty_reconciled_count"]
         + coupon_status["coupon_runtime_nonempty_reconciled_count"]
         + user_status["user_runtime_nonempty_reconciled_count"]
+        + engagement_status["engagement_runtime_nonempty_reconciled_count"]
     )
     verified_count = (
         game_status["game_final_disposition_verified_count"]
@@ -2765,6 +3072,7 @@ def disposition_status(
         + merchant_status["merchant_final_disposition_verified_count"]
         + coupon_status["coupon_final_disposition_verified_count"]
         + user_status["user_final_disposition_verified_count"]
+        + engagement_status["engagement_final_disposition_verified_count"]
     )
     return {
         "candidate_asset_count": candidate_count,
@@ -2804,6 +3112,7 @@ def disposition_status(
         **merchant_status,
         **coupon_status,
         **user_status,
+        **engagement_status,
     }
 
 
@@ -2921,7 +3230,10 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"({status['coupon_detailed_disposition_percent']:.2f}%); "
         f"user={status['user_detailed_disposition_specified_count']}/"
         f"{status['user_source_asset_count']} "
-        f"({status['user_detailed_disposition_percent']:.2f}%)"
+        f"({status['user_detailed_disposition_percent']:.2f}%); "
+        f"engagement={status['engagement_detailed_disposition_specified_count']}/"
+        f"{status['engagement_source_asset_count']} "
+        f"({status['engagement_detailed_disposition_percent']:.2f}%)"
     )
     yield (
         "non-empty runtime reconciliations: "
@@ -2947,7 +3259,10 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"({status['coupon_runtime_nonempty_reconciled_percent']:.2f}%); "
         f"user={status['user_runtime_nonempty_reconciled_count']}/"
         f"{status['user_source_asset_count']} "
-        f"({status['user_runtime_nonempty_reconciled_percent']:.2f}%)"
+        f"({status['user_runtime_nonempty_reconciled_percent']:.2f}%); "
+        f"engagement={status['engagement_runtime_nonempty_reconciled_count']}/"
+        f"{status['engagement_source_asset_count']} "
+        f"({status['engagement_runtime_nonempty_reconciled_percent']:.2f}%)"
     )
     yield (
         "final semantic dispositions verified: "
@@ -2966,7 +3281,9 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"coupon={status['coupon_final_disposition_verified_count']}/"
         f"{status['coupon_source_asset_count']}, "
         f"user={status['user_final_disposition_verified_count']}/"
-        f"{status['user_source_asset_count']}; routing is not completion"
+        f"{status['user_source_asset_count']}, "
+        f"engagement={status['engagement_final_disposition_verified_count']}/"
+        f"{status['engagement_source_asset_count']}; routing is not completion"
     )
 
 
@@ -2988,6 +3305,8 @@ def main() -> int:
     errors.extend(validate_merchant_source_dispositions(inventory))
     errors.extend(validate_coupon_source_dispositions(inventory))
     errors.extend(validate_user_source_dispositions(inventory))
+    errors.extend(validate_payment_source_schema_request(inventory))
+    errors.extend(validate_engagement_source_dispositions(inventory))
     errors.extend(
         validate_trade_admission(
             TRADE_HISTORY_ADMISSION,

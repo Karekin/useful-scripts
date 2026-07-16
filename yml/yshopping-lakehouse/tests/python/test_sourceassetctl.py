@@ -152,6 +152,8 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_merchant_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_coupon_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_user_source_dispositions(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_payment_source_schema_request(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_engagement_source_dispositions(self.inventory))
         self.assertEqual(
             [],
             validate_trade_admission(
@@ -264,12 +266,12 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual(110, status["bounded_domain_asset_count"])
         self.assertEqual(6, status["explicit_rejection_count"])
         self.assertEqual(718, status["preliminary_handled_count"])
-        self.assertEqual(71, status["detailed_disposition_specified_count"])
+        self.assertEqual(75, status["detailed_disposition_specified_count"])
         self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
         self.assertEqual(99.16, status["routing_percent"])
         self.assertEqual(100.0, status["preliminary_handled_percent"])
-        self.assertEqual(9.89, status["detailed_disposition_specified_percent"])
+        self.assertEqual(10.45, status["detailed_disposition_specified_percent"])
         self.assertEqual(0.0, status["runtime_nonempty_reconciled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
         self.assertIn(
@@ -297,7 +299,9 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertTrue(any("coupon=0/6 (0.00%)" in line for line in lines))
         self.assertTrue(any("user=2/30 (6.67%)" in line for line in lines))
         self.assertTrue(any("user=0/30 (0.00%)" in line for line in lines))
-        self.assertTrue(any("user=0/30; routing is not completion" in line for line in lines))
+        self.assertTrue(any("engagement=4/4 (100.00%)" in line for line in lines))
+        self.assertTrue(any("engagement=0/4 (0.00%)" in line for line in lines))
+        self.assertTrue(any("engagement=0/4; routing is not completion" in line for line in lines))
 
     def test_game_dispositions_cover_exact_authoritative_overview_rows(self):
         observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "游戏")
@@ -1236,6 +1240,103 @@ class SourceAssetCtlTest(unittest.TestCase):
                 for reference in references
                 if SOURCE_ASSETS._contract_reference_error(reference)
             ],
+        )
+
+    def test_payment_schema_request_covers_exact_overview_only_payment_assets(self):
+        contract = SOURCE_ASSETS.load_payment_source_schema_request()
+        observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "支付")
+        governed = set(contract["source_scope"]["already_governed_elsewhere"])
+        requested = {asset["source_asset"] for asset in contract["assets"]}
+        self.assertEqual(14, len(observed))
+        self.assertEqual(12, len(requested))
+        self.assertEqual(set(observed) - governed, requested)
+        self.assertEqual([], SOURCE_ASSETS.validate_payment_source_schema_request(self.inventory))
+
+    def test_payment_schema_request_requires_ledger_security_and_transport_boundaries(self):
+        contract = SOURCE_ASSETS.load_payment_source_schema_request()
+        by_name = {asset["source_asset"]: asset for asset in contract["assets"]}
+        self.assertIn("pan_cvv", " ".join(by_name["ods_fin_bind_card_df"]["required_semantics"]))
+        self.assertIn("validated_against_instruction", " ".join(by_name["ods_transfer_queue_df"]["required_semantics"]))
+        for name in ("ods_userscashaccountdetail_df", "ods_acc_personal_detail_df", "ods_bom_wallet_flow_log_df"):
+            self.assertIn("counter", " ".join(by_name[name]["required_semantics"]))
+        self.assertFalse(contract["admission_policy"]["overview_name_is_schema_evidence"])
+        self.assertFalse(contract["admission_policy"]["sampled_rows_are_final_evidence"])
+
+    def test_payment_schema_request_rejects_missing_duplicate_and_weakened_security(self):
+        contract = SOURCE_ASSETS.load_payment_source_schema_request()
+        missing = json.loads(json.dumps(contract))
+        missing["assets"].pop()
+        errors = SOURCE_ASSETS.validate_payment_source_schema_request(self.inventory, missing)
+        self.assertTrue(any("differ from missing-schema" in error for error in errors))
+        duplicate = json.loads(json.dumps(contract))
+        duplicate["assets"][1] = json.loads(json.dumps(duplicate["assets"][0]))
+        errors = SOURCE_ASSETS.validate_payment_source_schema_request(self.inventory, duplicate)
+        self.assertTrue(any("duplicate source_asset" in error for error in errors))
+        weakened = json.loads(json.dumps(contract))
+        weakened["admission_policy"]["raw_pan_password_otp_or_bank_credentials_are_accepted"] = True
+        errors = SOURCE_ASSETS.validate_payment_source_schema_request(self.inventory, weakened)
+        self.assertTrue(any("raw_pan_password" in error for error in errors))
+
+    def test_engagement_dispositions_cover_push_and_collect_assets(self):
+        contract = SOURCE_ASSETS.load_engagement_source_dispositions()
+        observed = set(SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "推送"))
+        observed.update(SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "收藏"))
+        names = {asset["source_asset"] for asset in contract["assets"]}
+        self.assertEqual(4, len(observed))
+        self.assertEqual(observed, names)
+        self.assertEqual([], SOURCE_ASSETS.validate_engagement_source_dispositions(self.inventory))
+
+    def test_engagement_dispositions_preserve_delivery_preference_and_price_authority(self):
+        contract = SOURCE_ASSETS.load_engagement_source_dispositions()
+        by_name = {asset["source_asset"]: asset for asset in contract["assets"]}
+        sms = " ".join(by_name["ods_push_push_message_log_di"]["corrections"])
+        favorite = " ".join(by_name["ods_collect_collect_spu_di"]["corrections"])
+        reminder = " ".join(by_name["ods_collect_collect_remind_di"]["corrections"])
+        self.assertIn("versioned JSON schema", sms)
+        self.assertIn("currency and unit", favorite)
+        self.assertIn("trigger-direction dictionary", reminder)
+        self.assertIn("separate from trigger evaluation", by_name["ods_collect_collect_remind_di"]["semantic_rules"]["history"])
+
+    def test_engagement_status_is_specified_but_not_runtime_verified(self):
+        self.assertEqual(
+            {
+                "engagement_source_asset_count": 4,
+                "engagement_detailed_disposition_specified_count": 4,
+                "engagement_runtime_nonempty_reconciled_count": 0,
+                "engagement_final_disposition_verified_count": 0,
+                "engagement_detailed_disposition_percent": 100.0,
+                "engagement_runtime_nonempty_reconciled_percent": 0.0,
+                "engagement_final_disposition_verified_percent": 0.0,
+            },
+            SOURCE_ASSETS.engagement_disposition_status(self.inventory),
+        )
+
+    def test_engagement_contract_rejects_missing_duplicate_and_false_verification(self):
+        contract = SOURCE_ASSETS.load_engagement_source_dispositions()
+        missing = json.loads(json.dumps(contract))
+        missing["assets"].pop()
+        errors = SOURCE_ASSETS.validate_engagement_source_dispositions(self.inventory, missing)
+        self.assertTrue(any("differ from authoritative" in error for error in errors))
+        duplicate = json.loads(json.dumps(contract))
+        duplicate["assets"][1] = json.loads(json.dumps(duplicate["assets"][0]))
+        errors = SOURCE_ASSETS.validate_engagement_source_dispositions(self.inventory, duplicate)
+        self.assertTrue(any("duplicate source_asset" in error for error in errors))
+        false_verification = json.loads(json.dumps(contract))
+        false_verification["assets"][0]["verification_status"] = "verified"
+        errors = SOURCE_ASSETS.validate_engagement_source_dispositions(self.inventory, false_verification)
+        self.assertTrue(any("forbidden without governed reconciliation" in error for error in errors))
+
+    def test_all_engagement_implementation_references_resolve(self):
+        contract = SOURCE_ASSETS.load_engagement_source_dispositions()
+        references = [
+            reference
+            for asset in contract["assets"]
+            for key in ("backend_refs", "lakehouse_refs")
+            for reference in asset[key]
+        ]
+        self.assertEqual(
+            [],
+            [(reference, SOURCE_ASSETS._contract_reference_error(reference)) for reference in references if SOURCE_ASSETS._contract_reference_error(reference)],
         )
 
     def test_qualified_names_and_markdown_bold_are_parsed_without_losing_source_location(self):
