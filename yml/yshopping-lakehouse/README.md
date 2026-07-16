@@ -93,6 +93,16 @@ zero-difference checks, and a separately checksummed independent verifier.
 Documentation volume estimates (for example “15.96 亿”) are never used as a
 denominator. A merely non-empty JSON file can no longer promote any of the 718
 assets to `verified`.
+The governed detailed-disposition numerator is now 57/718. The new Product
+slice covers all ten authoritative 商品 overview assets: nine DDL-backed assets
+are specified across Catalog, Listing, workflow, Identity/Merchant and Quality
+boundaries; the personnel salary asset remains provisional because its detailed
+heading creates `ods_goods_goods_operate_reject_df` instead of the advertised
+salary table. Latest operation results are projections rather than history,
+operator/file/review text stays restricted, payroll is excluded from Catalog,
+and whitelist/quality decisions are versioned policy or review facts. None of
+these ten assets has non-empty production evidence, so runtime and final credit
+remain zero.
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%

@@ -1,0 +1,137 @@
+{
+  "contract_version": 1,
+  "contract_id": "yshopping.product.source-disposition.v1",
+  "source_scope": {
+    "domain": "商品",
+    "authoritative_document": "ODS语兴好物（y shopping）电商数据表.md",
+    "authoritative_overview_lines": "254-264",
+    "expected_asset_count": 10,
+    "expected_source_evidence_counts": {"ddl_backed": 9, "name_conflict": 1},
+    "source_detail_limit": "The prototype describes product-onboarding operations, review work and personnel administration, not one Catalog aggregate. Mutable latest-state tables, operator PII, opaque files, payroll and misspelled/mislabeled DDL require explicit splits and exclusions."
+  },
+  "verification_policy": {
+    "specified_definition": "A product source is specified only when its detailed DDL proves the named asset and its grain, authority, identity, history, security, targets, corrections and runtime gate are explicit.",
+    "verified_definition": "Verification requires a non-empty production bundle and full-denominator tenant-scoped zero-difference reconciliation under the governed evidence protocol.",
+    "empty_tables_are_evidence": false,
+    "allowed_decisions": ["reuse", "merge", "split", "derive", "correct", "reject"],
+    "allowed_model_statuses": ["partial", "missing", "rejected"],
+    "runtime_statuses": ["missing", "pending", "verified"]
+  },
+  "lifecycle_policy_defaults": {
+    "history_policy": "Append product applications, workflow operations, review decisions and policy versions independently; never let a latest-result row replace operation history.",
+    "delete_policy": "Source deletion retires mutable visibility but never erases accepted Catalog, Listing, review, quality or audit facts.",
+    "backfill_policy": "Resolve tenant, Principal, Merchant, supplier, SPU, category, brand, scene and source business keys before replay; quarantine unknown dictionaries, PII leaks, malformed files and cross-aggregate identity guesses."
+  },
+  "assets": [
+    {
+      "source_asset": "ods_goods_goods_new_apply_df", "source_label": "新品申请表", "source_anchor": {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 261},
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 3864, "end_line": 3894, "source_asset": "ods_goods_goods_new_apply_df"}},
+      "source_grain": "one mutable product-onboarding application snapshot per source id",
+      "decision": "split", "canonical_entities": ["catalog.CatalogSpuDraft", "listing.ListingDraft", "catalog.ProductContentSnapshot", "workflow.ProductOnboardingCase"],
+      "semantic_rules": {"grain": "one onboarding case references one governed SPU draft and may create later Listing drafts", "identity": "source id, SPU id, article number, category, brand and publisher Principal remain qualified independent references", "money_or_quantity": "spu_auth_price requires ISO currency, minor-unit proof and cannot become Listing price without an accepted offer", "history": "application, review and publication transitions append; current status never rewrites accepted Catalog history", "security": "publisher names and raw media URLs use governed Principal/media references and do not enter public events", "authority": "Catalog owns SPU master; Listing owns sellability and price; workflow owns onboarding state"},
+      "corrections": ["separate product master from Listing publication", "replace publisher display name with Principal mapping", "interpret BIGINT times only through a proven epoch/timezone contract"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-catalog/cloudmold-module-catalog-server/src/main/java/cn/iocoder/yudao/module/cloudmold/catalog/dal/dataobject/CatalogSpuDO.java", "yudao-cloud/cloudmold-module-listing/cloudmold-module-listing-server/src/main/java/cn/iocoder/yudao/module/cloudmold/listing/dal/dataobject/ListingHeaderDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-catalog-sku-snapshot.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-listing-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/09-canonical-catalog-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_goods_goods_operate_result_df", "source_label": "商品操作结果表", "source_anchor": {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 255},
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 3895, "end_line": 3932, "source_asset": "ods_goods_goods_operate_result_df"}},
+      "source_grain": "one mutable latest large-stage result per biz_id plus scene_code",
+      "decision": "split", "canonical_entities": ["workflow.ProductOperationCase", "catalog.CatalogOperation", "listing.ListingReviewDecision"],
+      "semantic_rules": {"grain": "one case/scene projection derived from immutable fine-grained operations", "identity": "biz_id plus scene_code is the source business key; source id and import_task_id are provenance and job references", "money_or_quantity": "no product price or inventory authority is accepted from this result projection", "history": "the documented table intentionally keeps latest large-stage state, so canonical history must be rebuilt from the operation log and gaps quarantined", "security": "remarks and operator ids are restricted audit references", "authority": "workflow owns task state; Catalog/Listing accept only explicit approved effects"},
+      "corrections": ["do not treat latest result as event history", "join fine-stage logs before deriving duration", "separate workflow result from Catalog or Listing state"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-catalog/cloudmold-module-catalog-server/src/main/java/cn/iocoder/yudao/module/cloudmold/catalog/dal/dataobject/CatalogOperationDO.java", "yudao-cloud/cloudmold-module-listing/cloudmold-module-listing-server/src/main/java/cn/iocoder/yudao/module/cloudmold/listing/dal/dataobject/ListingReviewDecisionDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-catalog-status-change.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-listing-review-event.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/09-canonical-catalog-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_goods_goods_operate_log_di", "source_label": "商品操作日志表", "source_anchor": {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 256},
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 3933, "end_line": 3965, "source_asset": "ods_goods_goods_operate_log_di"}},
+      "source_grain": "one source product-operation observation per id and operation time",
+      "decision": "split", "canonical_entities": ["workflow.ProductOperationEvent", "catalog.CatalogOperation", "listing.ListingOperation", "audit.RestrictedOperationEvidence"],
+      "semantic_rules": {"grain": "one immutable typed operation with one case, scene and actor", "identity": "operation id, biz case, SPU, scene and Principal ids remain distinct", "money_or_quantity": "no money, stock or sellability is inferred from free-form operate_info", "history": "order operations by typed occurrence time plus stable source id; duplicates are idempotent and gaps remain visible", "security": "operator_name, remark and operate_info remain restricted and events expose Principal plus typed outcome", "authority": "workflow owns operations; Catalog and Listing own only effects accepted through their commands"},
+      "corrections": ["normalize operate_type and result dictionaries", "retain raw operation text only as restricted evidence", "do not infer final product state from log text"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-catalog/cloudmold-module-catalog-server/src/main/java/cn/iocoder/yudao/module/cloudmold/catalog/dal/dataobject/CatalogOperationDO.java", "yudao-cloud/cloudmold-module-listing/cloudmold-module-listing-server/src/main/java/cn/iocoder/yudao/module/cloudmold/listing/dal/dataobject/ListingOperationDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-catalog-status-change.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-listing-status-event.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/09-canonical-catalog-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_goods_scene_base_info_df", "source_label": "商品操作场景配置表", "source_anchor": {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 257},
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 3966, "end_line": 3993, "source_asset": "ods_goods_scene_base_info_df"}},
+      "source_grain": "one mutable source product-operation scene definition per scene_code",
+      "decision": "correct", "canonical_entities": ["workflow.ProductSceneDefinitionVersion", "policy.ProductReviewPolicyVersion"],
+      "semantic_rules": {"grain": "one immutable version of a scene definition and its review policy", "identity": "scene_code is qualified by source system and version; numeric row id is provenance", "money_or_quantity": "no money or product quantity", "history": "scene edits publish new versions and historical cases retain their accepted version", "security": "creator/editor names are replaced by Principal references", "authority": "workflow/policy owns scene meaning; Catalog and Listing only reference a version"},
+      "corrections": ["repair the prototype missing comma before editor_name", "version scene semantics instead of overwriting", "do not derive workflow meaning from display name"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-catalog/cloudmold-module-catalog-server/src/main/java/cn/iocoder/yudao/module/cloudmold/catalog/dal/dataobject/CatalogOperationDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-catalog-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/09-canonical-catalog-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_goods_user_info_df", "source_label": "商品操作人员信息表", "source_anchor": {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 258},
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 3994, "end_line": 4022, "source_asset": "ods_goods_user_info_df"}},
+      "source_grain": "one mutable source operator-to-supplier association per source id",
+      "decision": "split", "canonical_entities": ["identity.Principal", "merchant.SupplierReference", "merchant.MerchantOperatorAssignment"],
+      "semantic_rules": {"grain": "one versioned operator assignment between a Principal and a governed supplier or company scope", "identity": "user, supplier, Principal and Merchant identities require exact tenant-scoped mappings", "money_or_quantity": "no payroll or financial authority", "history": "assignment activation/retirement is append-only; is_del cannot erase authored operations", "security": "person and supplier names are restricted display attributes, never identity keys", "authority": "Identity owns Principal; Merchant owns supplier/operator authorization"},
+      "corrections": ["separate person identity from supplier assignment", "normalize user_type dictionary", "retain deleted operators for audit lineage"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-identity/cloudmold-module-identity-server/src/main/java/cn/iocoder/yudao/module/cloudmold/identity/dal/dataobject/PrincipalDO.java", "yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantOperatorAssignmentDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-principal-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-merchant-operator-assignment-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/15-canonical-identity-merchant-warehouse-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_goods_goods_operate_import_df", "source_label": "商品任务导入表", "source_anchor": {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 259},
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 4023, "end_line": 4052, "source_asset": "ods_goods_goods_operate_import_df"}},
+      "source_grain": "one mutable source product import job per task_id or biz_id",
+      "decision": "split", "canonical_entities": ["workflow.ProductImportJob", "audit.RestrictedImportArtifact", "workflow.ProductOperationCase"],
+      "semantic_rules": {"grain": "one immutable import attempt and separately versioned job status", "identity": "task_id, biz_id, scene, actor and resulting product ids remain separate", "money_or_quantity": "row counts and rejected counts are explicit job metrics, not inferred from file size", "history": "every attempt/status transition appends and retries keep stable idempotency", "security": "Excel URL/name and file content stay in restricted object storage with digest and malware scan", "authority": "import workflow owns job state; Catalog accepts only validated row effects"},
+      "corrections": ["resolve prototype id_del versus example is_del conflict", "never ingest raw spreadsheet URL into events", "do not equate import success with Catalog publication"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-catalog/cloudmold-module-catalog-server/src/main/java/cn/iocoder/yudao/module/cloudmold/catalog/dal/dataobject/CatalogOperationDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-catalog-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/09-canonical-catalog-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_goods_goods_operate_reject_df", "source_label": "商品操作拒绝日志表", "source_anchor": {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 260},
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 4053, "end_line": 4082, "source_asset": "ods_goods_goods_operate_reject_df"}},
+      "source_grain": "one source rejection reason observation per source id and operation case",
+      "decision": "split", "canonical_entities": ["listing.ListingReviewDecision", "policy.ProductRejectionReasonVersion", "audit.RestrictedReviewEvidence"],
+      "semantic_rules": {"grain": "one immutable review decision may contain multiple governed reason codes and one restricted narrative", "identity": "review decision, operation case, SPU, scene, actor and reason-version ids remain distinct", "money_or_quantity": "no price, inventory or settlement effect", "history": "decisions are append-only and reconsideration creates a new decision", "security": "free-form reason detail and operator name remain restricted", "authority": "Listing review owns sellability decision; policy owns reason taxonomy; Catalog master changes separately"},
+      "corrections": ["normalize reason and type through versioned policy", "do not overwrite prior rejection", "separate rejection evidence from product status"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-listing/cloudmold-module-listing-server/src/main/java/cn/iocoder/yudao/module/cloudmold/listing/dal/dataobject/ListingReviewDecisionDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-listing-review-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-listing-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/11-canonical-listing-fulfillment-commerce-v2-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_goods_goods_operate_user_salary_settlement_df", "source_label": "人员结算表", "source_anchor": {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 263},
+      "source_evidence": {"status": "name_conflict", "detail_anchor": {"heading_line": 4083, "end_line": 4107, "source_asset": "ods_goods_goods_operate_reject_df"}},
+      "source_grain": "purported monthly operator payroll settlement, unproven because the detailed DDL creates the rejection table under the salary heading",
+      "decision": "correct", "canonical_entities": ["external.HumanResourcesSettlement", "identity.PrincipalReference", "merchant.SupplierReference"],
+      "semantic_rules": {"grain": "one employee/supplier monthly settlement only after the physical source is proven", "identity": "operator, supplier, payroll account and settlement identities remain separate", "money_or_quantity": "salary amounts are minor units plus currency and never Catalog price or merchant ledger money", "history": "settlements are immutable accounting periods with explicit corrections", "security": "payroll and person data are highly restricted and excluded from Catalog/Listing events", "authority": "HR/payroll owns settlement; Catalog and Listing must reject this authority"},
+      "corrections": ["do not execute the mislabeled prototype DDL", "keep payroll outside Catalog and Listing", "require a physical table/schema proof before specification"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-catalog/cloudmold-module-catalog-server/src/main/java/cn/iocoder/yudao/module/cloudmold/catalog/dal/dataobject/CatalogOperationDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-catalog-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/09-canonical-catalog-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "provisional", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_goods_goods_white_df", "source_label": "商品白名单表", "source_anchor": {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 262},
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 4108, "end_line": 4124, "source_asset": "ods_goods_goods_white_df"}},
+      "source_grain": "one mutable source whitelist exception per SPU",
+      "decision": "split", "canonical_entities": ["policy.ListingEligibilityOverride", "catalog.CatalogSpuReference", "audit.RestrictedPolicyEvidence"],
+      "semantic_rules": {"grain": "one versioned, scoped and expiring policy override rather than a permanent SPU flag", "identity": "override, SPU, policy version and approving Principal remain distinct", "money_or_quantity": "no price, stock or settlement authority", "history": "grant, expiry and revocation append with reason and approver", "security": "remarks and actor names remain restricted", "authority": "policy owns exception; Listing enforces eligibility; Catalog remains product master"},
+      "corrections": ["add scope, reason code, policy version, approver and expiry", "do not make whitelist part of SPU identity", "replace creator name with Principal mapping"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-listing/cloudmold-module-listing-server/src/main/java/cn/iocoder/yudao/module/cloudmold/listing/dal/dataobject/ListingHeaderDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-listing-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-listing-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/11-canonical-listing-fulfillment-commerce-v2-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_goods_goods_quilty_check_df", "source_label": "商品质检表", "source_anchor": {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 264},
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 4125, "end_line": 4159, "source_asset": "ods_goods_goods_quilty_check_df"}},
+      "source_grain": "one source product-operation quality inspection per source id",
+      "decision": "split", "canonical_entities": ["quality.ProductOperationInspection", "listing.ListingReviewDecisionReference", "identity.PrincipalReference"],
+      "semantic_rules": {"grain": "one immutable inspection of one prior operation/actor under one scene and policy version", "identity": "inspection, SPU, reviewed operation, inspector and inspected Principal remain distinct", "money_or_quantity": "quality score and defect counts require explicit units; no product stock or price authority", "history": "inspection and appeal/correction append without overwriting", "security": "operator names and free-form remark remain restricted", "authority": "Quality owns inspection; Listing owns review decision; Catalog owns SPU"},
+      "corrections": ["retain misspelled source name only as provenance and use canonical quality terminology", "correct the prototype comment that calls this a whitelist", "map qc_status through a versioned decision dictionary"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-listing/cloudmold-module-listing-server/src/main/java/cn/iocoder/yudao/module/cloudmold/listing/dal/dataobject/ListingReviewDecisionDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-listing-review-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-listing-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/11-canonical-listing-fulfillment-commerce-v2-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    }
+  ]
+}
