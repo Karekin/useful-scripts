@@ -18,6 +18,12 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Iterable
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from source_evidence import runtime_reconciliation_errors, validate_trade_admission
+
 
 ROOT = Path(__file__).resolve().parents[1]
 ALIGNMENT_MANIFEST = ROOT / "contracts" / "yshopping-model-alignment-v1.json"
@@ -29,6 +35,9 @@ METADATA_SOURCE_DISPOSITIONS = (
 )
 COMMERCE_SOURCE_DISPOSITIONS = (
     ROOT / "contracts" / "yshopping-commerce-source-disposition-v1.json"
+)
+TRADE_HISTORY_ADMISSION = (
+    ROOT / "contracts" / "yshopping-trade-history-admission-v1.json"
 )
 DEFAULT_REFERENCE_ROOT = Path(
     "/Users/karekin/Library/Mobile Documents/iCloud~md~obsidian/Documents/project/"
@@ -839,26 +848,16 @@ def _contract_reference_error(value: str) -> str | None:
     return f"missing fragment {fragment!r} in {path}"
 
 
-def _runtime_reconciliation_verified(value: Any) -> bool:
-    evidence_ref = value.get("evidence_ref") if isinstance(value, dict) else None
-    evidence_path: Path | None = None
-    if isinstance(evidence_ref, str) and evidence_ref.strip():
-        evidence_path = _resolve_contract_reference(evidence_ref)
-    return (
-        isinstance(value, dict)
-        and value.get("status") == "verified"
-        and evidence_path is not None
-        and evidence_path.is_file()
-        and evidence_path.stat().st_size > 0
-        and isinstance(value.get("run_id"), str)
-        and bool(value["run_id"].strip())
-        and isinstance(value.get("row_count"), int)
-        and not isinstance(value.get("row_count"), bool)
-        and value["row_count"] > 0
-        and isinstance(value.get("tenant_count"), int)
-        and not isinstance(value.get("tenant_count"), bool)
-        and value["tenant_count"] > 0
+def _runtime_reconciliation_errors(value: Any, expected_asset: str) -> list[str]:
+    return runtime_reconciliation_errors(
+        value,
+        expected_asset=expected_asset,
+        resolve_reference=_resolve_contract_reference,
     )
+
+
+def _runtime_reconciliation_verified(value: Any, expected_asset: str) -> bool:
+    return not _runtime_reconciliation_errors(value, expected_asset)
 
 
 def validate_game_source_dispositions(
@@ -984,16 +983,18 @@ def validate_game_source_dispositions(
                 count = runtime.get(count_key)
                 if not isinstance(count, int) or isinstance(count, bool) or count < 0:
                     errors.append(f"{label}: {count_key} must be a non-negative integer")
-            if runtime.get("status") == "verified" and not _runtime_reconciliation_verified(runtime):
+            if runtime.get("status") == "verified" and not _runtime_reconciliation_verified(runtime, name):
                 errors.append(
                     f"{label}: verified runtime reconciliation requires durable evidence, "
-                    "run id, and positive row/tenant counts"
+                    "run id, positive row/tenant counts, a valid production source bundle, "
+                    "and independent full-denominator zero-difference reconciliation: "
+                    + "; ".join(_runtime_reconciliation_errors(runtime, name))
                 )
         if asset.get("specification_status") != "specified":
             errors.append(f"{label}: specification_status must be specified")
         if asset.get("verification_status") not in {"unverified", "verified"}:
             errors.append(f"{label}: invalid verification_status")
-        if asset.get("verification_status") == "verified" and not _runtime_reconciliation_verified(runtime):
+        if asset.get("verification_status") == "verified" and not _runtime_reconciliation_verified(runtime, name):
             errors.append(
                 f"{label}: final verification is forbidden without non-empty runtime reconciliation"
             )
@@ -1201,16 +1202,18 @@ def validate_metadata_source_dispositions(
                 count = runtime.get(count_key)
                 if not isinstance(count, int) or isinstance(count, bool) or count < 0:
                     errors.append(f"{label}: {count_key} must be a non-negative integer")
-            if runtime.get("status") == "verified" and not _runtime_reconciliation_verified(runtime):
+            if runtime.get("status") == "verified" and not _runtime_reconciliation_verified(runtime, name):
                 errors.append(
                     f"{label}: verified runtime reconciliation requires durable evidence, "
-                    "run id, and positive row/tenant counts"
+                    "run id, positive row/tenant counts, a valid production source bundle, "
+                    "and independent full-denominator zero-difference reconciliation: "
+                    + "; ".join(_runtime_reconciliation_errors(runtime, name))
                 )
         if asset.get("specification_status") != "specified":
             errors.append(f"{label}: specification_status must be specified")
         if asset.get("verification_status") not in {"unverified", "verified"}:
             errors.append(f"{label}: invalid verification_status")
-        if asset.get("verification_status") == "verified" and not _runtime_reconciliation_verified(runtime):
+        if asset.get("verification_status") == "verified" and not _runtime_reconciliation_verified(runtime, name):
             errors.append(
                 f"{label}: final verification is forbidden without non-empty runtime reconciliation"
             )
@@ -1500,8 +1503,12 @@ def validate_commerce_source_dispositions(
                 count = runtime.get(count_key)
                 if not isinstance(count, int) or isinstance(count, bool) or count < 0:
                     errors.append(f"{label}: {count_key} must be a non-negative integer")
-            if runtime.get("status") == "verified" and not _runtime_reconciliation_verified(runtime):
-                errors.append(f"{label}: verified runtime reconciliation requires durable non-empty evidence")
+            if runtime.get("status") == "verified" and not _runtime_reconciliation_verified(runtime, name):
+                errors.append(
+                    f"{label}: verified runtime reconciliation requires durable non-empty "
+                    "production evidence and independent zero-difference reconciliation: "
+                    + "; ".join(_runtime_reconciliation_errors(runtime, name))
+                )
         expected_specification = (
             "specified"
             if evidence.get("status") in {"ddl_backed", "rejected_mislabeled"}
@@ -1514,7 +1521,7 @@ def validate_commerce_source_dispositions(
             )
         if asset.get("verification_status") not in {"unverified", "verified"}:
             errors.append(f"{label}: invalid verification_status")
-        if asset.get("verification_status") == "verified" and not _runtime_reconciliation_verified(runtime):
+        if asset.get("verification_status") == "verified" and not _runtime_reconciliation_verified(runtime, name):
             errors.append(f"{label}: final verification is forbidden without non-empty reconciliation")
     if seen != set(expected):
         errors.append(
@@ -1597,7 +1604,9 @@ def game_disposition_status(
     reconciled = [
         asset for asset in assets
         if isinstance(asset, dict)
-        and _runtime_reconciliation_verified(asset.get("runtime_nonempty_reconciliation"))
+        and _runtime_reconciliation_verified(
+            asset.get("runtime_nonempty_reconciliation"), asset.get("source_asset", "")
+        )
     ]
     verified = [
         asset for asset in reconciled if asset.get("verification_status") == "verified"
@@ -1627,7 +1636,9 @@ def metadata_disposition_status(
     reconciled = [
         asset for asset in assets
         if isinstance(asset, dict)
-        and _runtime_reconciliation_verified(asset.get("runtime_nonempty_reconciliation"))
+        and _runtime_reconciliation_verified(
+            asset.get("runtime_nonempty_reconciliation"), asset.get("source_asset", "")
+        )
     ]
     verified = [
         asset for asset in reconciled if asset.get("verification_status") == "verified"
@@ -1664,7 +1675,9 @@ def commerce_disposition_status(
     reconciled = [
         asset for asset in assets
         if isinstance(asset, dict)
-        and _runtime_reconciliation_verified(asset.get("runtime_nonempty_reconciliation"))
+        and _runtime_reconciliation_verified(
+            asset.get("runtime_nonempty_reconciliation"), asset.get("source_asset", "")
+        )
     ]
     verified = [asset for asset in reconciled if asset.get("verification_status") == "verified"]
     denominator = len(expected) or 1
@@ -1914,6 +1927,12 @@ def main() -> int:
     errors.extend(validate_game_source_dispositions(inventory))
     errors.extend(validate_metadata_source_dispositions(inventory))
     errors.extend(validate_commerce_source_dispositions(inventory))
+    errors.extend(
+        validate_trade_admission(
+            TRADE_HISTORY_ADMISSION,
+            args.reference_root / LAYER_DOCUMENTS["ODS"],
+        )
+    )
     if errors:
         raise SourceAssetError("; ".join(errors))
     if args.command == "inventory":

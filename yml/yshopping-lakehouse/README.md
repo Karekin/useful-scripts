@@ -55,7 +55,7 @@ contexts: Merchant/Shop/Identity, Warehouse/Location, production-pilot
 admission and inventory shadow verification. It rejects source
 drift, duplicate authorities, cross-system ID equivalence, incomplete
 tenant-scoped keys, ungoverned PII or money, missing lakehouse layers, missing
-event evidence and drift from the current 168 SQL files/308 model objects. A
+event evidence and drift from the current 183 SQL files/323 model objects. A
 `missing`, `legacy_only` or `partial` status is an explicit open gate, not proof
 of complete alignment.
 
@@ -79,6 +79,20 @@ Bounded heading lineage and an explicit reviewed route registry now give every
 candidate a preliminary route or a reasoned placeholder rejection. This is 100%
 inventory handling, not 100% semantic completion: final disposition remains zero
 until the stronger evidence above exists.
+`./scripts/lakehousectl source-evidence-policy` validates the first production
+history admission slice for `ods_trade_trade_order_di`,
+`ods_trade_trade_sub_order_di` and `ods_trade_trade_discount_di` directly
+against the locked ODS DDL. `./scripts/sourceevidencectl validate-bundle` and
+`validate-reconciliation` are the runtime admission surfaces. Strict credit now
+requires a non-empty production snapshot with a checksummed source-system audit
+attestation, exact half-open window, source schema
+and extraction-query artifacts, per-file byte counts and SHA-256 digests,
+positive tenant and row counts, full-denominator/non-sampled coverage, exact
+admitted-plus-quarantine conservation, matching business-key digests, semantic
+zero-difference checks, and a separately checksummed independent verifier.
+Documentation volume estimates (for example “15.96 亿”) are never used as a
+denominator. A merely non-empty JSON file can no longer promote any of the 718
+assets to `verified`.
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%

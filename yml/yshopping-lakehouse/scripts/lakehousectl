@@ -4,9 +4,10 @@ set -euo pipefail
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
 STARROCKS_CONTAINER=${STARROCKS_CONTAINER:-yshopping-starrocks}
+YSHOPPING_REFERENCE_ROOT=${YSHOPPING_REFERENCE_ROOT:-/Users/karekin/Library/Mobile Documents/iCloud~md~obsidian/Documents/project/语兴好物（y shopping）-电商数仓搭建}
 
 usage() {
-  echo "usage: lakehousectl {config-check|contract-test|source-assets|source-disposition-status|semantic-status|start|submit-cdc|submit-catalog-cdc|submit-legacy-mall-cdc|submit-event-cdc|apply-models|health|test|reconcile|reconcile-legacy-trade-benefit-assessment|reconcile-canonical-legacy-trade-benefit-assessment|reconcile-canonical-inventory|reconcile-canonical-inventory-lot|reconcile-canonical-inventory-migration|reconcile-canonical-catalog|reconcile-canonical-commerce|reconcile-canonical-commerce-v2|reconcile-canonical-order-benefit|reconcile-canonical-cancellation-saga|reconcile-canonical-paid-cancellation-saga|reconcile-canonical-aftersales|reconcile-canonical-listing-unpublish-saga|reconcile-canonical-merchant|reconcile-canonical-merchant-deposit|reconcile-canonical-warehouse-network} [--tenant ID] [--run-id ID] [--after-sale-id UUID] [--saga-id UUID] [--merchant-id UUID] [--warehouse-id UUID] [--source-system CODE] [--source-type CODE] [--source-id ID]"
+  echo "usage: lakehousectl {config-check|contract-test|source-assets|source-disposition-status|source-evidence-policy|semantic-status|start|submit-cdc|submit-catalog-cdc|submit-legacy-mall-cdc|submit-event-cdc|apply-models|health|test|reconcile|reconcile-legacy-trade-benefit-assessment|reconcile-canonical-legacy-trade-benefit-assessment|reconcile-canonical-inventory|reconcile-canonical-inventory-lot|reconcile-canonical-inventory-migration|reconcile-canonical-catalog|reconcile-canonical-commerce|reconcile-canonical-commerce-v2|reconcile-canonical-order-benefit|reconcile-canonical-cancellation-saga|reconcile-canonical-paid-cancellation-saga|reconcile-canonical-aftersales|reconcile-canonical-listing-unpublish-saga|reconcile-canonical-merchant|reconcile-canonical-merchant-deposit|reconcile-canonical-warehouse-network} [--tenant ID] [--run-id ID] [--after-sale-id UUID] [--saga-id UUID] [--merchant-id UUID] [--warehouse-id UUID] [--source-system CODE] [--source-type CODE] [--source-id ID]"
 }
 
 sql() {
@@ -129,6 +130,7 @@ case "$COMMAND" in
     test -f "$ROOT_DIR/contracts/canonical-order-cancellation-saga-v1.yaml"
     test -f "$ROOT_DIR/contracts/canonical-paid-order-cancellation-saga-v2.yaml"
     test -f "$ROOT_DIR/contracts/canonical-aftersales-return-refund-v1.yaml"
+    test -f "$ROOT_DIR/contracts/yshopping-trade-history-admission-v1.json"
     find "$ROOT_DIR/models" "$ROOT_DIR/tests/sql" -type f -name '*.sql' -size 0 | grep . && exit 1 || true
     "$ROOT_DIR/scripts/contractctl" validate
     "$ROOT_DIR/scripts/alignmentctl" validate
@@ -146,6 +148,11 @@ case "$COMMAND" in
     ;;
   source-disposition-status)
     "$ROOT_DIR/scripts/sourceassetctl" disposition-status
+    ;;
+  source-evidence-policy)
+    "$ROOT_DIR/scripts/sourceevidencectl" validate-trade-admission \
+      "$ROOT_DIR/contracts/yshopping-trade-history-admission-v1.json" \
+      "$YSHOPPING_REFERENCE_ROOT/ODS语兴好物（y shopping）电商数据表.md"
     ;;
   semantic-status)
     "$ROOT_DIR/scripts/alignmentctl" semantic-score

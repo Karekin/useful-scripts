@@ -22,6 +22,12 @@ class LakehouseCtlContractTest(unittest.TestCase):
         self.assertIn("reconcile-legacy-trade-benefit-assessment", result.stdout)
         self.assertIn("reconcile-canonical-legacy-trade-benefit-assessment", result.stdout)
         self.assertIn("submit-legacy-mall-cdc", result.stdout)
+        self.assertIn("source-evidence-policy", result.stdout)
+
+    def test_trade_source_evidence_policy_is_executable(self):
+        result = self.run_ctl("source-evidence-policy")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Trade history admission policy valid", result.stdout)
 
     def test_legacy_trade_benefit_assessment_fails_closed_on_missing_evidence(self):
         script = SCRIPT.read_text(encoding="utf-8")

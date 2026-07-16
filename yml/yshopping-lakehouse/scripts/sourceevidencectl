@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+"""Validate governed Y-Shopping source snapshot and reconciliation evidence."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+from source_evidence import (
+    SourceEvidenceError,
+    canonical_sha256,
+    load_json_object,
+    validate_bundle,
+    validate_reconciliation,
+    validate_trade_admission,
+)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    bundle = subparsers.add_parser("validate-bundle")
+    bundle.add_argument("manifest", type=Path)
+    bundle.add_argument("--require-production", action="store_true")
+
+    reconciliation = subparsers.add_parser("validate-reconciliation")
+    reconciliation.add_argument("evidence", type=Path)
+    reconciliation.add_argument("--source-asset")
+    reconciliation.add_argument("--run-id")
+    reconciliation.add_argument("--row-count", type=int)
+    reconciliation.add_argument("--tenant-count", type=int)
+    reconciliation.add_argument("--allow-non-production", action="store_true")
+
+    admission = subparsers.add_parser("validate-trade-admission")
+    admission.add_argument("contract", type=Path)
+    admission.add_argument("source_document", type=Path)
+
+    fingerprint = subparsers.add_parser("fingerprint")
+    fingerprint.add_argument("document", type=Path)
+    fingerprint.add_argument(
+        "--digest-field",
+        choices=("manifest_sha256", "evidence_sha256"),
+        required=True,
+    )
+    args = parser.parse_args()
+
+    if args.command == "validate-bundle":
+        errors = validate_bundle(args.manifest, require_production=args.require_production)
+        if errors:
+            raise SourceEvidenceError("; ".join(errors))
+        print(f"source evidence bundle valid: {args.manifest}")
+    elif args.command == "validate-reconciliation":
+        errors = validate_reconciliation(
+            args.evidence,
+            expected_asset=args.source_asset,
+            expected_run_id=args.run_id,
+            expected_row_count=args.row_count,
+            expected_tenant_count=args.tenant_count,
+            require_production=not args.allow_non_production,
+        )
+        if errors:
+            raise SourceEvidenceError("; ".join(errors))
+        print(f"source reconciliation evidence valid: {args.evidence}")
+    elif args.command == "validate-trade-admission":
+        errors = validate_trade_admission(args.contract, args.source_document)
+        if errors:
+            raise SourceEvidenceError("; ".join(errors))
+        print(f"Trade history admission policy valid: {args.contract}")
+    else:
+        value = load_json_object(args.document)
+        print(
+            json.dumps(
+                {
+                    "document": str(args.document),
+                    "digest_field": args.digest_field,
+                    "sha256": canonical_sha256(value, args.digest_field),
+                },
+                ensure_ascii=False,
+            )
+        )
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except SourceEvidenceError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        raise SystemExit(1)

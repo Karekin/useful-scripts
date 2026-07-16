@@ -1,8 +1,10 @@
 import importlib.machinery
 import importlib.util
+import hashlib
 import json
 import tempfile
 import unittest
+import uuid
 from collections import Counter
 from pathlib import Path
 
@@ -12,6 +14,126 @@ LOADER = importlib.machinery.SourceFileLoader("sourceassetctl", str(SCRIPT))
 SPEC = importlib.util.spec_from_loader(LOADER.name, LOADER)
 SOURCE_ASSETS = importlib.util.module_from_spec(SPEC)
 LOADER.exec_module(SOURCE_ASSETS)
+
+from source_evidence import (
+    canonical_sha256,
+    validate_reconciliation,
+    validate_trade_admission,
+)
+
+
+def write_valid_reconciliation(
+    directory: Path, *, source_asset: str, run_id: str, row_count: int, tenant_count: int
+) -> Path:
+    payload = directory / "source.jsonl"
+    payload.write_text('{"tenant_id":"t-1","source_key":"k-1"}\n', encoding="utf-8")
+    schema = directory / "source-schema.sql"
+    schema.write_text("tenant_id STRING NOT NULL, source_key STRING NOT NULL\n", encoding="utf-8")
+    query = directory / "extract.sql"
+    query.write_text("SELECT tenant_id, source_key FROM bounded_source\n", encoding="utf-8")
+    verifier_code = directory / "reconcile.sql"
+    verifier_code.write_text("SELECT COUNT(*) AS mismatch_count FROM independent_diff\n", encoding="utf-8")
+    tenant_mapping = directory / "tenant-mapping.json"
+    tenant_mapping.write_text('{"source_tenant":"t-1","canonical_tenant":"1","version":1}\n', encoding="utf-8")
+    attestation = directory / "source-audit.json"
+    attestation.write_text('{"job":"job-1","access":"read-only","result":"completed"}\n', encoding="utf-8")
+    manifest = {
+        "contract_id": "yshopping.source-evidence-bundle.v1",
+        "bundle_id": str(uuid.uuid4()),
+        "source_system": "YSHOPPING",
+        "source_environment": "production",
+        "provenance": {
+            "snapshot_id": "snapshot-1",
+            "extraction_job_id": "job-1",
+            "extractor_identity": "test-governed-extractor",
+            "attestation_method": "SOURCE_SYSTEM_AUDIT_EXPORT",
+            "read_only_confirmed": True,
+            "attestation_ref": attestation.name,
+            "attestation_sha256": hashlib.sha256(attestation.read_bytes()).hexdigest(),
+        },
+        "source": {
+            "asset": source_asset,
+            "qualified_table": f"yshopping.{source_asset}",
+            "schema_ref": schema.name,
+            "schema_sha256": hashlib.sha256(schema.read_bytes()).hexdigest(),
+            "primary_key": ["source_key"],
+            "columns": [
+                {"name": "tenant_id", "type": "STRING", "nullable": False, "classification": "internal", "semantic_role": "tenant"},
+                {"name": "source_key", "type": "STRING", "nullable": False, "classification": "internal", "semantic_role": "business_key"},
+            ],
+        },
+        "extraction": {
+            "mode": "READ_ONLY_SNAPSHOT",
+            "full_denominator": True,
+            "sampled": False,
+            "query_ref": query.name,
+            "query_sha256": hashlib.sha256(query.read_bytes()).hexdigest(),
+            "extracted_at": "2026-07-17T00:00:00Z",
+            "window": {"field": "pt", "start_inclusive": "2026-07-01", "end_exclusive": "2026-07-02"},
+            "watermark": {"kind": "partition", "value": "2026-07-01"},
+        },
+        "tenant_scope": {"strategy": "source-key-map", "source_keys": ["tenant_id"], "tenant_count": tenant_count},
+        "quality": {
+            "row_count": row_count,
+            "distinct_business_key_count": row_count,
+            "duplicate_business_key_count": 0,
+            "null_business_key_count": 0,
+            "deleted_row_count": 0,
+        },
+        "semantic_artifacts": [{
+            "kind": "tenant_mapping",
+            "path": tenant_mapping.name,
+            "sha256": hashlib.sha256(tenant_mapping.read_bytes()).hexdigest(),
+        }],
+        "security": {"pii_handling": "no_pii"},
+        "files": [{
+            "path": payload.name,
+            "format": "JSONL",
+            "byte_count": payload.stat().st_size,
+            "row_count": row_count,
+            "sha256": hashlib.sha256(payload.read_bytes()).hexdigest(),
+        }],
+    }
+    manifest["manifest_sha256"] = canonical_sha256(manifest, "manifest_sha256")
+    manifest_path = directory / "bundle.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    business_key_digest = hashlib.sha256(b"all-source-business-keys").hexdigest()
+    evidence = {
+        "contract_id": "yshopping.source-reconciliation-evidence.v1",
+        "reconciliation_id": str(uuid.uuid4()),
+        "run_id": run_id,
+        "source_asset": source_asset,
+        "source_bundle_ref": manifest_path.name,
+        "source_bundle_manifest_sha256": manifest["manifest_sha256"],
+        "result": "verified",
+        "full_denominator": True,
+        "sampled": False,
+        "coverage": {
+            "source_row_count": row_count,
+            "admitted_source_row_count": row_count,
+            "quarantined_source_row_count": 0,
+            "missing_source_row_count": 0,
+            "duplicate_source_coverage_count": 0,
+            "tenant_count": tenant_count,
+            "source_business_key_sha256": business_key_digest,
+            "accounted_business_key_sha256": business_key_digest,
+        },
+        "canonical_outputs": [{"target": "canonical.test", "row_count": row_count}],
+        "semantic_checks": [{"name": "business_key_coverage", "checked_count": row_count, "mismatch_count": 0}],
+        "independent_verifier": {
+            "engine": "test-independent-engine",
+            "code_ref": verifier_code.name,
+            "code_sha256": hashlib.sha256(verifier_code.read_bytes()).hexdigest(),
+            "executed_at": "2026-07-17T00:01:00Z",
+            "independent_from_extractor": True,
+            "independent_from_canonical_transform": True,
+        },
+        "authorization": {"import_enabled": False, "cutover_enabled": False},
+    }
+    evidence["evidence_sha256"] = canonical_sha256(evidence, "evidence_sha256")
+    evidence_path = directory / "reconciliation.json"
+    evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+    return evidence_path
 
 
 class SourceAssetCtlTest(unittest.TestCase):
@@ -26,6 +148,13 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_game_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_metadata_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_commerce_source_dispositions(self.inventory))
+        self.assertEqual(
+            [],
+            validate_trade_admission(
+                SOURCE_ASSETS.TRADE_HISTORY_ADMISSION,
+                SOURCE_ASSETS.DEFAULT_REFERENCE_ROOT / SOURCE_ASSETS.LAYER_DOCUMENTS["ODS"],
+            ),
+        )
         self.assertEqual(6, len(self.inventory["documents"]))
 
     def test_inventory_is_complete_and_deterministic_for_the_locked_snapshot(self):
@@ -290,10 +419,15 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertTrue(any("durable evidence" in error for error in errors))
 
         with tempfile.TemporaryDirectory() as directory:
-            evidence = Path(directory) / "reconciliation.json"
-            evidence.write_text('{"row_count": 7, "tenant_count": 1}', encoding="utf-8")
             proven = json.loads(json.dumps(contract))
             runtime = proven["assets"][0]["runtime_nonempty_reconciliation"]
+            evidence = write_valid_reconciliation(
+                Path(directory),
+                source_asset=proven["assets"][0]["source_asset"],
+                run_id="game-runtime-verified-001",
+                row_count=7,
+                tenant_count=1,
+            )
             runtime.update(
                 {
                     "status": "verified",
@@ -310,6 +444,102 @@ class SourceAssetCtlTest(unittest.TestCase):
             status = SOURCE_ASSETS.game_disposition_status(self.inventory, proven)
             self.assertEqual(1, status["game_runtime_nonempty_reconciled_count"])
             self.assertEqual(1, status["game_final_disposition_verified_count"])
+
+    def test_runtime_evidence_detects_payload_tampering(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            evidence = write_valid_reconciliation(
+                root,
+                source_asset="ods_eliminate_user_coin_log_df",
+                run_id="trade-runtime-001",
+                row_count=7,
+                tenant_count=1,
+            )
+            (root / "source.jsonl").write_text("tampered\n", encoding="utf-8")
+            errors = validate_reconciliation(evidence)
+            self.assertTrue(any("sha256 mismatch" in error for error in errors))
+
+    def test_runtime_evidence_rejects_sampling_and_non_production_sources(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            evidence_path = write_valid_reconciliation(
+                root,
+                source_asset="ods_eliminate_user_coin_log_df",
+                run_id="trade-runtime-002",
+                row_count=7,
+                tenant_count=1,
+            )
+            manifest_path = root / "bundle.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["source_environment"] = "test"
+            manifest["extraction"]["sampled"] = True
+            manifest["extraction"]["full_denominator"] = False
+            manifest["manifest_sha256"] = canonical_sha256(manifest, "manifest_sha256")
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+            evidence["source_bundle_manifest_sha256"] = manifest["manifest_sha256"]
+            evidence["evidence_sha256"] = canonical_sha256(evidence, "evidence_sha256")
+            evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+            errors = validate_reconciliation(evidence_path)
+            self.assertTrue(any("requires production" in error for error in errors))
+            self.assertTrue(any("full-denominator" in error for error in errors))
+
+    def test_runtime_evidence_rejects_denominator_and_identity_mismatch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            evidence_path = write_valid_reconciliation(
+                root,
+                source_asset="ods_eliminate_user_coin_log_df",
+                run_id="trade-runtime-003",
+                row_count=7,
+                tenant_count=1,
+            )
+            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+            evidence["coverage"]["admitted_source_row_count"] = 6
+            evidence["evidence_sha256"] = canonical_sha256(evidence, "evidence_sha256")
+            evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+            errors = validate_reconciliation(
+                evidence_path,
+                expected_asset="ods_trade_trade_discount_di",
+                expected_run_id="another-run",
+                expected_row_count=8,
+                expected_tenant_count=2,
+            )
+            self.assertTrue(any("admitted plus quarantined" in error for error in errors))
+            self.assertTrue(any("source_asset does not match" in error for error in errors))
+            self.assertTrue(any("run_id does not match" in error for error in errors))
+            self.assertTrue(any("row count does not match" in error for error in errors))
+            self.assertTrue(any("tenant count does not match" in error for error in errors))
+
+    def test_trade_history_admission_is_bound_to_commerce_dispositions(self):
+        admission = json.loads(
+            SOURCE_ASSETS.TRADE_HISTORY_ADMISSION.read_text(encoding="utf-8")
+        )
+        commerce = SOURCE_ASSETS.load_commerce_source_dispositions()
+        commerce_by_name = {
+            asset["source_asset"]: asset for asset in commerce["assets"]
+        }
+        self.assertEqual(
+            [
+                "ods_trade_trade_order_di",
+                "ods_trade_trade_sub_order_di",
+                "ods_trade_trade_discount_di",
+            ],
+            [asset["source_asset"] for asset in admission["assets"]],
+        )
+        for asset in admission["assets"]:
+            disposition = commerce_by_name[asset["source_asset"]]
+            self.assertEqual(
+                set(disposition["canonical_entities"]), set(asset["canonical_targets"])
+            )
+            self.assertEqual("specified", disposition["specification_status"])
+            self.assertEqual("unverified", disposition["verification_status"])
+            self.assertEqual("missing", disposition["runtime_nonempty_reconciliation"]["status"])
+        discount = admission["assets"][2]
+        self.assertEqual(
+            set(commerce_by_name[discount["source_asset"]]["field_dispositions"]),
+            {column["name"] for column in discount["columns"]},
+        )
 
     def test_game_contract_rejects_missing_duplicate_or_mislabeled_overview_assets(self):
         contract = SOURCE_ASSETS.load_game_source_dispositions()
