@@ -153,6 +153,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_coupon_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_user_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_payment_source_schema_request(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_advertising_source_schema_request(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_engagement_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_compensation_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_ticket_source_dispositions(self.inventory))
@@ -304,6 +305,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertTrue(any("coupon=0/6 (0.00%)" in line for line in lines))
         self.assertTrue(any("user=2/30 (6.67%)" in line for line in lines))
         self.assertTrue(any("user=0/30 (0.00%)" in line for line in lines))
+        self.assertTrue(any("advertising=0/7 (0.00%)" in line for line in lines))
         self.assertTrue(any("engagement=4/4 (100.00%)" in line for line in lines))
         self.assertTrue(any("engagement=0/4 (0.00%)" in line for line in lines))
         self.assertTrue(any("compensation=1/3 (33.33%)" in line for line in lines))
@@ -1291,6 +1293,106 @@ class SourceAssetCtlTest(unittest.TestCase):
         weakened["admission_policy"]["raw_pan_password_otp_or_bank_credentials_are_accepted"] = True
         errors = SOURCE_ASSETS.validate_payment_source_schema_request(self.inventory, weakened)
         self.assertTrue(any("raw_pan_password" in error for error in errors))
+
+    def test_advertising_schema_request_covers_exact_overview_only_assets(self):
+        contract = SOURCE_ASSETS.load_advertising_source_schema_request()
+        observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "广告")
+        requested = {asset["source_asset"] for asset in contract["assets"]}
+        self.assertEqual(7, len(observed))
+        self.assertEqual(set(observed), requested)
+        self.assertEqual([], SOURCE_ASSETS.validate_advertising_source_schema_request(self.inventory))
+        for name in requested:
+            logical = next(
+                asset for asset in self.inventory["logical_assets"]
+                if asset["normalized_name"] == name
+            )
+            self.assertEqual(1, len(logical["occurrences"]))
+            self.assertIn("数据表总览", logical["occurrences"][0]["heading_path"])
+
+    def test_advertising_schema_request_preserves_grain_privacy_and_authority_boundaries(self):
+        contract = SOURCE_ASSETS.load_advertising_source_schema_request()
+        by_name = {asset["source_asset"]: asset for asset in contract["assets"]}
+        self.assertIn(
+            "bilibill_spelling",
+            " ".join(by_name["ods_bilibill_df"]["required_semantics"]),
+        )
+        self.assertIn(
+            "prohibition_on_inferring_conversion_order_or_payment",
+            " ".join(by_name["ods_toutiaoevent_df"]["required_semantics"]),
+        )
+        self.assertIn(
+            "exclusion_of_conversion_order_payment_and_settlement_inference",
+            " ".join(by_name["ods_xinlangclick_df"]["required_semantics"]),
+        )
+        kafka = " ".join(by_name["ods_kafka_market_launch_label_di"]["required_semantics"])
+        for token in ("topic_partition_offset", "schema_registry", "replay_duplicate", "does_not_authorize"):
+            self.assertIn(token, kafka)
+        for gate in (
+            "platform_name_implies_event_grain",
+            "click_or_impression_proves_conversion",
+            "attribution_proves_order_or_payment",
+            "raw_device_cookie_ip_or_platform_identifier_is_broadly_exposed",
+        ):
+            self.assertFalse(contract["admission_policy"][gate])
+
+    def test_advertising_disposition_status_is_explicitly_zero_until_schema_arrives(self):
+        status = SOURCE_ASSETS.advertising_disposition_status(self.inventory)
+        self.assertEqual(7, status["advertising_source_asset_count"])
+        self.assertEqual(0, status["advertising_detailed_disposition_specified_count"])
+        self.assertEqual(0, status["advertising_runtime_nonempty_reconciled_count"])
+        self.assertEqual(0, status["advertising_final_disposition_verified_count"])
+        self.assertEqual(0.0, status["advertising_detailed_disposition_percent"])
+
+    def test_advertising_schema_request_rejects_missing_duplicate_weakened_and_evidence_drift(self):
+        contract = SOURCE_ASSETS.load_advertising_source_schema_request()
+        missing = json.loads(json.dumps(contract))
+        missing["assets"].pop()
+        errors = SOURCE_ASSETS.validate_advertising_source_schema_request(self.inventory, missing)
+        self.assertTrue(any("differ from locked overview assets" in error for error in errors))
+
+        duplicate = json.loads(json.dumps(contract))
+        duplicate["assets"][1] = json.loads(json.dumps(duplicate["assets"][0]))
+        errors = SOURCE_ASSETS.validate_advertising_source_schema_request(self.inventory, duplicate)
+        self.assertTrue(any("duplicate source_asset" in error for error in errors))
+
+        weakened = json.loads(json.dumps(contract))
+        weakened["admission_policy"]["attribution_proves_order_or_payment"] = True
+        errors = SOURCE_ASSETS.validate_advertising_source_schema_request(self.inventory, weakened)
+        self.assertTrue(any("attribution_proves_order_or_payment" in error for error in errors))
+
+        drifted_inventory = json.loads(json.dumps(self.inventory))
+        logical = next(
+            asset for asset in drifted_inventory["logical_assets"]
+            if asset["normalized_name"] == "ods_xinlangclick_df"
+        )
+        logical["occurrences"].append(
+            {
+                "role": "create_target",
+                "document": "ODS语兴好物（y shopping）电商数据表.md",
+                "line": 9000,
+                "heading_path": ["广告", "ods_xinlangclick_df"],
+            }
+        )
+        errors = SOURCE_ASSETS.validate_advertising_source_schema_request(
+            drifted_inventory, contract
+        )
+        self.assertTrue(any("field-level evidence may now exist" in error for error in errors))
+
+    def test_all_advertising_implementation_references_resolve(self):
+        contract = SOURCE_ASSETS.load_advertising_source_schema_request()
+        references = [
+            reference
+            for values in contract["implementation_refs"].values()
+            for reference in values
+        ]
+        self.assertEqual(
+            [],
+            [
+                (reference, SOURCE_ASSETS._contract_reference_error(reference))
+                for reference in references
+                if SOURCE_ASSETS._contract_reference_error(reference)
+            ],
+        )
 
     def test_engagement_dispositions_cover_push_and_collect_assets(self):
         contract = SOURCE_ASSETS.load_engagement_source_dispositions()

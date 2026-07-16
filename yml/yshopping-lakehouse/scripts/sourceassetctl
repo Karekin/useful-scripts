@@ -51,6 +51,9 @@ USER_SOURCE_DISPOSITIONS = (
 PAYMENT_SOURCE_SCHEMA_REQUEST = (
     ROOT / "contracts" / "yshopping-payment-source-schema-request-v1.json"
 )
+ADVERTISING_SOURCE_SCHEMA_REQUEST = (
+    ROOT / "contracts" / "yshopping-advertising-source-schema-request-v1.json"
+)
 ENGAGEMENT_SOURCE_DISPOSITIONS = (
     ROOT / "contracts" / "yshopping-engagement-source-disposition-v1.json"
 )
@@ -296,6 +299,12 @@ def load_payment_source_schema_request(
     path: Path = PAYMENT_SOURCE_SCHEMA_REQUEST,
 ) -> dict[str, Any]:
     return _load_json_object(path, "payment source schema request")
+
+
+def load_advertising_source_schema_request(
+    path: Path = ADVERTISING_SOURCE_SCHEMA_REQUEST,
+) -> dict[str, Any]:
+    return _load_json_object(path, "advertising source schema request")
 
 
 def load_engagement_source_dispositions(
@@ -2862,6 +2871,176 @@ def validate_payment_source_schema_request(
     return errors
 
 
+def validate_advertising_source_schema_request(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    """Keep overview-only advertising assets from fabricating grain or authority."""
+    errors: list[str] = []
+    contract = contract or load_advertising_source_schema_request()
+    expected = authoritative_ods_domain_assets(inventory, "广告")
+    expected_anchors = {
+        "ods_bilibill_df": ("哔哩哔哩", 206),
+        "ods_media_bilibili_df": ("哔哩哔哩媒", 207),
+        "ods_kuaishou_df": ("快手", 208),
+        "ods_toutiaoevent_df": ("头条", 209),
+        "ods_media_toutiao_df": ("头条媒", 210),
+        "ods_xinlangclick_df": ("新浪点击", 211),
+        "ods_kafka_market_launch_label_di": ("硬广点击日志表", 212),
+    }
+    scope = contract.get("source_scope")
+    if not isinstance(scope, dict):
+        return ["advertising source schema request requires source_scope"]
+    document = scope.get("authoritative_document")
+    if scope.get("domain") != "广告" or scope.get("status") != "BLOCKED_MISSING_SOURCE_SCHEMA":
+        errors.append("advertising source schema request must remain blocked for 广告")
+    if set(expected) != set(expected_anchors):
+        errors.append(
+            "authoritative Advertising overview assets changed: "
+            f"missing={sorted(set(expected_anchors) - set(expected))}, "
+            f"extra={sorted(set(expected) - set(expected_anchors))}"
+        )
+    if scope.get("authoritative_unique_asset_count") != len(expected):
+        errors.append("advertising source schema request authoritative count differs")
+    if scope.get("requested_schema_asset_count") != len(expected):
+        errors.append("advertising source schema request missing-schema count differs")
+
+    delivery = contract.get("delivery_requirements")
+    required_delivery_groups = {
+        "source_identity", "schema", "change_semantics", "governance",
+        "money_and_attribution", "reconciliation",
+    }
+    if not isinstance(delivery, dict) or set(delivery) != required_delivery_groups:
+        errors.append(
+            "advertising delivery requirements must define exactly "
+            f"{sorted(required_delivery_groups)}"
+        )
+    elif any(not _nonempty_strings(value) for value in delivery.values()):
+        errors.append("advertising delivery requirement groups must contain non-empty fields")
+
+    admission = contract.get("admission_policy")
+    false_gates = {
+        "overview_name_is_schema_evidence",
+        "platform_name_implies_event_grain",
+        "sampled_rows_are_final_evidence",
+        "empty_extract_is_evidence",
+        "click_or_impression_proves_conversion",
+        "attribution_proves_order_or_payment",
+        "spend_without_currency_or_settlement_is_accepted",
+        "raw_device_cookie_ip_or_platform_identifier_is_broadly_exposed",
+    }
+    if not isinstance(admission, dict):
+        errors.append("advertising source schema request requires admission_policy")
+    else:
+        for gate in false_gates:
+            if admission.get(gate) is not False:
+                errors.append(f"advertising admission gate {gate} must be false")
+        for rule in ("promotion_rule", "runtime_rule"):
+            if not isinstance(admission.get(rule), str) or not admission[rule].strip():
+                errors.append(f"advertising admission policy requires {rule}")
+
+    references = contract.get("implementation_refs")
+    if not isinstance(references, dict) or set(references) != {"backend_refs", "lakehouse_refs"}:
+        errors.append("advertising implementation_refs must define backend_refs and lakehouse_refs")
+    else:
+        for kind, values in references.items():
+            if not _nonempty_strings(values):
+                errors.append(f"advertising {kind} must contain non-empty references")
+                continue
+            for value in values:
+                reference_error = _contract_reference_error(value)
+                if reference_error:
+                    errors.append(f"advertising {kind} reference {value!r}: {reference_error}")
+
+    assets = contract.get("assets")
+    if not isinstance(assets, list):
+        return errors + ["advertising source schema request requires assets"]
+    logical_by_name = {
+        asset["normalized_name"]: asset for asset in inventory.get("logical_assets", [])
+    }
+    seen: set[str] = set()
+    for index, asset in enumerate(assets):
+        label = f"advertising source schema request assets[{index}]"
+        required_fields = {
+            "source_asset", "source_label", "overview_line", "target_boundary",
+            "required_semantics",
+        }
+        if not isinstance(asset, dict) or set(asset) != required_fields:
+            errors.append(f"{label}: must define exactly {sorted(required_fields)}")
+            continue
+        name = asset.get("source_asset")
+        if name in seen:
+            errors.append(f"{label}: duplicate source_asset {name}")
+        seen.add(name)
+        observed = expected.get(name)
+        locked = expected_anchors.get(name)
+        if observed is None or locked is None:
+            errors.append(f"{label}: not an authoritative Advertising asset: {name}")
+            continue
+        expected_label, expected_line = locked
+        if asset.get("source_label") != expected_label or observed.get("source_labels") != [expected_label]:
+            errors.append(f"{label}: source label differs from locked ODS overview for {name}")
+        if asset.get("overview_line") != expected_line or (document, expected_line) not in observed.get("anchors", []):
+            errors.append(f"{label}: source anchor differs from locked ODS overview for {name}")
+        if not isinstance(asset.get("target_boundary"), str) or not asset["target_boundary"].strip():
+            errors.append(f"{label}: requires target_boundary")
+        semantics = asset.get("required_semantics")
+        if not _nonempty_strings(semantics) or len(semantics) < 6 or len(set(semantics)) != len(semantics):
+            errors.append(f"{label}: requires at least six unique table-specific semantics")
+
+        occurrences = logical_by_name.get(name, {}).get("occurrences", [])
+        overview_only = (
+            len(occurrences) == 1
+            and occurrences[0].get("role") == "candidate"
+            and occurrences[0].get("document") == document
+            and occurrences[0].get("line") == expected_line
+            and "数据表总览" in occurrences[0].get("heading_path", [])
+        )
+        if not overview_only:
+            errors.append(
+                f"{label}: exact field-level evidence may now exist for {name}; "
+                "review and replace the missing-schema classification"
+            )
+    if seen != set(expected_anchors):
+        errors.append(
+            "advertising source schema requests differ from locked overview assets: "
+            f"missing={sorted(set(expected_anchors) - seen)}, "
+            f"extra={sorted(seen - set(expected_anchors))}"
+        )
+
+    by_name = {asset.get("source_asset"): asset for asset in assets if isinstance(asset, dict)}
+    bilibili = " ".join(by_name.get("ods_bilibill_df", {}).get("required_semantics", []))
+    if "bilibill_spelling" not in bilibili or "qualified_source" not in bilibili:
+        errors.append("Advertising Bilibili request must resolve the ambiguous source spelling")
+    toutiao_event = " ".join(by_name.get("ods_toutiaoevent_df", {}).get("required_semantics", []))
+    if "prohibition_on_inferring_conversion_order_or_payment" not in toutiao_event:
+        errors.append("Toutiao event name must not imply conversion, order or payment")
+    sina_click = " ".join(by_name.get("ods_xinlangclick_df", {}).get("required_semantics", []))
+    if "exclusion_of_conversion_order_payment_and_settlement_inference" not in sina_click:
+        errors.append("Sina click observations must not imply downstream business effects")
+    kafka = " ".join(by_name.get("ods_kafka_market_launch_label_di", {}).get("required_semantics", []))
+    for token in ("topic_partition_offset", "schema_registry", "replay_duplicate", "does_not_authorize"):
+        if token not in kafka:
+            errors.append(f"Advertising Kafka request must require {token} semantics")
+    return errors
+
+
+def advertising_disposition_status(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    contract = contract or load_advertising_source_schema_request()
+    expected_count = len(authoritative_ods_domain_assets(inventory, "广告"))
+    denominator = expected_count or 1
+    return {
+        "advertising_source_asset_count": expected_count,
+        "advertising_detailed_disposition_specified_count": 0,
+        "advertising_runtime_nonempty_reconciled_count": 0,
+        "advertising_final_disposition_verified_count": 0,
+        "advertising_detailed_disposition_percent": round(0.0 / denominator, 2),
+        "advertising_runtime_nonempty_reconciled_percent": round(0.0 / denominator, 2),
+        "advertising_final_disposition_verified_percent": round(0.0 / denominator, 2),
+    }
+
+
 def validate_engagement_source_dispositions(
     inventory: dict[str, Any], contract: dict[str, Any] | None = None
 ) -> list[str]:
@@ -4321,6 +4500,7 @@ def disposition_status(
     merchant_status = merchant_disposition_status(inventory)
     coupon_status = coupon_disposition_status(inventory)
     user_status = user_disposition_status(inventory)
+    advertising_status = advertising_disposition_status(inventory)
     engagement_status = engagement_disposition_status(inventory)
     compensation_status = compensation_disposition_status(inventory)
     ticket_status = ticket_disposition_status(inventory)
@@ -4335,6 +4515,7 @@ def disposition_status(
         + merchant_status["merchant_detailed_disposition_specified_count"]
         + coupon_status["coupon_detailed_disposition_specified_count"]
         + user_status["user_detailed_disposition_specified_count"]
+        + advertising_status["advertising_detailed_disposition_specified_count"]
         + engagement_status["engagement_detailed_disposition_specified_count"]
         + compensation_status["compensation_detailed_disposition_specified_count"]
         + ticket_status["ticket_detailed_disposition_specified_count"]
@@ -4350,6 +4531,7 @@ def disposition_status(
         + merchant_status["merchant_runtime_nonempty_reconciled_count"]
         + coupon_status["coupon_runtime_nonempty_reconciled_count"]
         + user_status["user_runtime_nonempty_reconciled_count"]
+        + advertising_status["advertising_runtime_nonempty_reconciled_count"]
         + engagement_status["engagement_runtime_nonempty_reconciled_count"]
         + compensation_status["compensation_runtime_nonempty_reconciled_count"]
         + ticket_status["ticket_runtime_nonempty_reconciled_count"]
@@ -4365,6 +4547,7 @@ def disposition_status(
         + merchant_status["merchant_final_disposition_verified_count"]
         + coupon_status["coupon_final_disposition_verified_count"]
         + user_status["user_final_disposition_verified_count"]
+        + advertising_status["advertising_final_disposition_verified_count"]
         + engagement_status["engagement_final_disposition_verified_count"]
         + compensation_status["compensation_final_disposition_verified_count"]
         + ticket_status["ticket_final_disposition_verified_count"]
@@ -4410,6 +4593,7 @@ def disposition_status(
         **merchant_status,
         **coupon_status,
         **user_status,
+        **advertising_status,
         **engagement_status,
         **compensation_status,
         **ticket_status,
@@ -4534,6 +4718,9 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"user={status['user_detailed_disposition_specified_count']}/"
         f"{status['user_source_asset_count']} "
         f"({status['user_detailed_disposition_percent']:.2f}%); "
+        f"advertising={status['advertising_detailed_disposition_specified_count']}/"
+        f"{status['advertising_source_asset_count']} "
+        f"({status['advertising_detailed_disposition_percent']:.2f}%); "
         f"engagement={status['engagement_detailed_disposition_specified_count']}/"
         f"{status['engagement_source_asset_count']} "
         f"({status['engagement_detailed_disposition_percent']:.2f}%); "
@@ -4578,6 +4765,9 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"user={status['user_runtime_nonempty_reconciled_count']}/"
         f"{status['user_source_asset_count']} "
         f"({status['user_runtime_nonempty_reconciled_percent']:.2f}%); "
+        f"advertising={status['advertising_runtime_nonempty_reconciled_count']}/"
+        f"{status['advertising_source_asset_count']} "
+        f"({status['advertising_runtime_nonempty_reconciled_percent']:.2f}%); "
         f"engagement={status['engagement_runtime_nonempty_reconciled_count']}/"
         f"{status['engagement_source_asset_count']} "
         f"({status['engagement_runtime_nonempty_reconciled_percent']:.2f}%); "
@@ -4615,6 +4805,8 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"{status['coupon_source_asset_count']}, "
         f"user={status['user_final_disposition_verified_count']}/"
         f"{status['user_source_asset_count']}, "
+        f"advertising={status['advertising_final_disposition_verified_count']}/"
+        f"{status['advertising_source_asset_count']}, "
         f"engagement={status['engagement_final_disposition_verified_count']}/"
         f"{status['engagement_source_asset_count']}, "
         f"compensation={status['compensation_final_disposition_verified_count']}/"
@@ -4649,6 +4841,7 @@ def main() -> int:
     errors.extend(validate_coupon_source_dispositions(inventory))
     errors.extend(validate_user_source_dispositions(inventory))
     errors.extend(validate_payment_source_schema_request(inventory))
+    errors.extend(validate_advertising_source_schema_request(inventory))
     errors.extend(validate_engagement_source_dispositions(inventory))
     errors.extend(validate_compensation_source_dispositions(inventory))
     errors.extend(validate_ticket_source_dispositions(inventory))

@@ -1,0 +1,191 @@
+{
+  "contract_version": 1,
+  "contract_id": "yshopping.advertising.source-schema-request.v1",
+  "source_scope": {
+    "domain": "广告",
+    "authoritative_document": "ODS语兴好物（y shopping）电商数据表.md",
+    "overview_lines": "206-212",
+    "authoritative_unique_asset_count": 7,
+    "requested_schema_asset_count": 7,
+    "status": "BLOCKED_MISSING_SOURCE_SCHEMA"
+  },
+  "delivery_requirements": {
+    "source_identity": [
+      "source_system",
+      "platform",
+      "advertiser_or_account_id",
+      "qualified_table_topic_or_api",
+      "owner",
+      "business_description",
+      "api_or_report_version"
+    ],
+    "schema": [
+      "full_create_table_ddl_or_versioned_event_schema",
+      "primary_or_business_event_key",
+      "tenant_account_campaign_ad_creative_keys",
+      "column_name_type_nullability_comment",
+      "unique_keys_and_cross_platform_mappings",
+      "event_metric_and_status_dictionaries"
+    ],
+    "change_semantics": [
+      "snapshot_report_or_event_mode",
+      "impression_click_conversion_and_ingestion_times",
+      "timezone",
+      "delete_correction_and_restated_report_behavior",
+      "cdc_watermark_api_cursor_or_kafka_offset",
+      "late_arrival_deduplication_and_replay_policy",
+      "schema_change_policy"
+    ],
+    "governance": [
+      "pii_device_cookie_ip_and_ad_identifier_classification",
+      "consent_and_processing_purpose",
+      "retention",
+      "freshness_slo",
+      "expected_volume",
+      "least_privilege_read_role",
+      "source_audit_attestation"
+    ],
+    "money_and_attribution": [
+      "iso_currency_and_minor_unit_precision",
+      "spend_bid_budget_fee_and_tax_definitions",
+      "billing_model_and_settlement_reference",
+      "attribution_model_window_and_version",
+      "impression_click_conversion_identity_chain",
+      "order_payment_and_refund_linkage",
+      "proof_that_attribution_never_self_authorizes_order_payment_or_settlement"
+    ],
+    "reconciliation": [
+      "complete_denominator_query",
+      "tenant_platform_account_partition_counts",
+      "stable_business_key_digest",
+      "impression_click_conversion_funnel_conservation",
+      "spend_currency_and_provider_bill_reconciliation",
+      "duplicate_orphan_and_unattributed_rules"
+    ]
+  },
+  "admission_policy": {
+    "overview_name_is_schema_evidence": false,
+    "platform_name_implies_event_grain": false,
+    "sampled_rows_are_final_evidence": false,
+    "empty_extract_is_evidence": false,
+    "click_or_impression_proves_conversion": false,
+    "attribution_proves_order_or_payment": false,
+    "spend_without_currency_or_settlement_is_accepted": false,
+    "raw_device_cookie_ip_or_platform_identifier_is_broadly_exposed": false,
+    "promotion_rule": "No Advertising asset may become a canonical placement or interaction source until its exact schema, event grain, identity chain, consent boundary, money semantics and attribution version are delivered and checksummed.",
+    "runtime_rule": "No Advertising asset may move to verified until non-empty production full-denominator reconciliation proves source counts, stable keys, funnel conservation, provider spend and cross-domain order/payment references without treating attribution as financial authority."
+  },
+  "implementation_refs": {
+    "backend_refs": [
+      "yudao-cloud/cloudmold-module-promotion/cloudmold-module-promotion-server/src/main/java/cn/iocoder/yudao/module/cloudmold/promotion/dal/dataobject/AdvertisingPlacementDO.java",
+      "yudao-cloud/cloudmold-module-promotion/cloudmold-module-promotion-server/src/main/java/cn/iocoder/yudao/module/cloudmold/promotion/dal/dataobject/AdvertisingInteractionDO.java"
+    ],
+    "lakehouse_refs": [
+      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-promotion-event.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-promotion-current.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-promotion-current.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-promotion-readiness.sql",
+      "useful-scripts/yml/yshopping-lakehouse/tests/sql/23-canonical-promotion-engagement-customer-service-contract.sql"
+    ]
+  },
+  "assets": [
+    {
+      "source_asset": "ods_bilibill_df",
+      "source_label": "哔哩哔哩",
+      "overview_line": 206,
+      "target_boundary": "Versioned Bilibili platform observation mapped to canonical Advertising Placement or Interaction only after the misspelled source name and exact report/event grain are resolved",
+      "required_semantics": [
+        "qualified_source_and_explicit_resolution_of_bilibill_spelling",
+        "api_report_version_account_campaign_ad_and_creative_identity",
+        "explicit_snapshot_report_or_impression_click_conversion_event_grain",
+        "event_stat_ingestion_times_timezone_and_restated_report_behavior",
+        "metric_status_and_attribution_dictionaries",
+        "consent_device_identifier_and_retention_boundary"
+      ]
+    },
+    {
+      "source_asset": "ods_media_bilibili_df",
+      "source_label": "哔哩哔哩媒",
+      "overview_line": 207,
+      "target_boundary": "Bilibili media-performance report separated from immutable user interactions; aggregates cannot be replayed as click or conversion events",
+      "required_semantics": [
+        "platform_account_campaign_ad_creative_and_stat_partition_keys",
+        "report_grain_dimensions_and_metric_additivity",
+        "impression_click_conversion_metric_definitions_and_invalid_traffic_rules",
+        "spend_fee_iso_currency_minor_unit_and_provider_bill_reference",
+        "report_timezone_refresh_cursor_and_correction_window",
+        "proof_that_aggregate_metrics_do_not_create_interaction_identity"
+      ]
+    },
+    {
+      "source_asset": "ods_kuaishou_df",
+      "source_label": "快手",
+      "overview_line": 208,
+      "target_boundary": "Versioned Kuaishou delivery report or event observation; platform naming alone grants no grain, conversion or settlement authority",
+      "required_semantics": [
+        "qualified_api_or_table_and_versioned_platform_account_identity",
+        "campaign_ad_group_ad_creative_and_placement_mapping_keys",
+        "explicit_report_snapshot_or_event_grain_with_business_key",
+        "impression_click_conversion_times_timezone_and_attribution_window",
+        "spend_bid_budget_fee_iso_currency_and_billing_model",
+        "deduplication_late_arrival_correction_and_provider_reconciliation"
+      ]
+    },
+    {
+      "source_asset": "ods_toutiaoevent_df",
+      "source_label": "头条",
+      "overview_line": 209,
+      "target_boundary": "Toutiao event observation requiring an explicit event dictionary; the table name does not prove impression, click, conversion, order or payment outcome",
+      "required_semantics": [
+        "provider_event_id_event_type_schema_version_and_business_key",
+        "account_campaign_ad_creative_and_placement_identity",
+        "separate_impression_click_conversion_event_definitions",
+        "event_client_server_and_ingestion_times_with_timezone",
+        "attribution_model_window_version_and_predecessor_event_chain",
+        "explicit_prohibition_on_inferring_conversion_order_or_payment_from_event_name"
+      ]
+    },
+    {
+      "source_asset": "ods_media_toutiao_df",
+      "source_label": "头条媒",
+      "overview_line": 210,
+      "target_boundary": "Toutiao media-performance snapshot kept separate from ods_toutiaoevent_df and from immutable canonical Advertising interactions",
+      "required_semantics": [
+        "qualified_report_endpoint_version_and_platform_account_identity",
+        "stat_date_campaign_ad_group_ad_creative_and_placement_grain",
+        "metric_additivity_invalid_traffic_and_estimated_metric_flags",
+        "spend_fee_tax_iso_currency_minor_unit_and_provider_bill_reference",
+        "refresh_cursor_timezone_restated_report_and_late_correction_policy",
+        "mapping_rule_to_events_without_fabricating_click_or_conversion_identity"
+      ]
+    },
+    {
+      "source_asset": "ods_xinlangclick_df",
+      "source_label": "新浪点击",
+      "overview_line": 211,
+      "target_boundary": "Sina click observation only; a click is not a conversion, order, payment or settlement fact",
+      "required_semantics": [
+        "click_id_request_id_platform_account_campaign_ad_and_creative_identity",
+        "click_event_server_ingestion_times_timezone_and_duplicate_rule",
+        "consented_pseudonymous_device_cookie_ip_and_ad_identifier_handling",
+        "landing_destination_and_catalog_or_listing_reference_without_raw_url_secrets",
+        "attribution_candidate_chain_model_window_and_version",
+        "explicit_exclusion_of_conversion_order_payment_and_settlement_inference"
+      ]
+    },
+    {
+      "source_asset": "ods_kafka_market_launch_label_di",
+      "source_label": "硬广点击日志表",
+      "overview_line": 212,
+      "target_boundary": "Kafka transport evidence for hard-ad click observations; topic delivery, launch labels and replay never become attribution or business-effect authority",
+      "required_semantics": [
+        "topic_partition_offset_message_key_schema_registry_subject_and_version",
+        "launch_label_ad_placement_creative_click_and_request_identity",
+        "event_producer_broker_ingestion_times_and_timezone",
+        "consumer_group_replay_duplicate_tombstone_and_late_arrival_semantics",
+        "consent_pseudonymous_identifier_classification_retention_and_access",
+        "proof_that_kafka_delivery_or_label_does_not_authorize_conversion_order_payment_or_settlement"
+      ]
+    }
+  ]
+}

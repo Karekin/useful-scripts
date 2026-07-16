@@ -187,6 +187,17 @@ JSON, alert text, identities and model conclusions remain restricted; rules and
 taxonomies are immutable versions, alerts and model attempts append, and model
 scores or cluster membership cannot directly block users, refund money or
 change commerce state. Runtime and final verification remain zero.
+The Advertising overview contains seven assets and none has a same-name
+field-level definition anywhere in the six source documents. A locked schema
+request therefore keeps all seven at `BLOCKED_MISSING_SOURCE_SCHEMA` and
+requires exact platform/account identity, report-versus-event grain, event and
+stat times, privacy/consent handling, money/currency, versioned attribution and
+full-denominator reconciliation before promotion. The existing canonical
+Advertising Placement/Interaction implementation is only a target boundary,
+not source-schema evidence. A platform or table name cannot prove impression,
+click or conversion grain; clicks and attribution cannot prove Order, Payment
+or settlement effects. Advertising receives 0/7 detailed, runtime and final
+credit, so the global governed numerator remains 129/718 (17.97%).
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%
