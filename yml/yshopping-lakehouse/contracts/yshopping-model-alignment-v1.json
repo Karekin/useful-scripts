@@ -7,6 +7,12 @@
     "baseline_floor_percent": 95.24,
     "description": "Across non-deferred backend and lakehouse surfaces, verified/partial=1, legacy_only=0.5 and missing=0. Existing refs and explicit gaps remain mandatory, so status-only promotion cannot pass validation."
   },
+  "semantic_completion_score": {
+    "method": "verified_surface_v1",
+    "target_percent": 100.0,
+    "description": "Strict completion includes all declared backend and lakehouse surfaces, including deferred work. Only verified surfaces with no open gaps earn credit; partial, legacy_only, missing and deferred earn zero. This is the authoritative completion gate for 100% governed semantic alignment."
+  },
+  "semantic_completion_evidence": [],
   "source_documents": [
     {
       "filename": "语兴好物（y shopping）-电商数仓搭建.md",

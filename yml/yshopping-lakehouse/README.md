@@ -55,9 +55,26 @@ contexts: Merchant/Shop/Identity, Warehouse/Location, production-pilot
 admission and inventory shadow verification. It rejects source
 drift, duplicate authorities, cross-system ID equivalence, incomplete
 tenant-scoped keys, ungoverned PII or money, missing lakehouse layers, missing
-event evidence and drift from the current 130 SQL files/129 model objects. A
+event evidence and drift from the current 154 SQL files/207 model objects. A
 `missing`, `legacy_only` or `partial` status is an explicit open gate, not proof
 of complete alignment.
+
+`./scripts/lakehousectl source-assets` runs the stricter source inventory used
+for the 100% governed-semantic-alignment program. The locked snapshot contains
+718 distinct layer-prefixed names and 752 `FROM`/`JOIN` occurrences across all
+six documents. The inventory preserves both the layer declared by a name and
+the document layer where it occurs; it classifies references as physical tables,
+CTEs, Python imports, code symbols or unresolved prose instead of treating every
+match as a table. Duplicate and wrong-layer occurrences retain their line and
+heading context, and statement-like lines that still require manual disposition
+are reported separately. The inventory is evidence input only: it never executes
+or silently repairs prototype SQL. Every listed asset and every unparsed statement
+must eventually receive an explicit semantic decision before 100% can be claimed.
+`./scripts/lakehousectl semantic-status` reports the authoritative completion
+score: all 22 declared units and both backend/lakehouse surfaces stay in the
+denominator, and only gap-free `verified` surfaces earn credit. The older 95.24%
+surface score remains useful for structural presence, but it is not a completion
+gate and does not credit the 100% objective.
 
 The models intentionally call `erp_product` an ERP projection. Canonical apparel
 SPU/SKU is sourced from the Mall catalog through a separate Catalog CDC job;

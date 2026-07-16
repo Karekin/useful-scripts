@@ -43,6 +43,7 @@ INVARIANT_KINDS = {
 }
 CORRECTION_DECISIONS = {"split", "correct", "normalize", "reject", "secure", "new"}
 SIMILARITY_METHOD = "surface_coverage_v1"
+SEMANTIC_COMPLETION_METHOD = "verified_surface_v1"
 SIMILARITY_STATUS_WEIGHTS = {
     "verified": 1.0,
     "partial": 1.0,
@@ -305,6 +306,230 @@ def validate_similarity_score(manifest: dict[str, Any]) -> list[str]:
             "similarity_score: "
             f"{score['overall_percent']:.2f}% is below baseline floor {float(floor):.2f}%"
         )
+    return errors
+
+
+def semantic_evidence_sides(evidence: Any) -> dict[str, bool]:
+    if not isinstance(evidence, dict):
+        return {"backend": False, "lakehouse": False}
+    shared_ready = (
+        isinstance(evidence.get("source_asset_ledger_ref"), str)
+        and bool(evidence.get("source_asset_ledger_ref"))
+        and isinstance(evidence.get("decision_context_refs"), list)
+        and bool(evidence.get("decision_context_refs"))
+        and isinstance(evidence.get("open_gaps"), list)
+        and not evidence.get("open_gaps")
+    )
+    backend = evidence.get("backend")
+    backend_ready = shared_ready and isinstance(backend, dict) and all(
+        isinstance(backend.get(key), list) and bool(backend.get(key))
+        for key in (
+            "authority_refs",
+            "contract_refs",
+            "verification_refs",
+            "non_empty_reconciliation_refs",
+        )
+    )
+    lakehouse = evidence.get("lakehouse")
+    layer_refs = lakehouse.get("layer_refs") if isinstance(lakehouse, dict) else None
+    lakehouse_ready = (
+        shared_ready
+        and isinstance(lakehouse, dict)
+        and isinstance(layer_refs, dict)
+        and set(layer_refs) == REQUIRED_LAYERS
+        and all(isinstance(refs, list) and refs for refs in layer_refs.values())
+        and all(
+            isinstance(lakehouse.get(key), list) and bool(lakehouse.get(key))
+            for key in (
+                "history_policy_refs",
+                "delete_policy_refs",
+                "dqc_refs",
+                "non_empty_reconciliation_refs",
+            )
+        )
+    )
+    return {"backend": bool(backend_ready), "lakehouse": bool(lakehouse_ready)}
+
+
+def _validate_ref_list(value: Any, label: str, workspace_root: Path) -> list[str]:
+    if not isinstance(value, list) or not value or any(
+        not isinstance(item, str) or not item for item in value
+    ):
+        return [f"{label}: requires a non-empty list of paths"]
+    return [
+        f"{label}: missing {ref}"
+        for ref in value
+        if not resolve_project_path(ref, workspace_root).exists()
+    ]
+
+
+def validate_semantic_completion_evidence(
+    manifest: dict[str, Any], workspace_root: Path = WORKSPACE_ROOT
+) -> list[str]:
+    evidence_list = manifest.get("semantic_completion_evidence")
+    if not isinstance(evidence_list, list):
+        return ["semantic_completion_evidence: must be a list"]
+    errors: list[str] = []
+    unit_ids = {
+        item.get("id")
+        for item in manifest.get("alignment_units", [])
+        if isinstance(item, dict)
+    }
+    context_ids = {
+        item.get("id")
+        for item in manifest.get("detailed_alignment", {}).get("contexts", [])
+        if isinstance(item, dict)
+    }
+    seen: set[str] = set()
+    for index, evidence in enumerate(evidence_list):
+        label = f"semantic_completion_evidence[{index}]"
+        if not isinstance(evidence, dict):
+            errors.append(f"{label}: must be an object")
+            continue
+        unit_id = evidence.get("unit_id")
+        if unit_id not in unit_ids:
+            errors.append(f"{label}.unit_id: unknown {unit_id}")
+        elif unit_id in seen:
+            errors.append(f"{label}.unit_id: duplicate {unit_id}")
+        else:
+            seen.add(str(unit_id))
+        ledger_ref = evidence.get("source_asset_ledger_ref")
+        if not isinstance(ledger_ref, str) or not ledger_ref:
+            errors.append(f"{label}.source_asset_ledger_ref: required")
+        elif not resolve_project_path(ledger_ref, workspace_root).is_file():
+            errors.append(f"{label}.source_asset_ledger_ref: missing {ledger_ref}")
+        decision_refs = evidence.get("decision_context_refs")
+        if not isinstance(decision_refs, list) or not decision_refs:
+            errors.append(f"{label}.decision_context_refs: requires context ids")
+        else:
+            unknown = sorted(set(decision_refs) - context_ids)
+            if unknown:
+                errors.append(f"{label}.decision_context_refs: unknown {unknown}")
+        if evidence.get("open_gaps") != []:
+            errors.append(f"{label}.open_gaps: completion evidence requires an empty list")
+
+        backend = evidence.get("backend")
+        if not isinstance(backend, dict):
+            errors.append(f"{label}.backend: required")
+        else:
+            for key in (
+                "authority_refs",
+                "contract_refs",
+                "verification_refs",
+                "non_empty_reconciliation_refs",
+            ):
+                errors.extend(_validate_ref_list(backend.get(key), f"{label}.backend.{key}", workspace_root))
+
+        lakehouse = evidence.get("lakehouse")
+        if not isinstance(lakehouse, dict):
+            errors.append(f"{label}.lakehouse: required")
+        else:
+            layers = lakehouse.get("layer_refs")
+            if not isinstance(layers, dict) or set(layers) != REQUIRED_LAYERS:
+                errors.append(f"{label}.lakehouse.layer_refs: expected exactly {sorted(REQUIRED_LAYERS)}")
+            else:
+                for layer, refs in layers.items():
+                    errors.extend(
+                        _validate_ref_list(refs, f"{label}.lakehouse.layer_refs.{layer}", workspace_root)
+                    )
+            for key in (
+                "history_policy_refs",
+                "delete_policy_refs",
+                "dqc_refs",
+                "non_empty_reconciliation_refs",
+            ):
+                errors.extend(_validate_ref_list(lakehouse.get(key), f"{label}.lakehouse.{key}", workspace_root))
+        readiness = semantic_evidence_sides(evidence)
+        if not all(readiness.values()):
+            errors.append(f"{label}: incomplete backend/lakehouse completion evidence")
+    return errors
+
+
+def calculate_semantic_completion_score(manifest: dict[str, Any]) -> dict[str, Any]:
+    """Measure strict completion; only gap-free verified surfaces earn credit."""
+    earned_by_side = {"backend": 0, "lakehouse": 0}
+    eligible_by_side = {"backend": 0, "lakehouse": 0}
+    complete_units = 0
+    unit_scores: list[dict[str, Any]] = []
+    units = manifest.get("alignment_units", [])
+    evidence_by_unit = {
+        item.get("unit_id"): semantic_evidence_sides(item)
+        for item in manifest.get("semantic_completion_evidence", [])
+        if isinstance(item, dict)
+    }
+    if not isinstance(units, list):
+        units = []
+    for unit in units:
+        if not isinstance(unit, dict):
+            continue
+        statuses: dict[str, Any] = {}
+        verified: dict[str, bool] = {}
+        for side in ("backend", "lakehouse"):
+            eligible_by_side[side] += 1
+            surface = unit.get(side, {})
+            status = surface.get("status") if isinstance(surface, dict) else None
+            gaps = surface.get("gaps", []) if isinstance(surface, dict) else []
+            evidence_ready = evidence_by_unit.get(unit.get("id"), {}).get(side, False)
+            is_verified = (
+                status == "verified"
+                and isinstance(gaps, list)
+                and not gaps
+                and evidence_ready
+            )
+            statuses[side] = status
+            verified[side] = is_verified
+            if is_verified:
+                earned_by_side[side] += 1
+        unit_complete = verified["backend"] and verified["lakehouse"]
+        if unit_complete:
+            complete_units += 1
+        unit_scores.append(
+            {
+                "id": unit.get("id"),
+                "backend_status": statuses["backend"],
+                "lakehouse_status": statuses["lakehouse"],
+                "backend_verified": verified["backend"],
+                "lakehouse_verified": verified["lakehouse"],
+                "completion_evidence_present": unit.get("id") in evidence_by_unit,
+                "unit_complete": unit_complete,
+            }
+        )
+
+    def percent(earned: int, eligible: int) -> float:
+        return round(earned * 100.0 / eligible, 2) if eligible else 0.0
+
+    eligible_total = sum(eligible_by_side.values())
+    earned_total = sum(earned_by_side.values())
+    config = manifest.get("semantic_completion_score", {})
+    target = config.get("target_percent") if isinstance(config, dict) else None
+    overall = percent(earned_total, eligible_total)
+    return {
+        "method": SEMANTIC_COMPLETION_METHOD,
+        "overall_percent": overall,
+        "backend_percent": percent(earned_by_side["backend"], eligible_by_side["backend"]),
+        "lakehouse_percent": percent(earned_by_side["lakehouse"], eligible_by_side["lakehouse"]),
+        "verified_surface_count": earned_total,
+        "required_surface_count": eligible_total,
+        "complete_unit_count": complete_units,
+        "required_unit_count": len(unit_scores),
+        "target_percent": target,
+        "target_met": isinstance(target, (int, float)) and overall >= float(target),
+        "unit_scores": unit_scores,
+    }
+
+
+def validate_semantic_completion_score(manifest: dict[str, Any]) -> list[str]:
+    config = manifest.get("semantic_completion_score")
+    if not isinstance(config, dict):
+        return ["semantic_completion_score: required"]
+    errors: list[str] = []
+    if config.get("method") != SEMANTIC_COMPLETION_METHOD:
+        errors.append(
+            f"semantic_completion_score.method: expected {SEMANTIC_COMPLETION_METHOD}"
+        )
+    target = config.get("target_percent")
+    if not isinstance(target, (int, float)) or float(target) != 100.0:
+        errors.append("semantic_completion_score.target_percent: expected exactly 100")
     return errors
 
 
@@ -760,10 +985,13 @@ def validate_all(
     errors.extend(validate_asset_baseline(manifest, workspace_root / "useful-scripts/yml/yshopping-lakehouse"))
     errors.extend(validate_units(manifest, workspace_root))
     errors.extend(validate_similarity_score(manifest))
+    errors.extend(validate_semantic_completion_score(manifest))
     errors.extend(validate_detailed_alignment(manifest, reference_root, workspace_root))
+    errors.extend(validate_semantic_completion_evidence(manifest, workspace_root))
     if errors:
         raise AlignmentError("\n".join(errors))
     score = calculate_similarity_score(manifest)
+    completion = calculate_semantic_completion_score(manifest)
     print(
         "alignment valid: "
         f"{len(manifest['source_documents'])} source documents, "
@@ -771,19 +999,32 @@ def validate_all(
         f"{len(manifest['detailed_alignment']['contexts'])} detailed contexts, "
         f"{manifest['prototype_asset_baseline']['totals']['candidate_names']} prototype candidates, "
         f"{manifest['prototype_asset_baseline']['current_model_sql_files']} current SQL files, "
-        f"similarity {score['overall_percent']:.2f}% / target {score['target_percent']:.2f}%"
+        f"structural similarity {score['overall_percent']:.2f}% / target {score['target_percent']:.2f}%, "
+        f"strict semantic completion {completion['overall_percent']:.2f}% / target "
+        f"{completion['target_percent']:.2f}%"
     )
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=["validate", "score"])
+    parser.add_argument(
+        "command", choices=["validate", "score", "semantic-score", "semantic-gate"]
+    )
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--reference-root", type=Path, default=REFERENCE_ROOT)
     args = parser.parse_args()
     if args.command == "score":
         manifest = load(args.manifest)
         print(json.dumps(calculate_similarity_score(manifest), ensure_ascii=False, indent=2))
+    elif args.command in {"semantic-score", "semantic-gate"}:
+        manifest = load(args.manifest)
+        score = calculate_semantic_completion_score(manifest)
+        print(json.dumps(score, ensure_ascii=False, indent=2))
+        if args.command == "semantic-gate" and not score["target_met"]:
+            raise AlignmentError(
+                "strict governed semantic alignment is incomplete: "
+                f"{score['overall_percent']:.2f}% < {score['target_percent']:.2f}%"
+            )
     else:
         validate_all(args.manifest, args.reference_root)
     return 0

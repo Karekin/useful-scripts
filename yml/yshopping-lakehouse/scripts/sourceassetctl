@@ -1,0 +1,587 @@
+#!/usr/bin/env python3
+"""Inventory every SQL-shaped Y-Shopping source asset without executing prototype SQL.
+
+The source documents mix several SQL dialects, prose, duplicated targets and known
+mistakes.  This tool deliberately records what the documents say, including the
+document layer and heading context, so a separate semantic-coverage contract can
+decide whether each asset is reused, renamed, split, corrected or rejected.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import re
+import sys
+from collections import Counter, defaultdict
+from pathlib import Path
+from typing import Any, Iterable
+
+
+ROOT = Path(__file__).resolve().parents[1]
+ALIGNMENT_MANIFEST = ROOT / "contracts" / "yshopping-model-alignment-v1.json"
+DEFAULT_REFERENCE_ROOT = Path(
+    "/Users/karekin/Library/Mobile Documents/iCloud~md~obsidian/Documents/project/"
+    "语兴好物（y shopping）-电商数仓搭建"
+)
+
+LAYER_DOCUMENTS = {
+    "MAIN": "语兴好物（y shopping）-电商数仓搭建.md",
+    "ODS": "ODS语兴好物（y shopping）电商数据表.md",
+    "DIM": "DIM语兴好物（y shopping）电商数据表.md",
+    "DWD_DWM": "DWD_DWM语兴好物（y shopping）电商数据表.md",
+    "DWS": "DWS语兴好物（y shopping）电商数据表.md",
+    "ADS": "ADS语兴好物（y shopping）电商数据表.md",
+}
+
+IDENTIFIER = r"(?:[`\"]?[A-Za-z_][A-Za-z0-9_$-]*[`\"]?\s*\.\s*)*[`\"]?[A-Za-z_][A-Za-z0-9_$-]*[`\"]?"
+CREATE_PATTERN = re.compile(
+    rf"\bCREATE\s+(?:OR\s+REPLACE\s+)?(?:EXTERNAL\s+)?"
+    rf"(?P<object_type>TABLE|VIEW)\s+(?:IF\s+NOT\s+EXISTS\s+)?"
+    rf"(?P<identifier>{IDENTIFIER})(?=\s*(?:\(|$))",
+    re.IGNORECASE,
+)
+INSERT_PATTERN = re.compile(
+    rf"\bINSERT\s+(?:INTO|OVERWRITE)(?:\s+TABLE)?\s+(?P<identifier>{IDENTIFIER})",
+    re.IGNORECASE,
+)
+DEPENDENCY_PATTERN = re.compile(
+    rf"\b(?P<relation>FROM|JOIN)\s+(?P<identifier>{IDENTIFIER})",
+    re.IGNORECASE,
+)
+CTE_PATTERN = re.compile(
+    r"(?:\bWITH|,)\s*(?P<identifier>[A-Za-z_][A-Za-z0-9_$-]*)\s+AS\s*\(",
+    re.IGNORECASE,
+)
+CTE_ALIAS_LINE_PATTERN = re.compile(
+    r"^\s*,?\s*(?P<identifier>[A-Za-z_][A-Za-z0-9_$-]*)\s+AS\s*\(",
+    re.IGNORECASE,
+)
+PYTHON_IMPORT_PATTERN = re.compile(
+    r"^\s*from\s+(?P<identifier>[A-Za-z_][A-Za-z0-9_.]*)\s+import\b",
+    re.IGNORECASE,
+)
+CANDIDATE_PATTERN = re.compile(
+    r"\b(?:ods|dim|dwd|dwm|dws|ads)_[a-z_][a-z0-9_]*",
+    re.IGNORECASE,
+)
+HEADING_PATTERN = re.compile(r"^(?P<marks>#{1,6})\s+(?P<title>.+?)\s*$")
+STATEMENT_HINT_PATTERN = re.compile(
+    r"\b(?:CREATE\s+(?:OR\s+REPLACE\s+)?(?:EXTERNAL\s+)?(?:TABLE|VIEW)|"
+    r"INSERT\s+(?:INTO|OVERWRITE))\b",
+    re.IGNORECASE,
+)
+
+
+class SourceAssetError(RuntimeError):
+    pass
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def normalize_identifier(raw: str) -> tuple[str, str]:
+    parts = [part.strip().strip("`\"").lower() for part in re.split(r"\s*\.\s*", raw)]
+    qualified = ".".join(part for part in parts if part)
+    if not qualified:
+        raise SourceAssetError(f"empty identifier from {raw!r}")
+    return qualified, qualified.rsplit(".", 1)[-1]
+
+
+def declared_layer(normalized_name: str) -> str | None:
+    """Return the layer declared by an object's name, independent of its document."""
+    prefix = normalized_name.split("_", 1)[0]
+    return {
+        "ods": "ODS",
+        "dim": "DIM",
+        "dwd": "DWD_DWM",
+        "dwm": "DWD_DWM",
+        "dws": "DWS",
+        "ads": "ADS",
+    }.get(prefix)
+
+
+def load_alignment_manifest(path: Path = ALIGNMENT_MANIFEST) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SourceAssetError(f"cannot load alignment manifest {path}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise SourceAssetError(f"{path}: root must be an object")
+    return value
+
+
+def _heading_path(headings: dict[int, str]) -> list[str]:
+    return [headings[level] for level in sorted(headings)]
+
+
+def _asset_id(layer: str, kind: str, normalized_name: str) -> str:
+    return f"{layer.lower()}:{kind}:{normalized_name}"
+
+
+def _occurrence(
+    *,
+    filename: str,
+    line_number: int,
+    raw_identifier: str,
+    qualified_name: str,
+    document_layer: str,
+    headings: dict[int, str],
+    relation: str | None = None,
+    object_type: str | None = None,
+    reference_kind: str | None = None,
+) -> dict[str, Any]:
+    value: dict[str, Any] = {
+        "document": filename,
+        "line": line_number,
+        "raw_identifier": raw_identifier,
+        "qualified_name": qualified_name,
+        "document_layer": document_layer,
+        "heading_path": _heading_path(headings),
+    }
+    if relation:
+        value["relation"] = relation.upper()
+    if object_type:
+        value["object_type"] = object_type.upper()
+    if reference_kind:
+        value["reference_kind"] = reference_kind
+    return value
+
+
+def _record_asset(
+    assets: dict[str, dict[str, Any]],
+    *,
+    document_layer: str,
+    kind: str,
+    normalized_name: str,
+    occurrence: dict[str, Any],
+) -> None:
+    name_layer = declared_layer(normalized_name)
+    semantic_layer = name_layer or document_layer
+    asset_id = _asset_id(semantic_layer, kind, normalized_name)
+    asset = assets.setdefault(
+        asset_id,
+        {
+            "asset_id": asset_id,
+            "layer": semantic_layer,
+            "declared_layer": name_layer,
+            "document_layers": [],
+            "kind": kind,
+            "normalized_name": normalized_name,
+            "occurrences": [],
+        },
+    )
+    if document_layer not in asset["document_layers"]:
+        asset["document_layers"].append(document_layer)
+    if (
+        name_layer
+        and document_layer not in {name_layer, "MAIN"}
+        and kind in {"create_target", "insert_target"}
+    ):
+        risk = f"wrong_layer_{'create' if kind == 'create_target' else 'insert'}"
+        occurrence.setdefault("risk_flags", []).append(risk)
+    asset["occurrences"].append(occurrence)
+
+
+def extract_inventory(reference_root: Path = DEFAULT_REFERENCE_ROOT) -> dict[str, Any]:
+    assets: dict[str, dict[str, Any]] = {}
+    documents: list[dict[str, Any]] = []
+    topics: list[dict[str, Any]] = []
+    references: list[dict[str, Any]] = []
+    unparsed_statement_lines: list[dict[str, Any]] = []
+
+    for layer, filename in LAYER_DOCUMENTS.items():
+        path = reference_root / filename
+        if not path.is_file():
+            raise SourceAssetError(f"missing source document {path}")
+        lines = path.read_text(encoding="utf-8").splitlines()
+        documents.append(
+            {
+                "layer": layer,
+                "filename": filename,
+                "sha256": sha256(path),
+                "line_count": len(lines),
+            }
+        )
+        headings: dict[int, str] = {}
+        in_fence = False
+        fence_marker: str | None = None
+        fence_language = ""
+        cte_aliases: set[str] = set()
+        for line_number, line in enumerate(lines, start=1):
+            stripped = line.lstrip()
+            opening_marker = "```" if stripped.startswith("```") else "~~~" if stripped.startswith("~~~") else None
+            if opening_marker:
+                if not in_fence:
+                    in_fence = True
+                    fence_marker = opening_marker
+                    fence_language = stripped[len(opening_marker) :].strip().lower().split(maxsplit=1)[0] if stripped[len(opening_marker) :].strip() else ""
+                    cte_aliases = set()
+                elif opening_marker == fence_marker:
+                    in_fence = False
+                    fence_marker = None
+                    fence_language = ""
+                    cte_aliases = set()
+            heading = None if in_fence else HEADING_PATTERN.match(line)
+            if heading:
+                level = len(heading.group("marks"))
+                headings = {key: value for key, value in headings.items() if key < level}
+                headings[level] = heading.group("title").strip()
+                topics.append(
+                    {
+                        "topic_id": f"{layer.lower()}:heading:{line_number}",
+                        "layer": layer,
+                        "document": filename,
+                        "line": line_number,
+                        "level": level,
+                        "title": headings[level],
+                        "heading_path": _heading_path(headings),
+                    }
+                )
+
+            # Markdown bold markers occasionally appear inside a quoted SQL
+            # identifier.  They are presentation syntax, not part of the name.
+            searchable_line = line.replace("**", "")
+            parsed_statement = False
+            for match in CREATE_PATTERN.finditer(searchable_line):
+                parsed_statement = True
+                raw = match.group("identifier")
+                qualified, normalized = normalize_identifier(raw)
+                kind = "create_target"
+                _record_asset(
+                    assets,
+                    document_layer=layer,
+                    kind=kind,
+                    normalized_name=normalized,
+                    occurrence=
+                    _occurrence(
+                        filename=filename,
+                        line_number=line_number,
+                        raw_identifier=raw,
+                        qualified_name=qualified,
+                        document_layer=layer,
+                        headings=headings,
+                        object_type=match.group("object_type"),
+                    ),
+                )
+
+            for match in INSERT_PATTERN.finditer(searchable_line):
+                parsed_statement = True
+                raw = match.group("identifier")
+                qualified, normalized = normalize_identifier(raw)
+                kind = "insert_target"
+                _record_asset(
+                    assets,
+                    document_layer=layer,
+                    kind=kind,
+                    normalized_name=normalized,
+                    occurrence=
+                    _occurrence(
+                        filename=filename,
+                        line_number=line_number,
+                        raw_identifier=raw,
+                        qualified_name=qualified,
+                        document_layer=layer,
+                        headings=headings,
+                    ),
+                )
+
+            is_sql_fence = in_fence and fence_language in {
+                "sql",
+                "hql",
+                "hive",
+                "flinksql",
+                "mysql",
+                "starrocks",
+            }
+            if is_sql_fence:
+                cte_aliases.update(
+                    match.group("identifier").lower()
+                    for match in CTE_PATTERN.finditer(searchable_line)
+                )
+                alias_match = CTE_ALIAS_LINE_PATTERN.match(searchable_line)
+                if alias_match:
+                    cte_aliases.add(alias_match.group("identifier").lower())
+
+            python_import = PYTHON_IMPORT_PATTERN.match(searchable_line)
+            for match in DEPENDENCY_PATTERN.finditer(searchable_line):
+                raw = match.group("identifier")
+                qualified, normalized = normalize_identifier(raw)
+                if is_sql_fence:
+                    reference_kind = (
+                        "cte" if "." not in qualified and normalized in cte_aliases else "physical_table"
+                    )
+                elif python_import and match.start() == python_import.start():
+                    reference_kind = "python_import"
+                elif in_fence:
+                    reference_kind = "code_symbol"
+                else:
+                    reference_kind = "unclassified_reference"
+                reference = _occurrence(
+                    filename=filename,
+                    line_number=line_number,
+                    raw_identifier=raw,
+                    qualified_name=qualified,
+                    document_layer=layer,
+                    headings=headings,
+                    relation=match.group("relation"),
+                    reference_kind=reference_kind,
+                )
+                references.append(reference)
+                if reference_kind == "physical_table":
+                    _record_asset(
+                        assets,
+                        document_layer=layer,
+                        kind="dependency",
+                        normalized_name=normalized,
+                        occurrence=reference,
+                    )
+
+            candidate_line = searchable_line.replace("\\_", "_").replace("\\.", ".")
+            for match in CANDIDATE_PATTERN.finditer(candidate_line):
+                raw = match.group(0)
+                qualified, normalized = normalize_identifier(raw)
+                kind = "candidate"
+                occurrence = _occurrence(
+                    filename=filename,
+                    line_number=line_number,
+                    raw_identifier=raw,
+                    qualified_name=qualified,
+                    document_layer=layer,
+                    headings=headings,
+                )
+                suffix = normalized.split("_", 1)[1]
+                if not suffix.strip("_"):
+                    occurrence["reference_kind"] = "placeholder"
+                    occurrence["risk_flags"] = ["placeholder_identifier"]
+                name_layer = declared_layer(normalized) or layer
+                asset_id = _asset_id(name_layer, kind, normalized)
+                existing = assets.get(asset_id)
+                if existing is None or not any(
+                    item["document"] == filename and item["line"] == line_number
+                    for item in existing["occurrences"]
+                ):
+                    _record_asset(
+                        assets,
+                        document_layer=layer,
+                        kind=kind,
+                        normalized_name=normalized,
+                        occurrence=occurrence,
+                    )
+
+            if STATEMENT_HINT_PATTERN.search(line) and not parsed_statement:
+                unparsed_statement_lines.append(
+                    {
+                        "layer": layer,
+                        "document": filename,
+                        "line": line_number,
+                        "text": line.strip(),
+                        "heading_path": _heading_path(headings),
+                    }
+                )
+
+    sorted_assets = sorted(assets.values(), key=lambda item: item["asset_id"])
+    for asset in sorted_assets:
+        asset["document_layers"].sort()
+        asset["occurrences"].sort(key=lambda item: (item["document"], item["line"]))
+
+    logical_by_id: dict[str, dict[str, Any]] = {}
+    for asset in sorted_assets:
+        logical_id = f"{asset['layer'].lower()}:object:{asset['normalized_name']}"
+        logical = logical_by_id.setdefault(
+            logical_id,
+            {
+                "logical_asset_id": logical_id,
+                "layer": asset["layer"],
+                "declared_layer": asset["declared_layer"],
+                "document_layers": [],
+                "normalized_name": asset["normalized_name"],
+                "roles": [],
+                "occurrences": [],
+            },
+        )
+        logical["roles"].append(asset["kind"])
+        logical["document_layers"].extend(asset["document_layers"])
+        for occurrence in asset["occurrences"]:
+            logical_occurrence = {"role": asset["kind"], **occurrence}
+            key = (
+                logical_occurrence["role"],
+                logical_occurrence["document"],
+                logical_occurrence["line"],
+                logical_occurrence["qualified_name"],
+            )
+            existing_keys = {
+                (item["role"], item["document"], item["line"], item["qualified_name"])
+                for item in logical["occurrences"]
+            }
+            if key not in existing_keys:
+                logical["occurrences"].append(logical_occurrence)
+    logical_assets = sorted(logical_by_id.values(), key=lambda item: item["logical_asset_id"])
+    for logical in logical_assets:
+        logical["roles"] = sorted(set(logical["roles"]))
+        logical["document_layers"] = sorted(set(logical["document_layers"]))
+        logical["occurrences"].sort(
+            key=lambda item: (item["document"], item["line"], item["role"])
+        )
+
+    by_kind = Counter(item["kind"] for item in sorted_assets)
+    references.sort(key=lambda item: (item["document"], item["line"], item["qualified_name"]))
+    references_by_kind = Counter(item["reference_kind"] for item in references)
+    by_layer_kind: dict[str, Counter[str]] = defaultdict(Counter)
+    occurrence_by_kind: Counter[str] = Counter()
+    for item in sorted_assets:
+        by_layer_kind[item["layer"]][item["kind"]] += 1
+        occurrence_by_kind[item["kind"]] += len(item["occurrences"])
+
+    document_role_keys: set[tuple[str, str, str]] = set()
+    for item in sorted_assets:
+        if item["kind"] == "dependency":
+            continue
+        for occurrence in item["occurrences"]:
+            document_role_keys.add(
+                (occurrence["document_layer"], item["kind"], item["normalized_name"])
+            )
+    for reference in references:
+        document_role_keys.add(
+            (
+                reference["document_layer"],
+                "dependency",
+                normalize_identifier(reference["raw_identifier"])[1],
+            )
+        )
+    document_role_by_kind = Counter(kind for _, kind, _ in document_role_keys)
+
+    return {
+        "inventory_version": 1,
+        "reference_root": str(reference_root),
+        "documents": documents,
+        "summary": {
+            "unique_asset_count": len(sorted_assets),
+            "unique_logical_asset_count": len(logical_assets),
+            "global_unique_name_count": len(
+                {item["normalized_name"] for item in logical_assets}
+            ),
+            "unique_by_kind": dict(sorted(by_kind.items())),
+            "document_role_unique_count": len(document_role_keys),
+            "document_role_unique_by_kind": dict(sorted(document_role_by_kind.items())),
+            "occurrences_by_kind": dict(sorted(occurrence_by_kind.items())),
+            "reference_occurrence_count": len(references),
+            "references_by_kind": dict(sorted(references_by_kind.items())),
+            "unique_by_layer_and_kind": {
+                layer: dict(sorted(values.items()))
+                for layer, values in sorted(by_layer_kind.items())
+            },
+            "topic_count": len(topics),
+            "unparsed_statement_line_count": len(unparsed_statement_lines),
+        },
+        "assets": sorted_assets,
+        "logical_assets": logical_assets,
+        "topics": topics,
+        "references": references,
+        "unparsed_statement_lines": unparsed_statement_lines,
+    }
+
+
+def validate_inventory(
+    inventory: dict[str, Any],
+    manifest: dict[str, Any] | None = None,
+) -> list[str]:
+    errors: list[str] = []
+    manifest = manifest or load_alignment_manifest()
+    expected_documents = {
+        item.get("filename"): item
+        for item in manifest.get("source_documents", [])
+        if isinstance(item, dict)
+    }
+    actual_documents = {item["filename"]: item for item in inventory["documents"]}
+    if set(actual_documents) != set(expected_documents):
+        errors.append(
+            "source documents differ from alignment contract: "
+            f"actual={sorted(actual_documents)}, expected={sorted(expected_documents)}"
+        )
+    for filename, expected in expected_documents.items():
+        actual = actual_documents.get(filename)
+        if actual is None:
+            continue
+        if actual["sha256"] != expected.get("sha256"):
+            errors.append(f"source drift detected for {filename}")
+        if actual["line_count"] != expected.get("line_count"):
+            errors.append(f"line count changed for {filename}")
+
+    asset_ids = [item["asset_id"] for item in inventory["assets"]]
+    if len(asset_ids) != len(set(asset_ids)):
+        errors.append("asset ids must be unique")
+    if not inventory["assets"]:
+        errors.append("source inventory must not be empty")
+    logical_ids = [item["logical_asset_id"] for item in inventory.get("logical_assets", [])]
+    if not logical_ids:
+        errors.append("logical source inventory must not be empty")
+    if len(logical_ids) != len(set(logical_ids)):
+        errors.append("logical asset ids must be unique")
+    for item in inventory["assets"]:
+        if item["layer"] not in LAYER_DOCUMENTS:
+            errors.append(f"{item['asset_id']}: invalid layer")
+        if item["kind"] not in {"candidate", "create_target", "insert_target", "dependency"}:
+            errors.append(f"{item['asset_id']}: invalid kind")
+        if not re.fullmatch(r"[a-z_][a-z0-9_$-]*", item["normalized_name"]):
+            errors.append(f"{item['asset_id']}: invalid normalized name")
+        if not item["occurrences"]:
+            errors.append(f"{item['asset_id']}: requires source occurrences")
+        for occurrence in item["occurrences"]:
+            if occurrence.get("document_layer") not in LAYER_DOCUMENTS:
+                errors.append(f"{item['asset_id']}: occurrence has invalid document layer")
+    allowed_reference_kinds = {
+        "physical_table",
+        "cte",
+        "python_import",
+        "code_symbol",
+        "unclassified_reference",
+    }
+    for reference in inventory.get("references", []):
+        if reference.get("reference_kind") not in allowed_reference_kinds:
+            errors.append("reference occurrence has invalid reference kind")
+    return errors
+
+
+def summary_lines(inventory: dict[str, Any]) -> Iterable[str]:
+    summary = inventory["summary"]
+    yield (
+        f"source inventory valid: {len(inventory['documents'])} documents, "
+        f"{summary['unique_logical_asset_count']} semantic-layer logical assets "
+        f"({summary['global_unique_name_count']} global names), "
+        f"{summary['unique_asset_count']} role-qualified SQL-shaped assets, "
+        f"{summary['topic_count']} headings, "
+        f"{summary['unparsed_statement_line_count']} statement-like lines requiring review"
+    )
+    for layer, values in summary["unique_by_layer_and_kind"].items():
+        yield f"{layer}: " + ", ".join(f"{key}={value}" for key, value in values.items())
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("command", choices=("validate", "summary", "inventory"))
+    parser.add_argument("--reference-root", type=Path, default=DEFAULT_REFERENCE_ROOT)
+    args = parser.parse_args()
+    inventory = extract_inventory(args.reference_root)
+    errors = validate_inventory(inventory)
+    if errors:
+        raise SourceAssetError("; ".join(errors))
+    if args.command == "inventory":
+        print(json.dumps(inventory, ensure_ascii=False, indent=2))
+    else:
+        print("\n".join(summary_lines(inventory)))
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except SourceAssetError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        raise SystemExit(1)

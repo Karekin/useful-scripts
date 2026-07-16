@@ -97,6 +97,72 @@ class AlignmentCtlTest(unittest.TestCase):
         score = ALIGNMENT.calculate_similarity_score(manifest)
         self.assertGreaterEqual(score["overall_percent"], manifest["similarity_score"]["target_percent"])
 
+    def test_strict_semantic_completion_does_not_credit_partial_or_deferred_surfaces(self):
+        manifest = ALIGNMENT.load(ALIGNMENT.DEFAULT_MANIFEST)
+        self.assertEqual([], ALIGNMENT.validate_semantic_completion_score(manifest))
+        score = ALIGNMENT.calculate_semantic_completion_score(manifest)
+        self.assertEqual(0.0, score["overall_percent"])
+        self.assertEqual(0, score["verified_surface_count"])
+        self.assertEqual(44, score["required_surface_count"])
+        self.assertEqual(0, score["complete_unit_count"])
+        self.assertEqual(22, score["required_unit_count"])
+        self.assertFalse(score["target_met"])
+
+    def test_strict_semantic_completion_requires_both_sides_and_full_evidence(self):
+        manifest = ALIGNMENT.load(ALIGNMENT.DEFAULT_MANIFEST)
+        first = manifest["alignment_units"][0]
+        first["backend"] = {"status": "verified", "refs": first["backend"]["refs"], "gaps": []}
+        score = ALIGNMENT.calculate_semantic_completion_score(manifest)
+        self.assertEqual(0, score["verified_surface_count"])
+        self.assertEqual(0, score["complete_unit_count"])
+        first["lakehouse"] = {
+            "status": "verified",
+            "refs": first["lakehouse"]["refs"],
+            "gaps": [],
+        }
+        score = ALIGNMENT.calculate_semantic_completion_score(manifest)
+        self.assertEqual(0, score["verified_surface_count"])
+        manifest["semantic_completion_evidence"] = [
+            {
+                "unit_id": first["id"],
+                "source_asset_ledger_ref": "asset-ledger.json",
+                "decision_context_refs": ["context"],
+                "open_gaps": [],
+                "backend": {
+                    "authority_refs": ["authority"],
+                    "contract_refs": ["contract"],
+                    "verification_refs": ["verification"],
+                    "non_empty_reconciliation_refs": ["runtime"],
+                },
+                "lakehouse": {
+                    "layer_refs": {
+                        "ODS": ["ods"],
+                        "DIM": ["dim"],
+                        "DWD_DWM": ["dwd"],
+                        "DWS": ["dws"],
+                        "ADS": ["ads"],
+                    },
+                    "history_policy_refs": ["history"],
+                    "delete_policy_refs": ["delete"],
+                    "dqc_refs": ["dqc"],
+                    "non_empty_reconciliation_refs": ["runtime"],
+                },
+            }
+        ]
+        score = ALIGNMENT.calculate_semantic_completion_score(manifest)
+        self.assertEqual(2, score["verified_surface_count"])
+        self.assertEqual(1, score["complete_unit_count"])
+
+    def test_incomplete_semantic_completion_evidence_is_rejected(self):
+        manifest = ALIGNMENT.load(ALIGNMENT.DEFAULT_MANIFEST)
+        manifest["semantic_completion_evidence"] = [
+            {"unit_id": "trade.order", "open_gaps": []}
+        ]
+        errors = ALIGNMENT.validate_semantic_completion_evidence(manifest)
+        self.assertTrue(any("source_asset_ledger_ref" in error for error in errors))
+        self.assertTrue(any("backend" in error for error in errors))
+        self.assertTrue(any("lakehouse" in error for error in errors))
+
     def test_detailed_context_ids_are_closed(self):
         manifest = ALIGNMENT.load(ALIGNMENT.DEFAULT_MANIFEST)
         broken = json.loads(json.dumps(manifest))
