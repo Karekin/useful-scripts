@@ -93,7 +93,7 @@ zero-difference checks, and a separately checksummed independent verifier.
 Documentation volume estimates (for example “15.96 亿”) are never used as a
 denominator. A merely non-empty JSON file can no longer promote any of the 718
 assets to `verified`.
-The governed detailed-disposition numerator is now 124/718. The Product
+The governed detailed-disposition numerator is now 129/718. The Product
 slice covers all ten authoritative 商品 overview assets: nine DDL-backed assets
 are specified across Catalog, Listing, workflow, Identity/Merchant and Quality
 boundaries; the personnel salary asset remains provisional because its detailed
@@ -178,6 +178,15 @@ pricing or Payment settlement. An unadvertised account heading that exposes
 password fields is explicitly rejected; an unadvertised Skill search log is
 governed as restricted behavior. Neither receives denominator credit. Large
 Model runtime and final verification remain zero.
+The Algorithm, Platform and Intelligence slice covers all seven authoritative
+overview assets. Three Platform and two Intelligence assets have same-name DDL
+and are definition-specified; the singular/plural Intelligence clue table stays
+name-conflict provisional, while the Algorithm gang table remains overview-only
+because no field-level DDL exists in any of the six documents. Raw monitoring
+JSON, alert text, identities and model conclusions remain restricted; rules and
+taxonomies are immutable versions, alerts and model attempts append, and model
+scores or cluster membership cannot directly block users, refund money or
+change commerce state. Runtime and final verification remain zero.
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%

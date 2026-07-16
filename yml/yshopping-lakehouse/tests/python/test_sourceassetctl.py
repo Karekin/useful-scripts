@@ -158,6 +158,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_ticket_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_supply_chain_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_llm_source_dispositions(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_operations_intelligence_source_dispositions(self.inventory))
         self.assertEqual(
             [],
             validate_trade_admission(
@@ -270,12 +271,12 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual(110, status["bounded_domain_asset_count"])
         self.assertEqual(6, status["explicit_rejection_count"])
         self.assertEqual(718, status["preliminary_handled_count"])
-        self.assertEqual(124, status["detailed_disposition_specified_count"])
+        self.assertEqual(129, status["detailed_disposition_specified_count"])
         self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
         self.assertEqual(99.16, status["routing_percent"])
         self.assertEqual(100.0, status["preliminary_handled_percent"])
-        self.assertEqual(17.27, status["detailed_disposition_specified_percent"])
+        self.assertEqual(17.97, status["detailed_disposition_specified_percent"])
         self.assertEqual(0.0, status["runtime_nonempty_reconciled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
         self.assertIn(
@@ -313,7 +314,9 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertTrue(any("supply_chain=0/23 (0.00%)" in line for line in lines))
         self.assertTrue(any("llm=14/16 (87.50%)" in line for line in lines))
         self.assertTrue(any("llm=0/16 (0.00%)" in line for line in lines))
-        self.assertTrue(any("llm=0/16; routing is not completion" in line for line in lines))
+        self.assertTrue(any("operations_intelligence=5/7 (71.43%)" in line for line in lines))
+        self.assertTrue(any("operations_intelligence=0/7 (0.00%)" in line for line in lines))
+        self.assertTrue(any("operations_intelligence=0/7; routing is not completion" in line for line in lines))
 
     def test_game_dispositions_cover_exact_authoritative_overview_rows(self):
         observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "游戏")
@@ -1635,6 +1638,66 @@ class SourceAssetCtlTest(unittest.TestCase):
                 if SOURCE_ASSETS._contract_reference_error(reference)
             ],
         )
+
+    def test_operations_intelligence_dispositions_lock_five_ddls_one_conflict_and_one_overview(self):
+        contract = SOURCE_ASSETS.load_operations_intelligence_source_dispositions()
+        observed = {}
+        for domain in ("算法", "中台", "情报系统"):
+            observed.update(SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, domain))
+        detailed = {asset["source_asset"] for asset in contract["ddl_backed_assets"]}
+        conflicts = {asset["source_asset"] for asset in contract["name_conflict_assets"]}
+        overview = {asset["source_asset"] for asset in contract["overview_only_assets"]}
+        self.assertEqual(7, len(observed))
+        self.assertEqual(set(observed), detailed | conflicts | overview)
+        self.assertEqual((5, 1, 1), (len(detailed), len(conflicts), len(overview)))
+        self.assertEqual([], SOURCE_ASSETS.validate_operations_intelligence_source_dispositions(self.inventory))
+
+    def test_operations_intelligence_boundaries_keep_models_and_clusters_advisory(self):
+        contract = SOURCE_ASSETS.load_operations_intelligence_source_dispositions()
+        detailed = {asset["source_asset"]: asset for asset in contract["ddl_backed_assets"]}
+        algorithm = contract["overview_only_assets"][0]
+        self.assertIn("never directly blocks users", detailed["ods_intelligence_model_result_df"]["semantic_rules"]["authority"])
+        self.assertIn("cannot prove cluster membership", algorithm["table_rule"])
+        self.assertIn("missing comma", " ".join(detailed["ods_discover_ng_monitor_rule_data_ri"]["corrections"]))
+        self.assertIn("seven-day source retention", " ".join(detailed["ods_yeyes_alarm_record_df"]["corrections"]))
+
+    def test_operations_intelligence_status_is_definition_only(self):
+        self.assertEqual(
+            {
+                "operations_intelligence_source_asset_count": 7,
+                "operations_intelligence_detailed_disposition_specified_count": 5,
+                "operations_intelligence_runtime_nonempty_reconciled_count": 0,
+                "operations_intelligence_final_disposition_verified_count": 0,
+                "operations_intelligence_detailed_disposition_percent": 71.43,
+                "operations_intelligence_runtime_nonempty_reconciled_percent": 0.0,
+                "operations_intelligence_final_disposition_verified_percent": 0.0,
+            },
+            SOURCE_ASSETS.operations_intelligence_disposition_status(self.inventory),
+        )
+
+    def test_operations_intelligence_contract_rejects_evidence_and_authority_drift(self):
+        contract = SOURCE_ASSETS.load_operations_intelligence_source_dispositions()
+        missing = json.loads(json.dumps(contract))
+        missing["ddl_backed_assets"].pop()
+        errors = SOURCE_ASSETS.validate_operations_intelligence_source_dispositions(self.inventory, missing)
+        self.assertTrue(any("exactly five" in error for error in errors))
+        evidence_drift = json.loads(json.dumps(contract))
+        evidence_drift["ddl_backed_assets"][0]["source_evidence"]["detail_anchor"]["heading_line"] = 1
+        errors = SOURCE_ASSETS.validate_operations_intelligence_source_dispositions(self.inventory, evidence_drift)
+        self.assertTrue(any("detailed evidence differs" in error for error in errors))
+        false_verification = json.loads(json.dumps(contract))
+        false_verification["ddl_backed_assets"][0]["verification_status"] = "verified"
+        errors = SOURCE_ASSETS.validate_operations_intelligence_source_dispositions(self.inventory, false_verification)
+        self.assertTrue(any("forbidden without governed reconciliation" in error for error in errors))
+        authority_drift = json.loads(json.dumps(contract))
+        authority_drift["ddl_backed_assets"][3]["semantic_rules"]["authority"] = "model blocks users"
+        errors = SOURCE_ASSETS.validate_operations_intelligence_source_dispositions(self.inventory, authority_drift)
+        self.assertTrue(any("direct business authority" in error for error in errors))
+
+    def test_all_operations_intelligence_implementation_references_resolve(self):
+        contract = SOURCE_ASSETS.load_operations_intelligence_source_dispositions()
+        references = [reference for asset in contract["ddl_backed_assets"] for key in ("backend_refs", "lakehouse_refs") for reference in asset[key]]
+        self.assertEqual([], [(reference, SOURCE_ASSETS._contract_reference_error(reference)) for reference in references if SOURCE_ASSETS._contract_reference_error(reference)])
 
     def test_qualified_names_and_markdown_bold_are_parsed_without_losing_source_location(self):
         assets = {item["asset_id"]: item for item in self.inventory["assets"]}

@@ -1,0 +1,88 @@
+{
+  "contract_version": 1,
+  "contract_id": "yshopping.operations-intelligence.source-disposition.v1",
+  "source_scope": {
+    "domains": {"算法": 1, "中台": 3, "情报系统": 3},
+    "authoritative_document": "ODS语兴好物（y shopping）电商数据表.md",
+    "authoritative_overview_lines": "251-254,281-283",
+    "expected_asset_count": 7,
+    "expected_source_evidence_counts": {"ddl_backed": 5, "name_conflict": 1, "overview_only": 1},
+    "source_detail_limit": "The Algorithm gang table has no field-level DDL anywhere in the six-document snapshot. Three Platform assets and two Intelligence assets have same-name ODS DDL. The advertised singular intelligence clue table is created and consumed as plural clues, so it remains a physical-name conflict."
+  },
+  "verification_policy": {
+    "specified_definition": "Same-name DDL plus explicit event, rule version, alert case, model observation, taxonomy, identity, history, restricted payload and decision-authority boundaries.",
+    "verified_definition": "Non-empty production full-denominator reconciliation with exact tenant, source event, rule/policy version, invocation/model version, subject identity, alert/clue/review/decision lineage, deletion history and independently accepted effects.",
+    "empty_tables_are_evidence": false,
+    "allowed_decisions": ["reuse", "merge", "split", "derive", "correct", "reject"],
+    "allowed_model_statuses": ["partial", "missing", "rejected"],
+    "runtime_statuses": ["missing", "pending", "verified"]
+  },
+  "lifecycle_policy_defaults": {
+    "history_policy": "Raw observations, alerts, model results, clues, reviews and decisions append; rules and event-level taxonomies publish immutable effective-dated versions.",
+    "delete_policy": "Source deletion or invalidation retires a projection but never erases alert, model, review, decision or accepted-effect audit history.",
+    "backfill_policy": "Resolve tenant, source system/event, Principal/subject, policy/rule version, model/invocation, alert/clue and owning-domain decision; quarantine raw JSON, ambiguous aliases, unversioned scores and unsupported effects."
+  },
+  "ddl_backed_assets": [
+    {
+      "source_asset":"ods_ng_all_log_ri","source_domain":"中台","source_label":"机审结果","source_anchor":{"document":"ODS语兴好物（y shopping）电商数据表.md","line":252},
+      "source_evidence":{"status":"ddl_backed","detail_anchor":{"heading_line":3169,"end_line":3191,"source_asset":"ods_ng_all_log_ri"},"downstream_anchors":[{"document":"DWD_DWM语兴好物（y shopping）电商数据表.md","start_line":11098,"end_line":11222}]},
+      "source_grain":"one raw machine-review or engine-path message from a high-volume realtime topic",
+      "decision":"split","canonical_entities":["risk.Signal","risk.ReviewCaseReference","ai_operations.InvocationAttemptReference","identity.PrincipalReference","operations.RawObservationReference"],
+      "semantic_rules":{"grain":"one immutable source event keyed by tenant, qualified topic/partition/offset or governed source event id","identity":"raw event, invocation, rule version, subject Principal/business object, review case and accepted decision remain distinct","money_or_quantity":"documented TB/row-volume estimates are capacity hints only and never reconciliation denominators","history":"every observation appends; retries, model/rule results, human review and accepted effects use separate histories","security":"the raw message may contain phone, IP, device, ticket, prompt or business payload and remains restricted behind schema-versioned extraction","authority":"machine review is a Risk signal only; Risk human/automated decision is separate and owning domains alone apply blocks, refunds or account effects"},
+      "corrections":["raw single-column message requires a checksummed schema and qualified Kafka offset identity","the DWD prototype incorrectly creates an ODS table in the DWD document and cannot become deployment authority","do not infer successful review or business action from a parsed status/result field","do not use 9.6-billion daily volume prose as production denominator evidence"],
+      "model_status":"partial","backend_refs":["yudao-cloud/cloudmold-module-risk/cloudmold-module-risk-server/src/main/java/cn/iocoder/yudao/module/cloudmold/risk/dal/dataobject/RiskRecords.java","yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aioperations/dal/dataobject/AiInvocationAttemptDO.java"],
+      "lakehouse_refs":["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-risk-event.sql","useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-ai-operations-event.sql"],
+      "runtime_nonempty_reconciliation":{"gate_ref":"useful-scripts/yml/yshopping-lakehouse/tests/sql/24-canonical-ai-token-risk-contract.sql","evidence_ref":null,"run_id":null,"row_count":0,"tenant_count":0,"status":"missing"},"specification_status":"specified","verification_status":"unverified"
+    },
+    {
+      "source_asset":"ods_discover_ng_monitor_rule_data_ri","source_domain":"中台","source_label":"监控规则源表","source_anchor":{"document":"ODS语兴好物（y shopping）电商数据表.md","line":253},
+      "source_evidence":{"status":"ddl_backed","detail_anchor":{"heading_line":3192,"end_line":3209,"source_asset":"ods_discover_ng_monitor_rule_data_ri"},"downstream_anchors":[{"document":"DIM语兴好物（y shopping）电商数据表.md","start_line":945,"end_line":1156}]},
+      "source_grain":"one raw monitoring-rule configuration message with realtime and offline projections",
+      "decision":"split","canonical_entities":["risk.Policy","risk.PolicyVersion","risk.PolicyRule","operations.RulePublicationObservation","identity.PrincipalReference"],
+      "semantic_rules":{"grain":"one immutable effective-dated rule version plus separately keyed publication observation","identity":"policy, version, rule, condition, indicator, business line, author Principal and source message remain distinct","money_or_quantity":"threshold values require typed units, precision and comparison semantics; no financial authority","history":"rule JSON changes create versions with activation, retirement, approval and rollback rather than overwrite","security":"raw rule JSON and infrastructure/topic details stay restricted; canonical rules expose validated typed conditions","authority":"Risk owns policy/rule definitions; publication does not prove execution, alert, review or an owning-domain effect"},
+      "corrections":["repair the missing comma between pt and hr partition fields before execution","replace mutable unversioned message JSON with a checksummed schema and immutable rule version","the prose says backend ownership was avoided for convenience; canonical policy authority still requires an explicit service owner","four repeated downstream JSON paths do not prove complete rule grammar or valid condition ordinals"],
+      "model_status":"partial","backend_refs":["yudao-cloud/cloudmold-module-risk/cloudmold-module-risk-server/src/main/java/cn/iocoder/yudao/module/cloudmold/risk/dal/dataobject/RiskRecords.java"],
+      "lakehouse_refs":["useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-risk-current.sql","useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-risk-current.sql"],
+      "runtime_nonempty_reconciliation":{"gate_ref":"useful-scripts/yml/yshopping-lakehouse/tests/sql/24-canonical-ai-token-risk-contract.sql","evidence_ref":null,"run_id":null,"row_count":0,"tenant_count":0,"status":"missing"},"specification_status":"specified","verification_status":"unverified"
+    },
+    {
+      "source_asset":"ods_yeyes_alarm_record_df","source_domain":"中台","source_label":"yeyes任务执行告警信息表","source_anchor":{"document":"ODS语兴好物（y shopping）电商数据表.md","line":254},
+      "source_evidence":{"status":"ddl_backed","detail_anchor":{"heading_line":3808,"end_line":3844,"source_asset":"ods_yeyes_alarm_record_df"},"downstream_anchors":[{"document":"DWD_DWM语兴好物（y shopping）电商数据表.md","start_line":12115,"end_line":12190}]},
+      "source_grain":"one mutable alert snapshot with notification, claim and resolution fields",
+      "decision":"split","canonical_entities":["operations.AlertCase","operations.AlertStatusHistory","operations.AlertAssignment","identity.PrincipalReference","metadata.TaskReference"],
+      "semantic_rules":{"grain":"one stable alert case plus append-only lifecycle transitions, assignments and notifications","identity":"alert id, affected data/task id, creator, notifier, claimant, solver and leader Principal identities remain distinct","money_or_quantity":"no money, inventory, quota or business quantity authority","history":"notice, claim, invalidation, acknowledgement and resolution append with actor and event time; snapshot status cannot replace history","security":"title, description, reason and actor names may contain infrastructure or personal data and remain restricted/tokenized","authority":"Operations owns alert workflow evidence; an alert never changes task, data quality or business state without an independently recorded owning-system action"},
+      "corrections":["normalize string timestamps with timezone and resolve actor strings to qualified Principal mappings","replace status snapshot inference with an append-only state machine and immutable assignment history","separate technical and business alert taxonomies from free-text descriptions","the seven-day source retention cannot prove durable audit history"],
+      "model_status":"missing","backend_refs":["yudao-cloud/cloudmold-module-risk/cloudmold-module-risk-server/src/main/java/cn/iocoder/yudao/module/cloudmold/risk/dal/dataobject/RiskRecords.java"],
+      "lakehouse_refs":["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-metadata-event.sql","useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-metadata-readiness.sql"],
+      "runtime_nonempty_reconciliation":{"gate_ref":"useful-scripts/yml/yshopping-lakehouse/tests/sql/24-canonical-ai-token-risk-contract.sql","evidence_ref":null,"run_id":null,"row_count":0,"tenant_count":0,"status":"missing"},"specification_status":"specified","verification_status":"unverified"
+    },
+    {
+      "source_asset":"ods_intelligence_model_result_df","source_domain":"情报系统","source_label":"模型结果表","source_anchor":{"document":"ODS语兴好物（y shopping）电商数据表.md","line":281},
+      "source_evidence":{"status":"ddl_backed","detail_anchor":{"heading_line":4377,"end_line":4410,"source_asset":"ods_intelligence_model_result_df"},"downstream_anchors":[{"document":"DWD_DWM语兴好物（y shopping）电商数据表.md","start_line":11714,"end_line":11920}]},
+      "source_grain":"one model-result snapshot for a source snippet/intelligence business item",
+      "decision":"split","canonical_entities":["ai_operations.InvocationAttempt","risk.Signal","risk.SignalSubjectReference","risk.ReviewCaseReference","risk.DecisionReference"],
+      "semantic_rules":{"grain":"one immutable model attempt/result keyed by tenant, model/version, invocation, snippet and subject","identity":"row id, snippet, group, message list, intelligence biz id, event taxonomy, model invocation and reviewed subject remain distinct","money_or_quantity":"DOUBLE score requires declared scale/range/model version and is never money or an action threshold by itself","history":"retry attempts and outputs append; deletion retires source projection while review/decision/effect history remains","security":"message ids, conclusion, failure details, group and risk labels are restricted and canonical analytics expose typed/digested projections","authority":"AI Operations owns invocation evidence and Risk owns signal/review/decision; model success or score never directly blocks users or changes commerce"},
+      "corrections":["repair the full-width comma after RISK_LABEL and invalid trailing TBLPROPERTIES value","snippet_id prose claims uniqueness but requires tenant/model/version scope and collision proof","msg_id is a list encoded as STRING and needs a versioned schema plus member identity mappings","separate model status, risk taxonomy, human review and accepted owning-domain effect"],
+      "model_status":"partial","backend_refs":["yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aioperations/dal/dataobject/AiInvocationAttemptDO.java","yudao-cloud/cloudmold-module-risk/cloudmold-module-risk-server/src/main/java/cn/iocoder/yudao/module/cloudmold/risk/dal/dataobject/RiskRecords.java"],
+      "lakehouse_refs":["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-ai-operations-event.sql","useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-risk-event.sql"],
+      "runtime_nonempty_reconciliation":{"gate_ref":"useful-scripts/yml/yshopping-lakehouse/tests/sql/24-canonical-ai-token-risk-contract.sql","evidence_ref":null,"run_id":null,"row_count":0,"tenant_count":0,"status":"missing"},"specification_status":"specified","verification_status":"unverified"
+    },
+    {
+      "source_asset":"ods_intelligence_event_code_level_df","source_domain":"情报系统","source_label":"情报等级表","source_anchor":{"document":"ODS语兴好物（y shopping）电商数据表.md","line":283},
+      "source_evidence":{"status":"ddl_backed","detail_anchor":{"heading_line":4440,"end_line":4461,"source_asset":"ods_intelligence_event_code_level_df"},"downstream_anchors":[{"document":"DIM语兴好物（y shopping）电商数据表.md","start_line":1161,"end_line":1247}]},
+      "source_grain":"one mutable event-code risk-level taxonomy row",
+      "decision":"split","canonical_entities":["risk.EventTaxonomy","risk.EventTaxonomyVersion","risk.PolicyVersionReference","identity.PrincipalReference"],
+      "semantic_rules":{"grain":"one immutable effective-dated level assignment per tenant and event-code taxonomy version","identity":"source row id, event code, taxonomy version, policy version and approving Principal remain distinct","money_or_quantity":"level is an ordinal category, not a numeric score, money amount or automatic action","history":"level changes publish versions with effective interval, approval and rollback; is_del retires only the source projection","security":"event taxonomy is restricted operational policy metadata and excludes raw subject payloads","authority":"Risk owns taxonomy; a level assignment guides review/routing but never proves a signal, decision or business effect"},
+      "corrections":["repair the trailing comma after is_del and invalid trailing TBLPROPERTIES value","sample level contains A/B/C in one row despite the field describing one level; require a single governed enum or explicit multi-valued rule","the downstream Kafka _ri table and offline _df table require an explicit CDC/materialization identity","do not collapse taxonomy version into event_code"],
+      "model_status":"partial","backend_refs":["yudao-cloud/cloudmold-module-risk/cloudmold-module-risk-server/src/main/java/cn/iocoder/yudao/module/cloudmold/risk/dal/dataobject/RiskRecords.java"],
+      "lakehouse_refs":["useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-risk-current.sql"],
+      "runtime_nonempty_reconciliation":{"gate_ref":"useful-scripts/yml/yshopping-lakehouse/tests/sql/24-canonical-ai-token-risk-contract.sql","evidence_ref":null,"run_id":null,"row_count":0,"tenant_count":0,"status":"missing"},"specification_status":"specified","verification_status":"unverified"
+    }
+  ],
+  "name_conflict_assets": [
+    {"source_asset":"ods_intelligence_clue_df","source_domain":"情报系统","source_label":"拓源线索表","line":282,"detail_anchor":{"heading_line":4411,"end_line":4438,"actual_create_asset":"ods_intelligence_clues_df"},"decision":"correct","target_boundary":"Restricted intelligence clue observation plus immutable evidence items, source/publisher identity, AI extraction lineage, validation review and separately accepted Risk decision","conflict_rule":"Do not equate singular clue_df, plural clues_df and realtime clue_ri. Require physical source, CDC mode, business key, clue_info schema and full-denominator reconciliation before credit.","specification_status":"provisional"}
+  ],
+  "overview_only_assets": [
+    {"source_asset":"ods_topo_user_groupid_df","source_domain":"算法","source_label":"图谱强团伙表","line":251,"decision":"split","canonical_entities":["risk.Relation","risk.Cluster","risk.ClusterMembership","risk.Signal","risk.ReviewCase","risk.Decision"],"target_boundary":"Versioned relation evidence and algorithm-run cluster membership with subject identity, feature/window/model lineage, confidence, human review and independently accepted enforcement decision","table_rule":"No field-level DDL exists in the six documents. The business prose about one/two-degree users and top-300 blocking is not a schema and cannot prove cluster membership, identity, model version, review or enforcement.","specification_status":"provisional"}
+  ]
+}
