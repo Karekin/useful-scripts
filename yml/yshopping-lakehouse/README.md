@@ -93,7 +93,7 @@ zero-difference checks, and a separately checksummed independent verifier.
 Documentation volume estimates (for example “15.96 亿”) are never used as a
 denominator. A merely non-empty JSON file can no longer promote any of the 718
 assets to `verified`.
-The governed detailed-disposition numerator is now 271/718. The Product
+The governed detailed-disposition numerator is now 476/718. The Product
 slice covers all ten authoritative 商品 overview assets: nine DDL-backed assets
 are specified across Catalog, Listing, workflow, Identity/Merchant and Quality
 boundaries; the personnel salary asset remains provisional because its detailed
@@ -258,6 +258,20 @@ separates Kafka/OSS delivery from accepted effects; preserves `tatget`, `agnet`
 and `ovewview` only as source aliases; and prevents profiles, alerts or AI output
 from mutating business state. This slice receives 52/52 detailed credit but 0/52
 runtime/final credit, taking the global numerator to 271/718 (37.74%).
+The first DWD/DWM-derived slice governs 205 same-name objects: 165 DWD facts,
+24 DWM projections, five misplaced DIM lookups and eleven misplaced ODS
+connectors. Every object is classified as an immutable fact, rebuildable current
+projection, transport bridge, exact-grain wide projection or rejected wrong-layer
+object. Domain rules cover Order/Payment/Fulfillment, partial multi-line returns,
+Coupon entitlements, Engagement, Community/Moderation/live economy, Customer
+Service/compensation, Catalog/Listing, Merchant, Metadata, AI Workflow, Token and
+Skill, Operations/Intelligence, and Warehouse/Quality. The corrected design
+requires stable keys, event/effective/ingestion time, replay/checkpoint evidence,
+typed currency/quota units, restricted content/PII/secrets, and preaggregation
+before DWM joins. It specifically fences legacy Trade discounts, `quilty`/`fink`
+aliases, token top-ups, AI decisions and cross-process mega-grains. This slice
+receives 205/205 detailed credit but 0/205 runtime/final credit, taking the global
+numerator to 476/718 (66.30%).
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%

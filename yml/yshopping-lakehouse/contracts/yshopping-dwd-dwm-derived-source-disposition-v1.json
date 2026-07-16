@@ -1,0 +1,2897 @@
+{
+  "contract_version": 1,
+  "contract_id": "yshopping.dwd-dwm-derived.source-disposition.v1",
+  "source_scope": {
+    "authoritative_document": "DWD_DWM语兴好物（y shopping）电商数据表.md",
+    "expected_asset_count": 205,
+    "expected_source_evidence_counts": {
+      "same_name_dim_create": 5,
+      "same_name_dwd_create": 165,
+      "same_name_dwm_create": 24,
+      "wrong_layer_ods_create": 11
+    },
+    "expected_physical_role_counts": {
+      "wrong_layer": 16,
+      "event_fact": 78,
+      "current_projection": 73,
+      "transport_bridge": 14,
+      "wide_projection": 24
+    },
+    "scope_rule": "This slice covers candidate assets without an authoritative ODS domain that have a same-name CREATE in the DWD/DWM document. Every object is classified as immutable fact, rebuildable current projection, transport bridge, exact-grain wide projection or rejected wrong-layer reference/source."
+  },
+  "verification_policy": {
+    "specified_definition": "Same-name CREATE plus canonical entities, exact grain, physical role, stable key, time/version, privacy/unit, reversal/deletion, authority and explicit defect corrections.",
+    "verified_definition": "Non-empty production source-to-fact and fact-to-projection reconciliation with exact denominators, stable watermarks/checkpoints, key/content digests, conservation checks, independent verification and zero unexplained differences.",
+    "empty_tables_are_evidence": false,
+    "allowed_decisions": [
+      "derive",
+      "correct",
+      "reject"
+    ],
+    "allowed_physical_roles": [
+      "event_fact",
+      "current_projection",
+      "transport_bridge",
+      "wide_projection",
+      "wrong_layer"
+    ],
+    "runtime_statuses": [
+      "missing",
+      "pending",
+      "verified"
+    ]
+  },
+  "semantic_profiles": {
+    "order_payment_fulfillment_fact": {
+      "canonical_entities": [
+        "order.Order",
+        "order.OrderItem",
+        "payment.PaymentAttempt",
+        "promotion.BenefitAllocation",
+        "fulfillment.FulfillmentItem"
+      ],
+      "grain": "one tenant and immutable order, order-item, payment, benefit-allocation or fulfillment lifecycle fact; DWM uses one declared order/item as-of grain",
+      "metric_rules": [
+        "header and item identities remain separate and conservation is checked",
+        "payment intent authorization capture failure refund and chargeback are distinct effects",
+        "benefit amount and funding party are immutable allocations",
+        "shipment package and tracking milestones never overwrite order history",
+        "money uses ISO currency and integer minor units",
+        "wide rows preaggregate one-to-many facts before joining"
+      ],
+      "security": "Buyer, seller, address, logistics and payment data are purpose-bound and tokenized or redacted.",
+      "authority": "Order, Payment, Promotion and Fulfillment retain authority; DWD/DWM is replayable evidence only.",
+      "model_status": "partial"
+    },
+    "aftersales_refund_fact": {
+      "canonical_entities": [
+        "aftersales.AfterSaleCase",
+        "aftersales.AfterSaleLine",
+        "payment.RefundEffect",
+        "fulfillment.ReturnShipment",
+        "promotion.BenefitReversal"
+      ],
+      "grain": "one tenant and immutable after-sale case/line, refund effect, return shipment or benefit reversal; DWM uses exact case-line as-of grain",
+      "metric_rules": [
+        "partial and multi-line returns are first-class",
+        "refund intent and captured refund effect are distinct",
+        "return logistics and merchandise refund money are separate",
+        "benefit reversal points to the original allocation",
+        "money uses ISO currency and integer minor units",
+        "wide projections preaggregate refunds shipments and reversals before joining"
+      ],
+      "security": "Return addresses, evidence, payment and actor identities are restricted and purpose-bound.",
+      "authority": "AfterSales, Payment, Return Fulfillment and Promotion own effects; analytical rows cannot settle refunds.",
+      "model_status": "partial"
+    },
+    "promotion_entitlement_fact": {
+      "canonical_entities": [
+        "promotion.CouponEntitlement",
+        "promotion.CouponEntitlementLedger",
+        "promotion.CampaignVersion",
+        "promotion.BenefitFunding"
+      ],
+      "grain": "one tenant, Principal, entitlement and immutable issuance/claim/redemption/return/funding effect",
+      "metric_rules": [
+        "template/campaign definition and user entitlement are separate",
+        "each entitlement transition has a stable event id",
+        "claim and redemption bind to exact order/item when applicable",
+        "refund return reverses the original entitlement effect",
+        "subsidy funding names platform seller or other party",
+        "money uses ISO currency and integer minor units"
+      ],
+      "security": "Principal and campaign targeting data are minimized; voucher codes and funding evidence are restricted.",
+      "authority": "Promotion owns entitlement effects; DWD/DWM cannot issue, redeem or refund a coupon.",
+      "model_status": "partial"
+    },
+    "engagement_delivery_fact": {
+      "canonical_entities": [
+        "engagement.FavoriteBehavior",
+        "engagement.Reminder",
+        "engagement.NotificationDelivery",
+        "identity.PrincipalReference",
+        "identity.ConsentVersion"
+      ],
+      "grain": "one tenant, canonical Principal and immutable favorite/reminder/notification/login event or delivery attempt",
+      "metric_rules": [
+        "intent, delivery attempt, provider receipt and user engagement are distinct",
+        "favorite add/remove and reminder enable/disable remain events",
+        "consent and opt-out version are evaluated at delivery time",
+        "provider retries preserve one logical delivery identity",
+        "login observation never grants authentication or authorization",
+        "soft deletion does not fabricate missing history"
+      ],
+      "security": "Contact endpoints, devices, IP and behavioral data are tokenized, minimized and retention-bound.",
+      "authority": "Engagement records behavior/delivery evidence; Identity and owning services retain access and business authority.",
+      "model_status": "partial"
+    },
+    "community_fact": {
+      "canonical_entities": [
+        "engagement.CommunityContent",
+        "engagement.CommunityInteraction",
+        "engagement.ModerationCase",
+        "engagement.ModerationDecision",
+        "quality.ReviewReference"
+      ],
+      "grain": "one tenant and immutable content, interaction, report, appeal, moderation or quality-review fact; DWM declares one content/case grain",
+      "metric_rules": [
+        "content and interaction histories use stable event ids",
+        "report appeal machine review human review and final decision are distinct",
+        "accepted decisions bind policy/model/reviewer versions",
+        "counts and latest fields are projections rather than history",
+        "synthetic red-team identities are isolated from real users",
+        "DWM preaggregates all one-to-many interactions and reviews"
+      ],
+      "security": "Content, messages, search, reports, media and actor identities are restricted with consent and retention controls.",
+      "authority": "Community/Moderation owns effects; AI and analytical facts cannot hide, ban, select or distribute content.",
+      "model_status": "partial"
+    },
+    "live_economy_fact": {
+      "canonical_entities": [
+        "engagement.LiveSession",
+        "engagement.LiveGiftEntitlement",
+        "payment.PaymentEffect",
+        "ledger.LedgerEntry",
+        "engagement.CreatorCommission"
+      ],
+      "grain": "one tenant and immutable live session, presence, gift, tip, recharge, commission or reversal fact",
+      "metric_rules": [
+        "session entry/exit pairs define duration",
+        "gift quantity and monetary value are distinct",
+        "captured Payment and immutable Ledger entries prove money",
+        "refund chargeback and compensation are explicit reversals",
+        "commission points to exact funding and beneficiary",
+        "money uses ISO currency and integer minor units"
+      ],
+      "security": "Viewer/creator identity and live content are restricted; financial instruments are tokenized.",
+      "authority": "Engagement owns sessions, Payment/Ledger owns money and Commerce owns orders; DWD/DWM cannot settle.",
+      "model_status": "partial"
+    },
+    "customer_service_fact": {
+      "canonical_entities": [
+        "customerservice.Ticket",
+        "customerservice.Message",
+        "customerservice.Attachment",
+        "customerservice.TicketOrderLink",
+        "customerservice.QualityReview",
+        "risk.SignalReference"
+      ],
+      "grain": "one tenant and immutable ticket, message, attachment, link, tag, review, AI signal or accepted attribution fact",
+      "metric_rules": [
+        "ticket lifecycle is ordered and append-only",
+        "messages comments and attachments retain redacted evidence lineage",
+        "order and after-sale links use canonical keys",
+        "AI/keyword/anti-fraud outputs remain signals",
+        "quality review and problem attribution require accepted reviewer decisions",
+        "DWM preaggregates messages tags links and reviews before ticket joins"
+      ],
+      "security": "Customer content, attachment, contact and order context are purpose-bound, encrypted and redacted in broad analytics.",
+      "authority": "Customer Service owns tickets and accepted attribution; Risk/AI owns signals only and DWD/DWM is read-only.",
+      "model_status": "partial"
+    },
+    "compensation_fact": {
+      "canonical_entities": [
+        "customerservice.CompensationClaim",
+        "customerservice.CompensationDecision",
+        "payment.PaymentEffect",
+        "ledger.LedgerEntry",
+        "identity.PrincipalReference"
+      ],
+      "grain": "one tenant and immutable compensation claim, accepted decision, funding, payment or ledger effect",
+      "metric_rules": [
+        "claim and accepted compensation are distinct",
+        "funding party and reason version are explicit",
+        "payment capture failure refund and reversal remain effects",
+        "ledger entries are append-only and balanceable",
+        "money uses ISO currency and integer minor units",
+        "DWM never infers paid status from a mutable bill row"
+      ],
+      "security": "Claim evidence, identity and payment references are restricted and tokenized.",
+      "authority": "Customer Service owns claim decisions, Payment/Ledger owns money; DWD/DWM cannot compensate.",
+      "model_status": "partial"
+    },
+    "catalog_listing_workflow_fact": {
+      "canonical_entities": [
+        "catalog.ProductStyle",
+        "catalog.ProductVariant",
+        "listing.ListingWorkflowAttempt",
+        "quality.ReviewDecision",
+        "workforce.WorkerAssignmentReference"
+      ],
+      "grain": "one tenant and immutable catalog/listing workflow attempt, operation, import/reject/result or review fact",
+      "metric_rules": [
+        "SPU/style and SKU/variant identities remain separate",
+        "listing attempt and review decision are immutable",
+        "operator uses effective Principal/worker assignment",
+        "import files retain digest and source-row lineage",
+        "result snapshots do not erase operation history",
+        "salary/payroll is excluded from Catalog and general analytical access"
+      ],
+      "security": "Operator, file, review, payroll and supplier data are purpose-bound and least-privilege.",
+      "authority": "Catalog and Listing own product/publish state, Quality owns review and Workforce owns payroll.",
+      "model_status": "partial"
+    },
+    "merchant_lifecycle_fact": {
+      "canonical_entities": [
+        "merchant.MerchantAccount",
+        "merchant.Shop",
+        "merchant.LegalEntity",
+        "merchant.OnboardingApplication",
+        "merchant.DepositLedger",
+        "payment.PayoutEffect"
+      ],
+      "grain": "one tenant and immutable merchant/shop/legal-entity lifecycle, appeal, deposit, payout or offboarding fact",
+      "metric_rules": [
+        "Merchant Shop and LegalEntity identities remain separate",
+        "onboarding appeal and offboarding are ordered decisions",
+        "deposit recharge and withdrawal are immutable ledger/payment effects",
+        "bank/legal identifiers are token references",
+        "money uses ISO currency and integer minor units",
+        "AI answers are advisory with model/source lineage"
+      ],
+      "security": "Legal, bank, address, contact and operator data are vaulted or tokenized.",
+      "authority": "Merchant owns lifecycle, Payment/Ledger owns money and Listing owns sellability; DWD facts cannot enact effects.",
+      "model_status": "partial"
+    },
+    "metadata_operation_fact": {
+      "canonical_entities": [
+        "metadata.AssetVersion",
+        "metadata.SchemaVersion",
+        "metadata.LineageEdgeVersion",
+        "metadata.TaskDefinition",
+        "metadata.TaskRun",
+        "metadata.QualityCheckResult"
+      ],
+      "grain": "one tenant and immutable metadata definition/version, task run, lineage edge, DQC result or accepted governance operation",
+      "metric_rules": [
+        "asset schema metric and datasource versions are distinct",
+        "task definition node and run instance are separate",
+        "lineage edges retain source/target version and provenance",
+        "DQC definition instance execution and result are separate",
+        "AI helper/governance output is a suggestion until accepted",
+        "DWM preaggregates run/check edges without multiplying rows"
+      ],
+      "security": "SQL, connection details, owners, task parameters and AI prompts are restricted; secrets stay in a vault.",
+      "authority": "Metadata/Data Quality owns accepted definitions and results; AI and DWD/DWM cannot apply governance changes.",
+      "model_status": "missing"
+    },
+    "ai_workflow_fact": {
+      "canonical_entities": [
+        "ai_operations.AiApplication",
+        "ai_operations.WorkflowDefinition",
+        "ai_operations.WorkflowVersion",
+        "ai_operations.WorkflowRun",
+        "ai_operations.NodeExecution",
+        "ai_operations.InvocationAttempt"
+      ],
+      "grain": "one tenant and immutable application/workflow version, run, node execution, request or invocation attempt",
+      "metric_rules": [
+        "definition and immutable workflow version are separate",
+        "run request node execution and provider attempt have stable distinct ids",
+        "retry timeout cancellation and success use versioned status semantics",
+        "request/response payloads retain restricted digests and evidence references",
+        "Kafka/Hive/Doris projections conserve source identity",
+        "DWM joins account/app/workflow versions effective at the attempt time"
+      ],
+      "security": "Prompts, responses, environment variables, passwords, API keys, IP and email are restricted; secrets are vault-only.",
+      "authority": "AI Operations owns execution state; DWD/DWM observes and projects without running workflows.",
+      "model_status": "partial"
+    },
+    "token_marketplace_fact": {
+      "canonical_entities": [
+        "token_platform.InvocationUsage",
+        "token_platform.QuotaLedger",
+        "token_platform.PricingVersion",
+        "payment.PaymentEffect",
+        "marketplace.SkillPackageVersion",
+        "marketplace.SkillEntitlement"
+      ],
+      "grain": "one tenant and immutable login/operation/invocation/quota/top-up/image/Skill event",
+      "metric_rules": [
+        "Principal mapping never uses username as identity",
+        "input output and total token conservation is checked",
+        "quota ledger uses signed integer units",
+        "top-up money requires captured Payment and PricingVersion",
+        "Skill search download package and entitlement are separate",
+        "image generation retains model/prompt/result evidence without broad content exposure"
+      ],
+      "security": "Credentials, API tokens, prompts, images, search terms and Principal data are restricted; secret values are excluded.",
+      "authority": "Token Platform owns usage/quota, Payment owns top-up and Marketplace owns Skill entitlement; DWD/DWM is evidence only.",
+      "model_status": "partial"
+    },
+    "operations_intelligence_fact": {
+      "canonical_entities": [
+        "operations.MetricObservation",
+        "operations.Alert",
+        "operations.CollectionTask",
+        "operations.CollectionResult",
+        "risk.SignalReference",
+        "ai_operations.InvocationAttemptReference"
+      ],
+      "grain": "one tenant and immutable engine invocation, metric observation, alert, collection, intelligence signal or model-attempt fact",
+      "metric_rules": [
+        "request and retry identities are stable",
+        "metric units thresholds and policy versions are explicit",
+        "collection task result provider and payload digest are retained",
+        "alert delivery and accepted operation are distinct",
+        "model result and accepted intelligence/risk decision are distinct",
+        "realtime/Hive/Doris projections conserve event identity and replay checkpoints"
+      ],
+      "security": "Engine parameters, SQL, alerts, third-party content, clue identity and model payloads are restricted.",
+      "authority": "Operations/Intelligence/Risk own accepted effects; DWD/DWM observations cannot enforce or notify by themselves.",
+      "model_status": "partial"
+    },
+    "warehouse_quality_fact": {
+      "canonical_entities": [
+        "warehouse.PhysicalOperation",
+        "inventory.InventoryLedgerEntry",
+        "quality.QualityReview",
+        "ai_operations.InvocationAttemptReference",
+        "workforce.WorkerAssignmentReference"
+      ],
+      "grain": "one tenant and immutable inbound, outbound, quality, identification, AI attempt/feedback or accepted human-review fact",
+      "metric_rules": [
+        "header line and physical operation identities remain separate",
+        "receipt or outbound observation never creates stock by itself",
+        "inventory effects require exact warehouse/location/SKU/lot/UOM ledger dimensions",
+        "AI request image/part/result/feedback bind model and policy versions",
+        "human review remains independent ground truth",
+        "DWM preaggregates operations and reviews at exact physical-operation grain"
+      ],
+      "security": "Warehouse details, worker identity, images and quality evidence are restricted and purpose-bound.",
+      "authority": "Warehouse/WMS owns operations, Inventory owns balances, Quality owns accepted decisions and AI Operations owns attempts.",
+      "model_status": "partial"
+    },
+    "wrong_layer_dimension_reference": {
+      "canonical_entities": [
+        "reference.EffectiveDimensionVersion",
+        "source.SourceMapping"
+      ],
+      "grain": "one tenant, reference namespace/key and approved non-overlapping effective version",
+      "metric_rules": [
+        "lookup versions are immutable",
+        "source aliases are not global keys",
+        "event-time selection is deterministic",
+        "cache state never erases versions",
+        "labels do not create effects",
+        "DWD/DWM only references approved versions"
+      ],
+      "security": "Reference ownership and restricted attributes remain least-privilege.",
+      "authority": "Owning domains approve reference meanings; DIM/cache objects cannot become facts.",
+      "model_status": "rejected"
+    },
+    "wrong_layer_raw_source": {
+      "canonical_entities": [
+        "source.RawChangeEnvelope",
+        "source.SourceSchemaVersion",
+        "source.IngestionCheckpoint"
+      ],
+      "grain": "one source topic/partition/offset and immutable raw change envelope",
+      "metric_rules": [
+        "schema version and payload digest are retained",
+        "event and ingestion time are distinct",
+        "tenant/source identity is validated",
+        "replay is deterministic",
+        "poison/duplicate rows are auditable",
+        "only governed facts enter DWD/DWM"
+      ],
+      "security": "Raw payload and connector credentials are restricted; secrets remain external.",
+      "authority": "ODS preserves raw evidence only and cannot define canonical fact semantics.",
+      "model_status": "rejected"
+    }
+  },
+  "implementation_refs": {
+    "backend_refs": [
+      "yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/dal/dataobject/OrderHeaderDO.java",
+      "yudao-cloud/cloudmold-module-aftersales/cloudmold-module-aftersales-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aftersale/dal/dataobject/AfterSaleCaseDO.java",
+      "yudao-cloud/cloudmold-module-promotion/cloudmold-module-promotion-server/src/main/java/cn/iocoder/yudao/module/cloudmold/promotion/dal/dataobject/CouponEntitlementLedgerDO.java",
+      "yudao-cloud/cloudmold-module-engagement/cloudmold-module-engagement-server/src/main/java/cn/iocoder/yudao/module/cloudmold/engagement/dal/dataobject/CommunityInteractionDO.java",
+      "yudao-cloud/cloudmold-module-customer-service/cloudmold-module-customer-service-server/src/main/java/cn/iocoder/yudao/module/cloudmold/customerservice/dal/dataobject/CustomerServiceTicketDO.java",
+      "yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantAccountDO.java",
+      "yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aioperations/dal/dataobject/AiInvocationAttemptDO.java",
+      "yudao-cloud/cloudmold-module-token-platform/cloudmold-module-token-platform-server/src/main/java/cn/iocoder/yudao/module/cloudmold/tokenplatform/dal/dataobject/QuotaLedgerDO.java",
+      "yudao-cloud/cloudmold-module-warehouse/cloudmold-module-warehouse-server/src/main/java/cn/iocoder/yudao/module/cloudmold/warehouse/dal/dataobject/WarehouseOperationDO.java"
+    ],
+    "lakehouse_refs": [
+      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-item-event.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-after-sale-status-event.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-promotion-event.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-engagement-event.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-customer-service-event.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-ai-operations-event.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-token-platform-event.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-metadata-event.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-warehouse-entity-status-event.sql"
+    ]
+  },
+  "assets": [
+    {
+      "source_asset": "dim_ai_workflow_account_ri",
+      "detail_line": 15099,
+      "profile": "wrong_layer_dimension_reference",
+      "physical_role": "wrong_layer",
+      "decision": "reject",
+      "corrections": [
+        "reject this object as DWD/DWM authority and retain it only in its governed source or reference layer",
+        "serve only an approved effective-dated dimension version; a lookup cache cannot become event or business-effect authority",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dim_ai_workflow_app_ri",
+      "detail_line": 15117,
+      "profile": "wrong_layer_dimension_reference",
+      "physical_role": "wrong_layer",
+      "decision": "reject",
+      "corrections": [
+        "reject this object as DWD/DWM authority and retain it only in its governed source or reference layer",
+        "serve only an approved effective-dated dimension version; a lookup cache cannot become event or business-effect authority",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dim_code_desc",
+      "detail_line": 14324,
+      "profile": "wrong_layer_dimension_reference",
+      "physical_role": "wrong_layer",
+      "decision": "reject",
+      "corrections": [
+        "reject this object as DWD/DWM authority and retain it only in its governed source or reference layer",
+        "serve only an approved effective-dated dimension version; a lookup cache cannot become event or business-effect authority",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dim_code_desc_hive",
+      "detail_line": 6795,
+      "profile": "wrong_layer_dimension_reference",
+      "physical_role": "wrong_layer",
+      "decision": "reject",
+      "corrections": [
+        "reject this object as DWD/DWM authority and retain it only in its governed source or reference layer",
+        "serve only an approved effective-dated dimension version; a lookup cache cannot become event or business-effect authority",
+        "prove source-to-sink conservation and stable identity across Kafka/Hive/Doris instead of treating a non-empty sink as semantic success"
+      ]
+    },
+    {
+      "source_asset": "dim_platform_intelligence_event_code_level_ri",
+      "detail_line": 12569,
+      "profile": "wrong_layer_dimension_reference",
+      "physical_role": "wrong_layer",
+      "decision": "reject",
+      "corrections": [
+        "reject this object as DWD/DWM authority and retain it only in its governed source or reference layer",
+        "serve only an approved effective-dated dimension version; a lookup cache cannot become event or business-effect authority",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_ai_workflow_app_log_di",
+      "detail_line": 14210,
+      "profile": "ai_workflow_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate application, immutable workflow version, run, node execution, request and invocation attempt; exclude prompts, responses and secrets from broad access",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_ai_workflow_node_executions_detail_di",
+      "detail_line": 14146,
+      "profile": "ai_workflow_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate application, immutable workflow version, run, node execution, request and invocation attempt; exclude prompts, responses and secrets from broad access",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_ai_workflow_request_log_di",
+      "detail_line": 14259,
+      "profile": "ai_workflow_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate application, immutable workflow version, run, node execution, request and invocation attempt; exclude prompts, responses and secrets from broad access",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_ai_workflow_request_log_ri",
+      "detail_line": 4948,
+      "profile": "ai_workflow_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate application, immutable workflow version, run, node execution, request and invocation attempt; exclude prompts, responses and secrets from broad access",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_ai_workflow_request_log_ri_doris",
+      "detail_line": 14358,
+      "profile": "ai_workflow_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate application, immutable workflow version, run, node execution, request and invocation attempt; exclude prompts, responses and secrets from broad access",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_ai_workflow_request_log_ri_kafka",
+      "detail_line": 14338,
+      "profile": "ai_workflow_fact",
+      "physical_role": "transport_bridge",
+      "decision": "correct",
+      "corrections": [
+        "version the envelope schema and retain topic/partition/offset, replay, quarantine and acknowledgement evidence without embedding credentials",
+        "separate application, immutable workflow version, run, node execution, request and invocation attempt; exclude prompts, responses and secrets from broad access",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_ai_workflow_workflow_detail_df",
+      "detail_line": 13908,
+      "profile": "ai_workflow_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate application, immutable workflow version, run, node execution, request and invocation attempt; exclude prompts, responses and secrets from broad access",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_ai_workflow_workflow_detail_ri",
+      "detail_line": 15056,
+      "profile": "ai_workflow_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate application, immutable workflow version, run, node execution, request and invocation attempt; exclude prompts, responses and secrets from broad access",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_ai_workflow_workflow_detail_ri_hive",
+      "detail_line": 14033,
+      "profile": "ai_workflow_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate application, immutable workflow version, run, node execution, request and invocation attempt; exclude prompts, responses and secrets from broad access",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_ai_workflow_workflow_detail_ri_kafka",
+      "detail_line": 14001,
+      "profile": "ai_workflow_fact",
+      "physical_role": "transport_bridge",
+      "decision": "correct",
+      "corrections": [
+        "version the envelope schema and retain topic/partition/offset, replay, quarantine and acknowledgement evidence without embedding credentials",
+        "separate application, immutable workflow version, run, node execution, request and invocation attempt; exclude prompts, responses and secrets from broad access",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_ai_workflow_workflow_runs_detail_df",
+      "detail_line": 13691,
+      "profile": "ai_workflow_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate application, immutable workflow version, run, node execution, request and invocation attempt; exclude prompts, responses and secrets from broad access",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_ai_workflow_workflow_runs_detail_ri",
+      "detail_line": 4970,
+      "profile": "ai_workflow_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate application, immutable workflow version, run, node execution, request and invocation attempt; exclude prompts, responses and secrets from broad access",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_ai_workflow_workflow_runs_detail_ri_hive",
+      "detail_line": 13809,
+      "profile": "ai_workflow_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate application, immutable workflow version, run, node execution, request and invocation attempt; exclude prompts, responses and secrets from broad access",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_ai_workflow_workflow_runs_detail_ri_kafka",
+      "detail_line": 13776,
+      "profile": "ai_workflow_fact",
+      "physical_role": "transport_bridge",
+      "decision": "correct",
+      "corrections": [
+        "version the envelope schema and retain topic/partition/offset, replay, quarantine and acknowledgement evidence without embedding credentials",
+        "separate application, immutable workflow version, run, node execution, request and invocation attempt; exclude prompts, responses and secrets from broad access",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_collect_remind_log_di",
+      "detail_line": 6480,
+      "profile": "engagement_delivery_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "preserve Principal consent, campaign/favorite/reminder identity, delivery attempt/receipt and opt-out semantics without inferring engagement success",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_collect_spu_log_di",
+      "detail_line": 6445,
+      "profile": "engagement_delivery_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "preserve Principal consent, campaign/favorite/reminder identity, delivery attempt/receipt and opt-out semantics without inferring engagement success",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ai_blue_content_df",
+      "detail_line": 9100,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ai_blue_content_ri",
+      "detail_line": 10517,
+      "profile": "community_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ai_blue_content_ri_hive",
+      "detail_line": 9233,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ai_blue_content_ri_kafka",
+      "detail_line": 9198,
+      "profile": "community_fact",
+      "physical_role": "transport_bridge",
+      "decision": "correct",
+      "corrections": [
+        "version the envelope schema and retain topic/partition/offset, replay, quarantine and acknowledgement evidence without embedding credentials",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ai_blue_resource_df",
+      "detail_line": 9371,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ai_blue_resource_ri",
+      "detail_line": 10494,
+      "profile": "community_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ai_blue_resource_ri_hive",
+      "detail_line": 9447,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ai_blue_resource_ri_kafka",
+      "detail_line": 9427,
+      "profile": "community_fact",
+      "physical_role": "transport_bridge",
+      "decision": "correct",
+      "corrections": [
+        "version the envelope schema and retain topic/partition/offset, replay, quarantine and acknowledgement evidence without embedding credentials",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ai_blue_user_attack_df",
+      "detail_line": 9507,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ai_blue_user_attack_ri",
+      "detail_line": 10474,
+      "profile": "community_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ai_blue_user_attack_ri_hive",
+      "detail_line": 9582,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ai_blue_user_attack_ri_kafka",
+      "detail_line": 9562,
+      "profile": "community_fact",
+      "physical_role": "transport_bridge",
+      "decision": "correct",
+      "corrections": [
+        "version the envelope schema and retain topic/partition/offset, replay, quarantine and acknowledgement evidence without embedding credentials",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ai_blue_user_info_df",
+      "detail_line": 8905,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ai_blue_user_info_ri",
+      "detail_line": 10556,
+      "profile": "community_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ai_blue_user_info_ri_hive",
+      "detail_line": 8998,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ai_blue_user_info_ri_kafka",
+      "detail_line": 8973,
+      "profile": "community_fact",
+      "physical_role": "transport_bridge",
+      "decision": "correct",
+      "corrections": [
+        "version the envelope schema and retain topic/partition/offset, replay, quarantine and acknowledgement evidence without embedding credentials",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_detail_df",
+      "detail_line": 6687,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_detail_ri",
+      "detail_line": 10621,
+      "profile": "community_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_detail_ri_hive",
+      "detail_line": 6842,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "prove source-to-sink conservation and stable identity across Kafka/Hive/Doris instead of treating a non-empty sink as semantic success"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_detail_ri_kafka",
+      "detail_line": 6808,
+      "profile": "community_fact",
+      "physical_role": "transport_bridge",
+      "decision": "correct",
+      "corrections": [
+        "version the envelope schema and retain topic/partition/offset, replay, quarantine and acknowledgement evidence without embedding credentials",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "prove source-to-sink conservation and stable identity across Kafka/Hive/Doris instead of treating a non-empty sink as semantic success"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ecology_comment_result_df",
+      "detail_line": 7511,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ecology_creator_result_df",
+      "detail_line": 7651,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "map actors through canonical Principal/source identity and effective assignments; never use mutable names or profile flags as authorization"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ecology_qa_result_df",
+      "detail_line": 7213,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ecology_result_df",
+      "detail_line": 7072,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ecology_selected_result_df",
+      "detail_line": 7372,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_ecology_user_result_df",
+      "detail_line": 7793,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "map actors through canonical Principal/source identity and effective assignments; never use mutable names or profile flags as authorization"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_log_di",
+      "detail_line": 6998,
+      "profile": "community_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_audit_quilty_check_detail_df",
+      "detail_line": 8844,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "retain quilty only as a misspelled source alias and publish canonical quality-review naming with accepted reviewer lineage"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_comment_detail_di",
+      "detail_line": 7925,
+      "profile": "community_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_comment_favorite_log_di",
+      "detail_line": 8062,
+      "profile": "community_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_commission_detail_df",
+      "detail_line": 8180,
+      "profile": "live_economy_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate live session, gift entitlement, Payment capture, Ledger entry, commission and reversal using ISO currency and integer minor units",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_follow_log_di",
+      "detail_line": 8100,
+      "profile": "community_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_live_products_df",
+      "detail_line": 8551,
+      "profile": "live_economy_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate live session, gift entitlement, Payment capture, Ledger entry, commission and reversal using ISO currency and integer minor units",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_live_recharge_df",
+      "detail_line": 8750,
+      "profile": "live_economy_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate live session, gift entitlement, Payment capture, Ledger entry, commission and reversal using ISO currency and integer minor units",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_live_room_df",
+      "detail_line": 8486,
+      "profile": "live_economy_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate live session, gift entitlement, Payment capture, Ledger entry, commission and reversal using ISO currency and integer minor units",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_live_tip_df",
+      "detail_line": 8711,
+      "profile": "live_economy_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate live session, gift entitlement, Payment capture, Ledger entry, commission and reversal using ISO currency and integer minor units",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_live_user_gift_log_di",
+      "detail_line": 8626,
+      "profile": "live_economy_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate live session, gift entitlement, Payment capture, Ledger entry, commission and reversal using ISO currency and integer minor units",
+        "map actors through canonical Principal/source identity and effective assignments; never use mutable names or profile flags as authorization"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_live_user_login_log_di",
+      "detail_line": 8677,
+      "profile": "live_economy_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate live session, gift entitlement, Payment capture, Ledger entry, commission and reversal using ISO currency and integer minor units",
+        "map actors through canonical Principal/source identity and effective assignments; never use mutable names or profile flags as authorization"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_message_detail_di",
+      "detail_line": 8220,
+      "profile": "community_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_report_apply_detail_df",
+      "detail_line": 8355,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_report_detail_df",
+      "detail_line": 8266,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_search_log_di",
+      "detail_line": 8138,
+      "profile": "community_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_trend_detail_df",
+      "detail_line": 6528,
+      "profile": "community_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_trend_favorite_log_di",
+      "detail_line": 7990,
+      "profile": "community_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_com_trend_share_log_di",
+      "detail_line": 8026,
+      "profile": "community_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_coupon_allowance_detail_di",
+      "detail_line": 5903,
+      "profile": "promotion_entitlement_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "represent Coupon entitlement issuance, claim, redemption, return and subsidy funding as immutable effects rather than mutable coupon status",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_coupon_refund_detail_di",
+      "detail_line": 5844,
+      "profile": "promotion_entitlement_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "represent Coupon entitlement issuance, claim, redemption, return and subsidy funding as immutable effects rather than mutable coupon status",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_coupon_send_detail_di",
+      "detail_line": 5647,
+      "profile": "promotion_entitlement_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "represent Coupon entitlement issuance, claim, redemption, return and subsidy funding as immutable effects rather than mutable coupon status",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_coupon_snap_detail_di",
+      "detail_line": 5787,
+      "profile": "promotion_entitlement_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "represent Coupon entitlement issuance, claim, redemption, return and subsidy funding as immutable effects rather than mutable coupon status",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_repay_bill_detail_df",
+      "detail_line": 5415,
+      "profile": "compensation_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate claim, accepted compensation decision, funding source, Payment effect and immutable Ledger entry with currency/minor units",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_anti_result_detail_ri",
+      "detail_line": 3532,
+      "profile": "customer_service_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "treat algorithm output as a versioned Risk signal, never as accepted ticket attribution or enforcement"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_attachment_df",
+      "detail_line": 3355,
+      "profile": "customer_service_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_chat_message_detail_di",
+      "detail_line": 3252,
+      "profile": "customer_service_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_check_detail_df",
+      "detail_line": 3410,
+      "profile": "customer_service_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_comment_detail_di",
+      "detail_line": 3190,
+      "profile": "customer_service_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_detail_di",
+      "detail_line": 2668,
+      "profile": "customer_service_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_detail_ri_hive",
+      "detail_line": 2915,
+      "profile": "customer_service_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "prove source-to-sink conservation and stable identity across Kafka/Hive/Doris instead of treating a non-empty sink as semantic success"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_detail_ri_kafka",
+      "detail_line": 2874,
+      "profile": "customer_service_fact",
+      "physical_role": "transport_bridge",
+      "decision": "correct",
+      "corrections": [
+        "version the envelope schema and retain topic/partition/offset, replay, quarantine and acknowledgement evidence without embedding credentials",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "prove source-to-sink conservation and stable identity across Kafka/Hive/Doris instead of treating a non-empty sink as semantic success"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_message_unit_detail_di",
+      "detail_line": 3747,
+      "profile": "customer_service_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_message_unit_detail_ri",
+      "detail_line": 4919,
+      "profile": "customer_service_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_message_unit_detail_ri_hive",
+      "detail_line": 3842,
+      "profile": "customer_service_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_message_unit_detail_ri_kafka",
+      "detail_line": 3815,
+      "profile": "customer_service_fact",
+      "physical_role": "transport_bridge",
+      "decision": "correct",
+      "corrections": [
+        "version the envelope schema and retain topic/partition/offset, replay, quarantine and acknowledgement evidence without embedding credentials",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_order_detail_di",
+      "detail_line": 3045,
+      "profile": "customer_service_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_problem_attribution_di",
+      "detail_line": 4055,
+      "profile": "customer_service_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_problem_attribution_ri",
+      "detail_line": 5028,
+      "profile": "customer_service_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_problem_attribution_ri_hive",
+      "detail_line": 4117,
+      "profile": "customer_service_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "prove source-to-sink conservation and stable identity across Kafka/Hive/Doris instead of treating a non-empty sink as semantic success"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_problem_attribution_ri_kafka",
+      "detail_line": 4101,
+      "profile": "customer_service_fact",
+      "physical_role": "transport_bridge",
+      "decision": "correct",
+      "corrections": [
+        "version the envelope schema and retain topic/partition/offset, replay, quarantine and acknowledgement evidence without embedding credentials",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "prove source-to-sink conservation and stable identity across Kafka/Hive/Doris instead of treating a non-empty sink as semantic success"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_strategy_detail_df",
+      "detail_line": 3445,
+      "profile": "customer_service_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_tag_detail_di",
+      "detail_line": 3926,
+      "profile": "customer_service_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_tag_detail_ri",
+      "detail_line": 5008,
+      "profile": "customer_service_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_tag_detail_ri_hive",
+      "detail_line": 3994,
+      "profile": "customer_service_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "prove source-to-sink conservation and stable identity across Kafka/Hive/Doris instead of treating a non-empty sink as semantic success"
+      ]
+    },
+    {
+      "source_asset": "dwd_cs_ticket_tag_detail_ri_kafka",
+      "detail_line": 3976,
+      "profile": "customer_service_fact",
+      "physical_role": "transport_bridge",
+      "decision": "correct",
+      "corrections": [
+        "version the envelope schema and retain topic/partition/offset, replay, quarantine and acknowledgement evidence without embedding credentials",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "prove source-to-sink conservation and stable identity across Kafka/Hive/Doris instead of treating a non-empty sink as semantic success"
+      ]
+    },
+    {
+      "source_asset": "dwd_goods_apply_detail_df",
+      "detail_line": 13003,
+      "profile": "catalog_listing_workflow_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate Catalog style/variant, Listing workflow attempt, review decision, operator assignment and settlement/payroll boundaries",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_goods_operate_import_detail_df",
+      "detail_line": 13195,
+      "profile": "catalog_listing_workflow_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate Catalog style/variant, Listing workflow attempt, review decision, operator assignment and settlement/payroll boundaries",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_goods_operate_log_di",
+      "detail_line": 13136,
+      "profile": "catalog_listing_workflow_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate Catalog style/variant, Listing workflow attempt, review decision, operator assignment and settlement/payroll boundaries",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_goods_operate_reject_detail_df",
+      "detail_line": 13241,
+      "profile": "catalog_listing_workflow_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate Catalog style/variant, Listing workflow attempt, review decision, operator assignment and settlement/payroll boundaries",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_goods_operate_result_df",
+      "detail_line": 13078,
+      "profile": "catalog_listing_workflow_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate Catalog style/variant, Listing workflow attempt, review decision, operator assignment and settlement/payroll boundaries",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_goods_settlement_user_salary_month_detail_df",
+      "detail_line": 13312,
+      "profile": "catalog_listing_workflow_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate Catalog style/variant, Listing workflow attempt, review decision, operator assignment and settlement/payroll boundaries",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_merchant_ai_answer_detail_df",
+      "detail_line": 21222,
+      "profile": "merchant_lifecycle_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate Merchant, Shop, LegalEntity, onboarding/offboarding, appeal, deposit and withdrawal effects; tokenize legal and bank data",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_merchant_appeal_detail_df",
+      "detail_line": 20975,
+      "profile": "merchant_lifecycle_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate Merchant, Shop, LegalEntity, onboarding/offboarding, appeal, deposit and withdrawal effects; tokenize legal and bank data",
+        "map actors through canonical Principal/source identity and effective assignments; never use mutable names or profile flags as authorization"
+      ]
+    },
+    {
+      "source_asset": "dwd_merchant_deposit_recharge_df",
+      "detail_line": 21178,
+      "profile": "merchant_lifecycle_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate Merchant, Shop, LegalEntity, onboarding/offboarding, appeal, deposit and withdrawal effects; tokenize legal and bank data",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_merchant_entry_apply_detail_df",
+      "detail_line": 20800,
+      "profile": "merchant_lifecycle_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate Merchant, Shop, LegalEntity, onboarding/offboarding, appeal, deposit and withdrawal effects; tokenize legal and bank data",
+        "map actors through canonical Principal/source identity and effective assignments; never use mutable names or profile flags as authorization"
+      ]
+    },
+    {
+      "source_asset": "dwd_merchant_exit_detail_df",
+      "detail_line": 21108,
+      "profile": "merchant_lifecycle_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate Merchant, Shop, LegalEntity, onboarding/offboarding, appeal, deposit and withdrawal effects; tokenize legal and bank data",
+        "map actors through canonical Principal/source identity and effective assignments; never use mutable names or profile flags as authorization"
+      ]
+    },
+    {
+      "source_asset": "dwd_merchant_withdraw_detail_df",
+      "detail_line": 21052,
+      "profile": "merchant_lifecycle_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate Merchant, Shop, LegalEntity, onboarding/offboarding, appeal, deposit and withdrawal effects; tokenize legal and bank data",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_meta_ai_governance_table_result_output_df",
+      "detail_line": 16685,
+      "profile": "metadata_operation_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_meta_ai_governance_task_result_output_df",
+      "detail_line": 16635,
+      "profile": "metadata_operation_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_meta_ai_helper_task_result_output_df",
+      "detail_line": 16565,
+      "profile": "metadata_operation_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_meta_baseline_df",
+      "detail_line": 16264,
+      "profile": "metadata_operation_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "distinguish definition, observation, run, result and accepted governance change, with owner/approval and immutable lineage"
+      ]
+    },
+    {
+      "source_asset": "dwd_meta_dq_dqc_detail_df",
+      "detail_line": 16300,
+      "profile": "metadata_operation_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "distinguish definition, observation, run, result and accepted governance change, with owner/approval and immutable lineage"
+      ]
+    },
+    {
+      "source_asset": "dwd_meta_dq_dqc_instance_df",
+      "detail_line": 16384,
+      "profile": "metadata_operation_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "distinguish definition, observation, run, result and accepted governance change, with owner/approval and immutable lineage"
+      ]
+    },
+    {
+      "source_asset": "dwd_meta_metrics_detail_df",
+      "detail_line": 16456,
+      "profile": "metadata_operation_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "distinguish definition, observation, run, result and accepted governance change, with owner/approval and immutable lineage"
+      ]
+    },
+    {
+      "source_asset": "dwd_meta_sla_parent_child_node_detail_df",
+      "detail_line": 15715,
+      "profile": "metadata_operation_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "distinguish definition, observation, run, result and accepted governance change, with owner/approval and immutable lineage"
+      ]
+    },
+    {
+      "source_asset": "dwd_meta_sla_task_detail_df",
+      "detail_line": 15752,
+      "profile": "metadata_operation_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "distinguish definition, observation, run, result and accepted governance change, with owner/approval and immutable lineage"
+      ]
+    },
+    {
+      "source_asset": "dwd_meta_table_columns_detail_df",
+      "detail_line": 15971,
+      "profile": "metadata_operation_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "distinguish definition, observation, run, result and accepted governance change, with owner/approval and immutable lineage"
+      ]
+    },
+    {
+      "source_asset": "dwd_meta_table_datasource_df",
+      "detail_line": 16174,
+      "profile": "metadata_operation_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "distinguish definition, observation, run, result and accepted governance change, with owner/approval and immutable lineage"
+      ]
+    },
+    {
+      "source_asset": "dwd_meta_table_detail_df",
+      "detail_line": 15843,
+      "profile": "metadata_operation_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "distinguish definition, observation, run, result and accepted governance change, with owner/approval and immutable lineage"
+      ]
+    },
+    {
+      "source_asset": "dwd_meta_table_doris_df",
+      "detail_line": 16112,
+      "profile": "metadata_operation_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "prove source-to-sink conservation and stable identity across Kafka/Hive/Doris instead of treating a non-empty sink as semantic success"
+      ]
+    },
+    {
+      "source_asset": "dwd_meta_table_lineage_df",
+      "detail_line": 16014,
+      "profile": "metadata_operation_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "distinguish definition, observation, run, result and accepted governance change, with owner/approval and immutable lineage"
+      ]
+    },
+    {
+      "source_asset": "dwd_meta_table_report_dataset_df",
+      "detail_line": 16064,
+      "profile": "metadata_operation_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "distinguish definition, observation, run, result and accepted governance change, with owner/approval and immutable lineage"
+      ]
+    },
+    {
+      "source_asset": "dwd_meta_task_fink_df",
+      "detail_line": 16214,
+      "profile": "metadata_operation_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "retain fink only as a source alias, verify whether the source means Flink, and bind the normalized engine type to an approved dictionary"
+      ]
+    },
+    {
+      "source_asset": "dwd_meta_task_instance_detail_di",
+      "detail_line": 15442,
+      "profile": "metadata_operation_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "distinguish definition, observation, run, result and accepted governance change, with owner/approval and immutable lineage"
+      ]
+    },
+    {
+      "source_asset": "dwd_meta_task_node_detail_df",
+      "detail_line": 15571,
+      "profile": "metadata_operation_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "distinguish definition, observation, run, result and accepted governance change, with owner/approval and immutable lineage"
+      ]
+    },
+    {
+      "source_asset": "dwd_paimon_ai_ytoken_image_create_ri",
+      "detail_line": 14684,
+      "profile": "token_marketplace_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate Principal, credential reference, model/pricing version, invocation usage, quota ledger, Payment top-up and signed Skill entitlement",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_paimon_ai_ytoken_login_ri",
+      "detail_line": 14428,
+      "profile": "token_marketplace_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate Principal, credential reference, model/pricing version, invocation usage, quota ledger, Payment top-up and signed Skill entitlement",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_paimon_ai_ytoken_operate_log_ri",
+      "detail_line": 14612,
+      "profile": "token_marketplace_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate Principal, credential reference, model/pricing version, invocation usage, quota ledger, Payment top-up and signed Skill entitlement",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_paimon_ai_ytoken_skill_download_ri",
+      "detail_line": 14766,
+      "profile": "token_marketplace_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate Principal, credential reference, model/pricing version, invocation usage, quota ledger, Payment top-up and signed Skill entitlement",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_paimon_ai_ytoken_skill_search_log_ri",
+      "detail_line": 14810,
+      "profile": "token_marketplace_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate Principal, credential reference, model/pricing version, invocation usage, quota ledger, Payment top-up and signed Skill entitlement",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_paimon_ai_ytoken_token_ri",
+      "detail_line": 14537,
+      "profile": "token_marketplace_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate Principal, credential reference, model/pricing version, invocation usage, quota ledger, Payment top-up and signed Skill entitlement",
+        "exclude secret token values and model access as credential metadata plus immutable quota-ledger effects"
+      ]
+    },
+    {
+      "source_asset": "dwd_paimon_ai_ytoken_top_up_ri",
+      "detail_line": 14480,
+      "profile": "token_marketplace_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate Principal, credential reference, model/pricing version, invocation usage, quota ledger, Payment top-up and signed Skill entitlement",
+        "require captured Payment reference, ISO currency, integer minor units and immutable quota-ledger credit; a top-up row cannot self-settle"
+      ]
+    },
+    {
+      "source_asset": "dwd_platform_intelligence_clue_detail_ri",
+      "detail_line": 12548,
+      "profile": "operations_intelligence_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate metric observation, collection task/result, intelligence signal, model attempt, alert and accepted Risk/Operations decision",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_platform_intelligence_clue_detail_ri_hive",
+      "detail_line": 12024,
+      "profile": "operations_intelligence_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate metric observation, collection task/result, intelligence signal, model attempt, alert and accepted Risk/Operations decision",
+        "prove source-to-sink conservation and stable identity across Kafka/Hive/Doris instead of treating a non-empty sink as semantic success"
+      ]
+    },
+    {
+      "source_asset": "dwd_platform_intelligence_clue_detail_ri_kafka",
+      "detail_line": 11997,
+      "profile": "operations_intelligence_fact",
+      "physical_role": "transport_bridge",
+      "decision": "correct",
+      "corrections": [
+        "version the envelope schema and retain topic/partition/offset, replay, quarantine and acknowledgement evidence without embedding credentials",
+        "separate metric observation, collection task/result, intelligence signal, model attempt, alert and accepted Risk/Operations decision",
+        "prove source-to-sink conservation and stable identity across Kafka/Hive/Doris instead of treating a non-empty sink as semantic success"
+      ]
+    },
+    {
+      "source_asset": "dwd_platform_intelligence_collect_result_ri",
+      "detail_line": 11642,
+      "profile": "operations_intelligence_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate metric observation, collection task/result, intelligence signal, model attempt, alert and accepted Risk/Operations decision",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_platform_intelligence_model_result_detail_df",
+      "detail_line": 11726,
+      "profile": "operations_intelligence_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate metric observation, collection task/result, intelligence signal, model attempt, alert and accepted Risk/Operations decision",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_platform_intelligence_model_result_detail_ri",
+      "detail_line": 12516,
+      "profile": "operations_intelligence_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate metric observation, collection task/result, intelligence signal, model attempt, alert and accepted Risk/Operations decision",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_platform_intelligence_model_result_detail_ri_hive",
+      "detail_line": 11834,
+      "profile": "operations_intelligence_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate metric observation, collection task/result, intelligence signal, model attempt, alert and accepted Risk/Operations decision",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_platform_intelligence_model_result_detail_ri_kafka",
+      "detail_line": 11802,
+      "profile": "operations_intelligence_fact",
+      "physical_role": "transport_bridge",
+      "decision": "correct",
+      "corrections": [
+        "version the envelope schema and retain topic/partition/offset, replay, quarantine and acknowledgement evidence without embedding credentials",
+        "separate metric observation, collection task/result, intelligence signal, model attempt, alert and accepted Risk/Operations decision",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_platform_intelligence_monitor_task_record_ri",
+      "detail_line": 11546,
+      "profile": "operations_intelligence_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate metric observation, collection task/result, intelligence signal, model attempt, alert and accepted Risk/Operations decision",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_platform_intelligence_trend_di",
+      "detail_line": 11255,
+      "profile": "operations_intelligence_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate metric observation, collection task/result, intelligence signal, model attempt, alert and accepted Risk/Operations decision",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_platform_intelligence_trend_ri",
+      "detail_line": 11322,
+      "profile": "operations_intelligence_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate metric observation, collection task/result, intelligence signal, model attempt, alert and accepted Risk/Operations decision",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_platform_ng_log_ri",
+      "detail_line": 11070,
+      "profile": "operations_intelligence_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate metric observation, collection task/result, intelligence signal, model attempt, alert and accepted Risk/Operations decision",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_platform_ng_log_ri2hive",
+      "detail_line": 11138,
+      "profile": "operations_intelligence_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate metric observation, collection task/result, intelligence signal, model attempt, alert and accepted Risk/Operations decision",
+        "prove source-to-sink conservation and stable identity across Kafka/Hive/Doris instead of treating a non-empty sink as semantic success"
+      ]
+    },
+    {
+      "source_asset": "dwd_platform_yeyes_alarm_detail_df",
+      "detail_line": 12098,
+      "profile": "operations_intelligence_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate metric observation, collection task/result, intelligence signal, model attempt, alert and accepted Risk/Operations decision",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_push_app_log_di",
+      "detail_line": 6262,
+      "profile": "engagement_delivery_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "preserve Principal consent, campaign/favorite/reminder identity, delivery attempt/receipt and opt-out semantics without inferring engagement success",
+        "repair the SMS-heading/application-target ambiguity by typing channel, endpoint, provider attempt and receipt explicitly"
+      ]
+    },
+    {
+      "source_asset": "dwd_push_log_di",
+      "detail_line": 6314,
+      "profile": "engagement_delivery_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "preserve Principal consent, campaign/favorite/reminder identity, delivery attempt/receipt and opt-out semantics without inferring engagement success",
+        "reject the DWD name under a DWM heading as wide-layer authority; retain it as a typed delivery fact only"
+      ]
+    },
+    {
+      "source_asset": "dwd_push_message_log_di",
+      "detail_line": 6212,
+      "profile": "engagement_delivery_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "preserve Principal consent, campaign/favorite/reminder identity, delivery attempt/receipt and opt-out semantics without inferring engagement success",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_scm_inbound_detail_di",
+      "detail_line": 17338,
+      "profile": "warehouse_quality_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate receipt/sort/quality/outbound physical operations, Inventory ledger effects, AI attempt and accepted human review",
+        "physical observations do not create Inventory balances, saleability or quality effects without accepted owning-domain operations"
+      ]
+    },
+    {
+      "source_asset": "dwd_scm_inbound_header_detail_di",
+      "detail_line": 17457,
+      "profile": "warehouse_quality_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate receipt/sort/quality/outbound physical operations, Inventory ledger effects, AI attempt and accepted human review",
+        "physical observations do not create Inventory balances, saleability or quality effects without accepted owning-domain operations"
+      ]
+    },
+    {
+      "source_asset": "dwd_scm_outbound_detail_di",
+      "detail_line": 18052,
+      "profile": "warehouse_quality_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate receipt/sort/quality/outbound physical operations, Inventory ledger effects, AI attempt and accepted human review",
+        "physical observations do not create Inventory balances, saleability or quality effects without accepted owning-domain operations"
+      ]
+    },
+    {
+      "source_asset": "dwd_scm_quality_ai_feedback_detail_di",
+      "detail_line": 19727,
+      "profile": "warehouse_quality_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate receipt/sort/quality/outbound physical operations, Inventory ledger effects, AI attempt and accepted human review",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_scm_quality_ai_identify_apply_detail_di",
+      "detail_line": 18162,
+      "profile": "warehouse_quality_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate receipt/sort/quality/outbound physical operations, Inventory ledger effects, AI attempt and accepted human review",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_scm_quality_ai_image_quality_detail_di",
+      "detail_line": 18499,
+      "profile": "warehouse_quality_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate receipt/sort/quality/outbound physical operations, Inventory ledger effects, AI attempt and accepted human review",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "dwd_scm_quality_ai_part_feature_detail_di",
+      "detail_line": 18890,
+      "profile": "warehouse_quality_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate receipt/sort/quality/outbound physical operations, Inventory ledger effects, AI attempt and accepted human review",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwd_scm_quality_ai_result_detail_di",
+      "detail_line": 19077,
+      "profile": "warehouse_quality_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate receipt/sort/quality/outbound physical operations, Inventory ledger effects, AI attempt and accepted human review",
+        "keep AI result separate from accepted human quality review and downstream saleability/inventory effects"
+      ]
+    },
+    {
+      "source_asset": "dwd_scm_quality_check_result_di",
+      "detail_line": 17803,
+      "profile": "warehouse_quality_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate receipt/sort/quality/outbound physical operations, Inventory ledger effects, AI attempt and accepted human review",
+        "physical observations do not create Inventory balances, saleability or quality effects without accepted owning-domain operations"
+      ]
+    },
+    {
+      "source_asset": "dwd_scm_quality_identify_result_detail_di",
+      "detail_line": 17960,
+      "profile": "warehouse_quality_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate receipt/sort/quality/outbound physical operations, Inventory ledger effects, AI attempt and accepted human review",
+        "physical observations do not create Inventory balances, saleability or quality effects without accepted owning-domain operations"
+      ]
+    },
+    {
+      "source_asset": "dwd_scm_quality_operate_log_di",
+      "detail_line": 17694,
+      "profile": "warehouse_quality_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate receipt/sort/quality/outbound physical operations, Inventory ledger effects, AI attempt and accepted human review",
+        "physical observations do not create Inventory balances, saleability or quality effects without accepted owning-domain operations"
+      ]
+    },
+    {
+      "source_asset": "dwd_trade_order_appeal_status_detail_df",
+      "detail_line": 608,
+      "profile": "order_payment_fulfillment_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "separate Order header/item, Payment attempt/effect, benefit allocation and Fulfillment shipment identities; no joined row may mutate owning state",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_trade_order_detail_di",
+      "detail_line": 157,
+      "profile": "order_payment_fulfillment_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate Order header/item, Payment attempt/effect, benefit allocation and Fulfillment shipment identities; no joined row may mutate owning state",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_trade_order_discount_detail_di",
+      "detail_line": 511,
+      "profile": "order_payment_fulfillment_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate Order header/item, Payment attempt/effect, benefit allocation and Fulfillment shipment identities; no joined row may mutate owning state",
+        "reject legacy Trade discount rows as benefit authority; admit only assessed mappings to immutable Order-owned benefit allocations and funding entries"
+      ]
+    },
+    {
+      "source_asset": "dwd_trade_order_logistic_detail_di",
+      "detail_line": 783,
+      "profile": "order_payment_fulfillment_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate Order header/item, Payment attempt/effect, benefit allocation and Fulfillment shipment identities; no joined row may mutate owning state",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_trade_order_logistic_track_structure_di",
+      "detail_line": 916,
+      "profile": "order_payment_fulfillment_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate Order header/item, Payment attempt/effect, benefit allocation and Fulfillment shipment identities; no joined row may mutate owning state",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_trade_order_pay_detail_di",
+      "detail_line": 652,
+      "profile": "order_payment_fulfillment_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate Order header/item, Payment attempt/effect, benefit allocation and Fulfillment shipment identities; no joined row may mutate owning state",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_trade_order_sub_detail_di",
+      "detail_line": 318,
+      "profile": "order_payment_fulfillment_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "separate Order header/item, Payment attempt/effect, benefit allocation and Fulfillment shipment identities; no joined row may mutate owning state",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwd_trade_refund_bill_detail_di",
+      "detail_line": 1837,
+      "profile": "aftersales_refund_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "bind AfterSale case/line, refund Payment effect, return shipment and benefit reversal at partial multi-line grain",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_trade_refund_discount_detail_df",
+      "detail_line": 2118,
+      "profile": "aftersales_refund_fact",
+      "physical_role": "current_projection",
+      "decision": "correct",
+      "corrections": [
+        "make the row a rebuildable as-of projection from immutable facts; never overwrite or substitute for event history",
+        "bind AfterSale case/line, refund Payment effect, return shipment and benefit reversal at partial multi-line grain",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_trade_refund_logistic_detail_di",
+      "detail_line": 1987,
+      "profile": "aftersales_refund_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "bind AfterSale case/line, refund Payment effect, return shipment and benefit reversal at partial multi-line grain",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_trade_refund_order_detail_di",
+      "detail_line": 1578,
+      "profile": "aftersales_refund_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "bind AfterSale case/line, refund Payment effect, return shipment and benefit reversal at partial multi-line grain",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwd_user_login_log_di",
+      "detail_line": 6387,
+      "profile": "engagement_delivery_fact",
+      "physical_role": "event_fact",
+      "decision": "correct",
+      "corrections": [
+        "use a stable tenant-scoped event key, preserve event/ingestion time and source version, and make replay idempotent",
+        "preserve Principal consent, campaign/favorite/reminder identity, delivery attempt/receipt and opt-out semantics without inferring engagement success",
+        "map actors through canonical Principal/source identity and effective assignments; never use mutable names or profile flags as authorization"
+      ]
+    },
+    {
+      "source_asset": "dwm_ai_workflow_detail_df",
+      "detail_line": 14856,
+      "profile": "ai_workflow_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate application, immutable workflow version, run, node execution, request and invocation attempt; exclude prompts, responses and secrets from broad access",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwm_ai_workflow_detail_ri_doris",
+      "detail_line": 15191,
+      "profile": "ai_workflow_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate application, immutable workflow version, run, node execution, request and invocation attempt; exclude prompts, responses and secrets from broad access",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwm_ai_workflow_detail_ri_hive",
+      "detail_line": 15137,
+      "profile": "ai_workflow_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate application, immutable workflow version, run, node execution, request and invocation attempt; exclude prompts, responses and secrets from broad access",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwm_com_audit_ai_blue_input_detail_di",
+      "detail_line": 10160,
+      "profile": "community_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwm_com_audit_ai_blue_output_detail_df",
+      "detail_line": 10276,
+      "profile": "community_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwm_com_audit_ai_blue_output_detail_ri_doris",
+      "detail_line": 10748,
+      "profile": "community_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwm_com_audit_ai_blue_output_detail_ri_hive",
+      "detail_line": 10661,
+      "profile": "community_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwm_com_audit_ecology_all_result_df",
+      "detail_line": 9640,
+      "profile": "community_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate content, interaction, report, appeal, moderation decision and quality-review identities while restricting content and actor data",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwm_coupon_detail_di",
+      "detail_line": 5969,
+      "profile": "promotion_entitlement_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "represent Coupon entitlement issuance, claim, redemption, return and subsidy funding as immutable effects rather than mutable coupon status",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwm_cs_repay_detail_df",
+      "detail_line": 5536,
+      "profile": "compensation_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate claim, accepted compensation decision, funding source, Payment effect and immutable Ledger entry with currency/minor units",
+        "type every amount, quota and rate with named unit; monetary values require ISO currency, integer minor units and exact funding/effect references"
+      ]
+    },
+    {
+      "source_asset": "dwm_cs_ticket_ai_detail_di",
+      "detail_line": 4654,
+      "profile": "customer_service_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwm_cs_ticket_ai_detail_ri_doris",
+      "detail_line": 5047,
+      "profile": "customer_service_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwm_cs_ticket_ai_detail_ri_hive",
+      "detail_line": 5132,
+      "profile": "customer_service_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwm_cs_ticket_detail_di",
+      "detail_line": 4172,
+      "profile": "customer_service_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate ticket, message, attachment, order link, tag, quality review, AI signal and accepted attribution while keeping content restricted",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwm_goods_detail_df",
+      "detail_line": 13423,
+      "profile": "catalog_listing_workflow_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate Catalog style/variant, Listing workflow attempt, review decision, operator assignment and settlement/payroll boundaries",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "dwm_meta_dq_dqc_df",
+      "detail_line": 16736,
+      "profile": "metadata_operation_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "distinguish definition, observation, run, result and accepted governance change, with owner/approval and immutable lineage"
+      ]
+    },
+    {
+      "source_asset": "dwm_meta_table_lineage_df",
+      "detail_line": 17075,
+      "profile": "metadata_operation_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "distinguish definition, observation, run, result and accepted governance change, with owner/approval and immutable lineage"
+      ]
+    },
+    {
+      "source_asset": "dwm_meta_task_detail_di",
+      "detail_line": 16828,
+      "profile": "metadata_operation_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "version assets, schemas, lineage, task definitions/runs and DQC results; AI outputs remain suggestions until accepted metadata operations",
+        "distinguish definition, observation, run, result and accepted governance change, with owner/approval and immutable lineage"
+      ]
+    },
+    {
+      "source_asset": "dwm_platform_intelligence_ai_detail_di",
+      "detail_line": 12201,
+      "profile": "operations_intelligence_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate metric observation, collection task/result, intelligence signal, model attempt, alert and accepted Risk/Operations decision",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwm_platform_intelligence_ai_detail_ri_doris",
+      "detail_line": 12677,
+      "profile": "operations_intelligence_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate metric observation, collection task/result, intelligence signal, model attempt, alert and accepted Risk/Operations decision",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwm_platform_intelligence_ai_detail_ri_hive",
+      "detail_line": 12589,
+      "profile": "operations_intelligence_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate metric observation, collection task/result, intelligence signal, model attempt, alert and accepted Risk/Operations decision",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "dwm_scm_detail_di",
+      "detail_line": 20114,
+      "profile": "warehouse_quality_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate receipt/sort/quality/outbound physical operations, Inventory ledger effects, AI attempt and accepted human review",
+        "do not create one cross-process mega-grain: publish purpose-specific receipt, quality, inventory and outbound projections keyed by exact operation"
+      ]
+    },
+    {
+      "source_asset": "dwm_trade_order_detail_di",
+      "detail_line": 1032,
+      "profile": "order_payment_fulfillment_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "separate Order header/item, Payment attempt/effect, benefit allocation and Fulfillment shipment identities; no joined row may mutate owning state",
+        "use one declared order-item as-of grain and preaggregate payments, benefits, shipments and appeals before joining"
+      ]
+    },
+    {
+      "source_asset": "dwm_trade_refund_detail_di",
+      "detail_line": 2204,
+      "profile": "aftersales_refund_fact",
+      "physical_role": "wide_projection",
+      "decision": "correct",
+      "corrections": [
+        "declare one exact business grain, preaggregate one-to-many inputs, and bind every joined dimension to the version effective at the fact time",
+        "bind AfterSale case/line, refund Payment effect, return shipment and benefit reversal at partial multi-line grain",
+        "use one after-sale-line as-of grain and preaggregate refunds, return shipments and benefit reversals before joining"
+      ]
+    },
+    {
+      "source_asset": "ods_ai_workflow_workflow_runs_ri",
+      "detail_line": 13762,
+      "profile": "wrong_layer_raw_source",
+      "physical_role": "wrong_layer",
+      "decision": "reject",
+      "corrections": [
+        "reject this object as DWD/DWM authority and retain it only in its governed source or reference layer",
+        "retain raw source schema, payload digest and deterministic checkpoint; only governed facts may flow into DWD/DWM",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "ods_community_ai_blue_content_ri",
+      "detail_line": 9184,
+      "profile": "wrong_layer_raw_source",
+      "physical_role": "wrong_layer",
+      "decision": "reject",
+      "corrections": [
+        "reject this object as DWD/DWM authority and retain it only in its governed source or reference layer",
+        "retain raw source schema, payload digest and deterministic checkpoint; only governed facts may flow into DWD/DWM",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "ods_community_ai_blue_resource_ri",
+      "detail_line": 9413,
+      "profile": "wrong_layer_raw_source",
+      "physical_role": "wrong_layer",
+      "decision": "reject",
+      "corrections": [
+        "reject this object as DWD/DWM authority and retain it only in its governed source or reference layer",
+        "retain raw source schema, payload digest and deterministic checkpoint; only governed facts may flow into DWD/DWM",
+        "classify and restrict raw text/media/attachments, expose redacted evidence references, and enforce consent/retention before analytical use"
+      ]
+    },
+    {
+      "source_asset": "ods_community_ai_blue_user_info_ri",
+      "detail_line": 8959,
+      "profile": "wrong_layer_raw_source",
+      "physical_role": "wrong_layer",
+      "decision": "reject",
+      "corrections": [
+        "reject this object as DWD/DWM authority and retain it only in its governed source or reference layer",
+        "retain raw source schema, payload digest and deterministic checkpoint; only governed facts may flow into DWD/DWM",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "ods_community_community_audit_result_ri",
+      "detail_line": 6780,
+      "profile": "wrong_layer_raw_source",
+      "physical_role": "wrong_layer",
+      "decision": "reject",
+      "corrections": [
+        "reject this object as DWD/DWM authority and retain it only in its governed source or reference layer",
+        "retain raw source schema, payload digest and deterministic checkpoint; only governed facts may flow into DWD/DWM",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "ods_community_monitor_collect_result_ri",
+      "detail_line": 11660,
+      "profile": "wrong_layer_raw_source",
+      "physical_role": "wrong_layer",
+      "decision": "reject",
+      "corrections": [
+        "reject this object as DWD/DWM authority and retain it only in its governed source or reference layer",
+        "retain raw source schema, payload digest and deterministic checkpoint; only governed facts may flow into DWD/DWM",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "ods_community_monitor_task_ri",
+      "detail_line": 11571,
+      "profile": "wrong_layer_raw_source",
+      "physical_role": "wrong_layer",
+      "decision": "reject",
+      "corrections": [
+        "reject this object as DWD/DWM authority and retain it only in its governed source or reference layer",
+        "retain raw source schema, payload digest and deterministic checkpoint; only governed facts may flow into DWD/DWM",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "ods_community_opinion_trend_ri",
+      "detail_line": 11308,
+      "profile": "wrong_layer_raw_source",
+      "physical_role": "wrong_layer",
+      "decision": "reject",
+      "corrections": [
+        "reject this object as DWD/DWM authority and retain it only in its governed source or reference layer",
+        "retain raw source schema, payload digest and deterministic checkpoint; only governed facts may flow into DWD/DWM",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "ods_intelligence_clue_ri",
+      "detail_line": 11983,
+      "profile": "wrong_layer_raw_source",
+      "physical_role": "wrong_layer",
+      "decision": "reject",
+      "corrections": [
+        "reject this object as DWD/DWM authority and retain it only in its governed source or reference layer",
+        "retain raw source schema, payload digest and deterministic checkpoint; only governed facts may flow into DWD/DWM",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    },
+    {
+      "source_asset": "ods_intelligence_model_result_ri",
+      "detail_line": 11788,
+      "profile": "wrong_layer_raw_source",
+      "physical_role": "wrong_layer",
+      "decision": "reject",
+      "corrections": [
+        "reject this object as DWD/DWM authority and retain it only in its governed source or reference layer",
+        "retain raw source schema, payload digest and deterministic checkpoint; only governed facts may flow into DWD/DWM",
+        "bind model, prompt/policy, threshold and result dictionaries to immutable versions; AI output remains advisory until an owning-domain decision"
+      ]
+    },
+    {
+      "source_asset": "ods_ticket_ticket_detail_ri",
+      "detail_line": 2858,
+      "profile": "wrong_layer_raw_source",
+      "physical_role": "wrong_layer",
+      "decision": "reject",
+      "corrections": [
+        "reject this object as DWD/DWM authority and retain it only in its governed source or reference layer",
+        "retain raw source schema, payload digest and deterministic checkpoint; only governed facts may flow into DWD/DWM",
+        "retain typed status dictionaries, source mappings, effective versions and deletion/reversal lineage instead of inferring meaning from numeric codes"
+      ]
+    }
+  ],
+  "runtime_nonempty_reconciliation": {
+    "gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/23-canonical-promotion-engagement-customer-service-contract.sql",
+    "evidence_ref": null,
+    "run_id": null,
+    "row_count": 0,
+    "tenant_count": 0,
+    "status": "missing"
+  }
+}
