@@ -93,7 +93,7 @@ zero-difference checks, and a separately checksummed independent verifier.
 Documentation volume estimates (for example “15.96 亿”) are never used as a
 denominator. A merely non-empty JSON file can no longer promote any of the 718
 assets to `verified`.
-The governed detailed-disposition numerator is now 63/718. The Product
+The governed detailed-disposition numerator is now 69/718. The Product
 slice covers all ten authoritative 商品 overview assets: nine DDL-backed assets
 are specified across Catalog, Listing, workflow, Identity/Merchant and Quality
 boundaries; the personnel salary asset remains provisional because its detailed
@@ -111,6 +111,14 @@ Operations. The exit heading recreates the withdraw table, so offboarding stays
 IDs, bank/card data, phones, addresses, vouchers, prompts and responses stay
 tokenized or restricted; missing withdrawal currency and string/generic-unit
 deposit amounts fail closed. These assets also remain runtime-unverified.
+The Coupon slice covers all six authoritative 优惠券 assets with same-name DDL
+evidence. Template and Campaign snapshots become immutable versions; issuance
+becomes an Entitlement plus lifecycle ledger; acquisition attempts cannot
+fabricate issued entitlements; and returns must reference the exact original
+Order benefit allocation and AfterSale reversal. The platform-allowance label
+does not prove the funder when `seller_id` is present, and JSON/STRING amounts
+remain quarantined until currency, unit, rounding and conservation are proven.
+All six assets are specified but runtime and final verification remain zero.
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%

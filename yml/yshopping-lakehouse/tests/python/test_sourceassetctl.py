@@ -150,6 +150,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_commerce_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_product_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_merchant_source_dispositions(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_coupon_source_dispositions(self.inventory))
         self.assertEqual(
             [],
             validate_trade_admission(
@@ -262,12 +263,12 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual(110, status["bounded_domain_asset_count"])
         self.assertEqual(6, status["explicit_rejection_count"])
         self.assertEqual(718, status["preliminary_handled_count"])
-        self.assertEqual(63, status["detailed_disposition_specified_count"])
+        self.assertEqual(69, status["detailed_disposition_specified_count"])
         self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
         self.assertEqual(99.16, status["routing_percent"])
         self.assertEqual(100.0, status["preliminary_handled_percent"])
-        self.assertEqual(8.77, status["detailed_disposition_specified_percent"])
+        self.assertEqual(9.61, status["detailed_disposition_specified_percent"])
         self.assertEqual(0.0, status["runtime_nonempty_reconciled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
         self.assertIn(
@@ -291,7 +292,9 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertTrue(any("product=0/10 (0.00%)" in line for line in lines))
         self.assertTrue(any("merchant=6/7 (85.71%)" in line for line in lines))
         self.assertTrue(any("merchant=0/7 (0.00%)" in line for line in lines))
-        self.assertTrue(any("merchant=0/7; routing is not completion" in line for line in lines))
+        self.assertTrue(any("coupon=6/6 (100.00%)" in line for line in lines))
+        self.assertTrue(any("coupon=0/6 (0.00%)" in line for line in lines))
+        self.assertTrue(any("coupon=0/6; routing is not completion" in line for line in lines))
 
     def test_game_dispositions_cover_exact_authoritative_overview_rows(self):
         observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "游戏")
@@ -1032,6 +1035,99 @@ class SourceAssetCtlTest(unittest.TestCase):
 
     def test_all_merchant_implementation_references_resolve(self):
         contract = SOURCE_ASSETS.load_merchant_source_dispositions()
+        references = [
+            reference
+            for asset in contract["assets"]
+            for key in ("backend_refs", "lakehouse_refs")
+            for reference in asset[key]
+        ]
+        self.assertEqual(
+            [],
+            [
+                (reference, SOURCE_ASSETS._contract_reference_error(reference))
+                for reference in references
+                if SOURCE_ASSETS._contract_reference_error(reference)
+            ],
+        )
+
+    def test_coupon_dispositions_cover_every_authoritative_ods_asset(self):
+        contract = SOURCE_ASSETS.load_coupon_source_dispositions()
+        expected = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "优惠券")
+        self.assertEqual(6, len(expected))
+        self.assertEqual(set(expected), {asset["source_asset"] for asset in contract["assets"]})
+        self.assertEqual(
+            {"ddl_backed": 6},
+            dict(Counter(asset["source_evidence"]["status"] for asset in contract["assets"])),
+        )
+        for asset in contract["assets"]:
+            observed = expected[asset["source_asset"]]
+            self.assertEqual(observed["source_labels"], [asset["source_label"]])
+            self.assertIn(
+                (asset["source_anchor"]["document"], asset["source_anchor"]["line"]),
+                observed["anchors"],
+            )
+
+    def test_coupon_dispositions_bind_entitlement_allocation_and_funding(self):
+        contract = SOURCE_ASSETS.load_coupon_source_dispositions()
+        by_name = {asset["source_asset"]: asset for asset in contract["assets"]}
+        issued = by_name["ods_coupon_coupon_send_di"]
+        self.assertIn("versioned schema", " ".join(issued["corrections"]))
+        self.assertIn("found_type_code", " ".join(issued["corrections"]))
+        template = by_name["ods_coupon_coupon_template_df"]
+        self.assertIn("trailing comma", " ".join(template["corrections"]))
+        acquisition = by_name["ods_coupon_coupon_snap_di"]
+        self.assertIn("does not itself prove", acquisition["semantic_rules"]["authority"])
+        refund = by_name["ods_coupon_coupon_refund_di"]
+        self.assertIn("exact original Order benefit allocation", " ".join(refund["corrections"]))
+        allowance = by_name["ods_coupon_coupon_allowance_di"]
+        self.assertIn("do not assume", " ".join(allowance["corrections"]))
+        self.assertIn("STRING lacks currency/unit", allowance["semantic_rules"]["money_or_quantity"])
+
+    def test_coupon_status_is_fully_specified_but_not_runtime_verified(self):
+        self.assertEqual(
+            {
+                "coupon_source_asset_count": 6,
+                "coupon_detailed_disposition_specified_count": 6,
+                "coupon_runtime_nonempty_reconciled_count": 0,
+                "coupon_final_disposition_verified_count": 0,
+                "coupon_detailed_disposition_percent": 100.0,
+                "coupon_runtime_nonempty_reconciled_percent": 0.0,
+                "coupon_final_disposition_verified_percent": 0.0,
+            },
+            SOURCE_ASSETS.coupon_disposition_status(self.inventory),
+        )
+        contract = SOURCE_ASSETS.load_coupon_source_dispositions()
+        for asset in contract["assets"]:
+            self.assertEqual("specified", asset["specification_status"])
+            self.assertEqual("unverified", asset["verification_status"])
+            self.assertEqual("missing", asset["runtime_nonempty_reconciliation"]["status"])
+
+    def test_coupon_contract_rejects_missing_duplicate_mislabeled_and_false_verification(self):
+        contract = SOURCE_ASSETS.load_coupon_source_dispositions()
+        missing = json.loads(json.dumps(contract))
+        missing["assets"].pop()
+        errors = SOURCE_ASSETS.validate_coupon_source_dispositions(self.inventory, missing)
+        self.assertTrue(any("differ from authoritative ODS overview" in error for error in errors))
+
+        duplicate = json.loads(json.dumps(contract))
+        duplicate["assets"][1] = json.loads(json.dumps(duplicate["assets"][0]))
+        errors = SOURCE_ASSETS.validate_coupon_source_dispositions(self.inventory, duplicate)
+        self.assertTrue(any("duplicate source_asset" in error for error in errors))
+
+        mislabeled = json.loads(json.dumps(contract))
+        mislabeled["assets"][0]["source_label"] = "券"
+        errors = SOURCE_ASSETS.validate_coupon_source_dispositions(self.inventory, mislabeled)
+        self.assertTrue(any("source label differs" in error for error in errors))
+
+        false_verification = json.loads(json.dumps(contract))
+        false_verification["assets"][0]["verification_status"] = "verified"
+        errors = SOURCE_ASSETS.validate_coupon_source_dispositions(
+            self.inventory, false_verification
+        )
+        self.assertTrue(any("forbidden without governed reconciliation" in error for error in errors))
+
+    def test_all_coupon_implementation_references_resolve(self):
+        contract = SOURCE_ASSETS.load_coupon_source_dispositions()
         references = [
             reference
             for asset in contract["assets"]

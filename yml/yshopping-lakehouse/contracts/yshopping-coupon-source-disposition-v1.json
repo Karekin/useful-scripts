@@ -1,0 +1,93 @@
+{
+  "contract_version": 1,
+  "contract_id": "yshopping.coupon.source-disposition.v1",
+  "source_scope": {
+    "domain": "优惠券",
+    "authoritative_document": "ODS语兴好物（y shopping）电商数据表.md",
+    "authoritative_overview_lines": "124-130",
+    "expected_asset_count": 6,
+    "expected_source_evidence_counts": {"ddl_backed": 6},
+    "source_detail_limit": "The prototype mixes template definitions, campaigns, acquisition attempts, issued entitlements, refund observations and allowance/funding evidence. Amounts are often JSON or generic strings, creator fields are misspelled, status dictionaries are absent and refund rows do not identify the original Order allocation."
+  },
+  "verification_policy": {
+    "specified_definition": "Each coupon source has same-name DDL evidence plus explicit template/campaign/entitlement/application/funding authority, identity, units, history, security, corrections and runtime gate.",
+    "verified_definition": "Verification requires non-empty production evidence and full-denominator tenant-scoped independent reconciliation through entitlement, Order allocation and reversal lineage.",
+    "empty_tables_are_evidence": false,
+    "allowed_decisions": ["reuse", "merge", "split", "derive", "correct", "reject"],
+    "allowed_model_statuses": ["partial", "missing", "rejected"],
+    "runtime_statuses": ["missing", "pending", "verified"]
+  },
+  "lifecycle_policy_defaults": {
+    "history_policy": "Version Campaign and Template definitions; append acquisition, issuance, reservation, use, return, expiry and funding observations as immutable facts.",
+    "delete_policy": "Source deletion retires mutable visibility but never erases issued entitlement, Order benefit allocation, funding or reversal history.",
+    "backfill_policy": "Resolve tenant, Principal, Merchant, Campaign, Template version, Entitlement, Order/Item allocation and source dictionaries before replay; quarantine ambiguous amounts, statuses, funders, or orphan returns."
+  },
+  "assets": [
+    {
+      "source_asset": "ods_coupon_coupon_send_di", "source_label": "优惠券发放表", "source_anchor": {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 125},
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 1649, "end_line": 1683, "source_asset": "ods_coupon_coupon_send_di"}},
+      "source_grain": "one mutable issued-coupon/entitlement observation per coupon_id",
+      "decision": "split", "canonical_entities": ["promotion.CouponEntitlement", "promotion.CouponEntitlementLedgerEntry", "promotion.CouponTemplateVersionReference", "promotion.PromotionCampaignReference", "identity.PrincipalReference"],
+      "semantic_rules": {"grain": "one tenant-scoped entitlement with immutable lifecycle ledger entries and exact Template/Campaign versions", "identity": "coupon, entitlement, user Principal, Template, Campaign and any later Order allocation ids remain distinct", "money_or_quantity": "coupon_amount JSON and threshold require versioned discount-way parsing into exact minor units/rate plus currency and rounding", "history": "issuance, reservation, use, expiry and return append; mutable status/is_del cannot erase entitlement history", "security": "title and extra_json are governed content/restricted evidence, not identity or executable rule", "authority": "Promotion owns entitlement eligibility/lifecycle; Order owns accepted application/allocation; funding owner is separate"},
+      "corrections": ["parse coupon_amount only through a versioned schema", "correct found_type_code only through a governed source dictionary rather than guessing fund_type", "freeze exact Template and Campaign versions at issuance"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-promotion/cloudmold-module-promotion-server/src/main/java/cn/iocoder/yudao/module/cloudmold/promotion/dal/dataobject/CouponEntitlementDO.java", "yudao-cloud/cloudmold-module-promotion/cloudmold-module-promotion-server/src/main/java/cn/iocoder/yudao/module/cloudmold/promotion/dal/dataobject/CouponEntitlementLedgerDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-promotion-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-promotion-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/23-canonical-promotion-engagement-customer-service-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_coupon_coupon_template_df", "source_label": "优惠券模板表", "source_anchor": {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 126},
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 1684, "end_line": 1712, "source_asset": "ods_coupon_coupon_template_df"}},
+      "source_grain": "one mutable coupon-template snapshot per template_id",
+      "decision": "split", "canonical_entities": ["promotion.CouponTemplate", "promotion.CouponTemplateVersion", "identity.PrincipalReference", "policy.DiscountRuleVersion"],
+      "semantic_rules": {"grain": "one stable Template identity with immutable published rule versions", "identity": "numeric row id, template_id, creator Principal and Campaign references remain separate", "money_or_quantity": "coupon_amount JSON, threshold and voucher mode require explicit currency, minor-unit/rate, applicability and rounding rules", "history": "every rule/content/validity change publishes a new version; issued entitlements retain their version", "security": "creator name and remark stay restricted; rule payload is typed and non-executable", "authority": "Promotion owns Template/version; Identity owns creator; Order only references the accepted entitlement/application"},
+      "corrections": ["repair the prototype trailing comma", "correct misspelled createtor fields only at the mapping boundary", "replace mutable template overwrite with immutable versions"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-promotion/cloudmold-module-promotion-server/src/main/java/cn/iocoder/yudao/module/cloudmold/promotion/dal/dataobject/CouponTemplateDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-promotion-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-promotion-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/23-canonical-promotion-engagement-customer-service-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_coupon_coupon_activity_df", "source_label": "优惠券活动表", "source_anchor": {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 127},
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 1713, "end_line": 1740, "source_asset": "ods_coupon_coupon_activity_df"}},
+      "source_grain": "one mutable coupon-campaign snapshot per activity_id",
+      "decision": "split", "canonical_entities": ["promotion.PromotionCampaign", "promotion.PromotionCampaignVersion", "identity.PrincipalReference"],
+      "semantic_rules": {"grain": "one stable Campaign identity with immutable time-window and policy versions", "identity": "source activity id, Campaign id and creator Principal remain qualified distinct identities", "money_or_quantity": "budget, entitlement limits and funding are absent and cannot be inferred from dates or names", "history": "window/name/policy changes publish versions; 2099 expiry remains source data and not an automatic permanent flag", "security": "creator display name is restricted and replaced by Principal reference", "authority": "Promotion owns Campaign lifecycle; Template and Entitlement reference exact Campaign versions"},
+      "corrections": ["version Campaign instead of overwriting the full snapshot", "validate start before expiry with explicit timezone", "do not infer budget or perpetual status from 2099 expiry"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-promotion/cloudmold-module-promotion-server/src/main/java/cn/iocoder/yudao/module/cloudmold/promotion/dal/dataobject/PromotionCampaignDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-promotion-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-promotion-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/23-canonical-promotion-engagement-customer-service-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_coupon_coupon_snap_di", "source_label": "优惠券抢券表", "source_anchor": {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 128},
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 1741, "end_line": 1763, "source_asset": "ods_coupon_coupon_snap_di"}},
+      "source_grain": "one coupon acquisition attempt/result observation per source id",
+      "decision": "split", "canonical_entities": ["promotion.CouponAcquisitionAttempt", "promotion.CouponEntitlementReference", "identity.PrincipalReference"],
+      "semantic_rules": {"grain": "one immutable acquisition attempt with typed outcome and optional resulting entitlement", "identity": "attempt id, coupon/entitlement, Template and user Principal ids remain distinct", "money_or_quantity": "no amount or inventory; campaign quota consumption requires separate allocation evidence", "history": "attempts append and retry idempotency never overwrites failed attempts", "security": "user identity is a Principal reference and no display PII enters events", "authority": "Promotion owns acquisition and entitlement issuance; the attempt does not itself prove an entitlement unless exact issuance is linked"},
+      "corrections": ["normalize STRING is_receive through a versioned outcome dictionary", "do not equate attempted coupon_id with an issued entitlement without send linkage", "retain every attempt for quota and abuse audit"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-promotion/cloudmold-module-promotion-server/src/main/java/cn/iocoder/yudao/module/cloudmold/promotion/dal/dataobject/CouponEntitlementLedgerDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-promotion-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-promotion-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/23-canonical-promotion-engagement-customer-service-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_coupon_coupon_refund_di", "source_label": "优惠券退回表", "source_anchor": {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 129},
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 1764, "end_line": 1787, "source_asset": "ods_coupon_coupon_refund_di"}},
+      "source_grain": "one coupon return observation per coupon_refund_id",
+      "decision": "split", "canonical_entities": ["promotion.CouponEntitlementLedgerEntry", "aftersales.AfterSaleBenefitReversalReference", "order.OrderBenefitApplicationReference", "identity.PrincipalReference"],
+      "semantic_rules": {"grain": "one immutable entitlement-return transition linked to the exact original Order application/allocation and AfterSale effect", "identity": "refund, entitlement, Template, user, Order application/allocation and AfterSale ids remain distinct", "money_or_quantity": "return restores entitlement state; money reversal remains on original Order allocation/funding and must conserve exact minor units", "history": "return is append-only, idempotent and cannot move an unused/expired entitlement without a valid transition", "security": "user identity is a Principal reference; no raw reason/evidence is present or invented", "authority": "Promotion owns entitlement return; AfterSales owns reversal entitlement; Order owns original allocation/funding"},
+      "corrections": ["block migration until the exact original Order benefit allocation is mapped", "do not infer return reason or money from this sparse row", "require entitlement version transition and one-to-one refund idempotency"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-promotion/cloudmold-module-promotion-server/src/main/java/cn/iocoder/yudao/module/cloudmold/promotion/dal/dataobject/CouponEntitlementLedgerDO.java", "yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/dal/dataobject/OrderBenefitAllocationDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-promotion-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-after-sale-benefit-reversal-event.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/28-canonical-after-sale-benefit-reversal-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_coupon_coupon_allowance_di", "source_label": "平台津贴表", "source_anchor": {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 130},
+      "source_evidence": {"status": "ddl_backed", "detail_anchor": {"heading_line": 1788, "end_line": 1813, "source_asset": "ods_coupon_coupon_allowance_di"}},
+      "source_grain": "one source allowance/funding observation per allowance_id and coupon_id",
+      "decision": "split", "canonical_entities": ["promotion.EntitlementFundingEvidence", "order.OrderBenefitFundingReference", "merchant.MerchantReference", "promotion.CouponEntitlementReference"],
+      "semantic_rules": {"grain": "one named funder contribution to an entitlement, promoted to Order funding only when exact application/allocation lineage exists", "identity": "allowance, entitlement, Template, user Principal, seller Merchant and Order funding entry ids remain distinct", "money_or_quantity": "allowance_amount STRING lacks currency/unit; quarantine until exact minor-unit conversion and funding-sum conservation are proven", "history": "funding evidence appends and later Order use/reversal references the original immutable contribution", "security": "seller_name is restricted display data and Merchant mapping uses seller_id plus tenant/source", "authority": "Promotion retains entitlement funding evidence; Order owns accepted allocation/funding; Merchant is funder reference, not inferred owner"},
+      "corrections": ["do not assume the table label platform means PLATFORM funder when seller_id is present", "prove currency/unit and named funder before funding migration", "bind exact original Order application/allocation before use or reversal"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/dal/dataobject/OrderBenefitFundingDO.java", "yudao-cloud/cloudmold-module-promotion/cloudmold-module-promotion-server/src/main/java/cn/iocoder/yudao/module/cloudmold/promotion/dal/dataobject/CouponEntitlementDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-benefit-funding-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-order-benefit-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/27-canonical-order-benefit-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    }
+  ]
+}
