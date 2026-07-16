@@ -160,6 +160,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_dim_derived_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_ads_derived_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_dwd_dwm_derived_source_dispositions(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_residual_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_engagement_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_compensation_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_ticket_source_dispositions(self.inventory))
@@ -278,12 +279,12 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual(110, status["bounded_domain_asset_count"])
         self.assertEqual(6, status["explicit_rejection_count"])
         self.assertEqual(718, status["preliminary_handled_count"])
-        self.assertEqual(476, status["detailed_disposition_specified_count"])
+        self.assertEqual(718, status["detailed_disposition_specified_count"])
         self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
         self.assertEqual(99.16, status["routing_percent"])
         self.assertEqual(100.0, status["preliminary_handled_percent"])
-        self.assertEqual(66.3, status["detailed_disposition_specified_percent"])
+        self.assertEqual(100.0, status["detailed_disposition_specified_percent"])
         self.assertEqual(0.0, status["runtime_nonempty_reconciled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
         self.assertIn(
@@ -323,6 +324,8 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertTrue(any("ads_derived=0/52 (0.00%)" in line for line in lines))
         self.assertTrue(any("dwd_dwm_derived=205/205 (100.00%)" in line for line in lines))
         self.assertTrue(any("dwd_dwm_derived=0/205 (0.00%)" in line for line in lines))
+        self.assertTrue(any("residual=247/247 (100.00%)" in line for line in lines))
+        self.assertTrue(any("residual=0/247 (0.00%)" in line for line in lines))
         self.assertTrue(any("engagement=4/4 (100.00%)" in line for line in lines))
         self.assertTrue(any("engagement=0/4 (0.00%)" in line for line in lines))
         self.assertTrue(any("compensation=1/3 (33.33%)" in line for line in lines))
@@ -1874,6 +1877,99 @@ class SourceAssetCtlTest(unittest.TestCase):
 
     def test_all_dwd_dwm_derived_implementation_references_resolve(self):
         contract = SOURCE_ASSETS.load_dwd_dwm_derived_source_dispositions()
+        references = [
+            reference
+            for values in contract["implementation_refs"].values()
+            for reference in values
+        ]
+        references.append(contract["runtime_nonempty_reconciliation"]["gate_ref"])
+        self.assertEqual(
+            [],
+            [
+                (reference, SOURCE_ASSETS._contract_reference_error(reference))
+                for reference in references
+                if SOURCE_ASSETS._contract_reference_error(reference)
+            ],
+        )
+
+    def test_global_detailed_disposition_names_are_unique_and_cover_all_718_candidates(self):
+        base = SOURCE_ASSETS.base_detailed_disposition_asset_names()
+        governed = SOURCE_ASSETS.detailed_disposition_asset_names()
+        candidates = {
+            asset["normalized_name"]
+            for asset in self.inventory["logical_assets"]
+            if "candidate" in asset.get("roles", [])
+        }
+        self.assertEqual(471, len(base & candidates))
+        self.assertEqual(718, len(governed & candidates))
+        self.assertEqual(candidates, governed & candidates)
+        self.assertEqual(5, 476 - len(base & candidates))
+
+    def test_residual_dispositions_are_the_exact_247_name_complement(self):
+        contract = SOURCE_ASSETS.load_residual_source_dispositions()
+        names = {asset["source_asset"] for asset in contract["assets"]}
+        candidates = {
+            asset["normalized_name"]
+            for asset in self.inventory["logical_assets"]
+            if "candidate" in asset.get("roles", [])
+        }
+        self.assertEqual(247, len(names))
+        self.assertEqual(candidates - SOURCE_ASSETS.base_detailed_disposition_asset_names(), names)
+        self.assertEqual(
+            {
+                "reference_only": 56, "alias_or_dependency": 32, "placeholder": 7,
+                "authoritative_overview_only": 114, "same_name_ods_create": 30,
+                "domain_provisional": 4, "provisional_name_conflict": 4,
+            },
+            dict(Counter(asset["evidence_class"] for asset in contract["assets"])),
+        )
+        self.assertEqual([], SOURCE_ASSETS.validate_residual_source_dispositions(self.inventory))
+
+    def test_residual_profiles_reject_unknown_schema_without_weakening_capabilities(self):
+        contract = SOURCE_ASSETS.load_residual_source_dispositions()
+        by_name = {asset["source_asset"]: asset for asset in contract["assets"]}
+        profiles = contract["semantic_profiles"]
+        self.assertEqual(("reject", "rejected"), (by_name["ods_userpassword_df"]["decision"], by_name["ods_userpassword_df"]["admission"]))
+        self.assertIn("exclude passwords", " ".join(by_name["ods_userpassword_df"]["corrections"]))
+        self.assertEqual("placeholder_rejection", by_name["dwd_xxx_xx"]["profile"])
+        self.assertIn("issuance/redemption conserve units", " ".join(profiles["reward_entitlement_ledger"]["capability_rules"]))
+        self.assertIn("delivery never proves conversion", " ".join(profiles["advertising_attribution"]["capability_rules"]))
+        self.assertIn("PAN/secret instrument data is excluded", " ".join(profiles["payment_ledger"]["capability_rules"]))
+
+    def test_residual_status_credits_definition_not_runtime_or_final(self):
+        status = SOURCE_ASSETS.residual_disposition_status(self.inventory)
+        self.assertEqual(247, status["residual_source_asset_count"])
+        self.assertEqual(247, status["residual_detailed_disposition_specified_count"])
+        self.assertEqual(100.0, status["residual_detailed_disposition_percent"])
+        self.assertEqual(0, status["residual_runtime_nonempty_reconciled_count"])
+        self.assertEqual(0, status["residual_final_disposition_verified_count"])
+
+    def test_residual_dispositions_reject_missing_duplicate_weakened_and_anchor_drift(self):
+        contract = SOURCE_ASSETS.load_residual_source_dispositions()
+        missing = json.loads(json.dumps(contract))
+        missing["assets"].pop()
+        errors = SOURCE_ASSETS.validate_residual_source_dispositions(self.inventory, missing)
+        self.assertTrue(any("exact unique candidate complement" in error for error in errors))
+
+        duplicate = json.loads(json.dumps(contract))
+        duplicate["assets"][1] = json.loads(json.dumps(duplicate["assets"][0]))
+        errors = SOURCE_ASSETS.validate_residual_source_dispositions(self.inventory, duplicate)
+        self.assertTrue(any("duplicate source_asset" in error for error in errors))
+
+        weakened = json.loads(json.dumps(contract))
+        placeholder = next(asset for asset in weakened["assets"] if asset["source_asset"] == "dwd_xxx_xx")
+        placeholder["decision"] = "correct"
+        placeholder["admission"] = "quarantined"
+        errors = SOURCE_ASSETS.validate_residual_source_dispositions(self.inventory, weakened)
+        self.assertTrue(any("placeholder rejection differs" in error for error in errors))
+
+        drifted = json.loads(json.dumps(contract))
+        drifted["assets"][0]["anchor"]["line"] += 1
+        errors = SOURCE_ASSETS.validate_residual_source_dispositions(self.inventory, drifted)
+        self.assertTrue(any("evidence anchor differs" in error for error in errors))
+
+    def test_all_residual_implementation_references_resolve(self):
+        contract = SOURCE_ASSETS.load_residual_source_dispositions()
         references = [
             reference
             for values in contract["implementation_refs"].values()

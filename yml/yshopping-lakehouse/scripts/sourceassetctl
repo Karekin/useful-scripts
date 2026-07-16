@@ -72,6 +72,9 @@ ADS_DERIVED_SOURCE_DISPOSITIONS = (
 DWD_DWM_DERIVED_SOURCE_DISPOSITIONS = (
     ROOT / "contracts" / "yshopping-dwd-dwm-derived-source-disposition-v1.json"
 )
+RESIDUAL_SOURCE_DISPOSITIONS = (
+    ROOT / "contracts" / "yshopping-residual-source-disposition-v1.json"
+)
 ENGAGEMENT_SOURCE_DISPOSITIONS = (
     ROOT / "contracts" / "yshopping-engagement-source-disposition-v1.json"
 )
@@ -359,6 +362,12 @@ def load_dwd_dwm_derived_source_dispositions(
     path: Path = DWD_DWM_DERIVED_SOURCE_DISPOSITIONS,
 ) -> dict[str, Any]:
     return _load_json_object(path, "DWD/DWM derived source dispositions")
+
+
+def load_residual_source_dispositions(
+    path: Path = RESIDUAL_SOURCE_DISPOSITIONS,
+) -> dict[str, Any]:
+    return _load_json_object(path, "residual source dispositions")
 
 
 def load_engagement_source_dispositions(
@@ -4201,6 +4210,260 @@ def dwd_dwm_derived_disposition_status(
     }
 
 
+def validate_residual_source_dispositions(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    """Validate the exact unique-name complement with reject/quarantine decisions."""
+    errors: list[str] = []
+    contract = contract or load_residual_source_dispositions()
+    logical_by_name = {
+        asset["normalized_name"]: asset
+        for asset in inventory.get("logical_assets", [])
+        if "candidate" in asset.get("roles", [])
+    }
+    base_names = base_detailed_disposition_asset_names()
+    expected_names = set(logical_by_name) - base_names
+    scope = contract.get("source_scope")
+    locked_evidence_counts = {
+        "reference_only": 56,
+        "alias_or_dependency": 32,
+        "placeholder": 7,
+        "authoritative_overview_only": 114,
+        "same_name_ods_create": 30,
+        "domain_provisional": 4,
+        "provisional_name_conflict": 4,
+    }
+    locked_profile_counts = {
+        "community_moderation": 17,
+        "metadata_operations": 15,
+        "analytical_projection": 8,
+        "ai_token_platform": 17,
+        "operations_intelligence": 10,
+        "identity_lifecycle": 30,
+        "customer_service": 13,
+        "placeholder_rejection": 7,
+        "reference_dimension": 18,
+        "reward_entitlement_ledger": 24,
+        "compensation_ledger": 5,
+        "catalog_listing": 11,
+        "order_aftersales": 12,
+        "warehouse_inventory": 5,
+        "payment_ledger": 12,
+        "campaign_definition": 17,
+        "activity_commerce": 3,
+        "advertising_attribution": 7,
+        "participation_task": 13,
+        "merchant_lifecycle": 3,
+    }
+    if not isinstance(scope, dict):
+        errors.append("residual source scope must be an object")
+    elif scope.get("expected_asset_count") != len(expected_names) or len(expected_names) != 247:
+        errors.append("residual source asset count differs from unique candidate complement")
+    else:
+        if scope.get("expected_evidence_class_counts") != locked_evidence_counts:
+            errors.append("residual evidence-class counts differ")
+        if scope.get("expected_profile_counts") != locked_profile_counts:
+            errors.append("residual semantic-profile counts differ")
+
+    policy = contract.get("verification_policy")
+    if not isinstance(policy, dict) or policy.get("empty_tables_are_evidence") is not False:
+        errors.append("residual empty tables must not be evidence")
+    else:
+        if set(policy.get("allowed_decisions") or []) != {"correct", "reject"}:
+            errors.append("residual allowed decisions differ")
+        if set(policy.get("allowed_admissions") or []) != {"quarantined", "rejected"}:
+            errors.append("residual admissions differ")
+        for key in ("specified_definition", "verified_definition"):
+            if not isinstance(policy.get(key), str) or not policy[key].strip():
+                errors.append(f"residual verification policy requires {key}")
+
+    profiles = contract.get("semantic_profiles")
+    expected_profiles = set(locked_profile_counts)
+    profile_fields = {
+        "canonical_entities", "minimum_source_evidence", "capability_rules",
+        "security", "authority", "canonical_target_status",
+    }
+    if not isinstance(profiles, dict) or set(profiles) != expected_profiles:
+        errors.append(f"residual profiles must define exactly {sorted(expected_profiles)}")
+        profiles = {}
+    for name, profile in profiles.items():
+        if not isinstance(profile, dict) or set(profile) != profile_fields:
+            errors.append(f"residual profile {name} fields differ")
+            continue
+        if not _nonempty_strings(profile.get("canonical_entities")):
+            errors.append(f"residual profile {name} requires canonical entities")
+        evidence = profile.get("minimum_source_evidence")
+        rules = profile.get("capability_rules")
+        if not _nonempty_strings(evidence) or len(evidence) < 6 or len(set(evidence)) != len(evidence):
+            errors.append(f"residual profile {name} requires six unique evidence gates")
+        if not _nonempty_strings(rules) or len(rules) < 6 or len(set(rules)) != len(rules):
+            errors.append(f"residual profile {name} requires six unique capability rules")
+        for field in ("security", "authority"):
+            if not isinstance(profile.get(field), str) or not profile[field].strip():
+                errors.append(f"residual profile {name} requires {field}")
+        if profile.get("canonical_target_status") not in {"partial", "missing", "rejected"}:
+            errors.append(f"residual profile {name} has invalid canonical_target_status")
+
+    references = contract.get("implementation_refs")
+    if not isinstance(references, dict) or set(references) != {"backend_refs", "lakehouse_refs"}:
+        errors.append("residual implementation references differ")
+    else:
+        for kind, values in references.items():
+            if not _nonempty_strings(values):
+                errors.append(f"residual {kind} must contain references")
+                continue
+            for value in values:
+                reference_error = _contract_reference_error(value)
+                if reference_error:
+                    errors.append(f"residual {kind} reference {value!r}: {reference_error}")
+
+    assets = contract.get("assets")
+    asset_fields = {
+        "source_asset", "domains", "evidence_class", "anchor", "profile",
+        "decision", "admission", "corrections",
+    }
+    if not isinstance(assets, list):
+        return errors + ["residual source dispositions require assets"]
+    evidence_counts: Counter[str] = Counter()
+    profile_counts: Counter[str] = Counter()
+    seen: set[str] = set()
+    placeholder_names = set(load_source_domain_policy().get("explicit_rejections", {})) | {"ads_xxx"}
+    locked_conflicts = {
+        "ods_goods_goods_operate_user_salary_settlement_df",
+        "ods_merchant_sys_exit_df",
+        "ods_trade_trade_trade_sku_df",
+        "ods_trade_trade_trade_spu_df",
+    }
+    locked_domain_provisional = {
+        "ods_ai_workflow_request_log_ri",
+        "ods_ticket_ticket_message_unit_ri",
+        "ods_ticket_ticket_problem_attribution_ri",
+        "ods_ticket_ticket_tag_ri",
+    }
+    for index, asset in enumerate(assets):
+        label = f"residual assets[{index}]"
+        if not isinstance(asset, dict) or set(asset) != asset_fields:
+            errors.append(f"{label}: fields differ")
+            continue
+        name = asset.get("source_asset")
+        if name in seen:
+            errors.append(f"{label}: duplicate source_asset {name}")
+        seen.add(name)
+        logical = logical_by_name.get(name)
+        if logical is None or name not in expected_names:
+            errors.append(f"{label}: not in exact residual candidate complement: {name}")
+            continue
+        if asset.get("domains") != logical.get("source_domains", []):
+            errors.append(f"{label}: authoritative source domains differ")
+        anchor = asset.get("anchor")
+        if not isinstance(anchor, dict) or set(anchor) != {"document", "line", "role"}:
+            errors.append(f"{label}: anchor fields differ")
+        elif not any(
+            occurrence.get("document") == anchor.get("document")
+            and occurrence.get("line") == anchor.get("line")
+            and occurrence.get("role") == anchor.get("role")
+            for occurrence in logical.get("occurrences", [])
+        ):
+            errors.append(f"{label}: evidence anchor differs for {name}")
+        evidence_class = asset.get("evidence_class")
+        profile = asset.get("profile")
+        if evidence_class not in locked_evidence_counts:
+            errors.append(f"{label}: invalid evidence class")
+        else:
+            evidence_counts[evidence_class] += 1
+        if profile not in expected_profiles:
+            errors.append(f"{label}: invalid semantic profile")
+        else:
+            profile_counts[profile] += 1
+        decision = asset.get("decision")
+        admission = asset.get("admission")
+        if (decision, admission) not in {("reject", "rejected"), ("correct", "quarantined")}:
+            errors.append(f"{label}: decision/admission pair differs")
+        corrections = asset.get("corrections")
+        if not _nonempty_strings(corrections) or len(corrections) < 3 or len(set(corrections)) != len(corrections):
+            errors.append(f"{label}: requires three unique corrections")
+
+        occurrences = logical.get("occurrences", [])
+        same_name_ods_create = False
+        for occurrence in occurrences:
+            if occurrence.get("role") != "create_target" or occurrence.get("document") != LAYER_DOCUMENTS["ODS"]:
+                continue
+            try:
+                same_name_ods_create = normalize_identifier(occurrence.get("qualified_name", ""))[1] == name
+            except SourceAssetError:
+                same_name_ods_create = False
+            if same_name_ods_create:
+                break
+        if evidence_class == "placeholder":
+            if name not in placeholder_names or (decision, admission, profile) != ("reject", "rejected", "placeholder_rejection"):
+                errors.append(f"{label}: placeholder rejection differs")
+        elif name in placeholder_names:
+            errors.append(f"{label}: known placeholder must remain rejected")
+        if evidence_class == "authoritative_overview_only":
+            if not logical.get("source_domains") or same_name_ods_create or decision != "reject":
+                errors.append(f"{label}: overview-only evidence must remain non-admitted")
+        if evidence_class == "same_name_ods_create" and not same_name_ods_create:
+            errors.append(f"{label}: same-name ODS CREATE evidence is not proven")
+        if evidence_class == "alias_or_dependency" and not any(
+            occurrence.get("role") in {"dependency", "insert_target"}
+            for occurrence in occurrences
+        ):
+            errors.append(f"{label}: alias/dependency evidence is not proven")
+        if name in locked_conflicts and evidence_class != "provisional_name_conflict":
+            errors.append(f"{label}: locked name conflict was weakened")
+        if name in locked_domain_provisional and evidence_class != "domain_provisional":
+            errors.append(f"{label}: locked domain-provisional evidence was weakened")
+    if seen != expected_names:
+        errors.append(
+            "residual dispositions differ from exact unique candidate complement: "
+            f"missing={sorted(expected_names-seen)}, extra={sorted(seen-expected_names)}"
+        )
+    if dict(evidence_counts) != locked_evidence_counts:
+        errors.append(f"residual observed evidence counts differ: {dict(evidence_counts)}")
+    if dict(profile_counts) != locked_profile_counts:
+        errors.append(f"residual observed profile counts differ: {dict(profile_counts)}")
+
+    password = next((asset for asset in assets if asset.get("source_asset") == "ods_userpassword_df"), {})
+    if "exclude passwords" not in " ".join(password.get("corrections", [])):
+        errors.append("residual user password source must reject password values")
+    activity = profiles.get("reward_entitlement_ledger", {})
+    if "issuance/redemption conserve units" not in " ".join(activity.get("capability_rules", [])):
+        errors.append("residual reward sources must conserve entitlement units")
+    advertising = profiles.get("advertising_attribution", {})
+    if "delivery never proves conversion" not in " ".join(advertising.get("capability_rules", [])):
+        errors.append("residual advertising sources must not infer conversion")
+    payment = profiles.get("payment_ledger", {})
+    if "PAN/secret instrument data is excluded" not in " ".join(payment.get("capability_rules", [])):
+        errors.append("residual payment sources must exclude secret instrument data")
+
+    runtime = contract.get("runtime_nonempty_reconciliation")
+    runtime_fields = {"gate_ref", "evidence_ref", "run_id", "row_count", "tenant_count", "status"}
+    if not isinstance(runtime, dict) or set(runtime) != runtime_fields:
+        errors.append("residual runtime reconciliation fields differ")
+    elif runtime.get("status") != "missing" or runtime.get("row_count") != 0 or runtime.get("tenant_count") != 0 or runtime.get("evidence_ref") is not None or runtime.get("run_id") is not None:
+        errors.append("residual runtime evidence must remain missing and empty")
+    return errors
+
+
+def residual_disposition_status(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    contract = contract or load_residual_source_dispositions()
+    expected_count = contract.get("source_scope", {}).get("expected_asset_count", 0)
+    assets = contract.get("assets", []) if isinstance(contract, dict) else []
+    specified = len(assets) if isinstance(assets, list) else 0
+    denominator = expected_count or 1
+    return {
+        "residual_source_asset_count": expected_count,
+        "residual_detailed_disposition_specified_count": specified,
+        "residual_runtime_nonempty_reconciled_count": 0,
+        "residual_final_disposition_verified_count": 0,
+        "residual_detailed_disposition_percent": round(specified * 100.0 / denominator, 2),
+        "residual_runtime_nonempty_reconciled_percent": 0.0,
+        "residual_final_disposition_verified_percent": 0.0,
+    }
+
+
 def validate_engagement_source_dispositions(
     inventory: dict[str, Any], contract: dict[str, Any] | None = None
 ) -> list[str]:
@@ -5618,6 +5881,73 @@ def operations_intelligence_disposition_status(
     }
 
 
+def base_detailed_disposition_asset_names() -> set[str]:
+    """Return globally unique specified names before the exact residual complement."""
+    names: set[str] = set()
+    domain_contracts = (
+        load_game_source_dispositions(),
+        load_metadata_source_dispositions(),
+        load_commerce_source_dispositions(),
+        load_product_source_dispositions(),
+        load_merchant_source_dispositions(),
+        load_coupon_source_dispositions(),
+        load_user_source_dispositions(),
+        load_community_source_dispositions(),
+        load_engagement_source_dispositions(),
+        load_compensation_source_dispositions(),
+        load_ticket_source_dispositions(),
+        load_supply_chain_source_dispositions(),
+        load_llm_source_dispositions(),
+        load_operations_intelligence_source_dispositions(),
+    )
+    for contract in domain_contracts:
+        assets: list[Any] = []
+        for key in ("assets", "ddl_backed_assets"):
+            value = contract.get(key, [])
+            if isinstance(value, list):
+                assets.extend(value)
+        groups = contract.get("ddl_backed_groups", [])
+        if isinstance(groups, list):
+            for group in groups:
+                if isinstance(group, dict) and isinstance(group.get("assets"), list):
+                    assets.extend(group["assets"])
+        names.update(
+            asset["source_asset"]
+            for asset in assets
+            if isinstance(asset, dict)
+            and asset.get("specification_status") == "specified"
+            and isinstance(asset.get("source_asset"), str)
+        )
+    for contract in (
+        load_dws_derived_source_dispositions(),
+        load_dim_derived_source_dispositions(),
+        load_ads_derived_source_dispositions(),
+        load_dwd_dwm_derived_source_dispositions(),
+    ):
+        assets = contract.get("assets", [])
+        if isinstance(assets, list):
+            names.update(
+                asset["source_asset"]
+                for asset in assets
+                if isinstance(asset, dict) and isinstance(asset.get("source_asset"), str)
+            )
+    return names
+
+
+def detailed_disposition_asset_names() -> set[str]:
+    """Return globally unique candidate names with a specified semantic disposition."""
+    names = base_detailed_disposition_asset_names()
+    contract = load_residual_source_dispositions()
+    assets = contract.get("assets", []) if isinstance(contract, dict) else []
+    if isinstance(assets, list):
+        names.update(
+            asset["source_asset"]
+            for asset in assets
+            if isinstance(asset, dict) and isinstance(asset.get("source_asset"), str)
+        )
+    return names
+
+
 def disposition_status(
     inventory: dict[str, Any], policy: dict[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -5667,34 +5997,16 @@ def disposition_status(
     dim_derived_status = dim_derived_disposition_status(inventory)
     ads_derived_status = ads_derived_disposition_status(inventory)
     dwd_dwm_derived_status = dwd_dwm_derived_disposition_status(inventory)
+    residual_status = residual_disposition_status(inventory)
     engagement_status = engagement_disposition_status(inventory)
     compensation_status = compensation_disposition_status(inventory)
     ticket_status = ticket_disposition_status(inventory)
     supply_chain_status = supply_chain_disposition_status(inventory)
     llm_status = llm_disposition_status(inventory)
     operations_intelligence_status = operations_intelligence_disposition_status(inventory)
-    detailed_count = (
-        game_status["game_detailed_disposition_specified_count"]
-        + metadata_status["metadata_detailed_disposition_specified_count"]
-        + commerce_status["commerce_detailed_disposition_specified_count"]
-        + product_status["product_detailed_disposition_specified_count"]
-        + merchant_status["merchant_detailed_disposition_specified_count"]
-        + coupon_status["coupon_detailed_disposition_specified_count"]
-        + user_status["user_detailed_disposition_specified_count"]
-        + advertising_status["advertising_detailed_disposition_specified_count"]
-        + community_status["community_detailed_disposition_specified_count"]
-        + activity_status["activity_detailed_disposition_specified_count"]
-        + dws_derived_status["dws_derived_detailed_disposition_specified_count"]
-        + dim_derived_status["dim_derived_detailed_disposition_specified_count"]
-        + ads_derived_status["ads_derived_detailed_disposition_specified_count"]
-        + dwd_dwm_derived_status["dwd_dwm_derived_detailed_disposition_specified_count"]
-        + engagement_status["engagement_detailed_disposition_specified_count"]
-        + compensation_status["compensation_detailed_disposition_specified_count"]
-        + ticket_status["ticket_detailed_disposition_specified_count"]
-        + supply_chain_status["supply_chain_detailed_disposition_specified_count"]
-        + llm_status["llm_detailed_disposition_specified_count"]
-        + operations_intelligence_status["operations_intelligence_detailed_disposition_specified_count"]
-    )
+    candidate_names = {item["normalized_name"] for item in candidate_assets}
+    detailed_names = detailed_disposition_asset_names()
+    detailed_count = len(candidate_names & detailed_names)
     runtime_count = (
         game_status["game_runtime_nonempty_reconciled_count"]
         + metadata_status["metadata_runtime_nonempty_reconciled_count"]
@@ -5710,6 +6022,7 @@ def disposition_status(
         + dim_derived_status["dim_derived_runtime_nonempty_reconciled_count"]
         + ads_derived_status["ads_derived_runtime_nonempty_reconciled_count"]
         + dwd_dwm_derived_status["dwd_dwm_derived_runtime_nonempty_reconciled_count"]
+        + residual_status["residual_runtime_nonempty_reconciled_count"]
         + engagement_status["engagement_runtime_nonempty_reconciled_count"]
         + compensation_status["compensation_runtime_nonempty_reconciled_count"]
         + ticket_status["ticket_runtime_nonempty_reconciled_count"]
@@ -5732,6 +6045,7 @@ def disposition_status(
         + dim_derived_status["dim_derived_final_disposition_verified_count"]
         + ads_derived_status["ads_derived_final_disposition_verified_count"]
         + dwd_dwm_derived_status["dwd_dwm_derived_final_disposition_verified_count"]
+        + residual_status["residual_final_disposition_verified_count"]
         + engagement_status["engagement_final_disposition_verified_count"]
         + compensation_status["compensation_final_disposition_verified_count"]
         + ticket_status["ticket_final_disposition_verified_count"]
@@ -5784,6 +6098,7 @@ def disposition_status(
         **dim_derived_status,
         **ads_derived_status,
         **dwd_dwm_derived_status,
+        **residual_status,
         **engagement_status,
         **compensation_status,
         **ticket_status,
@@ -5929,6 +6244,9 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"dwd_dwm_derived={status['dwd_dwm_derived_detailed_disposition_specified_count']}/"
         f"{status['dwd_dwm_derived_source_asset_count']} "
         f"({status['dwd_dwm_derived_detailed_disposition_percent']:.2f}%); "
+        f"residual={status['residual_detailed_disposition_specified_count']}/"
+        f"{status['residual_source_asset_count']} "
+        f"({status['residual_detailed_disposition_percent']:.2f}%); "
         f"engagement={status['engagement_detailed_disposition_specified_count']}/"
         f"{status['engagement_source_asset_count']} "
         f"({status['engagement_detailed_disposition_percent']:.2f}%); "
@@ -5994,6 +6312,9 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"dwd_dwm_derived={status['dwd_dwm_derived_runtime_nonempty_reconciled_count']}/"
         f"{status['dwd_dwm_derived_source_asset_count']} "
         f"({status['dwd_dwm_derived_runtime_nonempty_reconciled_percent']:.2f}%); "
+        f"residual={status['residual_runtime_nonempty_reconciled_count']}/"
+        f"{status['residual_source_asset_count']} "
+        f"({status['residual_runtime_nonempty_reconciled_percent']:.2f}%); "
         f"engagement={status['engagement_runtime_nonempty_reconciled_count']}/"
         f"{status['engagement_source_asset_count']} "
         f"({status['engagement_runtime_nonempty_reconciled_percent']:.2f}%); "
@@ -6045,6 +6366,8 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"{status['ads_derived_source_asset_count']}, "
         f"dwd_dwm_derived={status['dwd_dwm_derived_final_disposition_verified_count']}/"
         f"{status['dwd_dwm_derived_source_asset_count']}, "
+        f"residual={status['residual_final_disposition_verified_count']}/"
+        f"{status['residual_source_asset_count']}, "
         f"engagement={status['engagement_final_disposition_verified_count']}/"
         f"{status['engagement_source_asset_count']}, "
         f"compensation={status['compensation_final_disposition_verified_count']}/"
@@ -6086,6 +6409,7 @@ def main() -> int:
     errors.extend(validate_dim_derived_source_dispositions(inventory))
     errors.extend(validate_ads_derived_source_dispositions(inventory))
     errors.extend(validate_dwd_dwm_derived_source_dispositions(inventory))
+    errors.extend(validate_residual_source_dispositions(inventory))
     errors.extend(validate_engagement_source_dispositions(inventory))
     errors.extend(validate_compensation_source_dispositions(inventory))
     errors.extend(validate_ticket_source_dispositions(inventory))

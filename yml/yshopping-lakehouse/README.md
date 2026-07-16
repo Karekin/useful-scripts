@@ -93,7 +93,7 @@ zero-difference checks, and a separately checksummed independent verifier.
 Documentation volume estimates (for example “15.96 亿”) are never used as a
 denominator. A merely non-empty JSON file can no longer promote any of the 718
 assets to `verified`.
-The governed detailed-disposition numerator is now 476/718. The Product
+The governed detailed-disposition numerator is now 718/718. The Product
 slice covers all ten authoritative 商品 overview assets: nine DDL-backed assets
 are specified across Catalog, Listing, workflow, Identity/Merchant and Quality
 boundaries; the personnel salary asset remains provisional because its detailed
@@ -270,8 +270,21 @@ requires stable keys, event/effective/ingestion time, replay/checkpoint evidence
 typed currency/quota units, restricted content/PII/secrets, and preaggregation
 before DWM joins. It specifically fences legacy Trade discounts, `quilty`/`fink`
 aliases, token top-ups, AI decisions and cross-process mega-grains. This slice
-receives 205/205 detailed credit but 0/205 runtime/final credit, taking the global
-numerator to 476/718 (66.30%).
+receives 205/205 slice credit but 0/205 runtime/final credit. Five logical names
+also occur in the DIM/ADS slices, so the global unique-name numerator rises by
+200 rather than 205, from 271/718 to 471/718 (65.60%).
+The residual contract is the exact 247-name complement of that unique set. It
+locks 114 authoritative overview-only names, 30 unrouted same-name ODS DDLs,
+32 aliases/dependencies, 56 reference-only names, eight conflict/provisional
+names and seven permanent placeholders. Overview-only and reference/placeholder
+assets are rejected from canonical ingestion; correctable aliases, conflicts and
+unrouted DDLs remain quarantined until exact schema, stable keys, CDC/delete,
+typed dictionaries, security and full-denominator reconciliation arrive. Their
+intended capabilities are still mapped to stronger canonical Activity, Reward,
+Identity, Payment, Advertising, Customer Service, Community, AI/Token,
+Warehouse/Inventory, Compensation, Commerce, Catalog, Merchant, Metadata and
+Operations semantics. This closes unique detailed decisions at 718/718 (100.00%)
+without granting runtime or final credit; both remain 0/718.
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%
