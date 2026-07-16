@@ -354,6 +354,12 @@
         }
       ]
     },
+    "order.benefit_application.recorded": {
+      "schema_version": 1,
+      "aggregate_type": "order",
+      "payload_schema": "events/order-benefit-application-recorded-v1.schema.json",
+      "example": "examples/order-benefit-application-recorded-v1.json"
+    },
     "order.cancellation_saga.status_changed": {
       "aggregate_type": "order_cancellation_saga",
       "versions": [

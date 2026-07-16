@@ -17,6 +17,9 @@ models/dwd/dwd-canonical-inventory-migration-shadow-window-event.sql
 models/dwd/dwd-canonical-inventory-migration-shadow-round-event.sql
 models/dwd/dwd-canonical-inventory-migration-shadow-item-comparison-event.sql
 models/dwd/dwd-canonical-order-status-event.sql
+models/dwd/dwd-canonical-order-benefit-application-event.sql
+models/dwd/dwd-canonical-order-benefit-allocation-event.sql
+models/dwd/dwd-canonical-order-benefit-funding-event.sql
 models/dwd/dwd-canonical-payment-status-event.sql
 models/dwd/dwd-canonical-listing-status-event.sql
 models/dwd/dwd-canonical-listing-review-event.sql
@@ -59,6 +62,7 @@ models/dim/dim-warehouse-current.sql
 models/dim/dim-canonical-catalog-entity-status-current.sql
 models/dim/dim-canonical-catalog-sku-current.sql
 models/dim/dim-canonical-order-current.sql
+models/dim/dim-canonical-order-benefit-application-current.sql
 models/dim/dim-canonical-order-cancellation-saga-current.sql
 models/dim/dim-canonical-after-sale-current.sql
 models/dim/dim-canonical-after-sale-refund-current.sql
@@ -109,6 +113,7 @@ models/dws/dws-canonical-inventory-migration-pilot-batch.sql
 models/dws/dws-canonical-inventory-migration-shadow-round.sql
 models/dws/dws-canonical-inventory-migration-shadow-window.sql
 models/dws/dws-canonical-order-item-current.sql
+models/dws/dws-canonical-order-item-benefit-current.sql
 models/dws/dws-canonical-fulfillment-item-current.sql
 models/dws/dws-canonical-order-cancellation-saga-current.sql
 models/dws/dws-canonical-paid-order-cancellation-saga-current.sql
@@ -140,6 +145,7 @@ models/ads/ads-canonical-inventory-migration-readiness.sql
 models/ads/ads-canonical-inventory-migration-pilot-readiness.sql
 models/ads/ads-canonical-inventory-migration-shadow-readiness.sql
 models/ads/ads-canonical-commerce-readiness.sql
+models/ads/ads-canonical-order-benefit-readiness.sql
 models/ads/ads-canonical-listing-readiness.sql
 models/ads/ads-canonical-fulfillment-readiness.sql
 models/ads/ads-canonical-order-cancellation-saga-readiness.sql

@@ -27,6 +27,9 @@ GAME_SOURCE_DISPOSITIONS = ROOT / "contracts" / "yshopping-game-source-dispositi
 METADATA_SOURCE_DISPOSITIONS = (
     ROOT / "contracts" / "yshopping-metadata-source-disposition-v1.json"
 )
+COMMERCE_SOURCE_DISPOSITIONS = (
+    ROOT / "contracts" / "yshopping-commerce-source-disposition-v1.json"
+)
 DEFAULT_REFERENCE_ROOT = Path(
     "/Users/karekin/Library/Mobile Documents/iCloud~md~obsidian/Documents/project/"
     "语兴好物（y shopping）-电商数仓搭建"
@@ -161,6 +164,20 @@ def load_metadata_source_dispositions(
     except (OSError, json.JSONDecodeError) as exc:
         raise SourceAssetError(
             f"cannot load metadata source dispositions {path}: {exc}"
+        ) from exc
+    if not isinstance(value, dict):
+        raise SourceAssetError(f"{path}: root must be an object")
+    return value
+
+
+def load_commerce_source_dispositions(
+    path: Path = COMMERCE_SOURCE_DISPOSITIONS,
+) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SourceAssetError(
+            f"cannot load commerce source dispositions {path}: {exc}"
         ) from exc
     if not isinstance(value, dict):
         raise SourceAssetError(f"{path}: root must be an object")
@@ -1248,6 +1265,325 @@ def validate_metadata_source_dispositions(
     return errors
 
 
+def _commerce_expected_assets(
+    inventory: dict[str, Any], domains: list[str]
+) -> tuple[dict[str, dict[str, Any]], dict[str, int]]:
+    combined: dict[str, dict[str, Any]] = {}
+    counts: dict[str, int] = {}
+    for domain in domains:
+        observed = authoritative_ods_domain_assets(inventory, domain)
+        counts[domain] = len(observed)
+        for name, source in observed.items():
+            target = combined.setdefault(
+                name,
+                {"source_asset": name, "domains": set(), "source_labels": set(), "anchors": set()},
+            )
+            target["domains"].add(domain)
+            target["source_labels"].update(source["source_labels"])
+            target["anchors"].update(source["anchors"])
+    for source in combined.values():
+        source["domains"] = sorted(source["domains"])
+        source["source_labels"] = sorted(source["source_labels"])
+        source["anchors"] = sorted(source["anchors"])
+    return combined, counts
+
+
+def validate_commerce_source_dispositions(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    """Validate the reviewed Order/Reverse/Payment/Inventory ODS overview slice."""
+    errors: list[str] = []
+    contract = contract or load_commerce_source_dispositions()
+    scope = contract.get("source_scope")
+    if not isinstance(scope, dict):
+        return ["commerce source dispositions requires source_scope"]
+    domains = scope.get("domains")
+    if not _nonempty_strings(domains) or set(domains) != {"正向订单", "逆向订单", "支付", "库存"}:
+        return ["commerce source dispositions must cover 正向订单/逆向订单/支付/库存"]
+    expected, observed_counts = _commerce_expected_assets(inventory, domains)
+    if scope.get("expected_domain_asset_counts") != observed_counts:
+        errors.append(
+            "commerce source dispositions domain counts differ from ODS overview: "
+            f"contract={scope.get('expected_domain_asset_counts')!r}, observed={observed_counts!r}"
+        )
+    if scope.get("expected_unique_asset_count") != len(expected):
+        errors.append(
+            "commerce source dispositions unique count differs from ODS overview: "
+            f"contract={scope.get('expected_unique_asset_count')!r}, observed={len(expected)}"
+        )
+    if not isinstance(scope.get("source_detail_limit"), str) or not scope["source_detail_limit"].strip():
+        errors.append("commerce source dispositions must state the source detail limit")
+
+    policy = contract.get("verification_policy")
+    if not isinstance(policy, dict):
+        return errors + ["commerce source dispositions requires verification_policy"]
+    allowed_decisions = set(policy.get("allowed_decisions") or [])
+    model_statuses = set(policy.get("allowed_model_statuses") or [])
+    runtime_statuses = set(policy.get("runtime_statuses") or [])
+    if allowed_decisions != {"reuse", "merge", "split", "derive", "correct", "reject"}:
+        errors.append("commerce source dispositions has an invalid decision vocabulary")
+    if model_statuses != {"partial", "missing", "rejected"}:
+        errors.append("commerce source dispositions has an invalid model-status vocabulary")
+    if runtime_statuses != {"missing", "pending", "verified"}:
+        errors.append("commerce source dispositions has an invalid runtime-status vocabulary")
+    if policy.get("empty_tables_are_evidence") is not False:
+        errors.append("commerce source dispositions must reject empty tables as evidence")
+    lifecycle_defaults = contract.get("lifecycle_policy_defaults")
+    if not isinstance(lifecycle_defaults, dict) or set(lifecycle_defaults) != set(domains):
+        errors.append("commerce source dispositions must define lifecycle defaults for every scoped domain")
+    else:
+        required_lifecycle_rules = {"history_policy", "delete_policy", "backfill_policy"}
+        for domain, rules in lifecycle_defaults.items():
+            if (
+                not isinstance(rules, dict)
+                or set(rules) != required_lifecycle_rules
+                or any(not isinstance(value, str) or not value.strip() for value in rules.values())
+            ):
+                errors.append(
+                    f"commerce lifecycle defaults for {domain} must define exactly "
+                    f"{sorted(required_lifecycle_rules)}"
+                )
+
+    assets = contract.get("assets")
+    if not isinstance(assets, list):
+        return errors + ["commerce source dispositions requires assets"]
+    seen: set[str] = set()
+    required_semantic_rules = {
+        "grain", "identity", "money_or_quantity", "history", "security", "authority"
+    }
+    detail_expectations = {
+        "ods_trade_trade_order_di": ("ddl_backed", 304, 333, "ods_trade_trade_order_di"),
+        "ods_trade_trade_sub_order_di": ("ddl_backed", 334, 389, "ods_trade_trade_sub_order_di"),
+        "ods_trade_trade_discount_di": ("ddl_backed", 392, 419, "ods_trade_trade_discount_di"),
+        "ods_trade_trade_log_di": ("ddl_backed", 420, 445, "ods_trade_trade_log_di"),
+        "ods_trade_trade_order_appeal_status_df": ("ddl_backed", 544, 564, "ods_trade_trade_order_appeal_status_df"),
+        "ods_trade_trade_payment_di": ("ddl_backed", 446, 474, "ods_trade_trade_payment_di"),
+        "ods_trade_trade_logistic_order_di": ("ddl_backed", 475, 503, "ods_trade_trade_logistic_order_di"),
+        "ods_trade_trade_logistic_track_structure_di": ("ddl_backed", 504, 543, "ods_trade_trade_logistic_track_structure_di"),
+        "ods_trade_trade_trade_spu_df": ("name_conflict", 591, 633, "ods_commodity_commodity_trade_spu_df"),
+        "ods_trade_trade_trade_sku_df": ("name_conflict", 634, 680, "ods_commodity_commodity_sku_df"),
+        "ods_trade_trade_refund_exchange_rel_df": ("ddl_backed", 565, 588, "ods_trade_trade_refund_exchange_rel_df"),
+        "ods_refund_refund_order_di": ("ddl_backed", 803, 858, "ods_refund_refund_order_di"),
+        "ods_refund_refund_money_di": ("ddl_backed", 859, 886, "ods_refund_refund_money_di"),
+        "ods_refund_refund_trade_reason_df": ("ddl_backed", 887, 917, "ods_refund_refund_trade_reason_df"),
+        "ods_refund_refund_logistic_di": ("ddl_backed", 918, 949, "ods_refund_refund_logistic_di"),
+        "ods_refund_refund_repay_reason_df": ("ddl_backed", 950, 979, "ods_refund_refund_repay_reason_df"),
+        "ods_refund_refund_bill_di": ("ddl_backed", 980, 1032, "ods_refund_refund_bill_di"),
+        "ods_refund_refund_discount_df": ("ddl_backed", 1033, 1062, "ods_refund_refund_discount_df"),
+        "ods_trade_trade_invoice_apply_df": ("ddl_backed", 1599, 1646, "ods_trade_trade_invoice_apply_df"),
+        "ods_trade_trade_inventory_flow_df": ("ddl_backed", 1573, 1596, "ods_trade_trade_inventory_flow_df"),
+    }
+    overview_only_assets = {
+        "ods_pay_pay_log_di", "ods_transferlog_df", "ods_transfer_queue_df",
+        "ods_userscashaccount_df", "ods_userscashaccountdetail_df", "ods_fin_bind_card_df",
+        "ods_yshoppingcashier_cashier_pay_log_extra_df", "ods_acc_pay_order_df",
+        "ods_acc_personal_detail_df", "ods_acc_personal_balance_df",
+        "ods_fin_trans_order_pay_tool_df", "ods_bom_wallet_flow_log_df",
+        "ods_inventory_sale_df", "ods_inventory_warehouse_df",
+    }
+    rejected_mislabeled_assets = {"ods_logistic_logistic_track_structure_di"}
+    source_document = Path(inventory.get("reference_root", DEFAULT_REFERENCE_ROOT)) / scope["authoritative_document"]
+    source_lines: list[str] = []
+    try:
+        source_lines = source_document.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        errors.append(f"cannot read commerce source document {source_document}: {exc}")
+    for index, asset in enumerate(assets):
+        label = f"commerce source dispositions assets[{index}]"
+        if not isinstance(asset, dict):
+            errors.append(f"{label}: must be an object")
+            continue
+        name = asset.get("source_asset")
+        if not isinstance(name, str) or not name:
+            errors.append(f"{label}: requires source_asset")
+            continue
+        if name in seen:
+            errors.append(f"{label}: duplicate source_asset {name}")
+        seen.add(name)
+        observed = expected.get(name)
+        if observed is None:
+            errors.append(f"{label}: not an authoritative commerce ODS asset: {name}")
+        else:
+            if sorted(asset.get("domains") or []) != observed["domains"]:
+                errors.append(f"{label}: domains differ for {name}")
+            if sorted(asset.get("source_labels") or []) != observed["source_labels"]:
+                errors.append(
+                    f"{label}: source labels differ for {name}: "
+                    f"contract={asset.get('source_labels')!r}, observed={observed['source_labels']!r}"
+                )
+            anchors = asset.get("source_anchors")
+            actual_anchors = sorted(
+                (anchor.get("document"), anchor.get("line"))
+                for anchor in anchors or [] if isinstance(anchor, dict)
+            )
+            if actual_anchors != observed["anchors"]:
+                errors.append(
+                    f"{label}: source anchors differ for {name}: "
+                    f"contract={actual_anchors!r}, observed={observed['anchors']!r}"
+                )
+        if not isinstance(asset.get("source_grain"), str) or not asset["source_grain"].strip():
+            errors.append(f"{label}: requires source_grain")
+        evidence = asset.get("source_evidence")
+        if not isinstance(evidence, dict):
+            errors.append(f"{label}: requires source_evidence")
+        else:
+            evidence_status = evidence.get("status")
+            detail_anchors = evidence.get("detail_anchors")
+            expected_detail = detail_expectations.get(name)
+            if expected_detail is not None:
+                expected_status, heading_line, end_line, heading_asset = expected_detail
+                expected_anchor = [{
+                    "document": scope["authoritative_document"],
+                    "heading_line": heading_line,
+                    "end_line": end_line,
+                    "source_asset": heading_asset,
+                }]
+                if evidence_status != expected_status or detail_anchors != expected_anchor:
+                    errors.append(
+                        f"{label}: source detail evidence differs for {name}: "
+                        f"contract={evidence!r}, expected_status={expected_status!r}, "
+                        f"expected_anchors={expected_anchor!r}"
+                    )
+                if source_lines and (
+                    heading_line > len(source_lines)
+                    or heading_asset.replace("_", r"\_") not in source_lines[heading_line - 1]
+                ):
+                    errors.append(
+                        f"{label}: source detail heading {heading_line} does not prove {heading_asset}"
+                    )
+            elif name in overview_only_assets:
+                if evidence_status != "overview_only" or detail_anchors != []:
+                    errors.append(f"{label}: overview-only asset must remain provisional without detail anchors")
+            elif name in rejected_mislabeled_assets:
+                if evidence_status != "rejected_mislabeled" or detail_anchors != []:
+                    errors.append(f"{label}: rejected mislabeled source must retain empty detail evidence")
+            else:
+                errors.append(f"{label}: source evidence classification is not governed for {name}")
+        if asset.get("decision") not in allowed_decisions:
+            errors.append(f"{label}: invalid decision {asset.get('decision')!r}")
+        if not _nonempty_strings(asset.get("canonical_entities")):
+            errors.append(f"{label}: requires canonical_entities")
+        semantic_rules = asset.get("semantic_rules")
+        if not isinstance(semantic_rules, dict) or set(semantic_rules) != required_semantic_rules:
+            errors.append(f"{label}: semantic_rules must define exactly {sorted(required_semantic_rules)}")
+        elif any(not isinstance(value, str) or not value.strip() for value in semantic_rules.values()):
+            errors.append(f"{label}: semantic_rules values must be non-empty strings")
+        if not _nonempty_strings(asset.get("corrections")):
+            errors.append(f"{label}: requires corrections")
+        if asset.get("model_status") not in model_statuses:
+            errors.append(f"{label}: invalid model_status")
+        if asset.get("decision") == "reject" and asset.get("model_status") != "rejected":
+            errors.append(f"{label}: rejected decision must have rejected model_status")
+        if asset.get("model_status") == "rejected" and asset.get("decision") != "reject":
+            errors.append(f"{label}: rejected model_status must have reject decision")
+        for ref_key in ("backend_refs", "lakehouse_refs"):
+            references = asset.get(ref_key)
+            if not _nonempty_strings(references):
+                errors.append(f"{label}: requires {ref_key}")
+                continue
+            for reference in references:
+                reference_error = _contract_reference_error(reference)
+                if reference_error:
+                    errors.append(f"{label}: invalid {ref_key[:-1]} {reference}: {reference_error}")
+        runtime = asset.get("runtime_nonempty_reconciliation")
+        if not isinstance(runtime, dict):
+            errors.append(f"{label}: requires runtime_nonempty_reconciliation")
+        else:
+            if runtime.get("status") not in runtime_statuses:
+                errors.append(f"{label}: invalid runtime reconciliation status")
+            gate_ref = runtime.get("gate_ref")
+            if not isinstance(gate_ref, str) or not gate_ref.strip():
+                errors.append(f"{label}: runtime reconciliation requires gate_ref")
+            elif not _resolve_contract_reference(gate_ref).is_file():
+                errors.append(f"{label}: missing runtime gate {gate_ref}")
+            for count_key in ("row_count", "tenant_count"):
+                count = runtime.get(count_key)
+                if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+                    errors.append(f"{label}: {count_key} must be a non-negative integer")
+            if runtime.get("status") == "verified" and not _runtime_reconciliation_verified(runtime):
+                errors.append(f"{label}: verified runtime reconciliation requires durable non-empty evidence")
+        expected_specification = (
+            "specified"
+            if evidence.get("status") in {"ddl_backed", "rejected_mislabeled"}
+            else "provisional"
+        ) if isinstance(evidence, dict) else None
+        if asset.get("specification_status") != expected_specification:
+            errors.append(
+                f"{label}: specification_status must be {expected_specification!r} "
+                f"for source evidence {evidence.get('status')!r}"
+            )
+        if asset.get("verification_status") not in {"unverified", "verified"}:
+            errors.append(f"{label}: invalid verification_status")
+        if asset.get("verification_status") == "verified" and not _runtime_reconciliation_verified(runtime):
+            errors.append(f"{label}: final verification is forbidden without non-empty reconciliation")
+    if seen != set(expected):
+        errors.append(
+            "commerce source dispositions differ from authoritative ODS overview: "
+            f"missing={sorted(set(expected) - seen)}, extra={sorted(seen - set(expected))}"
+        )
+    observed_evidence_counts: dict[str, int] = {}
+    for asset in assets:
+        if not isinstance(asset, dict) or not isinstance(asset.get("source_evidence"), dict):
+            continue
+        evidence_status = asset["source_evidence"].get("status")
+        if isinstance(evidence_status, str):
+            observed_evidence_counts[evidence_status] = observed_evidence_counts.get(evidence_status, 0) + 1
+    if scope.get("expected_source_evidence_counts") != observed_evidence_counts:
+        errors.append(
+            "commerce source evidence counts differ from the governed classification: "
+            f"contract={scope.get('expected_source_evidence_counts')!r}, "
+            f"observed={observed_evidence_counts!r}"
+        )
+
+    by_name = {asset.get("source_asset"): asset for asset in assets if isinstance(asset, dict)}
+    discount = by_name.get("ods_trade_trade_discount_di", {})
+    discount_entities = " ".join(discount.get("canonical_entities", []))
+    required_benefit_entities = {
+        "OrderBenefitApplication", "OrderBenefitAllocation", "OrderBenefitFunding"
+    }
+    if not all(entity in discount_entities for entity in required_benefit_entities):
+        errors.append("commerce order discount must split application, allocation and funding")
+    discount_fields = discount.get("field_dispositions")
+    expected_discount_fields = {
+        "id", "discount_no", "order_no", "sub_order_no", "buyer_id", "discount_type",
+        "discount_code", "use_status", "amount", "feature", "create_time", "modify_time",
+        "subsidy_info", "pt",
+    }
+    if not isinstance(discount_fields, dict) or set(discount_fields) != expected_discount_fields:
+        errors.append("commerce order discount must govern every DDL field and partition field")
+    elif any(
+        not isinstance(rule, dict)
+        or set(rule) != {"decision", "target", "rule"}
+        or any(not isinstance(value, str) or not value.strip() for value in rule.values())
+        for rule in discount_fields.values()
+    ):
+        errors.append("commerce order discount field dispositions must define decision, target and rule")
+    else:
+        if "quarantine" not in discount_fields["amount"]["rule"]:
+            errors.append("commerce order discount amount must quarantine ambiguous money units")
+        subsidy_rule = discount_fields["subsidy_info"]["rule"]
+        if "exact funding sum" not in subsidy_rule or "positional guessing" not in subsidy_rule:
+            errors.append("commerce order discount subsidy_info must reject guessed funders")
+        if discount_fields["feature"]["decision"] != "reject_raw":
+            errors.append("commerce order discount feature JSON must remain restricted evidence")
+    if "sum" not in discount.get("semantic_rules", {}).get("money_or_quantity", ""):
+        errors.append("commerce order discount must state exact allocation/funding sums")
+    refund_discount = by_name.get("ods_refund_refund_discount_df", {})
+    if "original allocation" not in " ".join(refund_discount.get("corrections", [])):
+        errors.append("commerce refund discount must reference the original allocation")
+    bad_credit_alias = by_name.get("ods_logistic_logistic_track_structure_di", {})
+    if bad_credit_alias.get("decision") != "reject" or bad_credit_alias.get("model_status") != "rejected":
+        errors.append("commerce duplicate logistics-as-credit alias must be rejected")
+    card = by_name.get("ods_fin_bind_card_df", {})
+    if "PAN" not in card.get("semantic_rules", {}).get("security", ""):
+        errors.append("commerce card disposition must forbid PAN")
+    for name in ("ods_inventory_sale_df", "ods_inventory_warehouse_df"):
+        rules = by_name.get(name, {}).get("semantic_rules", {})
+        if not all(term in rules.get("grain", "") for term in ("Warehouse", "Location", "Lot", "UOM")):
+            errors.append(f"commerce inventory disposition {name} must retain exact dimensions")
+    return errors
+
+
 def game_disposition_status(
     inventory: dict[str, Any], contract: dict[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -1314,6 +1650,35 @@ def metadata_disposition_status(
     }
 
 
+def commerce_disposition_status(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    contract = contract or load_commerce_source_dispositions()
+    domains = contract.get("source_scope", {}).get("domains", [])
+    expected, _ = _commerce_expected_assets(inventory, domains)
+    assets = contract.get("assets", []) if isinstance(contract, dict) else []
+    specified = [
+        asset for asset in assets
+        if isinstance(asset, dict) and asset.get("specification_status") == "specified"
+    ]
+    reconciled = [
+        asset for asset in assets
+        if isinstance(asset, dict)
+        and _runtime_reconciliation_verified(asset.get("runtime_nonempty_reconciliation"))
+    ]
+    verified = [asset for asset in reconciled if asset.get("verification_status") == "verified"]
+    denominator = len(expected) or 1
+    return {
+        "commerce_source_asset_count": len(expected),
+        "commerce_detailed_disposition_specified_count": len(specified),
+        "commerce_runtime_nonempty_reconciled_count": len(reconciled),
+        "commerce_final_disposition_verified_count": len(verified),
+        "commerce_detailed_disposition_percent": round(len(specified) * 100.0 / denominator, 2),
+        "commerce_runtime_nonempty_reconciled_percent": round(len(reconciled) * 100.0 / denominator, 2),
+        "commerce_final_disposition_verified_percent": round(len(verified) * 100.0 / denominator, 2),
+    }
+
+
 def disposition_status(
     inventory: dict[str, Any], policy: dict[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -1351,17 +1716,21 @@ def disposition_status(
     preliminary_count = len(routed) + len(rejected)
     game_status = game_disposition_status(inventory)
     metadata_status = metadata_disposition_status(inventory)
+    commerce_status = commerce_disposition_status(inventory)
     detailed_count = (
         game_status["game_detailed_disposition_specified_count"]
         + metadata_status["metadata_detailed_disposition_specified_count"]
+        + commerce_status["commerce_detailed_disposition_specified_count"]
     )
     runtime_count = (
         game_status["game_runtime_nonempty_reconciled_count"]
         + metadata_status["metadata_runtime_nonempty_reconciled_count"]
+        + commerce_status["commerce_runtime_nonempty_reconciled_count"]
     )
     verified_count = (
         game_status["game_final_disposition_verified_count"]
         + metadata_status["metadata_final_disposition_verified_count"]
+        + commerce_status["commerce_final_disposition_verified_count"]
     )
     return {
         "candidate_asset_count": candidate_count,
@@ -1396,6 +1765,7 @@ def disposition_status(
         ),
         **game_status,
         **metadata_status,
+        **commerce_status,
     }
 
 
@@ -1498,7 +1868,10 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"({status['game_detailed_disposition_percent']:.2f}%); "
         f"metadata={status['metadata_detailed_disposition_specified_count']}/"
         f"{status['metadata_source_asset_count']} "
-        f"({status['metadata_detailed_disposition_percent']:.2f}%)"
+        f"({status['metadata_detailed_disposition_percent']:.2f}%); "
+        f"commerce={status['commerce_detailed_disposition_specified_count']}/"
+        f"{status['commerce_source_asset_count']} "
+        f"({status['commerce_detailed_disposition_percent']:.2f}%)"
     )
     yield (
         "non-empty runtime reconciliations: "
@@ -1509,7 +1882,10 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"({status['game_runtime_nonempty_reconciled_percent']:.2f}%); "
         f"metadata={status['metadata_runtime_nonempty_reconciled_count']}/"
         f"{status['metadata_source_asset_count']} "
-        f"({status['metadata_runtime_nonempty_reconciled_percent']:.2f}%)"
+        f"({status['metadata_runtime_nonempty_reconciled_percent']:.2f}%); "
+        f"commerce={status['commerce_runtime_nonempty_reconciled_count']}/"
+        f"{status['commerce_source_asset_count']} "
+        f"({status['commerce_runtime_nonempty_reconciled_percent']:.2f}%)"
     )
     yield (
         "final semantic dispositions verified: "
@@ -1518,7 +1894,9 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"game={status['game_final_disposition_verified_count']}/"
         f"{status['game_source_asset_count']}, "
         f"metadata={status['metadata_final_disposition_verified_count']}/"
-        f"{status['metadata_source_asset_count']}; routing is not completion"
+        f"{status['metadata_source_asset_count']}, "
+        f"commerce={status['commerce_final_disposition_verified_count']}/"
+        f"{status['commerce_source_asset_count']}; routing is not completion"
     )
 
 
@@ -1535,6 +1913,7 @@ def main() -> int:
     errors.extend(validate_source_asset_routes(inventory))
     errors.extend(validate_game_source_dispositions(inventory))
     errors.extend(validate_metadata_source_dispositions(inventory))
+    errors.extend(validate_commerce_source_dispositions(inventory))
     if errors:
         raise SourceAssetError("; ".join(errors))
     if args.command == "inventory":

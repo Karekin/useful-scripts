@@ -62,9 +62,9 @@ class ModelCtlTest(unittest.TestCase):
             positions["models/dws/dws-canonical-paid-order-cancellation-saga-current.sql"],
         )
 
-    def test_models_extend_manifest_to_one_hundred_sixty_two_in_dependency_order(self):
+    def test_models_extend_manifest_to_one_hundred_sixty_eight_in_dependency_order(self):
         order = MODEL.load_order()
-        self.assertEqual(len(order), 162)
+        self.assertEqual(len(order), 168)
         positions = {entry: index for index, entry in enumerate(order)}
         paid_dws = "models/dws/dws-canonical-paid-order-cancellation-saga-current.sql"
         paid_ads = "models/ads/ads-canonical-paid-order-cancellation-saga-readiness.sql"
@@ -180,6 +180,21 @@ class ModelCtlTest(unittest.TestCase):
         self.assertLess(positions[metadata_dwd], positions[metadata_dim])
         self.assertLess(positions[metadata_dim], positions[metadata_dws])
         self.assertLess(positions[metadata_dws], positions[metadata_ads])
+
+        benefit_application_dwd = "models/dwd/dwd-canonical-order-benefit-application-event.sql"
+        benefit_allocation_dwd = "models/dwd/dwd-canonical-order-benefit-allocation-event.sql"
+        benefit_funding_dwd = "models/dwd/dwd-canonical-order-benefit-funding-event.sql"
+        benefit_dim = "models/dim/dim-canonical-order-benefit-application-current.sql"
+        benefit_dws = "models/dws/dws-canonical-order-item-benefit-current.sql"
+        benefit_ads = "models/ads/ads-canonical-order-benefit-readiness.sql"
+        self.assertLess(positions["models/dwd/dwd-domain-event.sql"], positions[benefit_application_dwd])
+        self.assertLess(positions[benefit_application_dwd], positions[benefit_allocation_dwd])
+        self.assertLess(positions[benefit_allocation_dwd], positions[benefit_funding_dwd])
+        self.assertLess(positions[benefit_application_dwd], positions[benefit_dim])
+        self.assertLess(positions["models/dws/dws-canonical-order-item-current.sql"], positions[benefit_dws])
+        self.assertLess(positions[benefit_dim], positions[benefit_dws])
+        self.assertLess(positions[benefit_funding_dwd], positions[benefit_dws])
+        self.assertLess(positions[benefit_dws], positions[benefit_ads])
 
     def test_shadow_models_follow_historical_admission_and_full_denominator_dependencies(self):
         positions = {entry: index for index, entry in enumerate(MODEL.load_order())}

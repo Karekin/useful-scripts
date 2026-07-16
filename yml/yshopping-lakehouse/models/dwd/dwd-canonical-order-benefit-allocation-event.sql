@@ -1,0 +1,27 @@
+CREATE OR REPLACE VIEW yshopping_dwd.dwd_canonical_order_benefit_allocation_event AS
+SELECT
+    application.event_id,
+    application.schema_version,
+    application.tenant_id,
+    application.envelope_order_id,
+    application.aggregate_version,
+    application.event_sequence,
+    application.run_id,
+    application.order_id,
+    application.order_no,
+    application.benefit_application_id,
+    application.application_key,
+    application.benefit_type,
+    application.amount_minor AS application_amount_minor,
+    application.currency_code AS application_currency_code,
+    application.occurred_at,
+    application.recorded_at,
+    get_json_string(allocation.`value`, '$.benefit_allocation_id') AS benefit_allocation_id,
+    get_json_string(allocation.`value`, '$.allocation_key') AS allocation_key,
+    get_json_string(allocation.`value`, '$.order_item_id') AS order_item_id,
+    get_json_string(allocation.`value`, '$.line_key') AS line_key,
+    CAST(get_json_string(allocation.`value`, '$.amount_minor') AS BIGINT) AS amount_minor,
+    get_json_string(allocation.`value`, '$.currency_code') AS currency_code,
+    json_query(allocation.`value`, '$.funding') AS funding
+FROM yshopping_dwd.dwd_canonical_order_benefit_application_event application,
+     LATERAL json_each(application.allocations) allocation;

@@ -142,8 +142,8 @@
       "ADS": {"candidate_names": 57, "create_targets": 48, "insert_targets": 42, "dependency_edges": 116, "unresolved_edges": 8}
     },
     "totals": {"candidate_names": 664, "create_targets": 440, "insert_targets": 261, "dependency_edges": 634, "unresolved_edges": 40},
-    "current_model_sql_files": 162,
-    "current_model_targets": 302,
+    "current_model_sql_files": 168,
+    "current_model_targets": 308,
     "known_high_confidence_issues": [
       "DWD 子订单当日任务误从主订单 ODS 取数，且子订单 DDL 缺逗号。",
       "SCM 操作 DDL 缺逗号并重复 operator_name。",
@@ -464,10 +464,10 @@
       },
       "lakehouse": {
         "status": "partial",
-        "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-item-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-order-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-order-item-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-commerce-v2-readiness.sql"],
-        "gaps": ["未覆盖子订单、优惠分摊、申诉及完整物流轨迹事实", "当前维度不是 SCD2"]
+        "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-item-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-benefit-application-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-benefit-allocation-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-benefit-funding-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-order-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-order-benefit-application-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-order-item-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-order-item-benefit-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-order-benefit-readiness.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-commerce-v2-readiness.sql", "useful-scripts/yml/yshopping-lakehouse/tests/sql/27-canonical-order-benefit-contract.sql"],
+        "gaps": ["优惠申请→订单项分摊→平台/商家/合作方出资已形成不可变事件明细、current、订单项净额及 readiness，但尚无非空运行对账与售后逆向退回", "未覆盖子订单、申诉及完整物流轨迹事实", "当前维度不是 SCD2"]
       },
-      "next_gate": "实现商家/履约拆单、优惠分摊和多包裹契约并以同一 run_id 对账。"
+      "next_gate": "补齐优惠申请/订单项分摊/出资的非空运行对账与售后逆向退回，再继续商家/履约拆单、多包裹、申诉及完整物流轨迹契约。"
     },
     {
       "id": "trade.payment",

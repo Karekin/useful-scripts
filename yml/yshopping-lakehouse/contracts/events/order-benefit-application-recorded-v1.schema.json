@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/order-benefit-application-recorded-v1.schema.json",
+  "title": "order.benefit_application.recorded payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id", "order_id", "order_no", "benefit_application_id", "application_key",
+    "benefit_type", "benefit_source_type", "benefit_source_id", "benefit_source_version",
+    "entitlement_id", "amount_minor", "currency_code", "calculation_digest", "allocations"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "order_id": {"type": "string", "format": "uuid"},
+    "order_no": {"type": "string", "minLength": 1, "maxLength": 32},
+    "benefit_application_id": {"type": "string", "format": "uuid"},
+    "application_key": {"type": "string", "minLength": 1, "maxLength": 128},
+    "benefit_type": {"type": "string", "enum": ["COUPON", "PROMOTION", "ALLOWANCE", "CAMPAIGN"]},
+    "benefit_source_type": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32,
+      "pattern": "^[A-Z][A-Z0-9_]*$"
+    },
+    "benefit_source_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "benefit_source_version": {"type": "integer", "minimum": 1},
+    "entitlement_id": {"type": ["string", "null"], "minLength": 1, "maxLength": 128},
+    "amount_minor": {"type": "integer", "minimum": 1},
+    "currency_code": {"type": "string", "enum": ["CNY"]},
+    "calculation_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "allocations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "benefit_allocation_id", "allocation_key", "order_item_id", "line_key",
+          "amount_minor", "currency_code", "funding"
+        ],
+        "properties": {
+          "benefit_allocation_id": {"type": "string", "format": "uuid"},
+          "allocation_key": {"type": "string", "minLength": 1, "maxLength": 128},
+          "order_item_id": {"type": "string", "format": "uuid"},
+          "line_key": {"type": "string", "minLength": 1, "maxLength": 128},
+          "amount_minor": {"type": "integer", "minimum": 1},
+          "currency_code": {"type": "string", "enum": ["CNY"]},
+          "funding": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "benefit_funding_id", "funding_key", "funder_type", "funder_id",
+                "amount_minor", "currency_code"
+              ],
+              "properties": {
+                "benefit_funding_id": {"type": "string", "format": "uuid"},
+                "funding_key": {"type": "string", "minLength": 1, "maxLength": 128},
+                "funder_type": {"type": "string", "enum": ["PLATFORM", "MERCHANT", "PARTNER"]},
+                "funder_id": {"type": "string", "minLength": 1, "maxLength": 128},
+                "amount_minor": {"type": "integer", "minimum": 1},
+                "currency_code": {"type": "string", "enum": ["CNY"]}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -25,6 +25,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_source_asset_routes(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_game_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_metadata_source_dispositions(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_commerce_source_dispositions(self.inventory))
         self.assertEqual(6, len(self.inventory["documents"]))
 
     def test_inventory_is_complete_and_deterministic_for_the_locked_snapshot(self):
@@ -130,12 +131,12 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual(110, status["bounded_domain_asset_count"])
         self.assertEqual(5, status["explicit_rejection_count"])
         self.assertEqual(718, status["preliminary_handled_count"])
-        self.assertEqual(29, status["detailed_disposition_specified_count"])
+        self.assertEqual(48, status["detailed_disposition_specified_count"])
         self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
         self.assertEqual(99.3, status["routing_percent"])
         self.assertEqual(100.0, status["preliminary_handled_percent"])
-        self.assertEqual(4.04, status["detailed_disposition_specified_percent"])
+        self.assertEqual(6.69, status["detailed_disposition_specified_percent"])
         self.assertEqual(0.0, status["runtime_nonempty_reconciled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
         inferred = SOURCE_ASSETS.infer_source_domains(self.inventory)
@@ -149,7 +150,9 @@ class SourceAssetCtlTest(unittest.TestCase):
         lines = list(SOURCE_ASSETS.disposition_lines(self.inventory))
         self.assertTrue(any("metadata=10/10 (100.00%)" in line for line in lines))
         self.assertTrue(any("metadata=0/10 (0.00%)" in line for line in lines))
-        self.assertTrue(any("metadata=0/10; routing is not completion" in line for line in lines))
+        self.assertTrue(any("commerce=19/35 (54.29%)" in line for line in lines))
+        self.assertTrue(any("commerce=0/35 (0.00%)" in line for line in lines))
+        self.assertTrue(any("commerce=0/35; routing is not completion" in line for line in lines))
 
     def test_game_dispositions_cover_exact_authoritative_overview_rows(self):
         observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "游戏")
@@ -467,6 +470,140 @@ class SourceAssetCtlTest(unittest.TestCase):
         mislabeled["assets"][0]["source_label"] = "任务"
         errors = SOURCE_ASSETS.validate_metadata_source_dispositions(self.inventory, mislabeled)
         self.assertTrue(any("source label differs" in error for error in errors))
+
+    def test_commerce_dispositions_cover_exact_authoritative_overview_rows(self):
+        contract = SOURCE_ASSETS.load_commerce_source_dispositions()
+        expected, counts = SOURCE_ASSETS._commerce_expected_assets(
+            self.inventory, contract["source_scope"]["domains"]
+        )
+        names = [asset["source_asset"] for asset in contract["assets"]]
+        self.assertEqual(
+            {"正向订单": 11, "逆向订单": 7, "支付": 14, "库存": 3}, counts
+        )
+        self.assertEqual(35, len(expected))
+        self.assertEqual(
+            {"ddl_backed": 18, "overview_only": 14, "name_conflict": 2, "rejected_mislabeled": 1},
+            contract["source_scope"]["expected_source_evidence_counts"],
+        )
+        self.assertEqual(set(expected), set(names))
+        self.assertEqual(len(names), len(set(names)))
+        self.assertEqual(
+            set(range(9, 45)),
+            {line for item in expected.values() for _, line in item["anchors"]},
+        )
+
+    def test_commerce_dispositions_count_only_field_level_evidence_and_fail_closed_on_runtime(self):
+        self.assertEqual(
+            {
+                "commerce_source_asset_count": 35,
+                "commerce_detailed_disposition_specified_count": 19,
+                "commerce_runtime_nonempty_reconciled_count": 0,
+                "commerce_final_disposition_verified_count": 0,
+                "commerce_detailed_disposition_percent": 54.29,
+                "commerce_runtime_nonempty_reconciled_percent": 0.0,
+                "commerce_final_disposition_verified_percent": 0.0,
+            },
+            SOURCE_ASSETS.commerce_disposition_status(self.inventory),
+        )
+        contract = SOURCE_ASSETS.load_commerce_source_dispositions()
+        broken = json.loads(json.dumps(contract))
+        broken["assets"][0]["verification_status"] = "verified"
+        errors = SOURCE_ASSETS.validate_commerce_source_dispositions(self.inventory, broken)
+        self.assertTrue(any("forbidden without non-empty" in error for error in errors))
+
+    def test_commerce_source_evidence_keeps_overview_only_and_name_conflicts_provisional(self):
+        contract = SOURCE_ASSETS.load_commerce_source_dispositions()
+        by_name = {asset["source_asset"]: asset for asset in contract["assets"]}
+        statuses = [asset["source_evidence"]["status"] for asset in contract["assets"]]
+        self.assertEqual(18, statuses.count("ddl_backed"))
+        self.assertEqual(14, statuses.count("overview_only"))
+        self.assertEqual(2, statuses.count("name_conflict"))
+        self.assertEqual(1, statuses.count("rejected_mislabeled"))
+        self.assertEqual(
+            "ods_commodity_commodity_trade_spu_df",
+            by_name["ods_trade_trade_trade_spu_df"]["source_evidence"]["detail_anchors"][0]["source_asset"],
+        )
+        self.assertEqual(
+            "ods_commodity_commodity_sku_df",
+            by_name["ods_trade_trade_trade_sku_df"]["source_evidence"]["detail_anchors"][0]["source_asset"],
+        )
+        broken = json.loads(json.dumps(contract))
+        by_broken_name = {asset["source_asset"]: asset for asset in broken["assets"]}
+        by_broken_name["ods_pay_pay_log_di"]["specification_status"] = "specified"
+        errors = SOURCE_ASSETS.validate_commerce_source_dispositions(self.inventory, broken)
+        self.assertTrue(any("specification_status must be 'provisional'" in error for error in errors))
+
+        broken = json.loads(json.dumps(contract))
+        by_broken_name = {asset["source_asset"]: asset for asset in broken["assets"]}
+        by_broken_name["ods_trade_trade_order_di"]["source_evidence"]["detail_anchors"][0]["heading_line"] = 305
+        errors = SOURCE_ASSETS.validate_commerce_source_dispositions(self.inventory, broken)
+        self.assertTrue(any("source detail evidence differs" in error for error in errors))
+
+    def test_commerce_dispositions_lock_required_authority_corrections(self):
+        contract = SOURCE_ASSETS.load_commerce_source_dispositions()
+        by_name = {asset["source_asset"]: asset for asset in contract["assets"]}
+        discount = by_name["ods_trade_trade_discount_di"]
+        self.assertIn("order.OrderBenefitApplication", discount["canonical_entities"])
+        self.assertIn("order.OrderBenefitAllocation", discount["canonical_entities"])
+        self.assertIn("order.OrderBenefitFunding", discount["canonical_entities"])
+        self.assertEqual("partial", discount["model_status"])
+        self.assertEqual(
+            {
+                "id", "discount_no", "order_no", "sub_order_no", "buyer_id", "discount_type",
+                "discount_code", "use_status", "amount", "feature", "create_time", "modify_time",
+                "subsidy_info", "pt",
+            },
+            set(discount["field_dispositions"]),
+        )
+        self.assertIn("quarantine", discount["field_dispositions"]["amount"]["rule"])
+        self.assertIn("positional guessing", discount["field_dispositions"]["subsidy_info"]["rule"])
+        self.assertEqual("reject_raw", discount["field_dispositions"]["feature"]["decision"])
+        reversal = by_name["ods_refund_refund_discount_df"]
+        self.assertIn("original allocation", " ".join(reversal["corrections"]))
+        bad_alias = by_name["ods_logistic_logistic_track_structure_di"]
+        self.assertEqual("reject", bad_alias["decision"])
+        self.assertEqual("rejected", bad_alias["model_status"])
+        card = by_name["ods_fin_bind_card_df"]
+        self.assertIn("PAN", card["semantic_rules"]["security"])
+        for name in ("ods_inventory_sale_df", "ods_inventory_warehouse_df"):
+            grain = by_name[name]["semantic_rules"]["grain"]
+            for dimension in ("Warehouse", "Location", "Lot", "UOM"):
+                self.assertIn(dimension, grain)
+
+    def test_all_commerce_implementation_references_resolve(self):
+        contract = SOURCE_ASSETS.load_commerce_source_dispositions()
+        references = [
+            reference
+            for asset in contract["assets"]
+            for key in ("backend_refs", "lakehouse_refs")
+            for reference in asset[key]
+        ]
+        self.assertEqual(114, len(references))
+        self.assertEqual(
+            [],
+            [
+                (reference, SOURCE_ASSETS._contract_reference_error(reference))
+                for reference in references
+                if SOURCE_ASSETS._contract_reference_error(reference)
+            ],
+        )
+
+    def test_commerce_contract_rejects_missing_duplicate_or_mislabeled_assets(self):
+        contract = SOURCE_ASSETS.load_commerce_source_dispositions()
+        missing = json.loads(json.dumps(contract))
+        missing["assets"].pop()
+        errors = SOURCE_ASSETS.validate_commerce_source_dispositions(self.inventory, missing)
+        self.assertTrue(any("differ from authoritative ODS overview" in error for error in errors))
+
+        duplicate = json.loads(json.dumps(contract))
+        duplicate["assets"][1] = json.loads(json.dumps(duplicate["assets"][0]))
+        errors = SOURCE_ASSETS.validate_commerce_source_dispositions(self.inventory, duplicate)
+        self.assertTrue(any("duplicate source_asset" in error for error in errors))
+
+        mislabeled = json.loads(json.dumps(contract))
+        mislabeled["assets"][0]["source_labels"] = ["订单"]
+        errors = SOURCE_ASSETS.validate_commerce_source_dispositions(self.inventory, mislabeled)
+        self.assertTrue(any("source labels differ" in error for error in errors))
 
     def test_qualified_names_and_markdown_bold_are_parsed_without_losing_source_location(self):
         assets = {item["asset_id"]: item for item in self.inventory["assets"]}

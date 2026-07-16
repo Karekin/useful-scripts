@@ -1,0 +1,59 @@
+{
+  "event_id": "b0000000-0000-4000-8000-000000000010",
+  "event_type": "order.benefit_application.recorded",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "order",
+  "aggregate_id": "b0000000-0000-4000-8000-000000000001",
+  "aggregate_version": 1,
+  "event_sequence": 2,
+  "idempotency_key": "order-benefit:b0000000-0000-4000-8000-000000000002",
+  "correlation_id": "b0000000-0000-4000-8000-000000000020",
+  "causation_id": "b0000000-0000-4000-8000-000000000011",
+  "occurred_at": "2026-07-16T04:00:00.000Z",
+  "recorded_at": "2026-07-16T04:00:00.100Z",
+  "source_system": "cloudmold-order",
+  "payload": {
+    "run_id": "order-benefit-example",
+    "order_id": "b0000000-0000-4000-8000-000000000001",
+    "order_no": "CMOBENEFIT00000000000001",
+    "benefit_application_id": "b0000000-0000-4000-8000-000000000002",
+    "application_key": "coupon-summer-2026",
+    "benefit_type": "COUPON",
+    "benefit_source_type": "COUPON_TEMPLATE",
+    "benefit_source_id": "b0000000-0000-4000-8000-000000000003",
+    "benefit_source_version": 3,
+    "entitlement_id": "b0000000-0000-4000-8000-000000000004",
+    "amount_minor": 3000,
+    "currency_code": "CNY",
+    "calculation_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "allocations": [
+      {
+        "benefit_allocation_id": "b0000000-0000-4000-8000-000000000005",
+        "allocation_key": "line-1-coupon",
+        "order_item_id": "b0000000-0000-4000-8000-000000000006",
+        "line_key": "line-1",
+        "amount_minor": 3000,
+        "currency_code": "CNY",
+        "funding": [
+          {
+            "benefit_funding_id": "b0000000-0000-4000-8000-000000000007",
+            "funding_key": "platform-share",
+            "funder_type": "PLATFORM",
+            "funder_id": "cloudmold-platform",
+            "amount_minor": 1000,
+            "currency_code": "CNY"
+          },
+          {
+            "benefit_funding_id": "b0000000-0000-4000-8000-000000000008",
+            "funding_key": "merchant-share",
+            "funder_type": "MERCHANT",
+            "funder_id": "b0000000-0000-4000-8000-000000000009",
+            "amount_minor": 2000,
+            "currency_code": "CNY"
+          }
+        ]
+      }
+    ]
+  }
+}

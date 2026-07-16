@@ -1,0 +1,433 @@
+{
+  "contract_version": 1,
+  "contract_id": "yshopping.commerce.source-disposition.v1",
+  "source_scope": {
+    "domains": ["正向订单", "逆向订单", "支付", "库存"],
+    "authoritative_document": "ODS语兴好物（y shopping）电商数据表.md",
+    "authoritative_overview_lines": "9-44",
+    "expected_domain_asset_counts": {"正向订单": 11, "逆向订单": 7, "支付": 14, "库存": 3},
+    "expected_unique_asset_count": 35,
+    "expected_source_evidence_counts": {"ddl_backed": 18, "overview_only": 14, "name_conflict": 2, "rejected_mislabeled": 1},
+    "source_detail_limit": "The ODS overview and prototype DDL are comparison evidence, not a canonical schema. Source status codes, mutable snapshots, duplicated aliases, PII and overloaded money fields require explicit correction before ingestion."
+  },
+  "verification_policy": {
+    "specified_definition": "Every authoritative commerce asset has a reviewed grain, authority boundary, canonical target, correction decision, implementation evidence and fail-closed runtime gate.",
+    "verified_definition": "An asset is verified only by non-empty tenant-scoped replay and exact source-to-canonical reconciliation with durable evidence.",
+    "empty_tables_are_evidence": false,
+    "allowed_decisions": ["reuse", "merge", "split", "derive", "correct", "reject"],
+    "allowed_model_statuses": ["partial", "missing", "rejected"],
+    "runtime_statuses": ["missing", "pending", "verified"]
+  },
+  "lifecycle_policy_defaults": {
+    "正向订单": {"history_policy": "freeze accepted commercial facts and append aggregate-version transitions", "delete_policy": "source deletion never erases an accepted order, item, money or fulfillment reference", "backfill_policy": "resolve tenant and exact source mappings, replay in business-key/version order, quarantine key/status/money conflicts and reconcile header-item-effect counts"},
+    "逆向订单": {"history_policy": "append entitlement, decision, physical return and money effects independently", "delete_policy": "source deletion retires mutable visibility but never erases reverse-case or financial evidence", "backfill_policy": "classify cancellation/refund/return/exchange before replay, bind exact original items/payments/allocations and quarantine over-quantity or over-money effects"},
+    "支付": {"history_policy": "append intent, attempt, provider observation and ledger effects with stable idempotency", "delete_policy": "financial and consent evidence is never hard-deleted; revocation and correction are explicit events", "backfill_policy": "remain blocked without source keys, tenant, currency, amount units and provider status contract; tokenize sensitive instruments before any ingestion"},
+    "库存": {"history_policy": "derive exact-dimensional balances from immutable movements and allocations", "delete_policy": "source disappearance cannot delete stock history or fabricate zero; correction requires explicit evidence", "backfill_policy": "require owner/SKU/Warehouse/Location/Lot/UOM mappings, stable watermark and complete denominator; never invent missing dimensions or quantities"}
+  },
+  "assets": [
+    {
+      "source_asset": "ods_trade_trade_order_di", "domains": ["正向订单"], "source_labels": ["主订单"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 9}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 304, "end_line": 333, "source_asset": "ods_trade_trade_order_di"}]},
+      "source_grain": "one mutable source main-order snapshot or change row per source order_no",
+      "decision": "split", "canonical_entities": ["order.OrderHeader", "order.OrderStatusHistory", "identity.BuyerReference"],
+      "semantic_rules": {"grain": "one tenant-scoped canonical Order header; items remain separate", "identity": "order_no is a qualified source business key and never a cross-system canonical id", "money_or_quantity": "product, shipping, discount and payable are int64 minor units plus ISO-4217 currency and must reconcile", "history": "append versioned state transitions; is_del cannot erase financial history", "security": "buyer_name and address_info are forbidden from domain events; retain canonical buyer and restricted address snapshot refs", "authority": "Order owns accepted commercial facts; Payment, Fulfillment and Identity retain their own authority"},
+      "corrections": ["separate delivery state from Order state", "replace feature/address/name blobs with governed references", "reject mutable snapshot overwrite as history"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/dal/dataobject/OrderHeaderDO.java", "yudao-cloud/sql/cloudmold/V20260712_06__canonical_order_payment_first_slice.sql"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-order-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-status-event.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/10-canonical-order-payment-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_trade_trade_sub_order_di", "domains": ["正向订单"], "source_labels": ["子订单"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 10}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 334, "end_line": 389, "source_asset": "ods_trade_trade_sub_order_di"}]},
+      "source_grain": "one mutable source sub-order line per source sub_order_no",
+      "decision": "split", "canonical_entities": ["order.OrderItem", "listing.ListingOfferSnapshot", "inventory.ReservationReference"],
+      "semantic_rules": {"grain": "one immutable accepted Order item, not a second header aggregate", "identity": "bind exact canonical SKU, Listing offer revision, Shop and reservation; source seller/spu/sku ids remain qualified mappings", "money_or_quantity": "quantity is decimal base-UOM and unit/line/discount amounts use exact minor units", "history": "item commercial facts freeze at placement while fulfillment and cancellation progress separately", "security": "buyer/seller display names and notes never define identity and must be restricted", "authority": "Order owns the accepted item snapshot; Catalog, Listing and Inventory own referenced master and reservation state"},
+      "corrections": ["fix the prototype DWD that reads the main-order source for sub-orders", "separate mutable title from canonical SKU and accepted offer", "do not treat inventory_id as an unqualified reservation"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/dal/dataobject/OrderItemDO.java", "yudao-cloud/cloudmold-module-order/cloudmold-module-order-api/src/main/java/cn/iocoder/yudao/module/cloudmold/order/api/OrderLineReference.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-item-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-order-item-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/11-canonical-listing-fulfillment-commerce-v2-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_trade_trade_discount_di", "domains": ["正向订单"], "source_labels": ["订单优惠"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 11}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 392, "end_line": 419, "source_asset": "ods_trade_trade_discount_di"}]},
+      "source_grain": "one source benefit application or discount row attached to an order or sub-order",
+      "field_dispositions": {
+        "id": {"decision": "retain_provenance", "target": "source.SourceRowReference", "rule": "qualify by tenant and source system; never use as a canonical benefit, Order or entitlement id"},
+        "discount_no": {"decision": "map", "target": "order.OrderBenefitApplication.application_key", "rule": "require a stable non-empty source business key and preserve it for idempotent replay"},
+        "order_no": {"decision": "map", "target": "order.Order.order_id", "rule": "resolve through an exact tenant-scoped source Order mapping; never equate text or numeric ids"},
+        "sub_order_no": {"decision": "split", "target": "order.OrderBenefitAllocation.order_item_id", "rule": "resolve to exact canonical Order lines through a versioned mapping; one source row may split across multiple lines"},
+        "buyer_id": {"decision": "validate_only", "target": "order.Order.buyer_id", "rule": "cross-check the accepted Order buyer through an Identity mapping; do not duplicate buyer authority on the benefit"},
+        "discount_type": {"decision": "map", "target": "order.OrderBenefitApplication.benefit_type", "rule": "use a versioned source-code mapping into COUPON, PROMOTION, ALLOWANCE or CAMPAIGN; quarantine unknown codes"},
+        "discount_code": {"decision": "split", "target": "order.OrderBenefitApplication.benefit_source_id|entitlement_id", "rule": "interpret only with discount_type and an exact source version; never assume coupon, red-packet and campaign ids share one namespace"},
+        "use_status": {"decision": "retain_observation", "target": "migration.SourceBenefitObservation", "rule": "map source status explicitly for migration comparison; accepted Order allocation is immutable authority after placement"},
+        "amount": {"decision": "correct", "target": "order.OrderBenefitApplication.amount_minor", "rule": "prove source currency and unit before conversion; require CNY integer minor units and quarantine ambiguous yuan/fen rows"},
+        "feature": {"decision": "reject_raw", "target": "audit.RestrictedSourceEvidence", "rule": "do not promote arbitrary JSON to canonical fields or events; retain only a digest and restricted evidence reference when required"},
+        "create_time": {"decision": "parse", "target": "order.OrderBenefitApplication.occurred_at", "rule": "parse with an explicit source timezone and retain the raw-source watermark separately"},
+        "modify_time": {"decision": "retain_observation", "target": "migration.SourceBenefitObservation.observed_at", "rule": "never mutate an accepted application, allocation or funding fact from a later source snapshot"},
+        "subsidy_info": {"decision": "split", "target": "order.OrderBenefitFunding", "rule": "parse only a versioned named-funder contract; require each funder id/type/amount and exact funding sum, reject positional guessing or missing parties"},
+        "pt": {"decision": "partition_only", "target": "ingestion.source_partition_date", "rule": "use only for bounded ingestion and reconciliation; never use as business occurrence time"}
+      },
+      "decision": "split", "canonical_entities": ["order.OrderBenefitApplication", "order.OrderBenefitAllocation", "order.OrderBenefitFunding", "promotion.EntitlementReference"],
+      "semantic_rules": {"grain": "one immutable benefit application allocated to an exact Order item plus one or more funding rows", "identity": "retain source benefit/application id and exact entitlement/template/campaign versions as distinct qualified references", "money_or_quantity": "allocation and funding use minor units plus currency; item allocations sum to header discount and funding rows sum to each allocation", "history": "freeze allocation at placement and reverse it by explicit AfterSale references, never recompute from current promotion rules", "security": "no coupon codes, user labels or arbitrary rule JSON in events", "authority": "Order owns accepted allocation; Promotion owns eligibility; funding ledger owner remains external until a settlement domain exists"},
+      "corrections": ["replace header-only discount with item-level allocation", "separate benefit identity from platform/merchant funding", "require reverse flows to reference the original allocation"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-order/cloudmold-module-order-api/src/main/java/cn/iocoder/yudao/module/cloudmold/order/api/OrderBenefitApplicationCommand.java", "yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/dal/dataobject/OrderBenefitApplicationDO.java", "yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/dal/dataobject/OrderBenefitAllocationDO.java", "yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/dal/dataobject/OrderBenefitFundingDO.java", "yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/service/OrderCommandServiceImpl.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-benefit-application-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-benefit-allocation-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-benefit-funding-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-order-item-benefit-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-order-benefit-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/10-canonical-order-payment-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_trade_trade_log_di", "domains": ["正向订单"], "source_labels": ["交易日志"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 12}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 420, "end_line": 445, "source_asset": "ods_trade_trade_log_di"}]},
+      "source_grain": "one source trade change-log row with an operation time and opaque before/after context",
+      "decision": "correct", "canonical_entities": ["order.OrderStatusHistory", "integration.DomainEvent", "audit.RestrictedSourceEvidence"],
+      "semantic_rules": {"grain": "one immutable aggregate version transition or quarantined source observation", "identity": "event id and aggregate version are independent from source log row id", "money_or_quantity": "money is accepted only from typed fields and never parsed from feature JSON", "history": "ordered aggregate versions are authoritative; duplicate payload hashes are idempotent", "security": "operator names, raw request/response and arbitrary feature blobs stay in restricted audit storage", "authority": "canonical domain events own normalized history; the source log is migration evidence only"},
+      "corrections": ["reject log text as current-state authority", "normalize only recognized transitions", "quarantine gaps, reversals and unknown status dictionaries"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/dal/dataobject/OrderStatusHistoryDO.java", "yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/service/OrderCommandServiceImpl.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-domain-event.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/07-domain-event-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_trade_trade_order_appeal_status_df", "domains": ["正向订单"], "source_labels": ["订单申诉状态"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 13}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 544, "end_line": 564, "source_asset": "ods_trade_trade_order_appeal_status_df"}]},
+      "source_grain": "one mutable source appeal-status snapshot per order appeal",
+      "decision": "split", "canonical_entities": ["customer_service.OrderAppealCase", "customer_service.AppealDecision", "order.OrderReference"],
+      "semantic_rules": {"grain": "one appeal case with append-only decisions and exact Order/AfterSale references", "identity": "appeal id is tenant-scoped and separate from ticket, order and after-sale ids", "money_or_quantity": "claimed or granted compensation uses exact minor units and currency outside status", "history": "status transitions, reviewer decisions and evidence versions are immutable", "security": "complaint text, evidence media and agent identities use restricted references", "authority": "Customer Service owns appeal workflow; Order state changes only through explicit accepted effects"},
+      "corrections": ["do not embed appeal lifecycle in Order status", "separate human decision from mutable status", "require explicit effect links to compensation or after-sale"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-customer-service/cloudmold-module-customer-service-server/src/main/java/cn/iocoder/yudao/module/cloudmold/customerservice/dal/dataobject/CustomerServiceClaimDO.java", "yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/dal/dataobject/OrderHeaderDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-customer-service-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-customer-service-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/23-canonical-promotion-engagement-customer-service-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_trade_trade_payment_di", "domains": ["正向订单"], "source_labels": ["订单支付"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 14}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 446, "end_line": 474, "source_asset": "ods_trade_trade_payment_di"}]},
+      "source_grain": "one source order-payment row mixing association, normalized payment state and provider-attempt observations",
+      "decision": "split", "canonical_entities": ["payment.Payment", "payment.PaymentAttempt", "order.OrderPaymentReference"],
+      "semantic_rules": {"grain": "one Payment aggregate may have multiple immutable attempts and one exact Order entitlement", "identity": "payment id, provider transaction id and order id are separate qualified identities", "money_or_quantity": "authorized/captured/refunded amounts use minor units and one immutable currency and cannot exceed payable/captured", "history": "append provider observations and canonical transitions; retries never overwrite attempts", "security": "provider payloads, payer PII and instrument details are restricted or tokenized", "authority": "Payment owns money state; Order only records the accepted Payment reference"},
+      "corrections": ["separate payment association from provider attempt", "do not infer paid from an order snapshot", "reject amount or currency mismatch"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/dal/dataobject/PaymentTransactionDO.java", "yudao-cloud/cloudmold-module-order/cloudmold-module-order-api/src/main/java/cn/iocoder/yudao/module/cloudmold/order/api/OrderPaymentView.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-payment-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-payment-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/10-canonical-order-payment-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_trade_trade_logistic_order_di", "domains": ["正向订单"], "source_labels": ["订单物流"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 15}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 475, "end_line": 503, "source_asset": "ods_trade_trade_logistic_order_di"}]},
+      "source_grain": "one source logistics order or package snapshot related to a trade order",
+      "decision": "split", "canonical_entities": ["fulfillment.FulfillmentOrder", "fulfillment.Shipment", "fulfillment.ShipmentItem"],
+      "semantic_rules": {"grain": "one Fulfillment aggregate with one or more packages and exact item quantities", "identity": "fulfillment, shipment, carrier waybill and order identities remain distinct", "money_or_quantity": "shipment-item quantities reconcile to fulfilled Order-item quantities without implicit unit conversion", "history": "shipment and fulfillment transitions are versioned independently", "security": "addresses, phone numbers and carrier payloads are restricted references", "authority": "Fulfillment owns physical delivery; Order owns commercial state"},
+      "corrections": ["support split packages instead of one order-one logistics row", "bind package lines to exact Order items", "do not copy delivery status into Order authority"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-fulfillment/cloudmold-module-fulfillment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/fulfillment/dal/dataobject/FulfillmentOrderDO.java", "yudao-cloud/cloudmold-module-fulfillment/cloudmold-module-fulfillment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/fulfillment/dal/dataobject/ShipmentDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-fulfillment-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-fulfillment-item-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/11-canonical-listing-fulfillment-commerce-v2-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_trade_trade_logistic_track_structure_di", "domains": ["正向订单"], "source_labels": ["物流轨迹"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 16}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 504, "end_line": 543, "source_asset": "ods_trade_trade_logistic_track_structure_di"}]},
+      "source_grain": "one mutable source logistics structure row per waybill containing multiple milestone timestamps such as shipped, handover, received and signed",
+      "decision": "split", "canonical_entities": ["fulfillment.TrackingEvent", "fulfillment.ShipmentMilestoneProjection", "fulfillment.Shipment"],
+      "semantic_rules": {"grain": "split every non-null milestone into one append-only normalized TrackingEvent while retaining one derived current milestone projection", "identity": "qualify carrier and waybill; derive a stable event key from milestone type/time/source row rather than treating the wide row as one event", "money_or_quantity": "no money; package quantity remains on Shipment items", "history": "a later wide snapshot may append newly observed milestones but cannot rewrite prior events", "security": "raw location/contact/message is restricted; events expose normalized code and opaque detail ref", "authority": "carrier owns observations; Fulfillment owns normalized shipment progress"},
+      "corrections": ["split the wide milestone snapshot instead of inventing a source event sequence", "normalize provider-specific milestone semantics", "retain event time separately from ingestion time", "do not infer delivered Order without Fulfillment transition"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-fulfillment/cloudmold-module-fulfillment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/fulfillment/dal/dataobject/TrackingEventDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-fulfillment-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-fulfillment-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/11-canonical-listing-fulfillment-commerce-v2-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_trade_trade_trade_spu_df", "domains": ["正向订单"], "source_labels": ["商品spu表"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 17}],
+      "source_evidence": {"status": "name_conflict", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 591, "end_line": 633, "source_asset": "ods_commodity_commodity_trade_spu_df"}]},
+      "source_grain": "one trade-system SPU projection snapshot",
+      "decision": "correct", "canonical_entities": ["catalog.CatalogSpu", "catalog.SourceMapping", "order.AcceptedProductSnapshot"],
+      "semantic_rules": {"grain": "one canonical SPU plus a qualified trade projection mapping", "identity": "trade SPU id never becomes canonical by equality", "money_or_quantity": "commercial price belongs to Listing/Order snapshots, not SPU master", "history": "catalog lifecycle versions and order snapshots are retained independently", "security": "titles and media are governed catalog content; no seller PII", "authority": "Catalog owns SPU; Order keeps only the accepted snapshot/ref"},
+      "corrections": ["reject trade projection as catalog SoR", "map rather than equate source ids", "the overview names ods_trade_trade_trade_spu_df but the detailed body defines ods_commodity_commodity_trade_spu_df, so neither may be joined until a source mapping resolves the conflict", "remove order-specific price/status from master identity"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-catalog/cloudmold-module-catalog-server/src/main/java/cn/iocoder/yudao/module/cloudmold/catalog/dal/dataobject/CatalogSpuDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-catalog-entity-status-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-item-event.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/09-canonical-catalog-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "provisional", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_trade_trade_trade_sku_df", "domains": ["正向订单"], "source_labels": ["商品sku表"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 18}],
+      "source_evidence": {"status": "name_conflict", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 634, "end_line": 680, "source_asset": "ods_commodity_commodity_sku_df"}]},
+      "source_grain": "one trade-system SKU projection snapshot",
+      "decision": "correct", "canonical_entities": ["catalog.CatalogSku", "listing.ListingOffer", "order.AcceptedItemSnapshot"],
+      "semantic_rules": {"grain": "one canonical SKU, separate sellable offer and immutable accepted item snapshot", "identity": "trade SKU, canonical SKU and Listing offer ids are mapped and never equated", "money_or_quantity": "unit price/currency freeze on offer/order; stock is never a SKU master field", "history": "catalog, offer and order versions progress independently", "security": "merchant/user display fields do not enter SKU identity", "authority": "Catalog owns SKU; Listing owns offer; Inventory owns stock; Order owns accepted price"},
+      "corrections": ["remove stock authority from trade SKU", "separate SKU from Listing offer", "the overview names ods_trade_trade_trade_sku_df but the detailed body defines ods_commodity_commodity_sku_df, so neither may be joined until a source mapping resolves the conflict", "require exact accepted revision and version on Order item"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-catalog/cloudmold-module-catalog-server/src/main/java/cn/iocoder/yudao/module/cloudmold/catalog/dal/dataobject/CatalogSkuDO.java", "yudao-cloud/cloudmold-module-listing/cloudmold-module-listing-server/src/main/java/cn/iocoder/yudao/module/cloudmold/listing/dal/dataobject/ListingOfferDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-catalog-sku-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-listing-offer-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/11-canonical-listing-fulfillment-commerce-v2-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "provisional", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_trade_trade_refund_exchange_rel_df", "domains": ["正向订单"], "source_labels": ["换货补单关联"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 19}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 565, "end_line": 588, "source_asset": "ods_trade_trade_refund_exchange_rel_df"}]},
+      "source_grain": "one source relation between an exchange/refund case and replacement order",
+      "decision": "split", "canonical_entities": ["aftersales.ExchangeCase", "aftersales.ReplacementOrderLink", "order.OrderReference"],
+      "semantic_rules": {"grain": "one immutable replacement link per approved exchange item and quantity", "identity": "original Order item, AfterSale item and replacement Order item are exact separate ids", "money_or_quantity": "replacement and returned quantities reconcile; any price difference is a separate money entitlement", "history": "link is append-only and compensation creates a new version/effect", "security": "reasons and evidence are restricted refs", "authority": "AfterSales owns exchange decision; Order owns replacement commercial order"},
+      "corrections": ["do not model exchange as a refund-only flag", "link exact items and quantities", "separate replacement fulfillment from return fulfillment"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-aftersales/cloudmold-module-aftersales-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aftersale/dal/dataobject/AfterSaleItemDO.java", "yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/dal/dataobject/OrderItemDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-after-sale-resolution-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-order-item-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/14-canonical-aftersales-return-refund-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+
+    {
+      "source_asset": "ods_refund_refund_order_di", "domains": ["逆向订单"], "source_labels": ["取消订单"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 20}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 803, "end_line": 858, "source_asset": "ods_refund_refund_order_di"}]},
+      "source_grain": "one mutable source reverse-order/refund-case row",
+      "decision": "split", "canonical_entities": ["order.OrderCancellationSaga", "aftersales.AfterSaleCase", "aftersales.AfterSaleItem"],
+      "semantic_rules": {"grain": "route pre-fulfillment cancellation and post-fulfillment after-sale into separate aggregates", "identity": "reverse id, cancellation saga id and after-sale id remain distinct and link exact Order items", "money_or_quantity": "requested/approved quantities and money are exact entitlements", "history": "append immutable state transitions and participant checkpoints", "security": "reason text and evidence are restricted references", "authority": "Order owns cancellation; AfterSales owns return/refund entitlement"},
+      "corrections": ["reject one overloaded reverse-order authority", "split by physical fulfillment boundary", "require exact item and effect lineage"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/dal/dataobject/cancellation/OrderCancellationSagaDO.java", "yudao-cloud/cloudmold-module-aftersales/cloudmold-module-aftersales-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aftersale/dal/dataobject/AfterSaleCaseDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-order-cancellation-saga-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-after-sale-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/14-canonical-aftersales-return-refund-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_refund_refund_money_di", "domains": ["逆向订单"], "source_labels": ["取消订单退款"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 21}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 859, "end_line": 886, "source_asset": "ods_refund_refund_money_di"}]},
+      "source_grain": "one source refund entitlement or mutable refund progress row",
+      "decision": "split", "canonical_entities": ["aftersales.RefundEntitlement", "payment.PaymentRefundTransaction", "compensation.CompensationEffect", "ledger.AccountEffect", "order.CancellationRefundCheckpoint"],
+      "semantic_rules": {"grain": "split approved refund entitlement, provider refund execution, buyer/seller compensation or deduction, and account-ledger effects", "identity": "entitlement, Payment, refund transaction, compensation effect, account effect and saga ids remain separate", "money_or_quantity": "refund, compensation, fee, freight, deposit and platform-funded amounts use exact minor units/currency and reconcile by biz_type and money_from without collapsing owners", "history": "approval and every money effect are independent append-only streams", "security": "bank/provider payload and beneficiary PII are restricted", "authority": "AfterSales/Order owns entitlement; Payment executes cash refund; Compensation/Ledger owners post non-refund effects"},
+      "corrections": ["separate buyer/seller deduction and compensation from payment refund", "preserve money_from such as deposit, platform and freight as explicit funding provenance", "reject mutable refunded total as transaction history", "bind exact original payment and order benefit allocation"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-aftersales/cloudmold-module-aftersales-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aftersale/dal/dataobject/AfterSaleRefundHistoryDO.java", "yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/dal/dataobject/PaymentTransactionDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-after-sale-refund-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-payment-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/14-canonical-aftersales-return-refund-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_refund_refund_trade_reason_df", "domains": ["逆向订单"], "source_labels": ["取消订单原因"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 22}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 887, "end_line": 917, "source_asset": "ods_refund_refund_trade_reason_df"}]},
+      "source_grain": "one mutable source cancellation reason dictionary row",
+      "decision": "split", "canonical_entities": ["order.CancellationReasonVersion", "order.ReasonApplicabilityPolicy", "order.FeeAndCouponEffectPolicy", "governance.ReasonMapping"],
+      "semantic_rules": {"grain": "split immutable reason-code version, hierarchy/applicability policy and fee/coupon-compensation effect policy", "identity": "source reason id is qualified and mapped to stable canonical code/version", "money_or_quantity": "money_compute and coupon_compensate become versioned policies; actual effects are immutable separate records", "history": "dictionary and policy changes create versions and old orders retain accepted versions", "security": "free text is restricted and cannot define automation", "authority": "Order policy owns cancellation reason/applicability; effect owners execute approved money/coupon consequences"},
+      "corrections": ["version the mutable hierarchy and applicability", "separate reason policy from actual refund/fee/coupon effects", "reject unknown codes during migration"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-order/cloudmold-module-order-api/src/main/java/cn/iocoder/yudao/module/cloudmold/order/api/OrderCommand.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-cancellation-saga-event.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/12-canonical-order-cancellation-saga-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_refund_refund_logistic_di", "domains": ["逆向订单"], "source_labels": ["取消订单物流"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 23}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 918, "end_line": 949, "source_asset": "ods_refund_refund_logistic_di"}]},
+      "source_grain": "one source reverse-logistics package or status row",
+      "decision": "split", "canonical_entities": ["fulfillment.ReturnFulfillment", "fulfillment.ReturnShipment", "fulfillment.ReturnTrackingEvent"],
+      "semantic_rules": {"grain": "one ReturnFulfillment with packages, exact items and append-only tracking", "identity": "return, package, waybill, AfterSale and Order ids remain distinct", "money_or_quantity": "returned/received/accepted quantities reconcile by exact AfterSale item", "history": "return status, shipment and inspection progress are independent versioned facts", "security": "address/contact/carrier detail is restricted", "authority": "Fulfillment owns reverse physical movement; AfterSales owns entitlement"},
+      "corrections": ["rename cancellation logistics to reverse fulfillment", "support multiple packages and inspections", "do not mark refund complete from carrier status"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-fulfillment/cloudmold-module-fulfillment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/fulfillment/dal/dataobject/returning/ReturnFulfillmentDO.java", "yudao-cloud/cloudmold-module-fulfillment/cloudmold-module-fulfillment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/fulfillment/dal/dataobject/returning/ReturnShipmentDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-return-fulfillment-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-return-fulfillment-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/14-canonical-aftersales-return-refund-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_refund_refund_repay_reason_df", "domains": ["逆向订单"], "source_labels": ["退款转账原因"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 24}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 950, "end_line": 979, "source_asset": "ods_refund_refund_repay_reason_df"}]},
+      "source_grain": "one mutable source refund-transfer reason dictionary row",
+      "decision": "split", "canonical_entities": ["payment.RefundReasonVersion", "payment.RefundTargetPolicy", "payment.FeeDeductionPolicy", "governance.ReasonMapping"],
+      "semantic_rules": {"grain": "split immutable reason/category version, eligible refund target and deduct-fee policy", "identity": "source reason hierarchy is qualified and mapped; display text is not identity", "money_or_quantity": "deduct_fees is policy input and actual fee/refund effects are separate exact money records", "history": "version mappings/policies and retain accepted versions on each refund", "security": "operator note and provider response remain restricted", "authority": "Payment owns execution reason/target policy; AfterSales/Order owns business entitlement reason"},
+      "corrections": ["separate business reason from transfer failure category", "split deduct-fee and target policy from actual effects", "version mappings", "do not reuse compensation reason codes silently"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-api/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/api/PaymentCommand.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-payment-status-event.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/10-canonical-order-payment-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_refund_refund_bill_di", "domains": ["逆向订单"], "source_labels": ["支付订单退款记录"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 25}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 980, "end_line": 1032, "source_asset": "ods_refund_refund_bill_di"}]},
+      "source_grain": "one source refund-bill row mixing refund request, provider execution/retry observation and cash/non-cash amount components",
+      "decision": "split", "canonical_entities": ["payment.PaymentRefundRequest", "payment.PaymentRefundTransaction", "payment.ProviderRefundObservation", "promotion.NonCashBenefitReversal"],
+      "semantic_rules": {"grain": "split one approved request, idempotent cash refund transaction, append-only provider observations and non-cash benefit reversal", "identity": "request, refund transaction, provider refund, original Payment and benefit reversal ids are distinct", "money_or_quantity": "cashamount plus nocashamount must equal total amount; only cashamount enters Payment cash refund and cumulative cash refunds cannot exceed captured", "history": "requests, retries and terminal observations are immutable", "security": "provider payload, bank account and payer data are tokenized or restricted", "authority": "Payment owns cash refund execution; Promotion/Order benefit owners reverse non-cash value"},
+      "corrections": ["split request, execution retries and channel observations", "enforce cashamount+nocashamount=amount", "never treat non-cash benefit as Payment cash refund", "require exact original Payment and benefit-allocation lineage"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/dal/dataobject/PaymentTransactionDO.java", "yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-api/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/api/PaymentRefundView.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-payment-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-payment-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/14-canonical-aftersales-return-refund-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_refund_refund_discount_df", "domains": ["逆向订单"], "source_labels": ["退款优惠信息"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 26}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 1033, "end_line": 1062, "source_asset": "ods_refund_refund_discount_df"}]},
+      "source_grain": "one source discount refund/reversal row",
+      "decision": "split", "canonical_entities": ["aftersales.DiscountReversal", "order.OrderDiscountAllocationReference", "promotion.EntitlementReturnEffect"],
+      "semantic_rules": {"grain": "one immutable reversal against one original item allocation and funding share", "identity": "AfterSale item, original allocation, entitlement and funder remain exact separate references", "money_or_quantity": "cash refund, benefit return and funding reversal are separate minor-unit effects that cannot exceed original allocation", "history": "append reversal effects once; retries are idempotent and never recompute current promotion rules", "security": "coupon codes and rule payloads are forbidden", "authority": "AfterSales owns reversal entitlement; Order owns original allocation; Promotion owns entitlement availability"},
+      "corrections": ["require exact original allocation instead of order-level discount", "separate cash, entitlement and funder effects", "reject over-reversal"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-aftersales/cloudmold-module-aftersales-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aftersale/dal/dataobject/AfterSaleItemDO.java", "yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/dal/dataobject/OrderItemDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-after-sale-resolution-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-order-item-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/14-canonical-aftersales-return-refund-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+
+    {
+      "source_asset": "ods_pay_pay_log_di", "domains": ["支付"], "source_labels": ["支付记录"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 27}],
+      "source_evidence": {"status": "overview_only", "detail_anchors": []},
+      "source_grain": "undocumented source asset; the overview label suggests a payment record but no detailed DDL proves its key, attempt grain, tenant, amount, currency or status fields",
+      "decision": "split", "canonical_entities": ["payment.Payment", "payment.PaymentAttempt", "payment.ProviderObservation"],
+      "semantic_rules": {"grain": "one Payment aggregate with immutable attempts and observations", "identity": "business order, Payment, attempt and provider transaction ids are distinct", "money_or_quantity": "authorized/captured/refunded minor units and currency obey conservation", "history": "append attempts and monotonic observations; never overwrite failures", "security": "payer, instrument, request and provider response are tokenized/restricted", "authority": "Payment owns normalized money state; provider owns external observation"},
+      "corrections": ["split payment intent from provider log", "use versioned provider status mapping", "quarantine amount/currency conflicts"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/dal/dataobject/PaymentTransactionDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-payment-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-payment-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/10-canonical-order-payment-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "provisional", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_transferlog_df", "domains": ["支付"], "source_labels": ["转账记录"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 28}],
+      "source_evidence": {"status": "overview_only", "detail_anchors": []},
+      "source_grain": "undocumented source asset; the overview label suggests a transfer record but no detailed DDL proves transaction grain, keys, parties, amount, currency or provider state",
+      "decision": "split", "canonical_entities": ["payment.TransferInstruction", "payment.TransferTransaction", "payment.ProviderObservation"],
+      "semantic_rules": {"grain": "one approved transfer instruction with idempotent execution attempts", "identity": "instruction, transfer, provider transaction and business entitlement ids are separate", "money_or_quantity": "debit/credit use exact minor units, one currency and explicit fee", "history": "append state transitions and provider observations", "security": "beneficiary bank/account data is tokenized and never emitted", "authority": "the entitlement owner authorizes; Payment executes; ledger domain owns balances"},
+      "corrections": ["separate authorization from execution", "reject raw bank details", "require balanced ledger references before verified"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-api/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/api/PaymentCommand.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-payment-status-event.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/10-canonical-order-payment-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "provisional", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_transfer_queue_df", "domains": ["支付"], "source_labels": ["转账队列"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 29}],
+      "source_evidence": {"status": "overview_only", "detail_anchors": []},
+      "source_grain": "undocumented source asset; the overview label suggests a transfer queue but no detailed DDL proves work-item identity, payload, retry or lifecycle semantics",
+      "decision": "correct", "canonical_entities": ["payment.TransferInstruction", "integration.OutboxMessage", "payment.ExecutionLease"],
+      "semantic_rules": {"grain": "one durable instruction plus delivery attempts; queue row is not financial truth", "identity": "instruction id and delivery attempt id are stable and idempotent", "money_or_quantity": "amount is validated on instruction and never trusted from duplicated queue payload", "history": "retain attempts, lease/retry state and terminal outcome", "security": "queue payload cannot contain raw credentials or bank data", "authority": "financial instruction is authoritative; outbox/queue is transport only"},
+      "corrections": ["reject queue as ledger or transfer SoR", "replace mutable retry row with durable attempts", "verify payload digest against instruction"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-data-contract/cloudmold-module-data-contract-server/src/main/java/cn/iocoder/yudao/module/cloudmold/datacontract/dal/dataobject/CloudmoldEventOutboxDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-domain-event.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/07-domain-event-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "provisional", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_userscashaccount_df", "domains": ["支付"], "source_labels": ["用户现金账户"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 30}],
+      "source_evidence": {"status": "overview_only", "detail_anchors": []},
+      "source_grain": "undocumented source asset; the overview label suggests a user cash account but no detailed DDL proves account grain, owner mapping, currency or balance components",
+      "decision": "split", "canonical_entities": ["ledger.WalletAccount", "ledger.WalletBalanceProjection", "identity.PrincipalReference"],
+      "semantic_rules": {"grain": "one account per tenant, owner, account type and ISO currency", "identity": "source user/account ids map to canonical Principal/account and never collapse", "money_or_quantity": "balance is derived from immutable entries in minor units; available/held/frozen are explicit", "history": "ledger is append-only and balance versions are projections", "security": "account credentials and personal identifiers are forbidden", "authority": "future Ledger domain owns balance; Payment only posts referenced transactions"},
+      "corrections": ["reject mutable balance as sole authority", "separate available, held and frozen", "require opening provenance and double-entry conservation"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/dal/dataobject/PaymentTransactionDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-commerce-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/10-canonical-order-payment-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "provisional", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_userscashaccountdetail_df", "domains": ["支付"], "source_labels": ["用户现金账户明细"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 31}],
+      "source_evidence": {"status": "overview_only", "detail_anchors": []},
+      "source_grain": "undocumented source asset; the overview label suggests cash-account detail but no detailed DDL proves ledger grain, sign, currency, balance or business provenance",
+      "decision": "merge", "canonical_entities": ["ledger.WalletLedgerTransaction", "ledger.WalletLedgerEntry"],
+      "semantic_rules": {"grain": "one immutable balanced transaction with at least two entries", "identity": "source detail id maps to idempotency/provenance, not account identity", "money_or_quantity": "signed minor-unit entries sum to zero per currency and transaction", "history": "append-only; corrections use compensating entries", "security": "counterparty PII and raw payment payload are restricted", "authority": "Ledger owns account movement and derived balance"},
+      "corrections": ["replace single-sided detail with balanced entries", "forbid update/delete", "link exact business entitlement and Payment transaction"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantDepositLedgerEntryDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-merchant-deposit-ledger-event.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/17-canonical-merchant-deposit-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "provisional", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_fin_bind_card_df", "domains": ["支付"], "source_labels": ["用户绑卡"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 32}],
+      "source_evidence": {"status": "overview_only", "detail_anchors": []},
+      "source_grain": "undocumented source asset; the overview label suggests a card binding but no detailed DDL or PCI boundary proves token, consent, owner or lifecycle fields",
+      "decision": "correct", "canonical_entities": ["payment.PaymentInstrumentToken", "identity.PrincipalReference", "audit.ConsentVersion"],
+      "semantic_rules": {"grain": "one tokenized instrument binding with consent and lifecycle", "identity": "canonical token and provider vault ref replace PAN/card number", "money_or_quantity": "no balance or transaction authority", "history": "append binding, consent, suspend and revoke events", "security": "PAN, CVV, full bank account, phone and identity number are forbidden from CloudMold storage/events", "authority": "PCI-compliant provider owns instrument secret; CloudMold stores opaque token metadata only"},
+      "corrections": ["reject raw card ingestion", "require consent and revocation history", "do not infer Principal from source user id without mapping"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-api/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/api/PaymentCommand.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-commerce-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/10-canonical-order-payment-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "provisional", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_yshoppingcashier_cashier_pay_log_extra_df", "domains": ["支付"], "source_labels": ["支付记录扩展"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 33}],
+      "source_evidence": {"status": "overview_only", "detail_anchors": []},
+      "source_grain": "undocumented source asset; the overview label suggests payment-log extension data but no detailed DDL proves parent key, schema, payload or provider semantics",
+      "decision": "correct", "canonical_entities": ["payment.ProviderObservation", "audit.RestrictedProviderEvidence"],
+      "semantic_rules": {"grain": "one append-only provider observation keyed to an exact Payment attempt", "identity": "extension row never creates a second Payment identity", "money_or_quantity": "typed money fields must match the Payment attempt; untyped JSON is not money evidence", "history": "retain payload digest, schema version and observation time", "security": "raw provider request/response, device fingerprint and payer PII stay restricted", "authority": "Payment owns normalized state; extension is evidence only"},
+      "corrections": ["reject arbitrary extension blob as canonical fields", "hash and restrict raw payload", "quarantine orphan or conflicting extensions"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/service/PaymentCommandServiceImpl.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-payment-status-event.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/10-canonical-order-payment-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "provisional", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_acc_pay_order_df", "domains": ["支付"], "source_labels": ["支付业务单表"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 34}],
+      "source_evidence": {"status": "overview_only", "detail_anchors": []},
+      "source_grain": "undocumented source asset; the overview label suggests a payment business order but no detailed DDL proves entitlement, payment-intent, amount, currency or lifecycle grain",
+      "decision": "merge", "canonical_entities": ["payment.Payment", "payment.BusinessEntitlementReference"],
+      "semantic_rules": {"grain": "one Payment intent for one exact payable business entitlement", "identity": "payment id and business order id are distinct", "money_or_quantity": "requested amount/currency freeze and captured/refunded conservation applies", "history": "state transitions are versioned and provider attempts are children", "security": "payer and provider details are tokenized/restricted", "authority": "Payment owns intent/execution; source business domain owns entitlement"},
+      "corrections": ["do not duplicate the business order aggregate", "require exact entitlement version", "separate intent from provider attempt"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/dal/dataobject/PaymentTransactionDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-payment-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/10-canonical-order-payment-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "provisional", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_acc_personal_detail_df", "domains": ["支付"], "source_labels": ["个体账户流水表"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 35}],
+      "source_evidence": {"status": "overview_only", "detail_anchors": []},
+      "source_grain": "undocumented source asset; the overview label suggests personal-account detail but no detailed DDL proves account, transaction, entry, sign or currency grain",
+      "decision": "split", "canonical_entities": ["ledger.AccountTransaction", "ledger.AccountEntry", "identity.PrincipalReference"],
+      "semantic_rules": {"grain": "one balanced transaction with account entries", "identity": "source person/account/detail ids are qualified mappings", "money_or_quantity": "signed entries sum to zero per transaction/currency and preserve minor units", "history": "append-only with compensating corrections", "security": "personal identity and bank data are forbidden", "authority": "Ledger owns entries; balance is derived"},
+      "corrections": ["replace mutable/single-sided detail with double-entry", "require business provenance", "quarantine unknown owner or currency"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantDepositLedgerEntryDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-merchant-deposit-ledger-event.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/17-canonical-merchant-deposit-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "provisional", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_acc_personal_balance_df", "domains": ["支付"], "source_labels": ["个体账户余额表"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 36}],
+      "source_evidence": {"status": "overview_only", "detail_anchors": []},
+      "source_grain": "undocumented source asset; the overview label suggests a personal-account balance but no detailed DDL proves owner, account purpose, currency or balance components",
+      "decision": "derive", "canonical_entities": ["ledger.AccountBalanceProjection", "ledger.AccountEntry"],
+      "semantic_rules": {"grain": "one projection per tenant/account/currency/version", "identity": "account maps to exact canonical owner and purpose", "money_or_quantity": "available, held and frozen derive from immutable entries in minor units", "history": "retain reconciliation observations but never mutate ledger from a later snapshot without an opening/correction entry", "security": "owner PII is excluded", "authority": "Ledger entries are SoR; balance table is migration/reconciliation evidence"},
+      "corrections": ["reject balance snapshot as ledger authority", "require opening provenance", "fail on snapshot-ledger difference"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantDepositAccountDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-merchant-deposit-current.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/17-canonical-merchant-deposit-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "provisional", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_logistic_logistic_track_structure_di", "domains": ["支付"], "source_labels": ["账户额度明细表", "账户额度表"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 37}, {"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 38}],
+      "source_evidence": {"status": "rejected_mislabeled", "detail_anchors": []},
+      "source_grain": "the same logistics tracking identifier is incorrectly listed twice as two payment credit-limit tables",
+      "decision": "reject", "canonical_entities": ["governance.RejectedSourceAlias"],
+      "semantic_rules": {"grain": "no payment grain can be inferred from this identifier", "identity": "the duplicated logistics name is not an account or credit identity", "money_or_quantity": "no amount, balance or limit may be sourced", "history": "preserve the rejection decision and source anchors", "security": "do not inspect or ingest logistics payload as finance data", "authority": "no canonical payment authority; a corrected source contract is required"},
+      "corrections": ["reject both mislabeled overview rows", "require the real account-limit header and detail table names", "never fabricate finance data from a logistics table"], "model_status": "rejected",
+      "backend_refs": ["yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-api/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/api/PaymentCommand.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/contracts/yshopping-model-alignment-v1.json"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/10-canonical-order-payment-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_fin_trans_order_pay_tool_df", "domains": ["支付"], "source_labels": ["支付工具交易表"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 39}],
+      "source_evidence": {"status": "overview_only", "detail_anchors": []},
+      "source_grain": "undocumented source asset; the overview label suggests a payment-tool transaction but no detailed DDL proves attempt, tool, allocation, instrument-token, amount or currency grain",
+      "decision": "split", "canonical_entities": ["payment.PaymentAttempt", "payment.PaymentToolAllocation", "payment.InstrumentTokenReference"],
+      "semantic_rules": {"grain": "one tool allocation within one Payment attempt", "identity": "tool, token, attempt and provider transaction ids remain separate", "money_or_quantity": "tool allocations sum to attempt amount in one currency; fee is explicit", "history": "allocations freeze with attempt and provider observations append", "security": "instrument secret/PAN is never stored", "authority": "Payment owns tool allocation; provider vault owns secret"},
+      "corrections": ["support multi-tool split", "require allocation sum conservation", "replace instrument fields with opaque token"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/dal/dataobject/PaymentTransactionDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-payment-status-event.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/10-canonical-order-payment-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "provisional", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_trade_trade_invoice_apply_df", "domains": ["支付"], "source_labels": ["开票申请"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 40}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 1599, "end_line": 1646, "source_asset": "ods_trade_trade_invoice_apply_df"}]},
+      "source_grain": "one source invoice application snapshot",
+      "decision": "split", "canonical_entities": ["billing.InvoiceApplication", "billing.InvoiceLine", "order.OrderPaymentReference"],
+      "semantic_rules": {"grain": "one invoice application with exact taxable lines and immutable issuance observations", "identity": "application, invoice, order, payment and tax-subject ids are distinct", "money_or_quantity": "line net/tax/gross use minor units/currency and reconcile to eligible paid amount", "history": "application, issue, red-letter and cancellation are append-only transitions", "security": "taxpayer identity, address and email are encrypted/restricted", "authority": "Billing owns invoice workflow; Order/Payment supply referenced commercial facts"},
+      "corrections": ["do not place invoice application under Payment authority", "split header/lines and issue observations", "require tax and paid-amount reconciliation"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/dal/dataobject/OrderHeaderDO.java", "yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/dal/dataobject/PaymentTransactionDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-commerce-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/10-canonical-order-payment-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_bom_wallet_flow_log_df", "domains": ["支付"], "source_labels": ["钱包流水表"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 41}],
+      "source_evidence": {"status": "overview_only", "detail_anchors": []},
+      "source_grain": "undocumented source asset; the overview label suggests a wallet flow but no detailed DDL proves wallet, transaction, entry, sign, currency or business provenance",
+      "decision": "split", "canonical_entities": ["ledger.WalletLedgerTransaction", "ledger.WalletLedgerEntry", "payment.PaymentReference"],
+      "semantic_rules": {"grain": "one balanced wallet transaction with immutable entries", "identity": "wallet account, transaction and business/payment references are distinct", "money_or_quantity": "entries are signed minor units and balance per currency", "history": "append-only; reversals are compensating transactions", "security": "wallet credentials and owner PII are forbidden", "authority": "Ledger owns wallet movement; Payment references it"},
+      "corrections": ["replace flow log with double-entry authority", "reject after-balance without entry conservation", "require exact business provenance"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantDepositLedgerEntryDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-merchant-deposit-ledger-event.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/17-canonical-merchant-deposit-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "provisional", "verification_status": "unverified"
+    },
+
+    {
+      "source_asset": "ods_inventory_sale_df", "domains": ["库存"], "source_labels": ["在线销售库存"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 42}],
+      "source_evidence": {"status": "overview_only", "detail_anchors": []},
+      "source_grain": "one mutable online-sale availability snapshot at an incompletely documented SKU/owner/location grain",
+      "decision": "correct", "canonical_entities": ["inventory.InventoryBalance", "inventory.ReservationAllocation", "inventory.SourceMapping"],
+      "semantic_rules": {"grain": "tenant, typed owner, canonical SKU, Warehouse, Location, nullable Lot, stock status, quality status and base UOM", "identity": "source inventory id maps to exact canonical dimensions and never becomes a canonical SKU or reservation", "money_or_quantity": "on_hand/reserved/in_transit are decimal base-UOM quantities with on_hand-reserved >= 0", "history": "immutable movements/allocations derive balance versions; snapshot is migration evidence", "security": "no operator PII or opaque feature JSON", "authority": "Inventory v3 ledger owns stock; source sale snapshot remains legacy until reconciled cutover"},
+      "corrections": ["reject SKU-only aggregate grain", "separate balance from sellable availability", "do not fabricate Location, Lot, UOM or reservation lineage"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-inventory/cloudmold-module-inventory-server/src/main/java/cn/iocoder/yudao/module/cloudmold/inventory/dal/dataobject/InventoryV3BalanceDO.java", "yudao-cloud/sql/cloudmold/V20260715_16__canonical_inventory_location_lot_v3.sql"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-inventory-balance-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-inventory-health.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/08-canonical-inventory-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "provisional", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_trade_trade_inventory_flow_df", "domains": ["库存"], "source_labels": ["交易库存流水表"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 43}],
+      "source_evidence": {"status": "ddl_backed", "detail_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "heading_line": 1573, "end_line": 1596, "source_asset": "ods_trade_trade_inventory_flow_df"}]},
+      "source_grain": "one source relation snapshot linking order_no, inventory_no, bidding_no, platform_order_no, platform_type, sku_id and defect level; the DDL has no quantity, delta, location, lot or UOM",
+      "decision": "correct", "canonical_entities": ["inventory.InventorySourceLink", "order.OrderItemReference", "inventory.SourceMapping"],
+      "semantic_rules": {"grain": "one qualified source relation between an Order context and a source inventory identity", "identity": "source order, platform order, bid, SKU and inventory ids remain distinct and require mappings", "money_or_quantity": "the source proves no quantity or movement delta and therefore cannot create ledger entries, balances, reservations or allocations", "history": "retain source snapshots as migration lineage and normalize only changes with explicit source versions", "security": "no operator PII; defect level requires a governed quality-status mapping", "authority": "Inventory ledger remains the only stock authority; this source is association evidence only"},
+      "corrections": ["reject the word flow as evidence of a stock movement", "never synthesize quantity, Location, Lot, UOM, reservation or ledger after-state", "use only as a qualified Order-to-source-inventory mapping until a real movement source exists"], "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/dal/dataobject/OrderItemDO.java", "yudao-cloud/cloudmold-module-inventory/cloudmold-module-inventory-server/src/main/java/cn/iocoder/yudao/module/cloudmold/inventory/dal/dataobject/InventoryV3BalanceDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-item-event.sql", "useful-scripts/yml/yshopping-lakehouse/contracts/yshopping-model-alignment-v1.json"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/08-canonical-inventory-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "specified", "verification_status": "unverified"
+    },
+    {
+      "source_asset": "ods_inventory_warehouse_df", "domains": ["库存"], "source_labels": ["仓库库存"], "source_anchors": [{"document": "ODS语兴好物（y shopping）电商数据表.md", "line": 44}],
+      "source_evidence": {"status": "overview_only", "detail_anchors": []},
+      "source_grain": "one mutable warehouse-stock snapshot at source warehouse/SKU and possibly batch grain",
+      "decision": "correct", "canonical_entities": ["inventory.InventoryBalance", "inventory.InventoryLot", "warehouse.WarehouseLocation", "inventory.SourceMapping"],
+      "semantic_rules": {"grain": "exact tenant/owner/SKU/Warehouse/Location/Lot/status/quality/UOM balance", "identity": "source warehouse, SKU, batch and balance ids require explicit mappings", "money_or_quantity": "base-UOM quantities and lot dates are typed; totals reconcile to ledger entries", "history": "snapshot observations support migration/shadow comparison but do not replace immutable ledger", "security": "operator/supplier PII is excluded", "authority": "Inventory v3 ledger and Warehouse master own canonical state; source warehouse snapshot is legacy evidence"},
+      "corrections": ["do not default missing Location or Lot", "do not treat batch_no as canonical Lot without provenance", "require source watermark and complete denominator for migration"], "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-inventory/cloudmold-module-inventory-server/src/main/java/cn/iocoder/yudao/module/cloudmold/inventory/dal/dataobject/InventoryV3BalanceDO.java", "yudao-cloud/cloudmold-module-inventory/cloudmold-module-inventory-server/src/main/java/cn/iocoder/yudao/module/cloudmold/inventory/dal/dataobject/InventoryLotDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-inventory-lot-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-inventory-lot-readiness.sql"],
+      "runtime_nonempty_reconciliation": {"gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/18-canonical-inventory-lot-contract.sql", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0, "status": "missing"}, "specification_status": "provisional", "verification_status": "unverified"
+    }
+  ]
+}
