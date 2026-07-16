@@ -155,6 +155,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_payment_source_schema_request(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_engagement_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_compensation_source_dispositions(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_ticket_source_dispositions(self.inventory))
         self.assertEqual(
             [],
             validate_trade_admission(
@@ -267,12 +268,12 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual(110, status["bounded_domain_asset_count"])
         self.assertEqual(6, status["explicit_rejection_count"])
         self.assertEqual(718, status["preliminary_handled_count"])
-        self.assertEqual(76, status["detailed_disposition_specified_count"])
+        self.assertEqual(87, status["detailed_disposition_specified_count"])
         self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
         self.assertEqual(99.16, status["routing_percent"])
         self.assertEqual(100.0, status["preliminary_handled_percent"])
-        self.assertEqual(10.58, status["detailed_disposition_specified_percent"])
+        self.assertEqual(12.12, status["detailed_disposition_specified_percent"])
         self.assertEqual(0.0, status["runtime_nonempty_reconciled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
         self.assertIn(
@@ -304,7 +305,9 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertTrue(any("engagement=0/4 (0.00%)" in line for line in lines))
         self.assertTrue(any("compensation=1/3 (33.33%)" in line for line in lines))
         self.assertTrue(any("compensation=0/3 (0.00%)" in line for line in lines))
-        self.assertTrue(any("compensation=0/3; routing is not completion" in line for line in lines))
+        self.assertTrue(any("ticket=11/15 (73.33%)" in line for line in lines))
+        self.assertTrue(any("ticket=0/15 (0.00%)" in line for line in lines))
+        self.assertTrue(any("ticket=0/15; routing is not completion" in line for line in lines))
 
     def test_game_dispositions_cover_exact_authoritative_overview_rows(self):
         observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "游戏")
@@ -1404,6 +1407,59 @@ class SourceAssetCtlTest(unittest.TestCase):
             [],
             [(reference, SOURCE_ASSETS._contract_reference_error(reference)) for reference in references if SOURCE_ASSETS._contract_reference_error(reference)],
         )
+
+    def test_ticket_dispositions_cover_all_assets_and_preserve_four_name_conflicts(self):
+        contract = SOURCE_ASSETS.load_ticket_source_dispositions()
+        observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "工单")
+        detailed = {asset["source_asset"] for asset in contract["ddl_backed_assets"]}
+        conflicts = {asset["source_asset"] for asset in contract["name_conflict_assets"]}
+        self.assertEqual(15, len(observed))
+        self.assertEqual(11, len(detailed))
+        self.assertEqual(4, len(conflicts))
+        self.assertEqual(set(observed), detailed | conflicts)
+        self.assertEqual([], SOURCE_ASSETS.validate_ticket_source_dispositions(self.inventory))
+
+    def test_ticket_dispositions_reject_credentials_and_ai_decision_fabrication(self):
+        contract = SOURCE_ASSETS.load_ticket_source_dispositions()
+        by_name = {asset["source_asset"]: asset for asset in contract["ddl_backed_assets"]}
+        self.assertIn("reject password field entirely", by_name["ods_ticket_ticket_operator_df"]["corrections"])
+        self.assertIn("do not promote model result to business decision", by_name["ods_yshopping_model_predict_log_ri"]["corrections"])
+        self.assertIn("do not infer account block/refund/remediation effect", " ".join(by_name["ods_ticket_ticket_risk_handle_df"]["corrections"]))
+        self.assertIn("remain restricted", contract["semantic_profiles"]["ai_evidence"]["security"])
+
+    def test_ticket_status_is_name_conflict_limited_and_not_runtime_verified(self):
+        self.assertEqual(
+            {
+                "ticket_source_asset_count": 15,
+                "ticket_detailed_disposition_specified_count": 11,
+                "ticket_runtime_nonempty_reconciled_count": 0,
+                "ticket_final_disposition_verified_count": 0,
+                "ticket_detailed_disposition_percent": 73.33,
+                "ticket_runtime_nonempty_reconciled_percent": 0.0,
+                "ticket_final_disposition_verified_percent": 0.0,
+            },
+            SOURCE_ASSETS.ticket_disposition_status(self.inventory),
+        )
+
+    def test_ticket_contract_rejects_missing_duplicate_and_false_verification(self):
+        contract = SOURCE_ASSETS.load_ticket_source_dispositions()
+        missing = json.loads(json.dumps(contract))
+        missing["name_conflict_assets"].pop()
+        errors = SOURCE_ASSETS.validate_ticket_source_dispositions(self.inventory, missing)
+        self.assertTrue(any("exactly four name-conflict" in error for error in errors))
+        duplicate = json.loads(json.dumps(contract))
+        duplicate["ddl_backed_assets"][1] = json.loads(json.dumps(duplicate["ddl_backed_assets"][0]))
+        errors = SOURCE_ASSETS.validate_ticket_source_dispositions(self.inventory, duplicate)
+        self.assertTrue(any("duplicate source_asset" in error for error in errors))
+        false_verification = json.loads(json.dumps(contract))
+        false_verification["ddl_backed_assets"][0]["verification_status"] = "verified"
+        errors = SOURCE_ASSETS.validate_ticket_source_dispositions(self.inventory, false_verification)
+        self.assertTrue(any("forbidden without governed reconciliation" in error for error in errors))
+
+    def test_all_ticket_implementation_references_resolve(self):
+        contract = SOURCE_ASSETS.load_ticket_source_dispositions()
+        references = [reference for asset in contract["ddl_backed_assets"] for key in ("backend_refs", "lakehouse_refs") for reference in asset[key]]
+        self.assertEqual([], [(reference, SOURCE_ASSETS._contract_reference_error(reference)) for reference in references if SOURCE_ASSETS._contract_reference_error(reference)])
 
     def test_qualified_names_and_markdown_bold_are_parsed_without_losing_source_location(self):
         assets = {item["asset_id"]: item for item in self.inventory["assets"]}

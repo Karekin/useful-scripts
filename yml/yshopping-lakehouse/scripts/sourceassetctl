@@ -57,6 +57,9 @@ ENGAGEMENT_SOURCE_DISPOSITIONS = (
 COMPENSATION_SOURCE_DISPOSITIONS = (
     ROOT / "contracts" / "yshopping-compensation-source-disposition-v1.json"
 )
+TICKET_SOURCE_DISPOSITIONS = (
+    ROOT / "contracts" / "yshopping-ticket-source-disposition-v1.json"
+)
 TRADE_HISTORY_ADMISSION = (
     ROOT / "contracts" / "yshopping-trade-history-admission-v1.json"
 )
@@ -296,6 +299,12 @@ def load_compensation_source_dispositions(
     path: Path = COMPENSATION_SOURCE_DISPOSITIONS,
 ) -> dict[str, Any]:
     return _load_json_object(path, "compensation source dispositions")
+
+
+def load_ticket_source_dispositions(
+    path: Path = TICKET_SOURCE_DISPOSITIONS,
+) -> dict[str, Any]:
+    return _load_json_object(path, "ticket source dispositions")
 
 
 def _heading_path(headings: dict[int, str]) -> list[str]:
@@ -3203,6 +3212,246 @@ def compensation_disposition_status(
     }
 
 
+def validate_ticket_source_dispositions(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    """Validate Ticket/Message/Quality/Risk/AI source boundaries and name conflicts."""
+    errors: list[str] = []
+    contract = contract or load_ticket_source_dispositions()
+    expected = authoritative_ods_domain_assets(inventory, "工单")
+    scope = contract.get("source_scope")
+    if not isinstance(scope, dict):
+        return ["ticket source dispositions requires source_scope"]
+    if scope.get("domain") != "工单" or scope.get("expected_asset_count") != len(expected):
+        errors.append("ticket source scope differs from authoritative 工单 overview")
+    if scope.get("expected_source_evidence_counts") != {"ddl_backed": 11, "name_conflict": 4}:
+        errors.append("ticket source evidence counts must remain 11 DDL and 4 conflicts")
+    if not isinstance(scope.get("source_detail_limit"), str) or not scope["source_detail_limit"].strip():
+        errors.append("ticket source dispositions must state source detail limits")
+    policy = contract.get("verification_policy")
+    if not isinstance(policy, dict):
+        return errors + ["ticket source dispositions requires verification_policy"]
+    decisions = set(policy.get("allowed_decisions") or [])
+    model_statuses = set(policy.get("allowed_model_statuses") or [])
+    runtime_statuses = set(policy.get("runtime_statuses") or [])
+    if decisions != {"reuse", "merge", "split", "derive", "correct", "reject"}:
+        errors.append("ticket has invalid decision vocabulary")
+    if model_statuses != {"partial", "missing", "rejected"}:
+        errors.append("ticket has invalid model-status vocabulary")
+    if runtime_statuses != {"missing", "pending", "verified"}:
+        errors.append("ticket has invalid runtime-status vocabulary")
+    if policy.get("empty_tables_are_evidence") is not False:
+        errors.append("ticket must reject empty tables as evidence")
+    lifecycle = contract.get("lifecycle_policy_defaults")
+    if not isinstance(lifecycle, dict) or set(lifecycle) != {"history_policy", "delete_policy", "backfill_policy"}:
+        errors.append("ticket lifecycle defaults are incomplete")
+    profiles = contract.get("semantic_profiles")
+    required_profiles = {
+        "ticket_case", "message_content", "workflow_task", "taxonomy",
+        "attachment", "operator", "quality_risk", "ai_evidence"
+    }
+    semantic_keys = {"grain", "identity", "money_or_quantity", "history", "security", "authority"}
+    if not isinstance(profiles, dict) or set(profiles) != required_profiles:
+        errors.append(f"ticket semantic profiles must define exactly {sorted(required_profiles)}")
+        profiles = {}
+    else:
+        for profile_name, profile in profiles.items():
+            if not isinstance(profile, dict) or set(profile) != semantic_keys:
+                errors.append(f"ticket semantic profile {profile_name} must define exactly {sorted(semantic_keys)}")
+            elif any(not isinstance(value, str) or not value.strip() for value in profile.values()):
+                errors.append(f"ticket semantic profile {profile_name} contains empty rules")
+
+    detail_expectations = {
+        "ods_ticket_ticket_detail_di": (1065, 1108),
+        "ods_ticket_ticket_comment_di": (1143, 1166),
+        "ods_ticket_ticket_task_node_di": (1167, 1208),
+        "ods_ticket_ticket_source_df": (1209, 1233),
+        "ods_ticket_ticket_type_df": (1234, 1258),
+        "ods_ticket_ticket_chat_message_di": (1259, 1292),
+        "ods_ticket_ticket_attachment_df": (1295, 1319),
+        "ods_ticket_ticket_operator_df": (1320, 1346),
+        "ods_ticket_ticket_check_df": (1347, 1366),
+        "ods_ticket_ticket_risk_handle_df": (1367, 1400),
+        "ods_yshopping_model_predict_log_ri": (1401, 1420),
+    }
+    conflict_expectations = {
+        "ods_ticket_ticket_order_detail_di": (1109, 1142, "ods_ticket_ticket_detail_order_di"),
+        "ods_ticket_ticket_message_unit_ri": (1421, 1452, "ods_ticket_ticket_message_unit_di"),
+        "ods_ticket_ticket_tag_ri": (1453, 1475, "ods_ticket_ticket_tag_di"),
+        "ods_ticket_ticket_problem_attribution_ri": (1476, 1496, "ods_ticket_ticket_problem_attribution_di"),
+    }
+    source_document = (
+        Path(inventory.get("reference_root", DEFAULT_REFERENCE_ROOT))
+        / scope.get("authoritative_document", "")
+    )
+    try:
+        source_lines = source_document.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        errors.append(f"cannot read ticket source document {source_document}: {exc}")
+        source_lines = []
+    detailed = contract.get("ddl_backed_assets")
+    conflicts = contract.get("name_conflict_assets")
+    if not isinstance(detailed, list) or len(detailed) != 11:
+        return errors + ["ticket requires exactly eleven DDL-backed assets"]
+    if not isinstance(conflicts, list) or len(conflicts) != 4:
+        return errors + ["ticket requires exactly four name-conflict assets"]
+    seen: set[str] = set()
+    for index, asset in enumerate(detailed):
+        label = f"ticket ddl_backed_assets[{index}]"
+        if not isinstance(asset, dict):
+            errors.append(f"{label}: must be an object")
+            continue
+        name = asset.get("source_asset")
+        if name in seen:
+            errors.append(f"{label}: duplicate source_asset {name}")
+        seen.add(name)
+        observed = expected.get(name)
+        if observed is None:
+            errors.append(f"{label}: not an authoritative 工单 asset")
+            continue
+        if asset.get("source_labels") != observed["source_labels"]:
+            errors.append(f"{label}: source labels differ")
+        actual_anchors = [
+            (anchor.get("document"), anchor.get("line"))
+            for anchor in asset.get("source_anchors", []) if isinstance(anchor, dict)
+        ]
+        if actual_anchors != observed["anchors"]:
+            errors.append(f"{label}: source anchors differ")
+        expectation = detail_expectations.get(name)
+        evidence = asset.get("source_evidence", {})
+        if expectation is None:
+            errors.append(f"{label}: asset is not in locked detail expectations")
+        else:
+            heading_line, end_line = expectation
+            expected_anchor = {"heading_line": heading_line, "end_line": end_line, "source_asset": name}
+            if evidence.get("status") != "ddl_backed" or evidence.get("detail_anchor") != expected_anchor:
+                errors.append(f"{label}: detailed evidence differs")
+            if source_lines and (
+                name.replace("_", r"\_") not in source_lines[heading_line - 1]
+                or name not in "\n".join(source_lines[heading_line:end_line])
+            ):
+                errors.append(f"{label}: same-name DDL is not proven")
+        profile_name = asset.get("semantic_profile")
+        if profile_name not in profiles:
+            errors.append(f"{label}: invalid semantic profile")
+        if not isinstance(asset.get("table_rule"), str) or not asset["table_rule"].strip():
+            errors.append(f"{label}: requires table_rule")
+        if asset.get("decision") not in decisions or asset.get("model_status") not in model_statuses:
+            errors.append(f"{label}: invalid decision/model status")
+        if not _nonempty_strings(asset.get("canonical_entities")) or not _nonempty_strings(asset.get("corrections")):
+            errors.append(f"{label}: requires entities and corrections")
+        for ref_key in ("backend_refs", "lakehouse_refs"):
+            references = asset.get(ref_key)
+            if not _nonempty_strings(references):
+                errors.append(f"{label}: requires {ref_key}")
+                continue
+            for reference in references:
+                reference_error = _contract_reference_error(reference)
+                if reference_error:
+                    errors.append(f"{label}: invalid {ref_key[:-1]} {reference}: {reference_error}")
+        runtime = asset.get("runtime_nonempty_reconciliation")
+        if not isinstance(runtime, dict) or runtime.get("status") not in runtime_statuses:
+            errors.append(f"{label}: invalid runtime reconciliation")
+        else:
+            gate_ref = runtime.get("gate_ref")
+            if not isinstance(gate_ref, str) or not _resolve_contract_reference(gate_ref).is_file():
+                errors.append(f"{label}: runtime gate does not exist")
+            for count_key in ("row_count", "tenant_count"):
+                value = runtime.get(count_key)
+                if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                    errors.append(f"{label}: {count_key} must be non-negative integer")
+            if runtime.get("status") == "verified" and not _runtime_reconciliation_verified(runtime, name):
+                errors.append(f"{label}: verified runtime lacks governed production evidence")
+        if asset.get("specification_status") != "specified":
+            errors.append(f"{label}: DDL-backed asset must be specified")
+        if asset.get("verification_status") == "verified" and not _runtime_reconciliation_verified(runtime, name):
+            errors.append(f"{label}: final verification is forbidden without governed reconciliation")
+
+    required_conflict_fields = {
+        "source_asset", "source_labels", "source_anchors", "detail_anchor", "decision",
+        "target_boundary", "conflict_rule", "specification_status"
+    }
+    for index, asset in enumerate(conflicts):
+        label = f"ticket name_conflict_assets[{index}]"
+        if not isinstance(asset, dict) or set(asset) != required_conflict_fields:
+            errors.append(f"{label}: fields differ")
+            continue
+        name = asset.get("source_asset")
+        if name in seen:
+            errors.append(f"{label}: duplicate source_asset {name}")
+        seen.add(name)
+        observed = expected.get(name)
+        if observed is None:
+            errors.append(f"{label}: not an authoritative 工单 asset")
+            continue
+        if asset.get("source_labels") != observed["source_labels"]:
+            errors.append(f"{label}: source labels differ")
+        actual_anchors = [
+            (anchor.get("document"), anchor.get("line"))
+            for anchor in asset.get("source_anchors", []) if isinstance(anchor, dict)
+        ]
+        if actual_anchors != observed["anchors"]:
+            errors.append(f"{label}: source anchors differ")
+        expectation = conflict_expectations.get(name)
+        if expectation is None:
+            errors.append(f"{label}: conflict is not locked")
+        else:
+            heading_line, end_line, actual_create = expectation
+            expected_anchor = {
+                "heading_line": heading_line,
+                "end_line": end_line,
+                "actual_create_asset": actual_create,
+            }
+            if asset.get("detail_anchor") != expected_anchor:
+                errors.append(f"{label}: conflict detail evidence differs")
+            if source_lines and actual_create not in "\n".join(source_lines[heading_line:end_line]):
+                errors.append(f"{label}: conflicting CREATE target is not proven")
+        if asset.get("decision") != "correct" or asset.get("specification_status") != "provisional":
+            errors.append(f"{label}: must remain provisional/correct")
+        for text_key in ("target_boundary", "conflict_rule"):
+            if not isinstance(asset.get(text_key), str) or not asset[text_key].strip():
+                errors.append(f"{label}: requires {text_key}")
+    if seen != set(expected):
+        errors.append(
+            "ticket dispositions differ from authoritative overview: "
+            f"missing={sorted(set(expected) - seen)}, extra={sorted(seen - set(expected))}"
+        )
+    by_name = {asset.get("source_asset"): asset for asset in detailed if isinstance(asset, dict)}
+    if "reject password field entirely" not in by_name.get("ods_ticket_ticket_operator_df", {}).get("corrections", []):
+        errors.append("ticket operator must reject password migration")
+    if "require versioned raw message schema" not in by_name.get("ods_yshopping_model_predict_log_ri", {}).get("corrections", []):
+        errors.append("ticket AI prediction must require a versioned payload schema")
+    conflict_by_name = {asset.get("source_asset"): asset for asset in conflicts if isinstance(asset, dict)}
+    if "order_detail and detail_order" not in conflict_by_name.get("ods_ticket_ticket_order_detail_di", {}).get("conflict_rule", ""):
+        errors.append("ticket order-detail reversed-name conflict must remain explicit")
+    return errors
+
+
+def ticket_disposition_status(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    contract = contract or load_ticket_source_dispositions()
+    expected_count = len(authoritative_ods_domain_assets(inventory, "工单"))
+    assets = contract.get("ddl_backed_assets", []) if isinstance(contract, dict) else []
+    specified = [asset for asset in assets if isinstance(asset, dict) and asset.get("specification_status") == "specified"]
+    reconciled = [
+        asset for asset in assets
+        if isinstance(asset, dict)
+        and _runtime_reconciliation_verified(asset.get("runtime_nonempty_reconciliation"), asset.get("source_asset", ""))
+    ]
+    verified = [asset for asset in reconciled if asset.get("verification_status") == "verified"]
+    denominator = expected_count or 1
+    return {
+        "ticket_source_asset_count": expected_count,
+        "ticket_detailed_disposition_specified_count": len(specified),
+        "ticket_runtime_nonempty_reconciled_count": len(reconciled),
+        "ticket_final_disposition_verified_count": len(verified),
+        "ticket_detailed_disposition_percent": round(len(specified) * 100.0 / denominator, 2),
+        "ticket_runtime_nonempty_reconciled_percent": round(len(reconciled) * 100.0 / denominator, 2),
+        "ticket_final_disposition_verified_percent": round(len(verified) * 100.0 / denominator, 2),
+    }
+
+
 def disposition_status(
     inventory: dict[str, Any], policy: dict[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -3247,6 +3496,7 @@ def disposition_status(
     user_status = user_disposition_status(inventory)
     engagement_status = engagement_disposition_status(inventory)
     compensation_status = compensation_disposition_status(inventory)
+    ticket_status = ticket_disposition_status(inventory)
     detailed_count = (
         game_status["game_detailed_disposition_specified_count"]
         + metadata_status["metadata_detailed_disposition_specified_count"]
@@ -3257,6 +3507,7 @@ def disposition_status(
         + user_status["user_detailed_disposition_specified_count"]
         + engagement_status["engagement_detailed_disposition_specified_count"]
         + compensation_status["compensation_detailed_disposition_specified_count"]
+        + ticket_status["ticket_detailed_disposition_specified_count"]
     )
     runtime_count = (
         game_status["game_runtime_nonempty_reconciled_count"]
@@ -3268,6 +3519,7 @@ def disposition_status(
         + user_status["user_runtime_nonempty_reconciled_count"]
         + engagement_status["engagement_runtime_nonempty_reconciled_count"]
         + compensation_status["compensation_runtime_nonempty_reconciled_count"]
+        + ticket_status["ticket_runtime_nonempty_reconciled_count"]
     )
     verified_count = (
         game_status["game_final_disposition_verified_count"]
@@ -3279,6 +3531,7 @@ def disposition_status(
         + user_status["user_final_disposition_verified_count"]
         + engagement_status["engagement_final_disposition_verified_count"]
         + compensation_status["compensation_final_disposition_verified_count"]
+        + ticket_status["ticket_final_disposition_verified_count"]
     )
     return {
         "candidate_asset_count": candidate_count,
@@ -3320,6 +3573,7 @@ def disposition_status(
         **user_status,
         **engagement_status,
         **compensation_status,
+        **ticket_status,
     }
 
 
@@ -3443,7 +3697,10 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"({status['engagement_detailed_disposition_percent']:.2f}%); "
         f"compensation={status['compensation_detailed_disposition_specified_count']}/"
         f"{status['compensation_source_asset_count']} "
-        f"({status['compensation_detailed_disposition_percent']:.2f}%)"
+        f"({status['compensation_detailed_disposition_percent']:.2f}%); "
+        f"ticket={status['ticket_detailed_disposition_specified_count']}/"
+        f"{status['ticket_source_asset_count']} "
+        f"({status['ticket_detailed_disposition_percent']:.2f}%)"
     )
     yield (
         "non-empty runtime reconciliations: "
@@ -3475,7 +3732,10 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"({status['engagement_runtime_nonempty_reconciled_percent']:.2f}%); "
         f"compensation={status['compensation_runtime_nonempty_reconciled_count']}/"
         f"{status['compensation_source_asset_count']} "
-        f"({status['compensation_runtime_nonempty_reconciled_percent']:.2f}%)"
+        f"({status['compensation_runtime_nonempty_reconciled_percent']:.2f}%); "
+        f"ticket={status['ticket_runtime_nonempty_reconciled_count']}/"
+        f"{status['ticket_source_asset_count']} "
+        f"({status['ticket_runtime_nonempty_reconciled_percent']:.2f}%)"
     )
     yield (
         "final semantic dispositions verified: "
@@ -3498,7 +3758,9 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"engagement={status['engagement_final_disposition_verified_count']}/"
         f"{status['engagement_source_asset_count']}, "
         f"compensation={status['compensation_final_disposition_verified_count']}/"
-        f"{status['compensation_source_asset_count']}; routing is not completion"
+        f"{status['compensation_source_asset_count']}, "
+        f"ticket={status['ticket_final_disposition_verified_count']}/"
+        f"{status['ticket_source_asset_count']}; routing is not completion"
     )
 
 
@@ -3523,6 +3785,7 @@ def main() -> int:
     errors.extend(validate_payment_source_schema_request(inventory))
     errors.extend(validate_engagement_source_dispositions(inventory))
     errors.extend(validate_compensation_source_dispositions(inventory))
+    errors.extend(validate_ticket_source_dispositions(inventory))
     errors.extend(
         validate_trade_admission(
             TRADE_HISTORY_ADMISSION,
