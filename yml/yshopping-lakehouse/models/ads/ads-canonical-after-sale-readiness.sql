@@ -45,7 +45,8 @@ SELECT resolution.*,
            OR resolution_saga_id <> saga_id
          THEN 'INCONSISTENT'
          WHEN saga_status = 'COMPLETED'
-           AND saga_version = IF(reported_benefit_amount_minor = 0, 10, 12)
+           AND saga_version >= IF(reported_benefit_amount_minor = 0, 10, 12)
+           AND MOD(saga_version - IF(reported_benefit_amount_minor = 0, 10, 12), 2) = 0
            AND saga_event_count = saga_version
            AND after_sale_status = 'COMPLETED' AND after_sale_event_count = 4
            AND return_fulfillment_status = 'INSPECTION_ACCEPTED' AND return_fulfillment_event_count = 5

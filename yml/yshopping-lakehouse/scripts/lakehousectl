@@ -527,24 +527,46 @@ case "$COMMAND" in
     require_running
     safe_run_id=${RUN_ID//\'/\'\'}
     result=$(sql --skip-column-names -e "
-      SELECT saga_event_count, saga_status, after_sale_status, refund_status,
+      SELECT saga_event_count, saga_version, saga_status, after_sale_status, refund_status,
              return_fulfillment_status, inspection_result,
              requested_quantity, accepted_quantity, inventory_return_quantity,
+             reported_gross_amount_minor, reported_benefit_amount_minor, reported_net_amount_minor,
              approved_amount_minor, refunded_amount_minor, payment_refunded_amount_minor,
+             benefit_reversal_status, benefit_reversal_amount_minor,
+             recorded_benefit_reversal_amount_minor, funding_reversal_amount_minor,
+             benefit_reversal_count, funding_reversal_count,
              order_status, payment_status, recorded_order_valid, readiness_status, recovery_status
       FROM yshopping_ads.ads_canonical_after_sale_readiness
       WHERE tenant_id=$TENANT_ID AND run_id='$safe_run_id';")
     require_single_row "$result" "canonical after-sales reconciliation"
-    echo -e "saga_events\tsaga_status\tafter_sale_status\trefund_status\treturn_status\tinspection\trequested_qty\taccepted_qty\tinventory_return_qty\tapproved\trefunded\tpayment_refunded\torder_status\tpayment_status\trecorded_order_valid\treadiness\trecovery"
+    echo -e "saga_events\tsaga_version\tsaga_status\tafter_sale_status\trefund_status\treturn_status\tinspection\trequested_qty\taccepted_qty\tinventory_return_qty\tgross\tbenefit\tnet\tapproved\trefunded\tpayment_refunded\tbenefit_reversal_status\tbenefit_reversed\trecorded_benefit\tfunding_reversed\tbenefit_rows\tfunding_rows\torder_status\tpayment_status\trecorded_order_valid\treadiness\trecovery"
     echo "$result"
-    IFS=$'\t' read -r saga_events saga_status after_sale_status refund_status return_status inspection \
-      requested_qty accepted_qty inventory_return_qty approved refunded payment_refunded order_status \
-      payment_status recorded_order_valid readiness recovery <<< "$result"
-    [[ "$saga_events" == "10" && "$saga_status" == "COMPLETED" \
+    IFS=$'\t' read -r saga_events saga_version saga_status after_sale_status refund_status return_status inspection \
+      requested_qty accepted_qty inventory_return_qty gross benefit net approved refunded payment_refunded \
+      benefit_reversal_status benefit_reversed recorded_benefit funding_reversed benefit_rows funding_rows \
+      order_status payment_status recorded_order_valid readiness recovery <<< "$result"
+    saga_baseline=10
+    benefit_reconciled=false
+    if [[ "$benefit" =~ ^[0-9]+$ && "$benefit" -gt 0 ]]; then
+      saga_baseline=12
+      [[ "$benefit_reversal_status" == "RECORDED" && "$benefit_reversed" == "$benefit" \
+         && "$recorded_benefit" == "$benefit" && "$funding_reversed" == "$benefit" \
+         && "$benefit_rows" =~ ^[1-9][0-9]*$ && "$funding_rows" =~ ^[1-9][0-9]*$ ]] \
+        && benefit_reconciled=true
+    elif [[ "$benefit" == "0" && "$benefit_reversal_status" == "NOT_REQUIRED" \
+            && "$benefit_reversed" == "0" ]]; then
+      benefit_reconciled=true
+    fi
+    [[ "$saga_events" == "$saga_version" && "$saga_version" =~ ^[0-9]+$ \
+       && "$saga_version" -ge "$saga_baseline" \
+       && $(((saga_version - saga_baseline) % 2)) -eq 0 \
+       && "$saga_status" == "COMPLETED" \
        && "$after_sale_status" == "COMPLETED" && "$refund_status" == "SUCCEEDED" \
        && "$return_status" == "INSPECTION_ACCEPTED" && "$inspection" == "ACCEPTED" \
        && "$requested_qty" == "$accepted_qty" && "$accepted_qty" == "$inventory_return_qty" \
+       && "$gross" -eq $((benefit + net)) && "$net" == "$approved" \
        && "$approved" == "$refunded" && "$refunded" == "$payment_refunded" \
+       && "$benefit_reconciled" == "true" \
        && "$order_status" == "RETURNED" && "$payment_status" == "REFUNDED" \
        && "$recorded_order_valid" == "1" && "$readiness" == "RECONCILED" ]] || {
       echo "canonical after-sales reconciliation failed" >&2

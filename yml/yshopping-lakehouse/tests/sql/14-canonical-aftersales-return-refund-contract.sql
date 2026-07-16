@@ -93,21 +93,25 @@ WHERE NOT (
        (previous_status IS NULL AND current_status = 'REQUESTED')
     OR (previous_status = 'REQUESTED' AND current_status = 'RETURNING_INVENTORY')
     OR (previous_status = 'RETURNING_INVENTORY' AND current_status IN ('INVENTORY_RETURNED', 'RETRY_SCHEDULED', 'MANUAL_REVIEW'))
-    OR (previous_status = 'INVENTORY_RETURNED' AND current_status = 'REFUNDING_PAYMENT')
+    OR (previous_status = 'INVENTORY_RETURNED' AND current_status IN ('REVERSING_BENEFITS', 'REFUNDING_PAYMENT'))
+    OR (previous_status = 'REVERSING_BENEFITS' AND current_status IN ('BENEFITS_REVERSED', 'RETRY_SCHEDULED', 'MANUAL_REVIEW'))
+    OR (previous_status = 'BENEFITS_REVERSED' AND current_status = 'REFUNDING_PAYMENT')
     OR (previous_status = 'REFUNDING_PAYMENT' AND current_status IN ('PAYMENT_REFUNDED', 'RETRY_SCHEDULED', 'MANUAL_REVIEW'))
     OR (previous_status = 'PAYMENT_REFUNDED' AND current_status = 'CONFIRMING_ORDER_REFUND')
     OR (previous_status = 'CONFIRMING_ORDER_REFUND' AND current_status IN ('ORDER_REFUNDED', 'RETRY_SCHEDULED', 'MANUAL_REVIEW'))
     OR (previous_status = 'ORDER_REFUNDED' AND current_status = 'RETURNING_ORDER')
     OR (previous_status = 'RETURNING_ORDER' AND current_status IN ('ORDER_RETURNED', 'RETRY_SCHEDULED', 'MANUAL_REVIEW'))
     OR (previous_status = 'ORDER_RETURNED' AND current_status = 'COMPLETED')
-    OR (previous_status = 'RETRY_SCHEDULED' AND current_status IN ('RETURNING_INVENTORY', 'REFUNDING_PAYMENT', 'CONFIRMING_ORDER_REFUND', 'RETURNING_ORDER', 'MANUAL_REVIEW'))
+    OR (previous_status = 'RETRY_SCHEDULED' AND current_status IN ('RETURNING_INVENTORY', 'REVERSING_BENEFITS', 'REFUNDING_PAYMENT', 'CONFIRMING_ORDER_REFUND', 'RETURNING_ORDER', 'MANUAL_REVIEW'))
     OR (previous_status = 'MANUAL_REVIEW' AND current_status = 'RETRY_SCHEDULED')
 )
 UNION ALL
 SELECT 'canonical_after_sale_saga_terminal_shape', COUNT(*)
 FROM yshopping_dwd.dwd_canonical_after_sale_resolution_saga_event
 WHERE current_status = 'COMPLETED' AND (
-      aggregate_version <> 10 OR active_step <> 'NONE' OR step_ordinal <> 5
+      aggregate_version < IF(benefit_amount_minor = 0, 10, 12)
+   OR MOD(aggregate_version - IF(benefit_amount_minor = 0, 10, 12), 2) <> 0
+   OR active_step <> 'NONE' OR step_ordinal <> IF(benefit_amount_minor = 0, 5, 6)
    OR accepted_quantity <> quantity OR returned_quantity <> quantity
    OR approved_amount_minor <> refunded_amount_minor
    OR inventory_operation_id IS NULL OR inventory_ledger_transaction_id IS NULL
@@ -161,7 +165,8 @@ WHERE after_sale_id IS NULL OR order_id IS NULL OR order_item_id IS NULL OR paym
    OR refund_after_sale_item_id <> after_sale_item_id
    OR original_order_sku_id IS NULL OR original_order_sku_id <> canonical_sku_id
    OR original_order_quantity <> requested_quantity
-   OR original_order_line_amount_minor <> approved_amount_minor
+   OR original_order_line_amount_minor <> original_order_discount_amount_minor + original_order_net_amount_minor
+   OR original_order_net_amount_minor <> approved_amount_minor
    OR original_listing_id <> listing_id OR original_offer_id <> offer_id
    OR return_fulfillment_id IS NULL OR inspection_id IS NULL
    OR requested_quantity <> received_quantity

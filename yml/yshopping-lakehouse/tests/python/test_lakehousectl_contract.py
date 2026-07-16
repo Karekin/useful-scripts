@@ -30,6 +30,15 @@ class LakehouseCtlContractTest(unittest.TestCase):
         self.assertIn('"$funding_amount" == "$item_discount"', script)
         self.assertIn('"$readiness" == "RECONCILED"', script)
 
+    def test_aftersales_reconciliation_accepts_even_retry_versions_and_exact_benefit_reversal(self):
+        script = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn('saga_baseline=12', script)
+        self.assertIn('$(((saga_version - saga_baseline) % 2)) -eq 0', script)
+        self.assertIn('"$gross" -eq $((benefit + net))', script)
+        self.assertIn('"$benefit_reversal_status" == "RECORDED"', script)
+        self.assertIn('"$recorded_benefit" == "$benefit"', script)
+        self.assertIn('"$funding_reversed" == "$benefit"', script)
+
     def test_merchant_reconciliation_rejects_non_uuid_before_querying(self):
         result = self.run_ctl(
             "reconcile-canonical-merchant", "--tenant", "1", "--merchant-id", "not-a-uuid"
