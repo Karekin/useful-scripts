@@ -93,7 +93,7 @@ zero-difference checks, and a separately checksummed independent verifier.
 Documentation volume estimates (for example “15.96 亿”) are never used as a
 denominator. A merely non-empty JSON file can no longer promote any of the 718
 assets to `verified`.
-The governed detailed-disposition numerator is now 219/718. The Product
+The governed detailed-disposition numerator is now 271/718. The Product
 slice covers all ten authoritative 商品 overview assets: nine DDL-backed assets
 are specified across Catalog, Listing, workflow, Identity/Merchant and Quality
 boundaries; the personnel salary asset remains provisional because its detailed
@@ -246,6 +246,18 @@ splits Merchant/Shop/LegalEntity/Operator, and treats Redis rows as disposable
 cache projections rather than identity or policy authority. This slice receives
 43/43 detailed credit but 0/43 runtime/final credit, taking the global numerator
 to 219/718 (30.50%).
+The first ADS-derived slice governs fifty same-name analytical products and
+rejects two DWD facts misplaced in the ADS document. Customer-service workforce,
+Risk case/content, pseudonymous customer profile, Community operations,
+monitoring/alert delivery, intelligence delivery, listing attribution, AI/Token
+usage, metadata operations, supply-chain efficiency and Merchant analytics now
+have exact grains, denominators, version/time/privacy rules and read-only
+authority boundaries. The design rejects the source-marked invalid buyer-loss
+content implementation; treats raw ticket/OCR/SQL/content as restricted evidence;
+separates Kafka/OSS delivery from accepted effects; preserves `tatget`, `agnet`
+and `ovewview` only as source aliases; and prevents profiles, alerts or AI output
+from mutating business state. This slice receives 52/52 detailed credit but 0/52
+runtime/final credit, taking the global numerator to 271/718 (37.74%).
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%

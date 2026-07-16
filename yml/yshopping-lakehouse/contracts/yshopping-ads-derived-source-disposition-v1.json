@@ -1,0 +1,189 @@
+{
+  "contract_version": 1,
+  "contract_id": "yshopping.ads-derived.source-disposition.v1",
+  "source_scope": {
+    "authoritative_document": "ADS语兴好物（y shopping）电商数据表.md",
+    "expected_asset_count": 52,
+    "expected_source_evidence_counts": {"same_name_ads_create": 50, "wrong_layer_dwd_create": 2},
+    "scope_rule": "This slice covers candidate assets without an authoritative ODS domain that have a same-name CREATE in the ADS document. ADS assets are purpose-limited analytical products; DWD tables declared here are rejected as ADS authority and retained only as governed source evidence."
+  },
+  "verification_policy": {
+    "specified_definition": "Same-name CREATE plus explicit analytical grain, denominator, source event/version, privacy class, time window, output boundary, authority and correction rules.",
+    "verified_definition": "Non-empty production recomputation from governed canonical facts with full eligible denominator, stable watermarks, exact time windows, privacy controls, independent metric/content comparison and zero unexplained differences.",
+    "empty_tables_are_evidence": false,
+    "allowed_decisions": ["derive", "correct", "reject"],
+    "runtime_statuses": ["missing", "pending", "verified"]
+  },
+  "semantic_profiles": {
+    "customer_service_workforce_metrics": {
+      "canonical_entities": ["analytics.CustomerServiceWorkforceWindow", "customerservice.TicketReference", "workforce.WorkerAssignmentReference", "quality.ReviewReference"],
+      "grain": "one tenant, effective worker assignment or service queue and exact declared reporting window",
+      "metric_rules": ["ticket counts use distinct canonical ticket ids and declared eligible states", "response and resolution durations use paired immutable events in one timezone", "worker identity uses effective assignment rather than display name", "quality and satisfaction numerators publish their exact eligible denominators", "reopened transferred automated and abandoned tickets are explicitly classified", "metrics never create payroll authorization SLA waiver or ticket effects"],
+      "security": "Worker and customer PII is minimized or pseudonymized; coaching access is purpose-bound and audited.",
+      "authority": "Customer Service owns tickets, Workforce owns assignments and Quality owns accepted reviews; ADS is read-only.",
+      "model_status": "partial"
+    },
+    "risk_case_content_projection": {
+      "canonical_entities": ["analytics.RiskCaseWindow", "customerservice.TicketReference", "risk.SignalReference", "risk.DecisionReference", "customerservice.CompensationReference"],
+      "grain": "one tenant, governed case or pseudonymous subject and exact as-of window",
+      "metric_rules": ["keyword OCR and model outputs remain typed signals with policy/model versions", "raw ticket content attachments and OCR text are never broad analytical dimensions", "high-refund and frequent-complaint numerators publish complete eligible denominators", "refund compensation and loss money use integer minor units ISO currency and owning-domain effects", "group relation evidence is HMAC-linked and cannot be inferred from name phone or address alone", "signals and scores never directly ban refund compensate or mutate a ticket"],
+      "security": "Content, attachments, identities and relations are restricted; ADS exposes redacted evidence references and aggregates.",
+      "authority": "Risk owns decisions, Customer Service owns cases, AfterSales/Payment owns refunds and Compensation/Ledger owns loss effects.",
+      "model_status": "partial"
+    },
+    "customer_profile_analytics": {
+      "canonical_entities": ["analytics.PrincipalProfileWindow", "identity.PrincipalReference", "order.OrderReference", "engagement.CommunityInteractionReference", "membership.MembershipReference"],
+      "grain": "one tenant, pseudonymous canonical Principal and declared feature as-of time",
+      "metric_rules": ["every feature names its source event, event-time window and late-data policy", "money is currency-partitioned integer minor units", "order refund engagement and membership features use distinct owning-domain keys", "missing unknown zero and not-applicable remain different", "feature versions and consent purpose are retained", "profile scores never grant membership credit moderation or marketing eligibility"],
+      "security": "Direct identifiers, addresses, devices, payment handles and legal identifiers are excluded; features are purpose-limited and erasable where legally required.",
+      "authority": "Owning domains retain business authority; ADS only publishes governed features.",
+      "model_status": "partial"
+    },
+    "community_operations_metrics": {
+      "canonical_entities": ["analytics.CommunityOperationsWindow", "engagement.CommunityContentReference", "engagement.CommunityInteractionReference", "engagement.ModerationCaseReference"],
+      "grain": "one tenant, community scope and exact calendar or rolling window",
+      "metric_rules": ["content interaction moderation and active-user facts preaggregate before joining", "counts use stable event or content ids and explicit deduplication", "active user and retention definitions publish eligible denominators", "AI red-team traffic is isolated from real-user and production KPIs", "timezone and late-event restatement are declared", "dashboard results never create moderation distribution or engagement effects"],
+      "security": "Raw content, reports, private messages and actor identity are restricted; outputs are aggregated and k-anonymous where needed.",
+      "authority": "Engagement and Moderation own facts; ADS is an operational analytical view.",
+      "model_status": "partial"
+    },
+    "monitoring_alert_delivery": {
+      "canonical_entities": ["operations.MetricObservation", "operations.AlertEvaluation", "operations.AlertDeliveryAttempt", "governance.PolicyVersionReference"],
+      "grain": "one tenant, metric definition version, evaluation window and alert delivery attempt",
+      "metric_rules": ["metric SQL and expected schema bind to immutable approved versions", "evaluation value threshold and outcome preserve units and timestamps", "late missing stale and query-error states are distinct", "alert deduplication and suppression use stable incident keys", "Kafka delivery records attempt acknowledgement and retry rather than business success", "LLM summaries are advisory and cannot change alert state without an accepted operation"],
+      "security": "SQL text, infrastructure identifiers and alert payloads are restricted; connector credentials remain external secrets.",
+      "authority": "Observability owns observations/incidents and Operations owns effects; ADS and Kafka outputs are projections.",
+      "model_status": "missing"
+    },
+    "intelligence_signal_delivery": {
+      "canonical_entities": ["analytics.IntelligenceSignalWindow", "engagement.CommunityContentReference", "operations.CollectionObservation", "risk.SignalReference", "ai_operations.InvocationAttemptReference"],
+      "grain": "one tenant, governed signal or collection task and immutable event/detail version",
+      "metric_rules": ["third-party collection retains provider source terms event time and payload digest", "content and image references are redacted and object-store uploads retain digest lineage", "AI category and overview metrics bind model taxonomy and policy versions", "realtime current views do not erase signal or delivery history", "Kafka output records delivery attempts acknowledgements and replay ids", "signals and summaries never directly enforce Risk or Community effects"],
+      "security": "Third-party content, personal data, image objects and intelligence payloads are restricted by purpose and retention policy.",
+      "authority": "Source collection owns observations, AI Operations owns attempts and Risk/Community owns accepted decisions.",
+      "model_status": "partial"
+    },
+    "catalog_listing_attribution": {
+      "canonical_entities": ["analytics.ListingApprovalAttribution", "catalog.ProductVariantReference", "listing.ListingReference", "quality.ReviewReference", "identity.PrincipalReference"],
+      "grain": "one tenant, listing approval attempt and immutable catalog/listing/review versions",
+      "metric_rules": ["first-pass success is defined from ordered immutable review attempts", "attribution dimensions use versions effective at the attempt time", "operator and reviewer identities use canonical Principal assignments", "missing review attempts and auto-approved flows are explicitly classified", "correlation and attribution remain separate from causal proof", "analytical attribution cannot approve publish or alter a Listing"],
+      "security": "Reviewer/operator identities and review comments are restricted; outputs expose minimized aggregates.",
+      "authority": "Catalog owns product identity, Listing owns publish state and Quality owns accepted review.",
+      "model_status": "partial"
+    },
+    "ai_usage_observability": {
+      "canonical_entities": ["analytics.AiUsageWindow", "ai_operations.InvocationAttemptReference", "ai_operations.WorkflowVersionReference", "token_platform.InvocationUsageReference", "token_platform.PricingVersionReference"],
+      "grain": "one tenant, immutable invocation attempt or model/user reporting window",
+      "metric_rules": ["attempt request run and workflow identities are distinct", "input output total token conservation is checked per provider response", "latency success retry timeout and cancellation use versioned status semantics", "quota and cost use integer units and immutable PricingVersion", "user profiles use canonical Principal mapping rather than username", "observability never debits quota settles payment grants access or changes workflow state"],
+      "security": "Prompts, responses, user identity, credentials and provider traces are restricted; outputs are redacted aggregates.",
+      "authority": "AI Operations owns execution, Token Platform owns usage/quota and Payment owns settlement; ADS is read-only.",
+      "model_status": "partial"
+    },
+    "metadata_observability": {
+      "canonical_entities": ["analytics.MetadataOperationsWindow", "metadata.AssetVersionReference", "metadata.TaskRunReference", "metadata.QualityCheckReference", "operations.AlertDeliveryAttempt"],
+      "grain": "one tenant, governed metadata asset/task/check version and exact observation or alert window",
+      "metric_rules": ["asset task metric and quality-check identities are versioned and separately typed", "run delay failure waiting SLA and restore derive from ordered immutable observations", "every threshold and expected schedule binds to an approved policy version", "ninety-day windows use exact half-open boundaries and late-data policy", "AI helper input/output retains prompt/model/version lineage without becoming metadata authority", "Kafka and object-store rows record delivery/storage evidence rather than governance effects"],
+      "security": "SQL, lineage, task parameters, owners and AI prompts are restricted; secrets remain external vault references.",
+      "authority": "Metadata owns asset/task definitions, Data Quality owns check results and Operations owns alert effects.",
+      "model_status": "partial"
+    },
+    "supply_chain_efficiency": {
+      "canonical_entities": ["analytics.SupplyChainEfficiencyWindow", "warehouse.OperationReference", "workforce.WorkerAssignmentReference", "quality.HumanReviewReference", "ai_operations.InvocationAttemptReference"],
+      "grain": "one tenant, governed operation or effective worker assignment and exact reporting window",
+      "metric_rules": ["receipt sorting quality and outbound operations use stable physical-operation ids", "duration requires paired milestones and one timezone", "BPO identity uses effective workforce assignment and excludes payroll fields", "AI quality accuracy publishes eligible case and accepted human-review denominators", "attribution distinguishes controllable cause from correlation", "metrics never change inventory quality employment or listing state"],
+      "security": "Worker PII, payroll, images, model evidence and warehouse details are restricted and purpose-bound.",
+      "authority": "Warehouse/WMS owns operations, Workforce owns assignments, Quality owns review and AI Operations owns attempts.",
+      "model_status": "partial"
+    },
+    "merchant_analytics": {
+      "canonical_entities": ["analytics.MerchantProfileWindow", "merchant.MerchantAccountReference", "merchant.ShopReference", "merchant.LegalEntityReference", "ai_operations.InvocationAttemptReference"],
+      "grain": "one tenant, canonical Merchant or Shop and immutable feature as-of time",
+      "metric_rules": ["Merchant Shop LegalEntity and operator identities remain separate", "features declare source event windows and version selection", "money uses integer minor units and ISO currency", "AI recommendations retain model prompt and source-feature lineage", "missing and not-applicable features remain explicit", "profiles and assistant outputs never grant onboarding listing settlement or credit effects"],
+      "security": "Legal, bank, contact and operator data are vaulted/tokenized; AI inputs and outputs are restricted.",
+      "authority": "Merchant owns identities, Payment/Ledger owns money and AI Operations owns attempts; ADS is advisory.",
+      "model_status": "partial"
+    },
+    "wrong_layer_operational_source": {
+      "canonical_entities": ["source.GovernedFactReference", "source.SourceSchemaVersion", "source.IngestionCheckpoint"],
+      "grain": "one immutable governed source fact or transport envelope referenced by ADS",
+      "metric_rules": ["DWD objects declared in ADS are rejected as ADS outputs", "source schema event identity and payload digest are retained", "event time ingestion time and replay checkpoint are distinct", "tenant and source identity are validated", "poison and duplicate records remain auditable", "only purpose-limited ADS projections may consume these facts"],
+      "security": "Raw content and connector payloads are restricted; credentials remain external secrets.",
+      "authority": "DWD preserves source facts; it is not an ADS metric or business-effect authority.",
+      "model_status": "rejected"
+    }
+  },
+  "implementation_refs": {
+    "backend_refs": [
+      "yudao-cloud/cloudmold-module-customer-service/cloudmold-module-customer-service-server/src/main/java/cn/iocoder/yudao/module/cloudmold/customerservice/dal/dataobject/CustomerServiceTicketDO.java",
+      "yudao-cloud/cloudmold-module-risk/cloudmold-module-risk-server/src/main/java/cn/iocoder/yudao/module/cloudmold/risk/dal/dataobject/RiskRecords.java",
+      "yudao-cloud/cloudmold-module-engagement/cloudmold-module-engagement-server/src/main/java/cn/iocoder/yudao/module/cloudmold/engagement/dal/dataobject/CommunityInteractionDO.java",
+      "yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aioperations/dal/dataobject/AiInvocationAttemptDO.java",
+      "yudao-cloud/cloudmold-module-token-platform/cloudmold-module-token-platform-server/src/main/java/cn/iocoder/yudao/module/cloudmold/tokenplatform/dal/dataobject/InvocationUsageDO.java",
+      "yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/dal/dataobject/MerchantAccountDO.java"
+    ],
+    "lakehouse_refs": [
+      "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-customer-service-readiness.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-risk-readiness.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-engagement-readiness.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-ai-operations-readiness.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-token-platform-readiness.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-metadata-readiness.sql",
+      "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-merchant-readiness.sql"
+    ]
+  },
+  "assets": [
+    {"source_asset":"ads_ai_workflow_invoke_target","detail_line":4358,"profile":"ai_usage_observability","decision":"correct","corrections":["separate workflow run request and invocation-attempt denominators","bind latency status and token usage to immutable versions","keep prompts responses and provider traces restricted"]},
+    {"source_asset":"ads_go_audit_once_list_base_target","detail_line":4295,"profile":"catalog_listing_attribution","decision":"correct","corrections":["bind base dimensions to versions effective at review attempt","resolve operator and reviewer through Principal assignments","do not treat correlation as causal approval evidence"]},
+    {"source_asset":"ads_go_audit_once_list_target","detail_line":4094,"profile":"catalog_listing_attribution","decision":"correct","corrections":["define first-pass success from ordered immutable review attempts","publish the complete eligible listing denominator","never let attribution approve or publish a listing"]},
+    {"source_asset":"ads_intelligence_ai_category_target","detail_line":3829,"profile":"intelligence_signal_delivery","decision":"correct","corrections":["bind categories to model taxonomy and policy versions","publish eligible signal denominator for every category metric","keep AI categorization advisory until accepted decision"]},
+    {"source_asset":"ads_intelligence_ai_overview_target","detail_line":3905,"profile":"intelligence_signal_delivery","decision":"correct","corrections":["define daily window timezone and late restatement","deduplicate invocation and signal identities before aggregation","separate collected observed classified and accepted counts"]},
+    {"source_asset":"ads_intelligence_com_monitor_task","detail_line":3665,"profile":"intelligence_signal_delivery","decision":"derive","corrections":["retain provider task source terms and payload lineage","separate collection observation from accepted intelligence signal","do not infer completeness from one hourly result"]},
+    {"source_asset":"ads_intelligence_com_monitor_task_2kafka","detail_line":3794,"profile":"intelligence_signal_delivery","decision":"correct","corrections":["model Kafka rows as delivery attempts with acknowledgements","add stable event id schema version and replay key","do not treat broker delivery as downstream business success"]},
+    {"source_asset":"ads_intelligence_com_trend_detail","detail_line":3190,"profile":"intelligence_signal_delivery","decision":"correct","corrections":["version realtime signal details instead of overwriting history","redact third-party content and actor identity","bind accepted severity to policy and decision versions"]},
+    {"source_asset":"ads_intelligence_com_trend_detail_2kafka_ri","detail_line":3617,"profile":"intelligence_signal_delivery","decision":"correct","corrections":["record delivery attempt acknowledgement retry and replay id","version outbound payload schema","never make realtime Kafka output Risk authority"]},
+    {"source_asset":"ads_intelligence_com_trend_detail_oss","detail_line":3484,"profile":"intelligence_signal_delivery","decision":"correct","corrections":["store object digest media type and restricted source reference","exclude inline object-store credentials","separate upload evidence from content acceptance"]},
+    {"source_asset":"ads_intelligence_com_trend_detail_ri","detail_line":3324,"profile":"intelligence_signal_delivery","decision":"correct","corrections":["treat realtime table as current projection not history","preserve immutable source signal references","keep content and identity purpose-restricted"]},
+    {"source_asset":"ads_merchant_ai_target","detail_line":8063,"profile":"merchant_analytics","decision":"correct","corrections":["bind assistant output to model prompt and feature versions","separate Merchant Shop and LegalEntity features","never let recommendation grant onboarding listing or settlement effects"]},
+    {"source_asset":"ads_merchant_profile","detail_line":7528,"profile":"merchant_analytics","decision":"correct","corrections":["split Merchant Shop LegalEntity and operator identities","tokenize legal bank and contact data","version every feature as of its source event window"]},
+    {"source_asset":"ads_meta_ai_helper_input_2kafka","detail_line":6135,"profile":"metadata_observability","decision":"correct","corrections":["record Kafka delivery attempt schema and replay identity","redact SQL owner and task parameters from broad payloads","do not treat delivered AI input as governance approval"]},
+    {"source_asset":"ads_meta_ai_helper_input_metrics","detail_line":6279,"profile":"metadata_observability","decision":"derive","corrections":["version metric definitions units and owners","bind lineage to immutable asset versions","keep metric metadata distinct from observed values"]},
+    {"source_asset":"ads_meta_ai_helper_input_table","detail_line":6152,"profile":"metadata_observability","decision":"derive","corrections":["version table schemas ownership and lineage","redact sensitive SQL and connection attributes","keep AI input projection separate from metadata authority"]},
+    {"source_asset":"ads_meta_ai_helper_output_target","detail_line":6389,"profile":"metadata_observability","decision":"correct","corrections":["retain prompt model and source-version lineage","separate suggestion from accepted metadata change","publish exact eligible asset denominator and failure states"]},
+    {"source_asset":"ads_meta_dq_dqc_target_90d","detail_line":6086,"profile":"metadata_observability","decision":"correct","corrections":["use exact half-open ninety-day window","bind check results to definition and threshold versions","separate missing unrun failed and passed states"]},
+    {"source_asset":"ads_meta_governance_ai_table_detail_2kafka","detail_line":7091,"profile":"metadata_observability","decision":"correct","corrections":["record delivery attempts acknowledgements and replay keys","redact schema SQL and ownership secrets","do not infer applied governance from Kafka delivery"]},
+    {"source_asset":"ads_meta_governance_ai_task_detail_2kafka","detail_line":6997,"profile":"metadata_observability","decision":"correct","corrections":["record stable task-version and delivery identities","separate recommendation delivery from accepted task change","retain retry acknowledgement and poison-message evidence"]},
+    {"source_asset":"ads_meta_governance_ai_task_detail_oss","detail_line":6448,"profile":"metadata_observability","decision":"correct","corrections":["store object digest source version and retention policy","exclude object-store credentials","separate upload completion from governance acceptance"]},
+    {"source_asset":"ads_meta_task_delay_2_hour_2kafka","detail_line":5028,"profile":"metadata_observability","decision":"correct","corrections":["bind two-hour threshold to approved schedule policy","compare ordered run observations in one timezone","record Kafka delivery attempt rather than alert resolution"]},
+    {"source_asset":"ads_meta_task_fail_2kafka","detail_line":4614,"profile":"metadata_observability","decision":"correct","corrections":["deduplicate failures by task run and incident key","retain error classification without leaking secrets","record alert delivery acknowledgement and retry"]},
+    {"source_asset":"ads_meta_task_restore_2kafka","detail_line":5656,"profile":"metadata_observability","decision":"correct","corrections":["pair restore with the exact prior incident","prevent restore replay from closing unrelated incidents","record delivery attempt separately from accepted recovery"]},
+    {"source_asset":"ads_meta_task_running_6_hour_2kafka","detail_line":4823,"profile":"metadata_observability","decision":"correct","corrections":["bind six-hour threshold to schedule version","distinguish running stalled retrying and missing heartbeat","record alert delivery rather than execution effect"]},
+    {"source_asset":"ads_meta_task_sla_delay_2kafka","detail_line":5245,"profile":"metadata_observability","decision":"correct","corrections":["version SLA timezone calendar and dependency policy","publish complete eligible SLA denominator","record Kafka acknowledgement without inferring remediation"]},
+    {"source_asset":"ads_meta_task_waiting_2kafka","detail_line":5457,"profile":"metadata_observability","decision":"correct","corrections":["distinguish not scheduled skipped waiting and missing execution","bind yesterday to declared business timezone","record delivery attempt and stable incident identity"]},
+    {"source_asset":"ads_monitor_discovery_indicator_2kafka_di","detail_line":2796,"profile":"monitoring_alert_delivery","decision":"correct","corrections":["record Kafka attempts acknowledgements retries and replay ids","bind payload to metric and alert-policy versions","never equate delivery with incident resolution"]},
+    {"source_asset":"ads_monitor_discovery_indicator_agnet_target","detail_line":2966,"profile":"monitoring_alert_delivery","decision":"correct","corrections":["retain agnet only as misspelled source alias and expose canonical agent naming","bind LLM summary to prompt model and metric versions","keep AI output advisory until accepted operation"]},
+    {"source_asset":"ads_monitor_discovery_indicator_di","detail_line":2428,"profile":"monitoring_alert_delivery","decision":"correct","corrections":["version metric SQL units threshold and owner","distinguish no-data stale query-error and threshold breach","preserve exact evaluation windows and observations"]},
+    {"source_asset":"ads_monitor_discovery_indicator_sql_content_di","detail_line":2672,"profile":"monitoring_alert_delivery","decision":"correct","corrections":["restrict SQL content and connection metadata","bind SQL digest to approved metric version","do not expose executable text in broad ADS access"]},
+    {"source_asset":"ads_operation_com_ai_blue_2kafka","detail_line":2145,"profile":"community_operations_metrics","decision":"correct","corrections":["isolate synthetic red-team actors from real-user metrics","record Kafka delivery attempts and replay ids","prevent payloads from triggering production moderation automatically"]},
+    {"source_asset":"ads_operation_com_ovewview_target","detail_line":1973,"profile":"community_operations_metrics","decision":"correct","corrections":["retain ovewview only as misspelled source alias and publish canonical overview naming","preaggregate content interaction moderation and active-user facts","publish exact denominator timezone and late-data policy"]},
+    {"source_asset":"ads_paimon_ai_token_model_target","detail_line":4565,"profile":"ai_usage_observability","decision":"correct","corrections":["check input output total token conservation","bind cost and quota to immutable PricingVersion and integer units","separate provider retry attempts from successful invocations"]},
+    {"source_asset":"ads_paimon_ai_token_user_profile","detail_line":4409,"profile":"ai_usage_observability","decision":"correct","corrections":["replace username joins with canonical Principal mapping","version usage features and exact windows","exclude credentials prompts responses and payment handles"]},
+    {"source_asset":"ads_risk_csr_ai_ticket_tatget","detail_line":1130,"profile":"risk_case_content_projection","decision":"correct","corrections":["retain tatget only as misspelled source alias and expose canonical target naming","bind AI output to model policy and ticket versions","never let AI metrics mutate ticket or Risk decisions"]},
+    {"source_asset":"ads_risk_csr_repay_buyer_content","detail_line":853,"profile":"risk_case_content_projection","decision":"reject","corrections":["honor the source document warning that this implementation is invalid","reject broad raw content and loss rows as an analytical authority","replace with redacted evidence references and complete case denominators"]},
+    {"source_asset":"ads_risk_csr_repay_buyer_tatget","detail_line":1046,"profile":"risk_case_content_projection","decision":"correct","corrections":["retain tatget only as misspelled source alias","publish exact buyer case and monetary denominators","separate Risk signal from refund compensation and loss effects"]},
+    {"source_asset":"ads_risk_csr_repay_seller_tatget","detail_line":1088,"profile":"risk_case_content_projection","decision":"correct","corrections":["retain tatget only as misspelled source alias","use canonical Merchant Shop and Principal mappings","separate Risk signal from settlement and compensation effects"]},
+    {"source_asset":"ads_risk_csr_ticket_all_content","detail_line":689,"profile":"risk_case_content_projection","decision":"correct","corrections":["replace broad raw content with restricted evidence references","bind merged signals to policy model and ticket versions","prevent content projection from becoming a Risk decision"]},
+    {"source_asset":"ads_risk_csr_ticket_keyword_content","detail_line":433,"profile":"risk_case_content_projection","decision":"correct","corrections":["version keyword dictionary language and policy","redact ticket content and actor identity","treat matches as signals rather than enforcement"]},
+    {"source_asset":"ads_risk_csr_ticket_ocr_content","detail_line":609,"profile":"risk_case_content_projection","decision":"correct","corrections":["bind OCR output to model and attachment digests","restrict extracted text and image identity","separate recognition confidence from accepted Risk decision"]},
+    {"source_asset":"ads_scm_effect_attribution_analysis_target","detail_line":7181,"profile":"supply_chain_efficiency","decision":"correct","corrections":["use stable physical-operation and milestone identities","separate correlation attribution and causal evidence","never change Inventory Warehouse or worker state"]},
+    {"source_asset":"ads_scm_effect_bpo_profile","detail_line":7332,"profile":"supply_chain_efficiency","decision":"correct","corrections":["map BPO workers through effective workforce assignments","exclude payroll legal and private contact fields","version performance features and eligible denominators"]},
+    {"source_asset":"ads_scm_quality_ai_effect_overview","detail_line":7445,"profile":"supply_chain_efficiency","decision":"correct","corrections":["publish AI eligible cases and accepted human-review denominators","bind model threshold category and policy versions","prevent metrics from directly changing quality or listing state"]},
+    {"source_asset":"ads_user_com_360_profile","detail_line":1831,"profile":"customer_profile_analytics","decision":"correct","corrections":["use pseudonymous canonical Principal and purpose-limited consent","version community features by event-time windows","exclude raw content private messages direct identifiers and devices"]},
+    {"source_asset":"ads_user_trade_360_profile","detail_line":1241,"profile":"customer_profile_analytics","decision":"correct","corrections":["currency-partition all monetary features in integer minor units","version order payment refund and benefit features by owning events","exclude direct identifiers addresses devices and payment handles"]},
+    {"source_asset":"ads_ux_cse_overview_target","detail_line":207,"profile":"customer_service_workforce_metrics","decision":"correct","corrections":["publish distinct ticket worker and queue denominators","derive durations from ordered immutable events","separate quality satisfaction productivity and workload measures"]},
+    {"source_asset":"ads_ux_cse_user_profile","detail_line":62,"profile":"customer_service_workforce_metrics","decision":"correct","corrections":["map workers through effective assignments not names","exclude payroll legal and private contact fields","prevent performance labels from becoming authorization or employment effects"]},
+    {"source_asset":"ads_ux_csr_ticket_overview_target","detail_line":801,"profile":"risk_case_content_projection","decision":"correct","corrections":["separate Customer Service workload from Risk signal and decision counts","publish complete ticket case and subject denominators","restrict content identity and relation evidence"]},
+    {"source_asset":"dwd_com_trend_detail_ri","detail_line":3256,"profile":"wrong_layer_operational_source","decision":"reject","corrections":["reject DWD realtime detail as an ADS output authority","retain immutable content signal event and schema lineage","derive only redacted purpose-limited ADS projections"]},
+    {"source_asset":"dwd_platform_intelligence_trend_ri","detail_line":3218,"profile":"wrong_layer_operational_source","decision":"reject","corrections":["reject DWD intelligence fact as an ADS output authority","retain event identity policy version and replay checkpoint","derive accepted redacted analytical projections only"]}
+  ],
+  "runtime_nonempty_reconciliation": {"gate_ref":"useful-scripts/yml/yshopping-lakehouse/tests/sql/26-canonical-metadata-contract.sql","evidence_ref":null,"run_id":null,"row_count":0,"tenant_count":0,"status":"missing"}
+}

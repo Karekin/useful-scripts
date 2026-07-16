@@ -66,6 +66,9 @@ DWS_DERIVED_SOURCE_DISPOSITIONS = (
 DIM_DERIVED_SOURCE_DISPOSITIONS = (
     ROOT / "contracts" / "yshopping-dim-derived-source-disposition-v1.json"
 )
+ADS_DERIVED_SOURCE_DISPOSITIONS = (
+    ROOT / "contracts" / "yshopping-ads-derived-source-disposition-v1.json"
+)
 ENGAGEMENT_SOURCE_DISPOSITIONS = (
     ROOT / "contracts" / "yshopping-engagement-source-disposition-v1.json"
 )
@@ -341,6 +344,12 @@ def load_dim_derived_source_dispositions(
     path: Path = DIM_DERIVED_SOURCE_DISPOSITIONS,
 ) -> dict[str, Any]:
     return _load_json_object(path, "DIM derived source dispositions")
+
+
+def load_ads_derived_source_dispositions(
+    path: Path = ADS_DERIVED_SOURCE_DISPOSITIONS,
+) -> dict[str, Any]:
+    return _load_json_object(path, "ADS derived source dispositions")
 
 
 def load_engagement_source_dispositions(
@@ -3780,6 +3789,184 @@ def dim_derived_disposition_status(
     }
 
 
+def validate_ads_derived_source_dispositions(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    """Validate purpose-limited ADS products and reject DWD objects as outputs."""
+    errors: list[str] = []
+    contract = contract or load_ads_derived_source_dispositions()
+    document = LAYER_DOCUMENTS["ADS"]
+    expected: dict[str, list[int]] = {}
+    for logical in inventory.get("logical_assets", []):
+        name = logical["normalized_name"]
+        if "candidate" not in logical.get("roles", []) or logical.get("source_domains"):
+            continue
+        lines: list[int] = []
+        for occurrence in logical.get("occurrences", []):
+            if occurrence.get("role") != "create_target" or occurrence.get("document") != document:
+                continue
+            try:
+                normalized = normalize_identifier(occurrence.get("qualified_name", ""))[1]
+            except SourceAssetError:
+                continue
+            if normalized == name:
+                lines.append(occurrence.get("line"))
+        if lines:
+            expected[name] = lines
+    ads_names = {name for name in expected if name.startswith("ads_")}
+    dwd_names = {name for name in expected if name.startswith("dwd_")}
+    expected_evidence = {
+        "same_name_ads_create": len(ads_names),
+        "wrong_layer_dwd_create": len(dwd_names),
+    }
+    scope = contract.get("source_scope")
+    if not isinstance(scope, dict) or scope.get("authoritative_document") != document:
+        errors.append("ADS derived source scope document differs")
+    elif scope.get("expected_asset_count") != len(expected) or len(expected) != 52:
+        errors.append("ADS derived source asset count differs")
+    elif expected_evidence != {"same_name_ads_create": 50, "wrong_layer_dwd_create": 2}:
+        errors.append("ADS derived observed evidence count differs")
+    elif scope.get("expected_source_evidence_counts") != expected_evidence:
+        errors.append("ADS derived evidence count differs")
+
+    policy = contract.get("verification_policy")
+    decisions: set[str] = set()
+    if not isinstance(policy, dict) or policy.get("empty_tables_are_evidence") is not False:
+        errors.append("ADS derived empty tables must not be evidence")
+    else:
+        decisions = set(policy.get("allowed_decisions") or [])
+        if decisions != {"derive", "correct", "reject"}:
+            errors.append("ADS derived allowed decisions differ")
+        for key in ("specified_definition", "verified_definition"):
+            if not isinstance(policy.get(key), str) or not policy[key].strip():
+                errors.append(f"ADS derived verification policy requires {key}")
+
+    profiles = contract.get("semantic_profiles")
+    expected_profiles = {
+        "customer_service_workforce_metrics", "risk_case_content_projection",
+        "customer_profile_analytics", "community_operations_metrics",
+        "monitoring_alert_delivery", "intelligence_signal_delivery",
+        "catalog_listing_attribution", "ai_usage_observability",
+        "metadata_observability", "supply_chain_efficiency",
+        "merchant_analytics", "wrong_layer_operational_source",
+    }
+    profile_fields = {
+        "canonical_entities", "grain", "metric_rules", "security", "authority",
+        "model_status",
+    }
+    if not isinstance(profiles, dict) or set(profiles) != expected_profiles:
+        errors.append(f"ADS derived profiles must define exactly {sorted(expected_profiles)}")
+        profiles = {}
+    for name, profile in profiles.items():
+        if not isinstance(profile, dict) or set(profile) != profile_fields:
+            errors.append(f"ADS derived profile {name} fields differ")
+            continue
+        if not _nonempty_strings(profile.get("canonical_entities")):
+            errors.append(f"ADS derived profile {name} requires canonical entities")
+        rules = profile.get("metric_rules")
+        if not _nonempty_strings(rules) or len(rules) < 6 or len(set(rules)) != len(rules):
+            errors.append(f"ADS derived profile {name} requires six unique metric rules")
+        for field in ("grain", "security", "authority"):
+            if not isinstance(profile.get(field), str) or not profile[field].strip():
+                errors.append(f"ADS derived profile {name} requires {field}")
+        if profile.get("model_status") not in {"partial", "missing", "rejected"}:
+            errors.append(f"ADS derived profile {name} has invalid model_status")
+
+    references = contract.get("implementation_refs")
+    if not isinstance(references, dict) or set(references) != {"backend_refs", "lakehouse_refs"}:
+        errors.append("ADS derived implementation references differ")
+    else:
+        for kind, values in references.items():
+            if not _nonempty_strings(values):
+                errors.append(f"ADS derived {kind} must contain references")
+                continue
+            for value in values:
+                reference_error = _contract_reference_error(value)
+                if reference_error:
+                    errors.append(f"ADS derived {kind} reference {value!r}: {reference_error}")
+
+    assets = contract.get("assets")
+    asset_fields = {"source_asset", "detail_line", "profile", "decision", "corrections"}
+    if not isinstance(assets, list):
+        return errors + ["ADS derived source dispositions require assets"]
+    seen: set[str] = set()
+    for index, asset in enumerate(assets):
+        label = f"ADS derived assets[{index}]"
+        if not isinstance(asset, dict) or set(asset) != asset_fields:
+            errors.append(f"{label}: fields differ")
+            continue
+        name = asset.get("source_asset")
+        if name in seen:
+            errors.append(f"{label}: duplicate source_asset {name}")
+        seen.add(name)
+        if name not in expected or asset.get("detail_line") not in expected.get(name, []):
+            errors.append(f"{label}: same-name ADS CREATE evidence differs for {name}")
+        if asset.get("profile") not in expected_profiles or asset.get("decision") not in decisions:
+            errors.append(f"{label}: invalid profile or decision")
+        corrections = asset.get("corrections")
+        if not _nonempty_strings(corrections) or len(corrections) < 3 or len(set(corrections)) != len(corrections):
+            errors.append(f"{label}: requires three unique corrections")
+        if isinstance(name, str) and name.startswith("dwd_"):
+            if asset.get("profile") != "wrong_layer_operational_source" or asset.get("decision") != "reject":
+                errors.append(f"{label}: wrong-layer DWD asset must be rejected as ADS authority")
+        elif asset.get("profile") == "wrong_layer_operational_source":
+            errors.append(f"{label}: only wrong-layer DWD assets may use source profile")
+    if seen != set(expected):
+        errors.append(
+            "ADS derived dispositions differ from same-name CREATE assets: "
+            f"missing={sorted(set(expected)-seen)}, extra={sorted(seen-set(expected))}"
+        )
+
+    runtime = contract.get("runtime_nonempty_reconciliation")
+    runtime_fields = {"gate_ref", "evidence_ref", "run_id", "row_count", "tenant_count", "status"}
+    if not isinstance(runtime, dict) or set(runtime) != runtime_fields:
+        errors.append("ADS derived runtime reconciliation fields differ")
+    elif runtime.get("status") != "missing" or runtime.get("row_count") != 0 or runtime.get("tenant_count") != 0 or runtime.get("evidence_ref") is not None or runtime.get("run_id") is not None:
+        errors.append("ADS derived runtime evidence must remain missing and empty")
+
+    by_name = {asset.get("source_asset"): asset for asset in assets if isinstance(asset, dict)}
+    invalid_content = by_name.get("ads_risk_csr_repay_buyer_content", {})
+    if invalid_content.get("decision") != "reject" or "source document warning" not in " ".join(invalid_content.get("corrections", [])):
+        errors.append("ADS invalid buyer-loss content implementation must remain rejected")
+    spelling_assets = {
+        "ads_monitor_discovery_indicator_agnet_target": "agnet",
+        "ads_operation_com_ovewview_target": "ovewview",
+        "ads_risk_csr_ai_ticket_tatget": "tatget",
+    }
+    for name, token in spelling_assets.items():
+        if token not in " ".join(by_name.get(name, {}).get("corrections", [])):
+            errors.append(f"ADS asset {name} must preserve misspelling as source alias only")
+    risk_rules = " ".join(profiles.get("risk_case_content_projection", {}).get("metric_rules", []))
+    if "raw ticket content" not in risk_rules or "integer minor units ISO currency" not in risk_rules:
+        errors.append("ADS Risk content must be restricted and money must be typed")
+    monitoring = " ".join(profiles.get("monitoring_alert_delivery", {}).get("metric_rules", []))
+    if "Kafka delivery records attempt acknowledgement and retry" not in monitoring:
+        errors.append("ADS monitoring must distinguish transport from effects")
+    profile_security = profiles.get("customer_profile_analytics", {}).get("security", "")
+    if "Direct identifiers" not in profile_security or "payment handles" not in profile_security:
+        errors.append("ADS customer profiles must exclude direct identifiers")
+    return errors
+
+
+def ads_derived_disposition_status(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    contract = contract or load_ads_derived_source_dispositions()
+    expected_count = contract.get("source_scope", {}).get("expected_asset_count", 0)
+    assets = contract.get("assets", []) if isinstance(contract, dict) else []
+    specified = len(assets) if isinstance(assets, list) else 0
+    denominator = expected_count or 1
+    return {
+        "ads_derived_source_asset_count": expected_count,
+        "ads_derived_detailed_disposition_specified_count": specified,
+        "ads_derived_runtime_nonempty_reconciled_count": 0,
+        "ads_derived_final_disposition_verified_count": 0,
+        "ads_derived_detailed_disposition_percent": round(specified * 100.0 / denominator, 2),
+        "ads_derived_runtime_nonempty_reconciled_percent": 0.0,
+        "ads_derived_final_disposition_verified_percent": 0.0,
+    }
+
+
 def validate_engagement_source_dispositions(
     inventory: dict[str, Any], contract: dict[str, Any] | None = None
 ) -> list[str]:
@@ -5244,6 +5431,7 @@ def disposition_status(
     activity_status = activity_disposition_status(inventory)
     dws_derived_status = dws_derived_disposition_status(inventory)
     dim_derived_status = dim_derived_disposition_status(inventory)
+    ads_derived_status = ads_derived_disposition_status(inventory)
     engagement_status = engagement_disposition_status(inventory)
     compensation_status = compensation_disposition_status(inventory)
     ticket_status = ticket_disposition_status(inventory)
@@ -5263,6 +5451,7 @@ def disposition_status(
         + activity_status["activity_detailed_disposition_specified_count"]
         + dws_derived_status["dws_derived_detailed_disposition_specified_count"]
         + dim_derived_status["dim_derived_detailed_disposition_specified_count"]
+        + ads_derived_status["ads_derived_detailed_disposition_specified_count"]
         + engagement_status["engagement_detailed_disposition_specified_count"]
         + compensation_status["compensation_detailed_disposition_specified_count"]
         + ticket_status["ticket_detailed_disposition_specified_count"]
@@ -5283,6 +5472,7 @@ def disposition_status(
         + activity_status["activity_runtime_nonempty_reconciled_count"]
         + dws_derived_status["dws_derived_runtime_nonempty_reconciled_count"]
         + dim_derived_status["dim_derived_runtime_nonempty_reconciled_count"]
+        + ads_derived_status["ads_derived_runtime_nonempty_reconciled_count"]
         + engagement_status["engagement_runtime_nonempty_reconciled_count"]
         + compensation_status["compensation_runtime_nonempty_reconciled_count"]
         + ticket_status["ticket_runtime_nonempty_reconciled_count"]
@@ -5303,6 +5493,7 @@ def disposition_status(
         + activity_status["activity_final_disposition_verified_count"]
         + dws_derived_status["dws_derived_final_disposition_verified_count"]
         + dim_derived_status["dim_derived_final_disposition_verified_count"]
+        + ads_derived_status["ads_derived_final_disposition_verified_count"]
         + engagement_status["engagement_final_disposition_verified_count"]
         + compensation_status["compensation_final_disposition_verified_count"]
         + ticket_status["ticket_final_disposition_verified_count"]
@@ -5353,6 +5544,7 @@ def disposition_status(
         **activity_status,
         **dws_derived_status,
         **dim_derived_status,
+        **ads_derived_status,
         **engagement_status,
         **compensation_status,
         **ticket_status,
@@ -5492,6 +5684,9 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"dim_derived={status['dim_derived_detailed_disposition_specified_count']}/"
         f"{status['dim_derived_source_asset_count']} "
         f"({status['dim_derived_detailed_disposition_percent']:.2f}%); "
+        f"ads_derived={status['ads_derived_detailed_disposition_specified_count']}/"
+        f"{status['ads_derived_source_asset_count']} "
+        f"({status['ads_derived_detailed_disposition_percent']:.2f}%); "
         f"engagement={status['engagement_detailed_disposition_specified_count']}/"
         f"{status['engagement_source_asset_count']} "
         f"({status['engagement_detailed_disposition_percent']:.2f}%); "
@@ -5551,6 +5746,9 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"dim_derived={status['dim_derived_runtime_nonempty_reconciled_count']}/"
         f"{status['dim_derived_source_asset_count']} "
         f"({status['dim_derived_runtime_nonempty_reconciled_percent']:.2f}%); "
+        f"ads_derived={status['ads_derived_runtime_nonempty_reconciled_count']}/"
+        f"{status['ads_derived_source_asset_count']} "
+        f"({status['ads_derived_runtime_nonempty_reconciled_percent']:.2f}%); "
         f"engagement={status['engagement_runtime_nonempty_reconciled_count']}/"
         f"{status['engagement_source_asset_count']} "
         f"({status['engagement_runtime_nonempty_reconciled_percent']:.2f}%); "
@@ -5598,6 +5796,8 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"{status['dws_derived_source_asset_count']}, "
         f"dim_derived={status['dim_derived_final_disposition_verified_count']}/"
         f"{status['dim_derived_source_asset_count']}, "
+        f"ads_derived={status['ads_derived_final_disposition_verified_count']}/"
+        f"{status['ads_derived_source_asset_count']}, "
         f"engagement={status['engagement_final_disposition_verified_count']}/"
         f"{status['engagement_source_asset_count']}, "
         f"compensation={status['compensation_final_disposition_verified_count']}/"
@@ -5637,6 +5837,7 @@ def main() -> int:
     errors.extend(validate_activity_source_schema_request(inventory))
     errors.extend(validate_dws_derived_source_dispositions(inventory))
     errors.extend(validate_dim_derived_source_dispositions(inventory))
+    errors.extend(validate_ads_derived_source_dispositions(inventory))
     errors.extend(validate_engagement_source_dispositions(inventory))
     errors.extend(validate_compensation_source_dispositions(inventory))
     errors.extend(validate_ticket_source_dispositions(inventory))

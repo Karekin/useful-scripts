@@ -158,6 +158,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_activity_source_schema_request(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_dws_derived_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_dim_derived_source_dispositions(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_ads_derived_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_engagement_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_compensation_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_ticket_source_dispositions(self.inventory))
@@ -276,12 +277,12 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual(110, status["bounded_domain_asset_count"])
         self.assertEqual(6, status["explicit_rejection_count"])
         self.assertEqual(718, status["preliminary_handled_count"])
-        self.assertEqual(219, status["detailed_disposition_specified_count"])
+        self.assertEqual(271, status["detailed_disposition_specified_count"])
         self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
         self.assertEqual(99.16, status["routing_percent"])
         self.assertEqual(100.0, status["preliminary_handled_percent"])
-        self.assertEqual(30.5, status["detailed_disposition_specified_percent"])
+        self.assertEqual(37.74, status["detailed_disposition_specified_percent"])
         self.assertEqual(0.0, status["runtime_nonempty_reconciled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
         self.assertIn(
@@ -317,6 +318,8 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertTrue(any("dws_derived=0/17 (0.00%)" in line for line in lines))
         self.assertTrue(any("dim_derived=43/43 (100.00%)" in line for line in lines))
         self.assertTrue(any("dim_derived=0/43 (0.00%)" in line for line in lines))
+        self.assertTrue(any("ads_derived=52/52 (100.00%)" in line for line in lines))
+        self.assertTrue(any("ads_derived=0/52 (0.00%)" in line for line in lines))
         self.assertTrue(any("engagement=4/4 (100.00%)" in line for line in lines))
         self.assertTrue(any("engagement=0/4 (0.00%)" in line for line in lines))
         self.assertTrue(any("compensation=1/3 (33.33%)" in line for line in lines))
@@ -1721,6 +1724,75 @@ class SourceAssetCtlTest(unittest.TestCase):
 
     def test_all_dim_derived_implementation_references_resolve(self):
         contract = SOURCE_ASSETS.load_dim_derived_source_dispositions()
+        references = [
+            reference
+            for values in contract["implementation_refs"].values()
+            for reference in values
+        ]
+        references.append(contract["runtime_nonempty_reconciliation"]["gate_ref"])
+        self.assertEqual(
+            [],
+            [
+                (reference, SOURCE_ASSETS._contract_reference_error(reference))
+                for reference in references
+                if SOURCE_ASSETS._contract_reference_error(reference)
+            ],
+        )
+
+    def test_ads_derived_dispositions_cover_exact_50_products_and_2_wrong_layer_facts(self):
+        contract = SOURCE_ASSETS.load_ads_derived_source_dispositions()
+        names = {asset["source_asset"] for asset in contract["assets"]}
+        self.assertEqual(52, len(names))
+        self.assertEqual(50, sum(name.startswith("ads_") for name in names))
+        self.assertEqual(
+            {"dwd_com_trend_detail_ri", "dwd_platform_intelligence_trend_ri"},
+            {name for name in names if name.startswith("dwd_")},
+        )
+        self.assertEqual([], SOURCE_ASSETS.validate_ads_derived_source_dispositions(self.inventory))
+
+    def test_ads_derived_profiles_separate_content_transport_ai_and_business_authority(self):
+        contract = SOURCE_ASSETS.load_ads_derived_source_dispositions()
+        by_name = {asset["source_asset"]: asset for asset in contract["assets"]}
+        profiles = contract["semantic_profiles"]
+        self.assertEqual("reject", by_name["ads_risk_csr_repay_buyer_content"]["decision"])
+        self.assertIn("tatget", " ".join(by_name["ads_risk_csr_ai_ticket_tatget"]["corrections"]))
+        self.assertIn("ovewview", " ".join(by_name["ads_operation_com_ovewview_target"]["corrections"]))
+        self.assertIn("Kafka delivery records attempt acknowledgement and retry", " ".join(profiles["monitoring_alert_delivery"]["metric_rules"]))
+        self.assertIn("raw ticket content", " ".join(profiles["risk_case_content_projection"]["metric_rules"]))
+        self.assertIn("Direct identifiers", profiles["customer_profile_analytics"]["security"])
+
+    def test_ads_derived_status_credits_definition_not_runtime_or_final(self):
+        status = SOURCE_ASSETS.ads_derived_disposition_status(self.inventory)
+        self.assertEqual(52, status["ads_derived_source_asset_count"])
+        self.assertEqual(52, status["ads_derived_detailed_disposition_specified_count"])
+        self.assertEqual(100.0, status["ads_derived_detailed_disposition_percent"])
+        self.assertEqual(0, status["ads_derived_runtime_nonempty_reconciled_count"])
+        self.assertEqual(0, status["ads_derived_final_disposition_verified_count"])
+
+    def test_ads_derived_dispositions_reject_missing_duplicate_weakened_and_create_drift(self):
+        contract = SOURCE_ASSETS.load_ads_derived_source_dispositions()
+        missing = json.loads(json.dumps(contract))
+        missing["assets"].pop()
+        errors = SOURCE_ASSETS.validate_ads_derived_source_dispositions(self.inventory, missing)
+        self.assertTrue(any("differ from same-name CREATE" in error for error in errors))
+
+        duplicate = json.loads(json.dumps(contract))
+        duplicate["assets"][1] = json.loads(json.dumps(duplicate["assets"][0]))
+        errors = SOURCE_ASSETS.validate_ads_derived_source_dispositions(self.inventory, duplicate)
+        self.assertTrue(any("duplicate source_asset" in error for error in errors))
+
+        weakened = json.loads(json.dumps(contract))
+        weakened["assets"][-1]["decision"] = "derive"
+        errors = SOURCE_ASSETS.validate_ads_derived_source_dispositions(self.inventory, weakened)
+        self.assertTrue(any("wrong-layer DWD asset must be rejected" in error for error in errors))
+
+        drifted = json.loads(json.dumps(contract))
+        drifted["assets"][0]["detail_line"] = 4359
+        errors = SOURCE_ASSETS.validate_ads_derived_source_dispositions(self.inventory, drifted)
+        self.assertTrue(any("CREATE evidence differs" in error for error in errors))
+
+    def test_all_ads_derived_implementation_references_resolve(self):
+        contract = SOURCE_ASSETS.load_ads_derived_source_dispositions()
         references = [
             reference
             for values in contract["implementation_refs"].values()
