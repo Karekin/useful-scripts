@@ -13,12 +13,22 @@ class LakehouseCtlContractTest(unittest.TestCase):
     def test_usage_registers_master_data_reconciliation_commands(self):
         result = self.run_ctl()
         self.assertEqual(result.returncode, 2)
+        self.assertIn("reconcile-canonical-order-benefit", result.stdout)
         self.assertIn("reconcile-canonical-merchant", result.stdout)
         self.assertIn("reconcile-canonical-merchant-deposit", result.stdout)
         self.assertIn("reconcile-canonical-warehouse-network", result.stdout)
         self.assertIn("reconcile-canonical-listing-unpublish-saga", result.stdout)
         self.assertIn("reconcile-canonical-inventory-migration", result.stdout)
         self.assertIn("submit-legacy-mall-cdc", result.stdout)
+
+    def test_order_benefit_reconciliation_requires_nonempty_conserved_evidence(self):
+        script = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn('"$applications" =~ ^[1-9][0-9]*$', script)
+        self.assertIn('"$header_discount" == "$application_amount"', script)
+        self.assertIn('"$application_amount" == "$allocation_amount"', script)
+        self.assertIn('"$allocation_amount" == "$funding_amount"', script)
+        self.assertIn('"$funding_amount" == "$item_discount"', script)
+        self.assertIn('"$readiness" == "RECONCILED"', script)
 
     def test_merchant_reconciliation_rejects_non_uuid_before_querying(self):
         result = self.run_ctl(

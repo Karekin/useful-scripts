@@ -6,7 +6,7 @@ COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
 STARROCKS_CONTAINER=${STARROCKS_CONTAINER:-yshopping-starrocks}
 
 usage() {
-  echo "usage: lakehousectl {config-check|contract-test|source-assets|source-disposition-status|semantic-status|start|submit-cdc|submit-catalog-cdc|submit-legacy-mall-cdc|submit-event-cdc|apply-models|health|test|reconcile|reconcile-canonical-inventory|reconcile-canonical-inventory-lot|reconcile-canonical-inventory-migration|reconcile-canonical-catalog|reconcile-canonical-commerce|reconcile-canonical-commerce-v2|reconcile-canonical-cancellation-saga|reconcile-canonical-paid-cancellation-saga|reconcile-canonical-aftersales|reconcile-canonical-listing-unpublish-saga|reconcile-canonical-merchant|reconcile-canonical-merchant-deposit|reconcile-canonical-warehouse-network} [--tenant ID] [--run-id ID] [--saga-id UUID] [--merchant-id UUID] [--warehouse-id UUID] [--source-system CODE] [--source-type CODE] [--source-id ID]"
+  echo "usage: lakehousectl {config-check|contract-test|source-assets|source-disposition-status|semantic-status|start|submit-cdc|submit-catalog-cdc|submit-legacy-mall-cdc|submit-event-cdc|apply-models|health|test|reconcile|reconcile-canonical-inventory|reconcile-canonical-inventory-lot|reconcile-canonical-inventory-migration|reconcile-canonical-catalog|reconcile-canonical-commerce|reconcile-canonical-commerce-v2|reconcile-canonical-order-benefit|reconcile-canonical-cancellation-saga|reconcile-canonical-paid-cancellation-saga|reconcile-canonical-aftersales|reconcile-canonical-listing-unpublish-saga|reconcile-canonical-merchant|reconcile-canonical-merchant-deposit|reconcile-canonical-warehouse-network} [--tenant ID] [--run-id ID] [--saga-id UUID] [--merchant-id UUID] [--warehouse-id UUID] [--source-system CODE] [--source-type CODE] [--source-id ID]"
 }
 
 sql() {
@@ -399,6 +399,46 @@ case "$COMMAND" in
        && "$fulfillment_items" == "$items" && "$fulfillment_links" == "$items" \
        && "$inventory_events" == "4" && "$readiness" == "RECONCILED" ]] || {
       echo "canonical commerce v2 reconciliation failed" >&2
+      exit 1
+    }
+    run_tests
+    ;;
+  reconcile-canonical-order-benefit)
+    test -n "$TENANT_ID" || { echo "--tenant is required" >&2; exit 2; }
+    test -n "$RUN_ID" || { echo "--run-id is required" >&2; exit 2; }
+    require_running
+    safe_run_id=${RUN_ID//\'/\'\'}
+    result=$(sql --skip-column-names -e "
+      SELECT application_count, allocation_count, item_count,
+             header_discount_amount_minor, application_amount_minor,
+             allocation_amount_minor, funding_amount_minor,
+             gross_amount_minor, item_discount_amount_minor, net_amount_minor,
+             application_allocation_mismatch_count,
+             allocation_funding_mismatch_count, mutable_application_count,
+             item_funding_mismatch_count, item_money_mismatch_count,
+             readiness_status, evidence_semantics
+      FROM yshopping_ads.ads_canonical_order_benefit_readiness
+      WHERE tenant_id=$TENANT_ID AND run_id='$safe_run_id';")
+    require_single_row "$result" "canonical Order Benefit reconciliation"
+    echo -e "applications\tallocations\titems\theader_discount\tapplication_amount\tallocation_amount\tfunding_amount\tgross\titem_discount\tnet\tapplication_allocation_mismatches\tallocation_funding_mismatches\tmutable_applications\titem_funding_mismatches\titem_money_mismatches\treadiness\tevidence_semantics"
+    echo "$result"
+    read -r applications allocations items header_discount application_amount allocation_amount \
+      funding_amount gross item_discount net application_allocation_mismatches \
+      allocation_funding_mismatches mutable_applications item_funding_mismatches \
+      item_money_mismatches readiness evidence_semantics <<< "$result"
+    [[ "$applications" =~ ^[1-9][0-9]*$ && "$allocations" =~ ^[1-9][0-9]*$ \
+       && "$items" =~ ^[1-9][0-9]*$ \
+       && "$header_discount" == "$application_amount" \
+       && "$application_amount" == "$allocation_amount" \
+       && "$allocation_amount" == "$funding_amount" \
+       && "$funding_amount" == "$item_discount" \
+       && "$gross" == "$((item_discount + net))" \
+       && "$application_allocation_mismatches" == "0" \
+       && "$allocation_funding_mismatches" == "0" && "$mutable_applications" == "0" \
+       && "$item_funding_mismatches" == "0" && "$item_money_mismatches" == "0" \
+       && "$readiness" == "RECONCILED" \
+       && "$evidence_semantics" == "NONEMPTY_IMMUTABLE_ORDER_BENEFIT_V1" ]] || {
+      echo "canonical Order Benefit reconciliation failed" >&2
       exit 1
     }
     run_tests
