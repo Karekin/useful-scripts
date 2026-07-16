@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ALIGNMENT_MANIFEST = ROOT / "contracts" / "yshopping-model-alignment-v1.json"
 SOURCE_DOMAIN_POLICY = ROOT / "contracts" / "yshopping-source-domain-policy-v1.json"
 SOURCE_ASSET_ROUTES = ROOT / "contracts" / "yshopping-source-asset-routes-v1.json"
+GAME_SOURCE_DISPOSITIONS = ROOT / "contracts" / "yshopping-game-source-disposition-v1.json"
 DEFAULT_REFERENCE_ROOT = Path(
     "/Users/karekin/Library/Mobile Documents/iCloud~md~obsidian/Documents/project/"
     "语兴好物（y shopping）-电商数仓搭建"
@@ -134,6 +135,16 @@ def load_source_asset_routes(path: Path = SOURCE_ASSET_ROUTES) -> dict[str, Any]
         value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise SourceAssetError(f"cannot load source asset routes {path}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise SourceAssetError(f"{path}: root must be an object")
+    return value
+
+
+def load_game_source_dispositions(path: Path = GAME_SOURCE_DISPOSITIONS) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SourceAssetError(f"cannot load game source dispositions {path}: {exc}") from exc
     if not isinstance(value, dict):
         raise SourceAssetError(f"{path}: root must be an object")
     return value
@@ -706,6 +717,329 @@ def validate_source_asset_routes(
     return errors
 
 
+def authoritative_ods_domain_assets(
+    inventory: dict[str, Any], domain: str
+) -> dict[str, dict[str, Any]]:
+    """Return only rows explicitly named by the authoritative ODS overview.
+
+    Inferred heading lineage and manual routing are deliberately excluded: they
+    are useful for broad routing, but cannot silently expand or shrink a locked
+    source-domain disposition contract.
+    """
+    result: dict[str, dict[str, Any]] = {}
+    for item in inventory.get("logical_assets", []):
+        if "candidate" not in item.get("roles", []):
+            continue
+        occurrences = [
+            occurrence
+            for occurrence in item.get("occurrences", [])
+            if occurrence.get("role") == "candidate"
+            and occurrence.get("source_domain") == domain
+        ]
+        if not occurrences:
+            continue
+        result[item["normalized_name"]] = {
+            "source_asset": item["normalized_name"],
+            "source_labels": sorted(
+                {
+                    occurrence["source_label"]
+                    for occurrence in occurrences
+                    if occurrence.get("source_label")
+                }
+            ),
+            "anchors": sorted(
+                {
+                    (occurrence["document"], occurrence["line"])
+                    for occurrence in occurrences
+                }
+            ),
+        }
+    return result
+
+
+def _nonempty_strings(value: Any) -> bool:
+    return (
+        isinstance(value, list)
+        and bool(value)
+        and all(isinstance(item, str) and item.strip() for item in value)
+    )
+
+
+def _resolve_contract_reference(value: str) -> Path:
+    path = Path(value.split("#", 1)[0])
+    if path.is_absolute():
+        return path
+    workspace_path = ROOT.parents[2] / path
+    return workspace_path if workspace_path.exists() else ROOT / path
+
+
+def _runtime_reconciliation_verified(value: Any) -> bool:
+    evidence_ref = value.get("evidence_ref") if isinstance(value, dict) else None
+    evidence_path: Path | None = None
+    if isinstance(evidence_ref, str) and evidence_ref.strip():
+        evidence_path = _resolve_contract_reference(evidence_ref)
+    return (
+        isinstance(value, dict)
+        and value.get("status") == "verified"
+        and evidence_path is not None
+        and evidence_path.is_file()
+        and evidence_path.stat().st_size > 0
+        and isinstance(value.get("run_id"), str)
+        and bool(value["run_id"].strip())
+        and isinstance(value.get("row_count"), int)
+        and not isinstance(value.get("row_count"), bool)
+        and value["row_count"] > 0
+        and isinstance(value.get("tenant_count"), int)
+        and not isinstance(value.get("tenant_count"), bool)
+        and value["tenant_count"] > 0
+    )
+
+
+def validate_game_source_dispositions(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    errors: list[str] = []
+    contract = contract or load_game_source_dispositions()
+    expected = authoritative_ods_domain_assets(inventory, "游戏")
+    scope = contract.get("source_scope")
+    if not isinstance(scope, dict):
+        return ["game source dispositions requires source_scope"]
+    if scope.get("domain") != "游戏":
+        errors.append("game source dispositions source_scope.domain must be 游戏")
+    if scope.get("expected_asset_count") != len(expected):
+        errors.append(
+            "game source dispositions expected_asset_count differs from ODS overview: "
+            f"contract={scope.get('expected_asset_count')}, observed={len(expected)}"
+        )
+    for name, source in expected.items():
+        if len(source["anchors"]) != 1 or len(source["source_labels"]) != 1:
+            errors.append(
+                f"authoritative ODS 游戏 asset {name} must occur exactly once with one label: "
+                f"anchors={source['anchors']!r}, labels={source['source_labels']!r}"
+            )
+    if not isinstance(scope.get("source_detail_limit"), str) or not scope["source_detail_limit"].strip():
+        errors.append("game source dispositions must state the source detail limit")
+
+    policy = contract.get("verification_policy")
+    if not isinstance(policy, dict):
+        return errors + ["game source dispositions requires verification_policy"]
+    allowed_decisions = policy.get("allowed_decisions")
+    runtime_statuses = policy.get("runtime_statuses")
+    if set(allowed_decisions or []) != {"reuse", "merge", "split", "derive", "correct", "reject"}:
+        errors.append("game source dispositions has an invalid decision vocabulary")
+    if set(runtime_statuses or []) != {"missing", "pending", "verified"}:
+        errors.append("game source dispositions has an invalid runtime status vocabulary")
+    if policy.get("empty_tables_are_evidence") is not False:
+        errors.append("game source dispositions must reject empty tables as evidence")
+
+    assets = contract.get("assets")
+    if not isinstance(assets, list):
+        return errors + ["game source dispositions requires assets"]
+    seen: set[str] = set()
+    actual: set[str] = set()
+    required_field_rules = {
+        "tenant", "business_key", "time", "status", "quantity", "currency_boundary"
+    }
+    for index, asset in enumerate(assets):
+        label = f"game source dispositions assets[{index}]"
+        if not isinstance(asset, dict):
+            errors.append(f"{label}: must be an object")
+            continue
+        name = asset.get("source_asset")
+        if not isinstance(name, str) or not name:
+            errors.append(f"{label}: requires source_asset")
+            continue
+        if name in seen:
+            errors.append(f"{label}: duplicate source_asset {name}")
+        seen.add(name)
+        actual.add(name)
+        observed = expected.get(name)
+        if observed is None:
+            errors.append(f"{label}: not an authoritative ODS 游戏 asset: {name}")
+        else:
+            if [asset.get("source_label")] != observed["source_labels"]:
+                errors.append(
+                    f"{label}: source label differs from ODS overview for {name}: "
+                    f"contract={asset.get('source_label')!r}, observed={observed['source_labels']!r}"
+                )
+            anchor = asset.get("source_anchor")
+            actual_anchor = (
+                anchor.get("document"), anchor.get("line")
+            ) if isinstance(anchor, dict) else None
+            if actual_anchor not in observed["anchors"]:
+                errors.append(
+                    f"{label}: source anchor differs from ODS overview for {name}: "
+                    f"contract={actual_anchor!r}, observed={observed['anchors']!r}"
+                )
+        if not isinstance(asset.get("source_grain"), str) or not asset["source_grain"].strip():
+            errors.append(f"{label}: requires source_grain")
+        if asset.get("decision") not in set(allowed_decisions or []):
+            errors.append(f"{label}: invalid decision {asset.get('decision')!r}")
+        for key in ("canonical_entities", "canonical_targets", "corrections"):
+            if not _nonempty_strings(asset.get(key)):
+                errors.append(f"{label}: requires non-empty {key}")
+        if not isinstance(asset.get("sor_owner"), str) or not asset["sor_owner"].strip():
+            errors.append(f"{label}: requires sor_owner")
+        field_rules = asset.get("field_rules")
+        if not isinstance(field_rules, dict) or set(field_rules) != required_field_rules:
+            errors.append(f"{label}: field_rules must define exactly {sorted(required_field_rules)}")
+        elif any(not isinstance(value, str) or not value.strip() for value in field_rules.values()):
+            errors.append(f"{label}: field_rules values must be non-empty strings")
+        for key in ("history_policy", "delete_policy", "backfill_policy"):
+            if not isinstance(asset.get(key), str) or not asset[key].strip():
+                errors.append(f"{label}: requires {key}")
+        if not _nonempty_strings(asset.get("backend_refs")):
+            errors.append(f"{label}: requires backend_refs")
+        else:
+            for reference in asset["backend_refs"]:
+                if not _resolve_contract_reference(reference).is_file():
+                    errors.append(f"{label}: missing backend ref {reference}")
+        if not _nonempty_strings(asset.get("lakehouse_refs")):
+            errors.append(f"{label}: requires lakehouse_refs")
+        else:
+            for reference in asset["lakehouse_refs"]:
+                if not _resolve_contract_reference(reference).is_file():
+                    errors.append(f"{label}: missing lakehouse ref {reference}")
+        runtime = asset.get("runtime_nonempty_reconciliation")
+        if not isinstance(runtime, dict):
+            errors.append(f"{label}: requires runtime_nonempty_reconciliation")
+        else:
+            if runtime.get("status") not in set(runtime_statuses or []):
+                errors.append(f"{label}: invalid runtime reconciliation status")
+            if not isinstance(runtime.get("gate_ref"), str) or not runtime["gate_ref"].strip():
+                errors.append(f"{label}: runtime reconciliation requires gate_ref")
+            for count_key in ("row_count", "tenant_count"):
+                count = runtime.get(count_key)
+                if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+                    errors.append(f"{label}: {count_key} must be a non-negative integer")
+            if runtime.get("status") == "verified" and not _runtime_reconciliation_verified(runtime):
+                errors.append(
+                    f"{label}: verified runtime reconciliation requires durable evidence, "
+                    "run id, and positive row/tenant counts"
+                )
+        if asset.get("specification_status") != "specified":
+            errors.append(f"{label}: specification_status must be specified")
+        if asset.get("verification_status") not in {"unverified", "verified"}:
+            errors.append(f"{label}: invalid verification_status")
+        if asset.get("verification_status") == "verified" and not _runtime_reconciliation_verified(runtime):
+            errors.append(
+                f"{label}: final verification is forbidden without non-empty runtime reconciliation"
+            )
+
+    if actual != set(expected):
+        errors.append(
+            "game source dispositions differ from authoritative ODS overview: "
+            f"missing={sorted(set(expected) - actual)}, extra={sorted(actual - set(expected))}"
+        )
+
+    required_design = {
+        "ods_eliminate_user_coin_log_df": ("merge", "VirtualCurrencyLedgerEntry"),
+        "ods_card_mall_coin_log_df": ("merge", "RedemptionIntent"),
+        "ods_eliminate_mall_coin_log_df": ("merge", "RedemptionIntent"),
+        "ods_factory_mall_coin_log_df": ("correct", "RedemptionIntent"),
+        "ods_factory_user_coin_log_df": ("merge", "VirtualCurrencyLedgerEntry"),
+        "ods_fortune_user_chip_detail_df": ("merge", "FragmentLedgerEntry"),
+        "ods_fortune_season_series_df": ("split", "SeasonVersion"),
+        "ods_fortune_gk_df": ("split", "CollectibleOwnership"),
+        "ods_hacking_card_prod_ri": ("split", "DrawResult"),
+        "ods_yshopping_growth_brainstorm_bst_game_round_di": ("reuse", "Round"),
+        "ods_yshopping_growth_brainstorm_bst_friendship_df": ("reuse", "AssistRecord"),
+        "ods_yshopping_newbie_aurora_user_task_complete_record_df": ("reuse", "TaskProgress"),
+        "ods_fortune_user_gk_exchange_df": ("split", "RedemptionIntent"),
+        "ods_fortune_gk_lottery_record_df": ("split", "DrawResult"),
+        "ods_yshopping_hacking_world_users_df": ("split", "SourceIdentity"),
+        "ods_yshopping_hacking_world_rank_currency_df": ("derive", "Leaderboard"),
+        "ods_yshopping_hacking_world_rank_gift_df": ("derive", "Leaderboard"),
+        "ods_yshopping_hacking_world_gift_send_record_df": ("reuse", "GiftTransfer"),
+        "ods_yshopping_hacking_world_user_receive_record_df": ("split", "RewardClaim"),
+    }
+    by_name = {
+        asset.get("source_asset"): asset for asset in assets if isinstance(asset, dict)
+    }
+    for name, (decision, entity_fragment) in required_design.items():
+        asset = by_name.get(name)
+        if asset is None:
+            continue
+        if asset.get("decision") != decision:
+            errors.append(f"game source disposition {name}: decision must be {decision}")
+        if not any(entity_fragment in entity for entity in asset.get("canonical_entities", [])):
+            errors.append(
+                f"game source disposition {name}: canonical entities must include {entity_fragment}"
+            )
+    for name in (
+        "ods_card_mall_coin_log_df",
+        "ods_eliminate_mall_coin_log_df",
+        "ods_factory_mall_coin_log_df",
+    ):
+        asset = by_name.get(name, {})
+        boundary = asset.get("field_rules", {}).get("currency_boundary", "")
+        status_rule = asset.get("field_rules", {}).get("status", "")
+        quantity_rule = asset.get("field_rules", {}).get("quantity", "")
+        entities = asset.get("canonical_entities", [])
+        if "gamification.VirtualCurrencyTransaction" not in entities:
+            errors.append(f"game source disposition {name}: must link a game-currency transaction")
+        if any("Collectible" in entity for entity in entities):
+            errors.append(f"game source disposition {name}: mall coin log cannot use collectible mode")
+        if (
+            "GAME_VIRTUAL_CURRENCY" not in boundary
+            or "mall balance" not in boundary
+            or "never" not in boundary
+        ):
+            errors.append(
+                f"game source disposition {name}: must use GAME_VIRTUAL_CURRENCY and fence mall balance ownership"
+            )
+        if "PENDING/SUCCEEDED/REJECTED" not in status_rule or "FAILED" in status_rule:
+            errors.append(
+                f"game source disposition {name}: redemption statuses must be PENDING/SUCCEEDED/REJECTED"
+            )
+        if (
+            "amount_microunits" not in quantity_rule
+            or "GAME_COIN_*" not in quantity_rule
+            or "mall-side" not in quantity_rule
+        ):
+            errors.append(
+                f"game source disposition {name}: amount must be the internal game-currency debit only"
+            )
+    for name in (
+        "ods_yshopping_hacking_world_rank_currency_df",
+        "ods_yshopping_hacking_world_rank_gift_df",
+    ):
+        asset = by_name.get(name, {})
+        if not all("leaderboard" not in ref.lower() or "README.md" in ref for ref in asset.get("backend_refs", [])):
+            errors.append(f"game source disposition {name}: leaderboard cannot have a backend write-model ref")
+    return errors
+
+
+def game_disposition_status(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    contract = contract or load_game_source_dispositions()
+    expected_count = len(authoritative_ods_domain_assets(inventory, "游戏"))
+    assets = contract.get("assets", []) if isinstance(contract, dict) else []
+    specified = [
+        asset for asset in assets
+        if isinstance(asset, dict) and asset.get("specification_status") == "specified"
+    ]
+    reconciled = [
+        asset for asset in assets
+        if isinstance(asset, dict)
+        and _runtime_reconciliation_verified(asset.get("runtime_nonempty_reconciliation"))
+    ]
+    verified = [
+        asset for asset in reconciled if asset.get("verification_status") == "verified"
+    ]
+    denominator = expected_count or 1
+    return {
+        "game_source_asset_count": expected_count,
+        "game_detailed_disposition_specified_count": len(specified),
+        "game_runtime_nonempty_reconciled_count": len(reconciled),
+        "game_final_disposition_verified_count": len(verified),
+        "game_detailed_disposition_percent": round(len(specified) * 100.0 / denominator, 2),
+        "game_runtime_nonempty_reconciled_percent": round(len(reconciled) * 100.0 / denominator, 2),
+        "game_final_disposition_verified_percent": round(len(verified) * 100.0 / denominator, 2),
+    }
+
+
 def disposition_status(
     inventory: dict[str, Any], policy: dict[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -741,6 +1075,7 @@ def disposition_status(
     ]
     candidate_count = inventory["summary"]["unique_by_kind"]["candidate"]
     preliminary_count = len(routed) + len(rejected)
+    game_status = game_disposition_status(inventory)
     return {
         "candidate_asset_count": candidate_count,
         "authoritative_ods_overview_asset_count": len(source_assets),
@@ -758,10 +1093,30 @@ def disposition_status(
         "bounded_domain_asset_count": len(bounded),
         "explicit_rejection_count": len(rejected),
         "preliminary_handled_count": preliminary_count,
-        "final_disposition_verified_count": 0,
+        "detailed_disposition_specified_count": game_status[
+            "game_detailed_disposition_specified_count"
+        ],
+        "runtime_nonempty_reconciled_count": game_status[
+            "game_runtime_nonempty_reconciled_count"
+        ],
+        "final_disposition_verified_count": game_status[
+            "game_final_disposition_verified_count"
+        ],
         "routing_percent": round(len(routed) * 100.0 / candidate_count, 2),
         "preliminary_handled_percent": round(preliminary_count * 100.0 / candidate_count, 2),
-        "final_disposition_percent": 0.0,
+        "detailed_disposition_specified_percent": round(
+            game_status["game_detailed_disposition_specified_count"]
+            * 100.0 / candidate_count, 2
+        ),
+        "runtime_nonempty_reconciled_percent": round(
+            game_status["game_runtime_nonempty_reconciled_count"]
+            * 100.0 / candidate_count, 2
+        ),
+        "final_disposition_percent": round(
+            game_status["game_final_disposition_verified_count"]
+            * 100.0 / candidate_count, 2
+        ),
+        **game_status,
     }
 
 
@@ -856,6 +1211,22 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"({status['preliminary_handled_percent']:.2f}%) routed or rejected"
     )
     yield (
+        "detailed source dispositions specified: "
+        f"{status['detailed_disposition_specified_count']}/{status['candidate_asset_count']} "
+        f"({status['detailed_disposition_specified_percent']:.2f}% overall); "
+        f"game={status['game_detailed_disposition_specified_count']}/"
+        f"{status['game_source_asset_count']} "
+        f"({status['game_detailed_disposition_percent']:.2f}%)"
+    )
+    yield (
+        "non-empty runtime reconciliations: "
+        f"{status['runtime_nonempty_reconciled_count']}/{status['candidate_asset_count']} "
+        f"({status['runtime_nonempty_reconciled_percent']:.2f}% overall); "
+        f"game={status['game_runtime_nonempty_reconciled_count']}/"
+        f"{status['game_source_asset_count']} "
+        f"({status['game_runtime_nonempty_reconciled_percent']:.2f}%)"
+    )
+    yield (
         "final semantic dispositions verified: "
         f"{status['final_disposition_verified_count']}/{status['candidate_asset_count']} "
         f"({status['final_disposition_percent']:.2f}%); routing is not completion"
@@ -873,6 +1244,7 @@ def main() -> int:
     errors = validate_inventory(inventory)
     errors.extend(validate_source_domain_policy(inventory))
     errors.extend(validate_source_asset_routes(inventory))
+    errors.extend(validate_game_source_dispositions(inventory))
     if errors:
         raise SourceAssetError("; ".join(errors))
     if args.command == "inventory":

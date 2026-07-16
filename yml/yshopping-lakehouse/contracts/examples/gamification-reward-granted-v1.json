@@ -1,0 +1,4 @@
+{
+  "event_id":"84000000-0000-4000-8000-000000000010","event_type":"gamification.reward.granted","schema_version":1,"tenant_id":1,"aggregate_type":"gamification_reward_grant","aggregate_id":"reward-grant-01","aggregate_version":1,"event_sequence":1,"idempotency_key":"gamification:reward-grant-01:event:1","correlation_id":"84000000-0000-4000-8000-000000000099","causation_id":null,"occurred_at":"2026-07-16T01:09:00.000Z","recorded_at":"2026-07-16T01:09:00.100Z","source_system":"cloudmold-gamification",
+  "payload":{"reward_grant_id":"reward-grant-01","game_id":"game-lucky-01","principal_id":"principal-player-01","reward_definition_id":"reward-coins-01","reward_version":1,"reward_kind":"CURRENCY","asset_class":"GAME_VIRTUAL_CURRENCY","asset_code":"GAME_COIN_LUCKY","currency_amount_microunits":100,"fragment_quantity":null,"source_type":"DRAW","source_id":"draw-request-01","ledger_transaction_id":"ledger-reward-01"}
+}

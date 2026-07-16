@@ -1,0 +1,4 @@
+{
+  "event_id":"84000000-0000-4000-8000-000000000005","event_type":"gamification.task.definition_published","schema_version":1,"tenant_id":1,"aggregate_type":"gamification_task_definition","aggregate_id":"task-rounds-01","aggregate_version":1,"event_sequence":1,"idempotency_key":"gamification:task-rounds-01:event:1","correlation_id":"84000000-0000-4000-8000-000000000099","causation_id":null,"occurred_at":"2026-07-16T01:04:00.000Z","recorded_at":"2026-07-16T01:04:00.100Z","source_system":"cloudmold-gamification",
+  "payload":{"task_definition_id":"task-rounds-01","game_id":"game-lucky-01","task_code":"PLAY_THREE_ROUNDS","task_version":1,"target_units":3,"reward_definition_id":"reward-coins-01","reward_version":1,"definition_sha256":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"}
+}

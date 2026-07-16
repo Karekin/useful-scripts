@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/gamification-fragment-ledger-posted-v1.schema.json",
+  "title": "gamification.fragment.ledger_posted payload v1", "type": "object", "additionalProperties": false,
+  "required": ["fragment_entry_id", "fragment_balance_id", "game_id", "principal_id", "asset_class", "fragment_code", "delta_quantity", "balance_after_quantity", "reward_grant_id"],
+  "properties": {
+    "fragment_entry_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "fragment_balance_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "game_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "asset_class": {"type": "string", "const": "GAME_FRAGMENT"}, "fragment_code": {"type": "string", "pattern": "^GAME_FRAGMENT_[A-Z0-9_]{2,40}$"},
+    "delta_quantity": {"type": "integer"}, "balance_after_quantity": {"type": "integer", "minimum": 0}, "reward_grant_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}
+  }
+}

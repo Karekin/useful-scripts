@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/gamification-virtual-currency-ledger-posted-v1.schema.json",
+  "title": "gamification.virtual_currency.ledger_posted payload v1", "type": "object", "additionalProperties": false,
+  "required": ["ledger_transaction_id", "game_id", "asset_class", "currency_code", "business_type", "business_id", "amount_microunits", "entry_count", "entry_delta_sum_microunits", "debit_account_id", "debit_balance_after_microunits", "credit_account_id", "credit_balance_after_microunits"],
+  "properties": {
+    "ledger_transaction_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "game_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "asset_class": {"type": "string", "const": "GAME_VIRTUAL_CURRENCY"}, "currency_code": {"type": "string", "pattern": "^GAME_COIN_(?!.*(?:TOKEN|COUPON|POINT|CNY|RMB|USD|MONEY))[A-Z0-9_]{2,40}$"},
+    "business_type": {"type": "string", "enum": ["DRAW_CHARGE", "REWARD_GRANT", "GIFT_TRANSFER", "REDEMPTION"]}, "business_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "amount_microunits": {"type": "integer", "minimum": 1}, "entry_count": {"type": "integer", "const": 2}, "entry_delta_sum_microunits": {"type": "integer", "const": 0},
+    "debit_account_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "debit_balance_after_microunits": {"type": "integer"},
+    "credit_account_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "credit_balance_after_microunits": {"type": "integer"}
+  }
+}

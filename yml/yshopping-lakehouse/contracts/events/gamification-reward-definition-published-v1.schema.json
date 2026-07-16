@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/gamification-reward-definition-published-v1.schema.json",
+  "title": "gamification.reward.definition_published payload v1", "type": "object", "additionalProperties": false,
+  "required": ["reward_definition_id", "game_id", "reward_code", "reward_version", "reward_kind", "asset_class", "asset_code", "currency_amount_microunits", "fragment_quantity", "definition_sha256"],
+  "properties": {
+    "reward_definition_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "game_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "reward_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,63}$"}, "reward_version": {"type": "integer", "minimum": 1},
+    "reward_kind": {"type": "string", "enum": ["CURRENCY", "FRAGMENT"]}, "asset_class": {"type": "string", "enum": ["GAME_VIRTUAL_CURRENCY", "GAME_FRAGMENT"]},
+    "asset_code": {"type": "string", "pattern": "^GAME_(?:COIN|FRAGMENT)_[A-Z0-9_]{2,40}$"},
+    "currency_amount_microunits": {"type": ["integer", "null"]}, "fragment_quantity": {"type": ["integer", "null"]},
+    "definition_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

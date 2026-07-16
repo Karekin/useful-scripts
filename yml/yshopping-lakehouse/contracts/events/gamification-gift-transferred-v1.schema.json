@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/gamification-gift-transferred-v1.schema.json",
+  "title": "gamification.gift.transferred payload v1", "type": "object", "additionalProperties": false,
+  "required": ["gift_transfer_id", "game_id", "asset_class", "currency_code", "from_principal_id", "to_principal_id", "amount_microunits", "ledger_transaction_id", "reason_code"],
+  "properties": {
+    "gift_transfer_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "game_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "asset_class": {"type": "string", "const": "GAME_VIRTUAL_CURRENCY"}, "currency_code": {"type": "string", "pattern": "^GAME_COIN_(?!.*(?:TOKEN|COUPON|POINT|CNY|RMB|USD|MONEY))[A-Z0-9_]{2,40}$"},
+    "from_principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "to_principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "amount_microunits": {"type": "integer", "minimum": 1}, "ledger_transaction_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "reason_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,63}$"}
+  }
+}

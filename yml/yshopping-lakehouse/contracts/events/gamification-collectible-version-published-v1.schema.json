@@ -1,0 +1,6 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://cloudmold.local/contracts/gamification-collectible-version-published-v1.schema.json",
+  "title":"gamification.collectible.version_published payload v1","type":"object","additionalProperties":false,
+  "required":["collectible_definition_id","collectible_version","game_id","collectible_code","collectible_kind","collectible_name","definition_sha256"],
+  "properties":{"collectible_definition_id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},"collectible_version":{"type":"integer","minimum":1},"game_id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},"collectible_code":{"type":"string","pattern":"^[A-Z][A-Z0-9_]{1,63}$"},"collectible_kind":{"type":"string","enum":["GK","FIGURE","COLLECTIBLE"]},"collectible_name":{"type":"string","minLength":1,"maxLength":128},"definition_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"}}
+}

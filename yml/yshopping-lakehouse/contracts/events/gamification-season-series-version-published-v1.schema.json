@@ -1,0 +1,6 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://cloudmold.local/contracts/gamification-season-series-version-published-v1.schema.json",
+  "title":"gamification.season_series.version_published payload v1","type":"object","additionalProperties":false,
+  "required":["season_series_id","series_version","game_id","series_code","series_name","definition_sha256"],
+  "properties":{"season_series_id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},"series_version":{"type":"integer","minimum":1},"game_id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},"series_code":{"type":"string","pattern":"^[A-Z][A-Z0-9_]{1,63}$"},"series_name":{"type":"string","minLength":1,"maxLength":128},"definition_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"}}
+}

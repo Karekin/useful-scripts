@@ -1,0 +1,4 @@
+{
+  "event_id":"84000000-0000-4000-8000-000000000009","event_type":"gamification.virtual_currency.ledger_posted","schema_version":1,"tenant_id":1,"aggregate_type":"gamification_currency_transaction","aggregate_id":"ledger-draw-01","aggregate_version":1,"event_sequence":1,"idempotency_key":"gamification:ledger-draw-01:event:1","correlation_id":"84000000-0000-4000-8000-000000000099","causation_id":null,"occurred_at":"2026-07-16T01:08:00.000Z","recorded_at":"2026-07-16T01:08:00.100Z","source_system":"cloudmold-gamification",
+  "payload":{"ledger_transaction_id":"ledger-draw-01","game_id":"game-lucky-01","asset_class":"GAME_VIRTUAL_CURRENCY","currency_code":"GAME_COIN_LUCKY","business_type":"DRAW_CHARGE","business_id":"draw-request-01","amount_microunits":50,"entry_count":2,"entry_delta_sum_microunits":0,"debit_account_id":"account-player-01","debit_balance_after_microunits":950,"credit_account_id":"account-treasury-01","credit_balance_after_microunits":50}
+}

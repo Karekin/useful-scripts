@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/gamification-task-definition-published-v1.schema.json",
+  "title": "gamification.task.definition_published payload v1", "type": "object", "additionalProperties": false,
+  "required": ["task_definition_id", "game_id", "task_code", "task_version", "target_units", "reward_definition_id", "reward_version", "definition_sha256"],
+  "properties": {
+    "task_definition_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "game_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "task_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,63}$"}, "task_version": {"type": "integer", "minimum": 1},
+    "target_units": {"type": "integer", "minimum": 1}, "reward_definition_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "reward_version": {"type": "integer", "minimum": 1}, "definition_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

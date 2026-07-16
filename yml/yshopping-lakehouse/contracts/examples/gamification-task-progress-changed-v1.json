@@ -1,0 +1,4 @@
+{
+  "event_id":"84000000-0000-4000-8000-000000000013","event_type":"gamification.task.progress_changed","schema_version":1,"tenant_id":1,"aggregate_type":"gamification_task_progress","aggregate_id":"task-progress-01","aggregate_version":2,"event_sequence":1,"idempotency_key":"gamification:task-progress-01:event:2","correlation_id":"84000000-0000-4000-8000-000000000099","causation_id":null,"occurred_at":"2026-07-16T01:12:00.000Z","recorded_at":"2026-07-16T01:12:00.100Z","source_system":"cloudmold-gamification",
+  "payload":{"task_progress_id":"task-progress-01","task_definition_id":"task-rounds-01","task_version":1,"game_id":"game-lucky-01","principal_id":"principal-player-01","completed_units":3,"target_units":3,"previous_status":"IN_PROGRESS","current_status":"COMPLETED","reward_grant_id":"reward-grant-task-01"}
+}

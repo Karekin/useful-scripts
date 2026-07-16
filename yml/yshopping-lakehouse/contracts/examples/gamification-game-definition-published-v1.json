@@ -1,0 +1,4 @@
+{
+  "event_id":"84000000-0000-4000-8000-000000000006","event_type":"gamification.game.definition_published","schema_version":1,"tenant_id":1,"aggregate_type":"gamification_game","aggregate_id":"game-lucky-01","aggregate_version":1,"event_sequence":1,"idempotency_key":"gamification:game-lucky-01:definition:1","correlation_id":"84000000-0000-4000-8000-000000000099","causation_id":null,"occurred_at":"2026-07-16T01:05:00.000Z","recorded_at":"2026-07-16T01:05:00.100Z","source_system":"cloudmold-gamification",
+  "payload":{"game_id":"game-lucky-01","game_code":"LUCKY_DRAW","game_version":1,"definition_sha256":"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd","previous_status":"DRAFT","current_status":"PUBLISHED","virtual_currency_code":"GAME_COIN_LUCKY","assist_daily_limit":5,"max_rounds_per_session":20,"session_ttl_seconds":3600}
+}

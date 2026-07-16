@@ -1,0 +1,6 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://cloudmold.local/contracts/gamification-collectible-ownership-changed-v1.schema.json",
+  "title":"gamification.collectible.ownership_changed payload v1","type":"object","additionalProperties":false,
+  "required":["collectible_entry_id","ownership_id","game_id","principal_id","collectible_definition_id","collectible_version","delta_quantity","quantity","source_type","source_id"],
+  "properties":{"collectible_entry_id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},"ownership_id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},"game_id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},"principal_id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},"collectible_definition_id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},"collectible_version":{"type":"integer","minimum":1},"delta_quantity":{"type":"integer"},"quantity":{"type":"integer","minimum":0},"source_type":{"type":"string","enum":["ADMIN_ADJUSTMENT","REDEMPTION"]},"source_id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}}
+}

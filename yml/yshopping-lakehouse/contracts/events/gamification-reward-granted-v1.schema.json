@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/gamification-reward-granted-v1.schema.json",
+  "title": "gamification.reward.granted payload v1", "type": "object", "additionalProperties": false,
+  "required": ["reward_grant_id", "game_id", "principal_id", "reward_definition_id", "reward_version", "reward_kind", "asset_class", "asset_code", "currency_amount_microunits", "fragment_quantity", "source_type", "source_id", "ledger_transaction_id"],
+  "properties": {
+    "reward_grant_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "game_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "reward_definition_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "reward_version": {"type": "integer", "minimum": 1},
+    "reward_kind": {"type": "string", "enum": ["CURRENCY", "FRAGMENT"]}, "asset_class": {"type": "string", "enum": ["GAME_VIRTUAL_CURRENCY", "GAME_FRAGMENT"]}, "asset_code": {"type": "string", "pattern": "^GAME_(?:COIN|FRAGMENT)_[A-Z0-9_]{2,40}$"},
+    "currency_amount_microunits": {"type": ["integer", "null"]}, "fragment_quantity": {"type": ["integer", "null"]},
+    "source_type": {"type": "string", "enum": ["ADMIN_ADJUSTMENT", "DRAW", "TASK_PROGRESS", "REWARD_CLAIM"]}, "source_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "ledger_transaction_id": {"type": ["string", "null"], "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}
+  }
+}

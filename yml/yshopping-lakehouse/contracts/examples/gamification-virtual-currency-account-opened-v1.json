@@ -1,0 +1,4 @@
+{
+  "event_id":"84000000-0000-4000-8000-000000000002","event_type":"gamification.virtual_currency.account_opened","schema_version":1,"tenant_id":1,"aggregate_type":"gamification_currency_account","aggregate_id":"account-player-01","aggregate_version":1,"event_sequence":1,"idempotency_key":"gamification:account-player-01:event:1","correlation_id":"84000000-0000-4000-8000-000000000099","causation_id":null,"occurred_at":"2026-07-16T01:01:00.000Z","recorded_at":"2026-07-16T01:01:00.100Z","source_system":"cloudmold-gamification",
+  "payload":{"account_id":"account-player-01","game_id":"game-lucky-01","owner_type":"PLAYER","owner_ref":"principal-player-01","asset_class":"GAME_VIRTUAL_CURRENCY","currency_code":"GAME_COIN_LUCKY","balance_microunits":0,"status":"ACTIVE"}
+}

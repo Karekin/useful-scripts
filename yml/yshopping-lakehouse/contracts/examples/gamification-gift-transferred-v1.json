@@ -1,0 +1,4 @@
+{
+  "event_id":"84000000-0000-4000-8000-000000000015","event_type":"gamification.gift.transferred","schema_version":1,"tenant_id":1,"aggregate_type":"gamification_gift_transfer","aggregate_id":"gift-transfer-01","aggregate_version":1,"event_sequence":1,"idempotency_key":"gamification:gift-transfer-01:event:1","correlation_id":"84000000-0000-4000-8000-000000000099","causation_id":null,"occurred_at":"2026-07-16T01:14:00.000Z","recorded_at":"2026-07-16T01:14:00.100Z","source_system":"cloudmold-gamification",
+  "payload":{"gift_transfer_id":"gift-transfer-01","game_id":"game-lucky-01","asset_class":"GAME_VIRTUAL_CURRENCY","currency_code":"GAME_COIN_LUCKY","from_principal_id":"principal-player-01","to_principal_id":"principal-friend-01","amount_microunits":25,"ledger_transaction_id":"ledger-gift-01","reason_code":"FRIEND_GIFT"}
+}

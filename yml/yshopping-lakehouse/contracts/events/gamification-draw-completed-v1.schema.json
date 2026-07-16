@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/gamification-draw-completed-v1.schema.json",
+  "title": "gamification.draw.completed payload v1", "type": "object", "additionalProperties": false,
+  "required": ["draw_request_id", "draw_result_id", "game_id", "principal_id", "draw_pool_id", "draw_pool_version", "price_microunits", "selected_ticket", "total_weight", "entropy_sha256", "reward_definition_id", "reward_version", "reward_grant_id"],
+  "properties": {
+    "draw_request_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "draw_result_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "game_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "draw_pool_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "draw_pool_version": {"type": "integer", "minimum": 1},
+    "price_microunits": {"type": "integer", "minimum": 1}, "selected_ticket": {"type": "integer", "minimum": 1}, "total_weight": {"type": "integer", "minimum": 1}, "entropy_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "reward_definition_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "reward_version": {"type": "integer", "minimum": 1}, "reward_grant_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}
+  }
+}

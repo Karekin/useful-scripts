@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/gamification-task-progress-changed-v1.schema.json",
+  "title": "gamification.task.progress_changed payload v1", "type": "object", "additionalProperties": false,
+  "required": ["task_progress_id", "task_definition_id", "task_version", "game_id", "principal_id", "completed_units", "target_units", "previous_status", "current_status", "reward_grant_id"],
+  "properties": {
+    "task_progress_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "task_definition_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "task_version": {"type": "integer", "minimum": 1},
+    "game_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "completed_units": {"type": "integer", "minimum": 0}, "target_units": {"type": "integer", "minimum": 1},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "IN_PROGRESS"]}, "current_status": {"type": "string", "enum": ["IN_PROGRESS", "COMPLETED"]},
+    "reward_grant_id": {"type": ["string", "null"], "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}
+  }
+}

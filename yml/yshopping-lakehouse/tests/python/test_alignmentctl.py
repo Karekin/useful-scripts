@@ -74,10 +74,10 @@ class AlignmentCtlTest(unittest.TestCase):
     def test_similarity_score_is_machine_derived_from_honest_surfaces(self):
         manifest = ALIGNMENT.load(ALIGNMENT.DEFAULT_MANIFEST)
         score = ALIGNMENT.calculate_similarity_score(manifest)
-        self.assertEqual(95.24, score["overall_percent"])
-        self.assertEqual(95.24, score["backend_percent"])
-        self.assertEqual(95.24, score["lakehouse_percent"])
-        self.assertEqual(40.0, score["earned_surface_points"])
+        self.assertEqual(100.0, score["overall_percent"])
+        self.assertEqual(100.0, score["backend_percent"])
+        self.assertEqual(100.0, score["lakehouse_percent"])
+        self.assertEqual(42.0, score["earned_surface_points"])
         self.assertEqual(42, score["eligible_surface_count"])
         self.assertEqual(1, score["excluded_unit_count"])
 

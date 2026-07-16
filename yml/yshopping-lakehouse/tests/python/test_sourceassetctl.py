@@ -23,6 +23,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_inventory(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_source_domain_policy(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_source_asset_routes(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_game_source_dispositions(self.inventory))
         self.assertEqual(6, len(self.inventory["documents"]))
 
     def test_inventory_is_complete_and_deterministic_for_the_locked_snapshot(self):
@@ -128,9 +129,13 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual(110, status["bounded_domain_asset_count"])
         self.assertEqual(5, status["explicit_rejection_count"])
         self.assertEqual(718, status["preliminary_handled_count"])
+        self.assertEqual(19, status["detailed_disposition_specified_count"])
+        self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
         self.assertEqual(99.3, status["routing_percent"])
         self.assertEqual(100.0, status["preliminary_handled_percent"])
+        self.assertEqual(2.65, status["detailed_disposition_specified_percent"])
+        self.assertEqual(0.0, status["runtime_nonempty_reconciled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
         inferred = SOURCE_ASSETS.infer_source_domains(self.inventory)
         self.assertEqual(
@@ -140,6 +145,176 @@ class SourceAssetCtlTest(unittest.TestCase):
             ["ods_overview"],
             inferred["ods:object:ods_eliminate_user_coin_log_df"]["evidence_kinds"],
         )
+
+    def test_game_dispositions_cover_exact_authoritative_overview_rows(self):
+        observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "游戏")
+        contract = SOURCE_ASSETS.load_game_source_dispositions()
+        names = [asset["source_asset"] for asset in contract["assets"]]
+        self.assertEqual(19, len(observed))
+        self.assertEqual(19, len(names))
+        self.assertEqual(set(observed), set(names))
+        self.assertEqual(len(names), len(set(names)))
+        self.assertEqual(
+            {line for item in observed.values() for _, line in item["anchors"]},
+            set(range(133, 152)),
+        )
+        for asset in contract["assets"]:
+            source = observed[asset["source_asset"]]
+            self.assertEqual([asset["source_label"]], source["source_labels"])
+            self.assertIn(
+                (asset["source_anchor"]["document"], asset["source_anchor"]["line"]),
+                source["anchors"],
+            )
+
+    def test_game_dispositions_are_fully_specified_but_not_runtime_verified(self):
+        status = SOURCE_ASSETS.game_disposition_status(self.inventory)
+        self.assertEqual(
+            {
+                "game_source_asset_count": 19,
+                "game_detailed_disposition_specified_count": 19,
+                "game_runtime_nonempty_reconciled_count": 0,
+                "game_final_disposition_verified_count": 0,
+                "game_detailed_disposition_percent": 100.0,
+                "game_runtime_nonempty_reconciled_percent": 0.0,
+                "game_final_disposition_verified_percent": 0.0,
+            },
+            status,
+        )
+        contract = SOURCE_ASSETS.load_game_source_dispositions()
+        for asset in contract["assets"]:
+            self.assertEqual("specified", asset["specification_status"])
+            self.assertEqual("unverified", asset["verification_status"])
+            runtime = asset["runtime_nonempty_reconciliation"]
+            self.assertEqual("missing", runtime["status"])
+            self.assertIsNone(runtime["evidence_ref"])
+            self.assertEqual(0, runtime["row_count"])
+            self.assertEqual(0, runtime["tenant_count"])
+
+    def test_game_dispositions_encode_required_authority_boundaries(self):
+        contract = SOURCE_ASSETS.load_game_source_dispositions()
+        by_name = {asset["source_asset"]: asset for asset in contract["assets"]}
+        coin = by_name["ods_eliminate_user_coin_log_df"]
+        self.assertIn("gamification.VirtualCurrencyLedgerEntry", coin["canonical_entities"])
+        self.assertIn("exactly two entries", coin["field_rules"]["quantity"])
+        for name in (
+            "ods_card_mall_coin_log_df",
+            "ods_eliminate_mall_coin_log_df",
+            "ods_factory_mall_coin_log_df",
+        ):
+            asset = by_name[name]
+            self.assertIn("gamification.RedemptionIntent", asset["canonical_entities"])
+            self.assertIn("gamification.VirtualCurrencyTransaction", asset["canonical_entities"])
+            self.assertFalse(any("Collectible" in entity for entity in asset["canonical_entities"]))
+            self.assertIn("mall", asset["sor_owner"])
+            self.assertIn("balance", asset["field_rules"]["currency_boundary"])
+            self.assertIn("GAME_VIRTUAL_CURRENCY", asset["field_rules"]["currency_boundary"])
+            self.assertIn("PENDING/SUCCEEDED/REJECTED", asset["field_rules"]["status"])
+            self.assertNotIn("FAILED", asset["field_rules"]["status"])
+            self.assertIn("amount_microunits", asset["field_rules"]["quantity"])
+            self.assertIn("GAME_COIN_*", asset["field_rules"]["quantity"])
+            self.assertTrue(any("V20260716_34" in ref for ref in asset["backend_refs"]))
+            self.assertTrue(any("V20260716_02" in ref for ref in asset["backend_refs"]))
+        self.assertEqual(
+            "split", by_name["ods_fortune_season_series_df"]["decision"]
+        )
+        self.assertIn(
+            "gamification.CollectibleOwnership",
+            by_name["ods_fortune_gk_df"]["canonical_entities"],
+        )
+        self.assertIn(
+            "gamification.RewardClaim",
+            by_name["ods_yshopping_hacking_world_user_receive_record_df"]["canonical_entities"],
+        )
+        for name in (
+            "ods_yshopping_hacking_world_rank_currency_df",
+            "ods_yshopping_hacking_world_rank_gift_df",
+        ):
+            asset = by_name[name]
+            self.assertEqual("derive", asset["decision"])
+            self.assertTrue(all(entity.startswith("analytics.") for entity in asset["canonical_entities"]))
+            self.assertTrue(any("README.md#leaderboards" in ref for ref in asset["backend_refs"]))
+        self.assertEqual(
+            [
+                "dws_canonical_gamification_currency_leaderboard_input_current",
+                "ads_canonical_gamification_currency_leaderboard_current",
+            ],
+            by_name["ods_yshopping_hacking_world_rank_currency_df"]["canonical_targets"],
+        )
+        self.assertEqual(
+            [
+                "dws_canonical_gamification_gift_leaderboard_1d",
+                "ads_canonical_gamification_gift_leaderboard_1d",
+            ],
+            by_name["ods_yshopping_hacking_world_rank_gift_df"]["canonical_targets"],
+        )
+
+    def test_game_final_verification_fails_closed_without_nonempty_runtime_evidence(self):
+        contract = SOURCE_ASSETS.load_game_source_dispositions()
+        broken = json.loads(json.dumps(contract))
+        broken["assets"][0]["verification_status"] = "verified"
+        errors = SOURCE_ASSETS.validate_game_source_dispositions(self.inventory, broken)
+        self.assertTrue(any("forbidden without non-empty" in error for error in errors))
+
+        incomplete = json.loads(json.dumps(contract))
+        runtime = incomplete["assets"][0]["runtime_nonempty_reconciliation"]
+        runtime["status"] = "verified"
+        runtime["evidence_ref"] = "/tmp/not-enough.json"
+        errors = SOURCE_ASSETS.validate_game_source_dispositions(self.inventory, incomplete)
+        self.assertTrue(any("positive row/tenant counts" in error for error in errors))
+
+        nonexistent = json.loads(json.dumps(contract))
+        runtime = nonexistent["assets"][0]["runtime_nonempty_reconciliation"]
+        runtime.update(
+            {
+                "status": "verified",
+                "evidence_ref": "/tmp/cloudmold-game-evidence-does-not-exist.json",
+                "run_id": "game-runtime-001",
+                "row_count": 1,
+                "tenant_count": 1,
+            }
+        )
+        nonexistent["assets"][0]["verification_status"] = "verified"
+        errors = SOURCE_ASSETS.validate_game_source_dispositions(self.inventory, nonexistent)
+        self.assertTrue(any("durable evidence" in error for error in errors))
+
+        with tempfile.TemporaryDirectory() as directory:
+            evidence = Path(directory) / "reconciliation.json"
+            evidence.write_text('{"row_count": 7, "tenant_count": 1}', encoding="utf-8")
+            proven = json.loads(json.dumps(contract))
+            runtime = proven["assets"][0]["runtime_nonempty_reconciliation"]
+            runtime.update(
+                {
+                    "status": "verified",
+                    "evidence_ref": str(evidence),
+                    "run_id": "game-runtime-verified-001",
+                    "row_count": 7,
+                    "tenant_count": 1,
+                }
+            )
+            proven["assets"][0]["verification_status"] = "verified"
+            self.assertEqual(
+                [], SOURCE_ASSETS.validate_game_source_dispositions(self.inventory, proven)
+            )
+            status = SOURCE_ASSETS.game_disposition_status(self.inventory, proven)
+            self.assertEqual(1, status["game_runtime_nonempty_reconciled_count"])
+            self.assertEqual(1, status["game_final_disposition_verified_count"])
+
+    def test_game_contract_rejects_missing_duplicate_or_mislabeled_overview_assets(self):
+        contract = SOURCE_ASSETS.load_game_source_dispositions()
+        missing = json.loads(json.dumps(contract))
+        missing["assets"].pop()
+        errors = SOURCE_ASSETS.validate_game_source_dispositions(self.inventory, missing)
+        self.assertTrue(any("differ from authoritative ODS overview" in error for error in errors))
+
+        duplicate = json.loads(json.dumps(contract))
+        duplicate["assets"][1] = json.loads(json.dumps(duplicate["assets"][0]))
+        errors = SOURCE_ASSETS.validate_game_source_dispositions(self.inventory, duplicate)
+        self.assertTrue(any("duplicate source_asset" in error for error in errors))
+
+        mislabeled = json.loads(json.dumps(contract))
+        mislabeled["assets"][0]["source_label"] = "金币"
+        errors = SOURCE_ASSETS.validate_game_source_dispositions(self.inventory, mislabeled)
+        self.assertTrue(any("source label differs" in error for error in errors))
 
     def test_qualified_names_and_markdown_bold_are_parsed_without_losing_source_location(self):
         assets = {item["asset_id"]: item for item in self.inventory["assets"]}

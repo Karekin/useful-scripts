@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/gamification-session-status-changed-v1.schema.json",
+  "title": "gamification.session.status_changed payload v1", "type": "object", "additionalProperties": false,
+  "required": ["session_id", "game_id", "game_version", "principal_id", "previous_status", "current_status", "round_count", "expires_at"],
+  "properties": {
+    "session_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "game_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "game_version": {"type": "integer", "minimum": 1}, "principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "OPEN", "CLOSED", "EXPIRED"]}, "current_status": {"type": "string", "enum": ["OPEN", "CLOSED", "EXPIRED"]},
+    "round_count": {"type": "integer", "minimum": 0}, "expires_at": {"type": "string", "format": "date-time"}
+  }
+}

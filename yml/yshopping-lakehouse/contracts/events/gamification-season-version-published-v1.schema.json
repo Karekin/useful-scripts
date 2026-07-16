@@ -1,0 +1,6 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://cloudmold.local/contracts/gamification-season-version-published-v1.schema.json",
+  "title":"gamification.season.version_published payload v1","type":"object","additionalProperties":false,
+  "required":["season_id","season_version","season_series_id","series_version","game_id","season_code","season_name","status","starts_at","ends_at","definition_sha256"],
+  "properties":{"season_id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},"season_version":{"type":"integer","minimum":1},"season_series_id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},"series_version":{"type":"integer","minimum":1},"game_id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},"season_code":{"type":"string","pattern":"^[A-Z][A-Z0-9_]{1,63}$"},"season_name":{"type":"string","minLength":1,"maxLength":128},"status":{"type":"string","const":"PUBLISHED"},"starts_at":{"type":"string","format":"date-time"},"ends_at":{"type":"string","format":"date-time"},"definition_sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"}}
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/gamification-virtual-currency-account-opened-v1.schema.json",
+  "title": "gamification.virtual_currency.account_opened payload v1", "type": "object", "additionalProperties": false,
+  "required": ["account_id", "game_id", "owner_type", "owner_ref", "asset_class", "currency_code", "balance_microunits", "status"],
+  "properties": {
+    "account_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "game_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "owner_type": {"type": "string", "enum": ["PLAYER", "TREASURY"]},
+    "owner_ref": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "asset_class": {"type": "string", "const": "GAME_VIRTUAL_CURRENCY"},
+    "currency_code": {"type": "string", "pattern": "^GAME_COIN_(?!.*(?:TOKEN|COUPON|POINT|CNY|RMB|USD|MONEY))[A-Z0-9_]{2,40}$"},
+    "balance_microunits": {"type": "integer"},
+    "status": {"type": "string", "const": "ACTIVE"}
+  }
+}

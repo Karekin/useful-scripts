@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/gamification-game-created-v1.schema.json",
+  "title": "gamification.game.created payload v1", "type": "object", "additionalProperties": false,
+  "required": ["game_id", "game_code", "game_name", "definition_version", "current_status"],
+  "properties": {
+    "game_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "game_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,63}$"},
+    "game_name": {"type": "string", "minLength": 1, "maxLength": 128},
+    "definition_version": {"type": "integer", "const": 0},
+    "current_status": {"type": "string", "const": "DRAFT"}
+  }
+}

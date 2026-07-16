@@ -1,0 +1,4 @@
+{
+  "event_id":"84000000-0000-4000-8000-000000000008","event_type":"gamification.round.status_changed","schema_version":1,"tenant_id":1,"aggregate_type":"gamification_round","aggregate_id":"round-player-01","aggregate_version":2,"event_sequence":1,"idempotency_key":"gamification:round-player-01:event:2","correlation_id":"84000000-0000-4000-8000-000000000099","causation_id":null,"occurred_at":"2026-07-16T01:07:00.000Z","recorded_at":"2026-07-16T01:07:00.100Z","source_system":"cloudmold-gamification",
+  "payload":{"round_id":"round-player-01","session_id":"session-player-01","game_id":"game-lucky-01","game_version":1,"principal_id":"principal-player-01","round_number":1,"previous_status":"ACTIVE","current_status":"COMPLETED","outcome":"WIN","score":800}
+}

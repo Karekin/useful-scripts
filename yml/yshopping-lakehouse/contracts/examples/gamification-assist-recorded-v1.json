@@ -1,0 +1,4 @@
+{
+  "event_id":"84000000-0000-4000-8000-000000000012","event_type":"gamification.assist.recorded","schema_version":1,"tenant_id":1,"aggregate_type":"gamification_assist_record","aggregate_id":"assist-record-01","aggregate_version":1,"event_sequence":1,"idempotency_key":"gamification:assist-record-01:event:1","correlation_id":"84000000-0000-4000-8000-000000000099","causation_id":null,"occurred_at":"2026-07-16T01:11:00.000Z","recorded_at":"2026-07-16T01:11:00.100Z","source_system":"cloudmold-gamification",
+  "payload":{"assist_record_id":"assist-record-01","game_id":"game-lucky-01","helper_principal_id":"principal-helper-01","beneficiary_principal_id":"principal-player-01","quota_date":"2026-07-16","ordinal":1,"assist_limit":5,"assists_used":1}
+}

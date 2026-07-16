@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/gamification-round-status-changed-v1.schema.json",
+  "title": "gamification.round.status_changed payload v1", "type": "object", "additionalProperties": false,
+  "required": ["round_id", "session_id", "game_id", "game_version", "principal_id", "round_number", "previous_status", "current_status", "outcome", "score"],
+  "properties": {
+    "round_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "session_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"},
+    "game_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "game_version": {"type": "integer", "minimum": 1},
+    "principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "round_number": {"type": "integer", "minimum": 1},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "ACTIVE"]}, "current_status": {"type": "string", "enum": ["ACTIVE", "COMPLETED"]},
+    "outcome": {"type": ["string", "null"], "enum": [null, "WIN", "LOSE", "DRAW", "ABORTED"]}, "score": {"type": ["integer", "null"]}
+  }
+}

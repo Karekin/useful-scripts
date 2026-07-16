@@ -1,0 +1,4 @@
+{
+  "event_id":"84000000-0000-4000-8000-000000000001","event_type":"gamification.game.created","schema_version":1,"tenant_id":1,"aggregate_type":"gamification_game_lifecycle","aggregate_id":"game-lucky-01","aggregate_version":1,"event_sequence":1,"idempotency_key":"gamification:game-lucky-01:event:1","correlation_id":"84000000-0000-4000-8000-000000000099","causation_id":null,"occurred_at":"2026-07-16T01:00:00.000Z","recorded_at":"2026-07-16T01:00:00.100Z","source_system":"cloudmold-gamification",
+  "payload":{"game_id":"game-lucky-01","game_code":"LUCKY_DRAW","game_name":"Lucky Draw","definition_version":0,"current_status":"DRAFT"}
+}

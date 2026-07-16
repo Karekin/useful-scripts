@@ -1,0 +1,4 @@
+{
+  "event_id":"84000000-0000-4000-8000-000000000014","event_type":"gamification.fragment.ledger_posted","schema_version":1,"tenant_id":1,"aggregate_type":"gamification_fragment_balance","aggregate_id":"fragment-balance-01","aggregate_version":1,"event_sequence":1,"idempotency_key":"gamification:fragment-balance-01:event:1","correlation_id":"84000000-0000-4000-8000-000000000099","causation_id":null,"occurred_at":"2026-07-16T01:13:00.000Z","recorded_at":"2026-07-16T01:13:00.100Z","source_system":"cloudmold-gamification",
+  "payload":{"fragment_entry_id":"fragment-entry-01","fragment_balance_id":"fragment-balance-01","game_id":"game-lucky-01","principal_id":"principal-player-01","asset_class":"GAME_FRAGMENT","fragment_code":"GAME_FRAGMENT_LUCKY","delta_quantity":1,"balance_after_quantity":1,"reward_grant_id":"reward-grant-fragment-01"}
+}

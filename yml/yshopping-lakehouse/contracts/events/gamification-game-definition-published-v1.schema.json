@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://cloudmold.local/contracts/gamification-game-definition-published-v1.schema.json",
+  "title": "gamification.game.definition_published payload v1", "type": "object", "additionalProperties": false,
+  "required": ["game_id", "game_code", "game_version", "definition_sha256", "previous_status", "current_status", "virtual_currency_code", "assist_daily_limit", "max_rounds_per_session", "session_ttl_seconds"],
+  "properties": {
+    "game_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,127}$"}, "game_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{1,63}$"},
+    "game_version": {"type": "integer", "minimum": 1}, "definition_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "previous_status": {"type": "string", "enum": ["DRAFT", "PUBLISHED"]}, "current_status": {"type": "string", "const": "PUBLISHED"},
+    "virtual_currency_code": {"type": "string", "pattern": "^GAME_COIN_(?!.*(?:TOKEN|COUPON|POINT|CNY|RMB|USD|MONEY))[A-Z0-9_]{2,40}$"},
+    "assist_daily_limit": {"type": "integer", "minimum": 0}, "max_rounds_per_session": {"type": "integer", "minimum": 1}, "session_ttl_seconds": {"type": "integer", "minimum": 60}
+  }
+}

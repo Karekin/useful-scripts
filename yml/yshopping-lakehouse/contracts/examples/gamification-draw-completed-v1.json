@@ -1,0 +1,4 @@
+{
+  "event_id":"84000000-0000-4000-8000-000000000011","event_type":"gamification.draw.completed","schema_version":1,"tenant_id":1,"aggregate_type":"gamification_draw_request","aggregate_id":"draw-request-01","aggregate_version":1,"event_sequence":1,"idempotency_key":"gamification:draw-request-01:event:1","correlation_id":"84000000-0000-4000-8000-000000000099","causation_id":null,"occurred_at":"2026-07-16T01:10:00.000Z","recorded_at":"2026-07-16T01:10:00.100Z","source_system":"cloudmold-gamification",
+  "payload":{"draw_request_id":"draw-request-01","draw_result_id":"draw-result-01","game_id":"game-lucky-01","principal_id":"principal-player-01","draw_pool_id":"pool-daily-01","draw_pool_version":1,"price_microunits":50,"selected_ticket":417,"total_weight":1000,"entropy_sha256":"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee","reward_definition_id":"reward-coins-01","reward_version":1,"reward_grant_id":"reward-grant-01"}
+}
