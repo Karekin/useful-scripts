@@ -658,18 +658,27 @@ def disposition_status(
 ) -> dict[str, Any]:
     policy = policy or load_source_domain_policy()
     domains = policy["domains"]
-    source_assets = [
-        item for item in inventory["logical_assets"] if item.get("source_domains")
+    inferred = infer_source_domains(inventory)
+    candidate_assets = [
+        item for item in inventory["logical_assets"] if "candidate" in item.get("roles", [])
     ]
+    source_assets = [item for item in candidate_assets if item.get("source_domains")]
     routed = [
         item
-        for item in source_assets
-        if all(domain in domains for domain in item["source_domains"])
+        for item in candidate_assets
+        if inferred[item["logical_asset_id"]]["domains"]
+        and all(
+            domain in domains
+            for domain in inferred[item["logical_asset_id"]]["domains"]
+        )
     ]
     bounded = [
         item
         for item in routed
-        if all(not domains[domain]["requires_row_level_split"] for domain in item["source_domains"])
+        if all(
+            not domains[domain]["requires_row_level_split"]
+            for domain in inferred[item["logical_asset_id"]]["domains"]
+        )
     ]
     rejected_names = set(policy.get("explicit_rejections", {}))
     rejected = [
@@ -680,6 +689,11 @@ def disposition_status(
     return {
         "candidate_asset_count": candidate_count,
         "authoritative_ods_overview_asset_count": len(source_assets),
+        "heading_lineage_inferred_asset_count": sum(
+            1
+            for item in candidate_assets
+            if "heading_lineage" in inferred[item["logical_asset_id"]]["evidence_kinds"]
+        ),
         "domain_routed_asset_count": len(routed),
         "bounded_domain_asset_count": len(bounded),
         "explicit_rejection_count": len(rejected),
@@ -687,6 +701,52 @@ def disposition_status(
         "routing_percent": round(len(routed) * 100.0 / candidate_count, 2),
         "final_disposition_percent": 0.0,
     }
+
+
+def infer_source_domains(inventory: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Propagate authoritative ODS domains through bounded table-heading lineage.
+
+    A heading group is accepted only when it is narrow (2-25 assets) and carries
+    at most three already authoritative/inherited domains. Broad overview and
+    chapter groups are intentionally ignored. The result is routing evidence,
+    never a final semantic decision.
+    """
+    result: dict[str, dict[str, Any]] = {
+        item["logical_asset_id"]: {
+            "domains": set(item.get("source_domains", [])),
+            "evidence_kinds": {"ods_overview"} if item.get("source_domains") else set(),
+        }
+        for item in inventory["logical_assets"]
+    }
+    groups: dict[tuple[str, tuple[str, ...]], set[str]] = defaultdict(set)
+    for item in inventory["logical_assets"]:
+        for occurrence in item["occurrences"]:
+            headings = tuple(occurrence.get("heading_path", []))
+            if len(headings) < 2 or any("数据表总览" in heading for heading in headings):
+                continue
+            groups[(occurrence["document"], headings)].add(item["logical_asset_id"])
+
+    changed = True
+    while changed:
+        changed = False
+        for asset_ids in groups.values():
+            if not 2 <= len(asset_ids) <= 25:
+                continue
+            inherited = set().union(*(result[asset_id]["domains"] for asset_id in asset_ids))
+            if not 1 <= len(inherited) <= 3:
+                continue
+            for asset_id in asset_ids:
+                if "ods_overview" in result[asset_id]["evidence_kinds"]:
+                    continue
+                before = len(result[asset_id]["domains"])
+                result[asset_id]["domains"].update(inherited)
+                if len(result[asset_id]["domains"]) != before:
+                    result[asset_id]["evidence_kinds"].add("heading_lineage")
+                    changed = True
+    for value in result.values():
+        value["domains"] = sorted(value["domains"])
+        value["evidence_kinds"] = sorted(value["evidence_kinds"])
+    return result
 
 
 def summary_lines(inventory: dict[str, Any]) -> Iterable[str]:
@@ -709,6 +769,7 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         "source disposition status: "
         f"{status['domain_routed_asset_count']}/{status['candidate_asset_count']} "
         f"assets domain-routed ({status['routing_percent']:.2f}%), "
+        f"{status['heading_lineage_inferred_asset_count']} inherited through bounded headings, "
         f"{status['bounded_domain_asset_count']} have a bounded single-domain route, "
         f"{status['explicit_rejection_count']} placeholders explicitly rejected"
     )

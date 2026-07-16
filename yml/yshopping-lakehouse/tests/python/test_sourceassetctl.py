@@ -121,12 +121,21 @@ class SourceAssetCtlTest(unittest.TestCase):
         status = SOURCE_ASSETS.disposition_status(self.inventory)
         self.assertEqual(718, status["candidate_asset_count"])
         self.assertEqual(281, status["authoritative_ods_overview_asset_count"])
-        self.assertEqual(281, status["domain_routed_asset_count"])
-        self.assertEqual(53, status["bounded_domain_asset_count"])
+        self.assertEqual(603, status["domain_routed_asset_count"])
+        self.assertEqual(322, status["heading_lineage_inferred_asset_count"])
+        self.assertEqual(58, status["bounded_domain_asset_count"])
         self.assertEqual(5, status["explicit_rejection_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
-        self.assertEqual(39.14, status["routing_percent"])
+        self.assertEqual(83.98, status["routing_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
+        inferred = SOURCE_ASSETS.infer_source_domains(self.inventory)
+        self.assertEqual(
+            ["游戏"], inferred["ods:object:ods_eliminate_user_coin_log_df"]["domains"]
+        )
+        self.assertEqual(
+            ["ods_overview"],
+            inferred["ods:object:ods_eliminate_user_coin_log_df"]["evidence_kinds"],
+        )
 
     def test_qualified_names_and_markdown_bold_are_parsed_without_losing_source_location(self):
         assets = {item["asset_id"]: item for item in self.inventory["assets"]}
