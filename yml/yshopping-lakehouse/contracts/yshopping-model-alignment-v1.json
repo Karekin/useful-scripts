@@ -142,8 +142,8 @@
       "ADS": {"candidate_names": 57, "create_targets": 48, "insert_targets": 42, "dependency_edges": 116, "unresolved_edges": 8}
     },
     "totals": {"candidate_names": 664, "create_targets": 440, "insert_targets": 261, "dependency_edges": 634, "unresolved_edges": 40},
-    "current_model_sql_files": 179,
-    "current_model_targets": 319,
+    "current_model_sql_files": 183,
+    "current_model_targets": 323,
     "known_high_confidence_issues": [
       "DWD 子订单当日任务误从主订单 ODS 取数，且子订单 DDL 缺逗号。",
       "SCM 操作 DDL 缺逗号并重复 operator_name。",
@@ -459,13 +459,13 @@
       "target_processes": ["主订单", "商家或履约子订单", "订单项", "优惠分摊", "订单申诉", "交易日志", "物流单", "物流轨迹"],
       "backend": {
         "status": "partial",
-        "refs": ["yudao-cloud/cloudmold-module-order", "yudao-cloud/cloudmold-module-fulfillment"],
-        "gaps": ["缺少主订单到多商家或多履约子订单拆分", "订单优惠正向申请/分摊/出资已落地，但缺少售后权益及出资逆向冲销和订单申诉权威", "多包裹与精确物流轨迹未完成"]
+        "refs": ["yudao-cloud/cloudmold-module-order", "yudao-cloud/cloudmold-module-fulfillment", "yudao-cloud/sql/cloudmold/V20260717_40__legacy_trade_benefit_migration_assessment.sql", "/Users/karekin/.cloudmold/runs/legacy-trade-benefit-assessment/cmtrade17assess3/ledger.json"],
+        "gaps": ["缺少主订单到多商家或多履约子订单拆分", "旧 Trade 权益已完成全量不可变评估，但缺少目标订单/订单项映射、版本化权益身份和实名资金方证据，因此生产导入保持关闭", "多包裹与精确物流轨迹未完成"]
       },
       "lakehouse": {
         "status": "partial",
-        "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-item-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-benefit-application-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-benefit-allocation-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-benefit-funding-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-order-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-order-benefit-application-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-order-item-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-order-item-benefit-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-order-benefit-readiness.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-commerce-v2-readiness.sql", "useful-scripts/yml/yshopping-lakehouse/tests/sql/27-canonical-order-benefit-contract.sql"],
-        "gaps": ["优惠申请→订单项分摊→平台/商家出资已完成非空运行对账，但尚未接入真实 Promotion entitlement、合作方出资和售后权益/出资逆向冲销", "未覆盖子订单、申诉及完整物流轨迹事实", "当前维度不是 SCD2"]
+        "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-item-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-benefit-application-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-benefit-allocation-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-benefit-funding-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-legacy-trade-benefit-assessment-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-order-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-order-benefit-application-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-legacy-trade-benefit-component-assessment.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-order-item-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-order-item-benefit-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-legacy-trade-benefit-migration-assessment.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-order-benefit-readiness.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-commerce-v2-readiness.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-legacy-trade-benefit-migration-readiness.sql", "useful-scripts/yml/yshopping-lakehouse/tests/sql/27-canonical-order-benefit-contract.sql", "useful-scripts/yml/yshopping-lakehouse/tests/sql/31-canonical-legacy-trade-benefit-migration-contract.sql"],
+        "gaps": ["规范订单优惠申请→订单项分摊→平台/商家出资已完成非空运行对账；旧 Trade 238 单/128 组件也已与独立离线评估逐行一致，但其订单项映射、版本化权益身份和实名资金方仍未获得治理证据", "未覆盖子订单、申诉及完整物流轨迹事实", "当前维度不是 SCD2"]
       },
       "next_gate": "补齐 Promotion entitlement、合作方出资和 AfterSale 权益/出资逆向冲销，再继续商家/履约拆单、多包裹、申诉及完整物流轨迹契约。"
     },
@@ -491,15 +491,15 @@
       "target_processes": ["取消", "退款资格", "资金退款", "退货", "逆向物流", "质检", "换货", "理赔", "优惠退回"],
       "backend": {
         "status": "partial",
-        "refs": ["yudao-cloud/cloudmold-module-aftersales", "yudao-cloud/cloudmold-module-order", "yudao-cloud/cloudmold-module-fulfillment"],
-        "gaps": ["仅整单全额退货退款和已支付未发货取消已验证", "部分退货、换货、拒绝质检和异常逆向物流未完成"]
+        "refs": ["yudao-cloud/cloudmold-module-aftersales", "yudao-cloud/cloudmold-module-order", "yudao-cloud/cloudmold-module-fulfillment", "yudao-cloud/sql/cloudmold/V20260717_39__partial_multi_line_return_settlement.sql"],
+        "gaps": ["整单、部分数量及多订单行累计退货退款已完成非空真实运行对账", "换货、拒绝质检、理赔和异常逆向物流未完成"]
       },
       "lakehouse": {
         "status": "partial",
-        "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-after-sale-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-return-fulfillment-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-after-sale-resolution-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-after-sale-readiness.sql"],
-        "gaps": ["缺少部分数量、换货、拒绝质检和理赔模型"]
+        "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-after-sale-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-return-fulfillment-status-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-order-after-sale-settlement-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-order-item-return-settlement-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-order-return-settlement-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-after-sale-resolution-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-after-sale-readiness.sql", "useful-scripts/yml/yshopping-lakehouse/tests/sql/29-canonical-partial-multi-line-return-contract.sql"],
+        "gaps": ["部分数量和多行累计退货结算已覆盖；换货、拒绝质检、理赔和异常逆向物流仍未完成"]
       },
-      "next_gate": "以订单项为粒度补齐部分退货、换货和拒绝质检，保持取消 Saga 与售后事实互斥。"
+      "next_gate": "在既有订单项级累计退货结算基础上补齐换货、拒绝质检、理赔和异常逆向物流，保持取消 Saga 与售后事实互斥。"
     },
     {
       "id": "trade.inventory",

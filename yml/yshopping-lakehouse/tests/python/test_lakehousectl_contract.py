@@ -20,6 +20,7 @@ class LakehouseCtlContractTest(unittest.TestCase):
         self.assertIn("reconcile-canonical-listing-unpublish-saga", result.stdout)
         self.assertIn("reconcile-canonical-inventory-migration", result.stdout)
         self.assertIn("reconcile-legacy-trade-benefit-assessment", result.stdout)
+        self.assertIn("reconcile-canonical-legacy-trade-benefit-assessment", result.stdout)
         self.assertIn("submit-legacy-mall-cdc", result.stdout)
 
     def test_legacy_trade_benefit_assessment_fails_closed_on_missing_evidence(self):
@@ -31,6 +32,22 @@ class LakehouseCtlContractTest(unittest.TestCase):
         self.assertIn('"$production_enabled" == "0"', script)
         self.assertIn('"$readiness" == "BLOCKED_REQUIRES_GOVERNED_EVIDENCE"', script)
         self.assertIn('"$source_scope" == "LOCAL_YUDAO_TRADE_NOT_YSHOPPING_SOURCE"', script)
+
+    def test_canonical_legacy_trade_benefit_reconciliation_is_row_exact_and_fail_closed(self):
+        script = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn('"$backend_orders" == "$offline_orders"', script)
+        self.assertIn('"$candidate_mismatches" == "0"', script)
+        self.assertIn('"$component_mismatches" == "0"', script)
+        self.assertIn('"$import_allowed" == "0"', script)
+        self.assertIn('MATCHED_LOCAL_SNAPSHOT_BLOCKED_REQUIRES_GOVERNED_EVIDENCE', script)
+
+    def test_canonical_legacy_trade_benefit_reconciliation_requires_uuid_run(self):
+        result = self.run_ctl(
+            "reconcile-canonical-legacy-trade-benefit-assessment",
+            "--tenant", "1", "--run-id", "not-a-uuid",
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--run-id must be a UUID for canonical legacy Trade benefit assessment", result.stderr)
 
     def test_order_benefit_reconciliation_requires_nonempty_conserved_evidence(self):
         script = SCRIPT.read_text(encoding="utf-8")

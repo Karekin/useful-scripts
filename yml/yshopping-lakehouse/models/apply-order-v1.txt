@@ -59,6 +59,7 @@ models/dwd/dwd-legacy-coupon-current.sql
 models/dwd/dwd-legacy-activity-current.sql
 models/dwd/dwd-legacy-collect-current.sql
 models/dwd/dwd-legacy-trade-benefit-assessment.sql
+models/dwd/dwd-canonical-legacy-trade-benefit-assessment-event.sql
 models/dim/dim-catalog-sku-current.sql
 models/dim/dim-erp-product-current.sql
 models/dim/dim-supplier-current.sql
@@ -111,6 +112,7 @@ models/dim/dim-legacy-coupon-current.sql
 models/dim/dim-legacy-activity-current.sql
 models/dim/dim-legacy-collect-current.sql
 models/dim/dim-legacy-trade-benefit-component-assessment.sql
+models/dim/dim-canonical-legacy-trade-benefit-component-assessment.sql
 models/dws/dws-product-warehouse-inventory.sql
 models/dws/dws-purchase-receipt-daily.sql
 models/dws/dws-canonical-catalog-style-current.sql
@@ -146,6 +148,7 @@ models/dws/dws-legacy-coupon-current.sql
 models/dws/dws-legacy-activity-current.sql
 models/dws/dws-legacy-collect-current.sql
 models/dws/dws-legacy-trade-benefit-migration-assessment.sql
+models/dws/dws-canonical-legacy-trade-benefit-migration-assessment.sql
 models/ads/ads-inventory-health.sql
 models/ads/ads-purchase-fulfillment.sql
 models/ads/ads-canonical-catalog-readiness.sql
@@ -178,3 +181,4 @@ models/ads/ads-legacy-coupon-current.sql
 models/ads/ads-legacy-activity-current.sql
 models/ads/ads-legacy-collect-current.sql
 models/ads/ads-legacy-trade-benefit-migration-readiness.sql
+models/ads/ads-canonical-legacy-trade-benefit-migration-readiness.sql
