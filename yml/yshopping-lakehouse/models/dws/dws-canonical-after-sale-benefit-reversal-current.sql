@@ -1,8 +1,23 @@
 CREATE OR REPLACE VIEW yshopping_dws.dws_canonical_after_sale_benefit_reversal_current AS
-WITH reversal_exactness AS (
+WITH expected_entitlements AS (
+    SELECT after_sale.tenant_id, after_sale.after_sale_id,
+           COUNT(DISTINCT application.benefit_application_id) AS entitlement_application_count
+    FROM yshopping_dim.dim_canonical_after_sale_current after_sale
+    JOIN yshopping_dwd.dwd_canonical_order_benefit_allocation_event allocation
+      ON allocation.tenant_id = after_sale.tenant_id
+     AND allocation.order_id = after_sale.order_id
+     AND allocation.order_item_id = after_sale.order_item_id
+    JOIN yshopping_dim.dim_canonical_order_benefit_application_current application
+      ON application.tenant_id = allocation.tenant_id
+     AND application.order_id = allocation.order_id
+     AND application.benefit_application_id = allocation.benefit_application_id
+     AND application.entitlement_id IS NOT NULL
+    GROUP BY after_sale.tenant_id, after_sale.after_sale_id
+), reversal_exactness AS (
     SELECT reversal.tenant_id, reversal.after_sale_id, reversal.reversal_batch_id,
            COUNT(*) AS benefit_reversal_count,
            COUNT(DISTINCT reversal.idempotency_key) AS benefit_reversal_idempotency_count,
+           COUNT(DISTINCT reversal.entitlement_id) AS returned_entitlement_count,
            SUM(reversal.amount_minor) AS benefit_reversal_amount_minor,
            SUM(CASE WHEN reversal.payload_benefit_reversal_id <> reversal.benefit_reversal_id
                   OR reversal.reversal_event_count <> 1
@@ -63,9 +78,13 @@ WITH reversal_exactness AS (
      AND original.benefit_funding_id = funding.benefit_funding_id
     GROUP BY funding.tenant_id, funding.after_sale_id, funding.reversal_batch_id
 )
-SELECT reversal.*, funding.funding_reversal_count, funding.funding_reversal_amount_minor,
+SELECT reversal.*, COALESCE(expected.entitlement_application_count, 0) AS entitlement_application_count,
+       funding.funding_reversal_count, funding.funding_reversal_amount_minor,
        funding.funding_reversal_mismatch_count
 FROM reversal_exactness reversal
+LEFT JOIN expected_entitlements expected
+  ON expected.tenant_id = reversal.tenant_id
+ AND expected.after_sale_id = reversal.after_sale_id
 LEFT JOIN funding_exactness funding
   ON funding.tenant_id = reversal.tenant_id
  AND funding.after_sale_id = reversal.after_sale_id

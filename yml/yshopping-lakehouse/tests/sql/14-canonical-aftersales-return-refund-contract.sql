@@ -53,8 +53,8 @@ FROM yshopping_dwd.dwd_canonical_after_sale_refund_status_event
 WHERE NOT (
        (aggregate_version = 1 AND previous_status = 'NOT_REQUESTED' AND current_status = 'REQUESTED')
     OR (aggregate_version = 2 AND previous_status = 'REQUESTED' AND current_status = 'SUCCEEDED')
-)
-UNION ALL
+);
+
 SELECT 'canonical_return_fulfillment_status_continuity', COUNT(*)
 FROM (
   SELECT previous_status,
@@ -122,8 +122,8 @@ WHERE current_status = 'COMPLETED' AND (
    OR get_json_bool(checkpoints, '$.order_refund_confirmed') <> TRUE
    OR get_json_bool(checkpoints, '$.order_returned') <> TRUE
    OR error_code IS NOT NULL OR error_message IS NOT NULL OR next_retry_at IS NOT NULL
-)
-UNION ALL
+);
+
 SELECT 'canonical_aftersales_exact_aggregate_identity', COUNT(*)
 FROM (
   SELECT event_id FROM yshopping_dwd.dwd_canonical_after_sale_status_event
@@ -154,8 +154,8 @@ WHERE approved_amount_minor < 0 OR refunded_amount_minor < 0
 UNION ALL
 SELECT 'canonical_aftersales_return_shipping_money', COUNT(*)
 FROM yshopping_dwd.dwd_canonical_return_fulfillment_status_event
-WHERE return_shipping_amount_minor <> 0 OR currency_code <> 'CNY'
-UNION ALL
+WHERE return_shipping_amount_minor <> 0 OR currency_code <> 'CNY';
+
 SELECT 'canonical_aftersales_exact_cross_fact_links', COUNT(*)
 FROM yshopping_dws.dws_canonical_after_sale_resolution_current
 WHERE after_sale_id IS NULL OR order_id IS NULL OR order_item_id IS NULL OR payment_id IS NULL

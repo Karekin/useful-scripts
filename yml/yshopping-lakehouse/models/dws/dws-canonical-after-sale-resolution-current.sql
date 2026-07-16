@@ -97,6 +97,8 @@ SELECT
     saga.benefit_reversal_amount_minor,
     benefit_reversal.benefit_reversal_count,
     benefit_reversal.benefit_reversal_idempotency_count,
+    benefit_reversal.entitlement_application_count,
+    benefit_reversal.returned_entitlement_count,
     benefit_reversal.benefit_reversal_amount_minor AS recorded_benefit_reversal_amount_minor,
     benefit_reversal.funding_reversal_count,
     benefit_reversal.funding_reversal_amount_minor,

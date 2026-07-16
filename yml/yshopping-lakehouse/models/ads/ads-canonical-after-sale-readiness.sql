@@ -71,6 +71,7 @@ SELECT resolution.*,
                   AND recorded_benefit_reversal_amount_minor = reported_benefit_amount_minor
                   AND funding_reversal_amount_minor = reported_benefit_amount_minor
                   AND benefit_reversal_idempotency_count = benefit_reversal_count
+                  AND entitlement_application_count = returned_entitlement_count
                   AND allocation_reversal_mismatch_count = 0
                   AND entitlement_effect_mismatch_count = 0
                   AND funding_reversal_mismatch_count = 0))

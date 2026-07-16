@@ -137,6 +137,26 @@ class OrderBenefitModelsTest(unittest.TestCase):
         self.assertIn("FROM benefit_by_order benefit", readiness)
         self.assertNotIn("FROM (SELECT 1", readiness)
 
+    def test_after_sale_readiness_preserves_stacked_entitlement_cardinality(self):
+        reversal = (ROOT / "models/dws/dws-canonical-after-sale-benefit-reversal-current.sql").read_text(
+            encoding="utf-8")
+        resolution = (ROOT / "models/dws/dws-canonical-after-sale-resolution-current.sql").read_text(
+            encoding="utf-8")
+        readiness = (ROOT / "models/ads/ads-canonical-after-sale-readiness.sql").read_text(
+            encoding="utf-8")
+        dqc = (ROOT / "tests/sql/28-canonical-after-sale-benefit-reversal-contract.sql").read_text(
+            encoding="utf-8")
+
+        for field in ("entitlement_application_count", "returned_entitlement_count"):
+            self.assertIn(field, reversal)
+            self.assertIn(field, resolution)
+            self.assertIn(field, readiness)
+            self.assertIn(field, dqc)
+        self.assertIn("WITH expected_entitlements AS", reversal)
+        self.assertIn("application.entitlement_id IS NOT NULL", reversal)
+        self.assertIn("COUNT(DISTINCT application.benefit_application_id)", reversal)
+        self.assertIn("entitlement_application_count = returned_entitlement_count", readiness)
+
     def test_dqc_locks_conservation_identity_sequence_and_nonempty_readiness(self):
         dqc = (ROOT / "tests/sql/27-canonical-order-benefit-contract.sql").read_text(encoding="utf-8")
         for check in (

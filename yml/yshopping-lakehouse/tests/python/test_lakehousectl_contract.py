@@ -38,6 +38,7 @@ class LakehouseCtlContractTest(unittest.TestCase):
         self.assertIn('"$benefit_reversal_status" == "RECORDED"', script)
         self.assertIn('"$recorded_benefit" == "$benefit"', script)
         self.assertIn('"$funding_reversed" == "$benefit"', script)
+        self.assertIn('"$entitlement_apps" == "$returned_entitlements"', script)
 
     def test_merchant_reconciliation_rejects_non_uuid_before_querying(self):
         result = self.run_ctl(

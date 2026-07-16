@@ -535,15 +535,17 @@ case "$COMMAND" in
              benefit_reversal_status, benefit_reversal_amount_minor,
              recorded_benefit_reversal_amount_minor, funding_reversal_amount_minor,
              benefit_reversal_count, funding_reversal_count,
+             entitlement_application_count, returned_entitlement_count,
              order_status, payment_status, recorded_order_valid, readiness_status, recovery_status
       FROM yshopping_ads.ads_canonical_after_sale_readiness
       WHERE tenant_id=$TENANT_ID AND run_id='$safe_run_id';")
     require_single_row "$result" "canonical after-sales reconciliation"
-    echo -e "saga_events\tsaga_version\tsaga_status\tafter_sale_status\trefund_status\treturn_status\tinspection\trequested_qty\taccepted_qty\tinventory_return_qty\tgross\tbenefit\tnet\tapproved\trefunded\tpayment_refunded\tbenefit_reversal_status\tbenefit_reversed\trecorded_benefit\tfunding_reversed\tbenefit_rows\tfunding_rows\torder_status\tpayment_status\trecorded_order_valid\treadiness\trecovery"
+    echo -e "saga_events\tsaga_version\tsaga_status\tafter_sale_status\trefund_status\treturn_status\tinspection\trequested_qty\taccepted_qty\tinventory_return_qty\tgross\tbenefit\tnet\tapproved\trefunded\tpayment_refunded\tbenefit_reversal_status\tbenefit_reversed\trecorded_benefit\tfunding_reversed\tbenefit_rows\tfunding_rows\tentitlement_apps\treturned_entitlements\torder_status\tpayment_status\trecorded_order_valid\treadiness\trecovery"
     echo "$result"
     IFS=$'\t' read -r saga_events saga_version saga_status after_sale_status refund_status return_status inspection \
       requested_qty accepted_qty inventory_return_qty gross benefit net approved refunded payment_refunded \
       benefit_reversal_status benefit_reversed recorded_benefit funding_reversed benefit_rows funding_rows \
+      entitlement_apps returned_entitlements \
       order_status payment_status recorded_order_valid readiness recovery <<< "$result"
     saga_baseline=10
     benefit_reconciled=false
@@ -551,7 +553,8 @@ case "$COMMAND" in
       saga_baseline=12
       [[ "$benefit_reversal_status" == "RECORDED" && "$benefit_reversed" == "$benefit" \
          && "$recorded_benefit" == "$benefit" && "$funding_reversed" == "$benefit" \
-         && "$benefit_rows" =~ ^[1-9][0-9]*$ && "$funding_rows" =~ ^[1-9][0-9]*$ ]] \
+         && "$benefit_rows" =~ ^[1-9][0-9]*$ && "$funding_rows" =~ ^[1-9][0-9]*$ \
+         && "$entitlement_apps" == "$returned_entitlements" ]] \
         && benefit_reconciled=true
     elif [[ "$benefit" == "0" && "$benefit_reversal_status" == "NOT_REQUIRED" \
             && "$benefit_reversed" == "0" ]]; then
