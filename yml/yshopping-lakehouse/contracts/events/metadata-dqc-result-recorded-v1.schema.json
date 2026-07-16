@@ -1,0 +1,13 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://cloudmold.local/contracts/metadata-dqc-result-recorded-v1.schema.json","title":"metadata.dqc_result.recorded payload v1","type":"object","additionalProperties":false,
+  "required":["result_id","dqc_rule_id","dqc_rule_version","dataset_id","dataset_version","task_run_id","task_run_observation_sequence","result_status","expected_value","actual_value","evaluated_rows","violation_count","evidence_ref","observed_at"],
+  "properties":{
+    "result_id":{"$ref":"#/$defs/id"},"dqc_rule_id":{"$ref":"#/$defs/id"},"dqc_rule_version":{"type":"integer","minimum":1},"dataset_id":{"$ref":"#/$defs/id"},"dataset_version":{"type":"integer","minimum":1},"task_run_id":{"anyOf":[{"$ref":"#/$defs/id"},{"type":"null"}]},"task_run_observation_sequence":{"type":["integer","null"],"minimum":1},"result_status":{"type":"string","enum":["PASS","WARN","FAIL","ERROR"]},"expected_value":{"type":"string","pattern":"^-?[0-9]+(?:\\.[0-9]+)?$"},"actual_value":{"type":"string","pattern":"^-?[0-9]+(?:\\.[0-9]+)?$"},"evaluated_rows":{"type":"integer","minimum":0},"violation_count":{"type":"integer","minimum":0},"evidence_ref":{"$ref":"#/$defs/ref"},"observed_at":{"type":"string","format":"date-time"}
+  },
+  "allOf":[
+    {"if":{"properties":{"task_run_id":{"type":"string"}}},"then":{"properties":{"task_run_observation_sequence":{"type":"integer"}}},"else":{"properties":{"task_run_observation_sequence":{"type":"null"}}}},
+    {"if":{"properties":{"result_status":{"const":"PASS"}}},"then":{"properties":{"violation_count":{"const":0}}}},
+    {"if":{"properties":{"result_status":{"enum":["WARN","FAIL"]}}},"then":{"properties":{"violation_count":{"type":"integer","minimum":1}}}}
+  ],
+  "$defs":{"id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9_.-]{1,127}$"},"ref":{"type":"string","pattern":"^(?:sha256:[0-9a-f]{64}|restricted:[A-Za-z0-9][A-Za-z0-9._/-]{7,159})$"}}
+}

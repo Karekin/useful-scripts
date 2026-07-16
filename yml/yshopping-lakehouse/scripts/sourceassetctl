@@ -24,6 +24,9 @@ ALIGNMENT_MANIFEST = ROOT / "contracts" / "yshopping-model-alignment-v1.json"
 SOURCE_DOMAIN_POLICY = ROOT / "contracts" / "yshopping-source-domain-policy-v1.json"
 SOURCE_ASSET_ROUTES = ROOT / "contracts" / "yshopping-source-asset-routes-v1.json"
 GAME_SOURCE_DISPOSITIONS = ROOT / "contracts" / "yshopping-game-source-disposition-v1.json"
+METADATA_SOURCE_DISPOSITIONS = (
+    ROOT / "contracts" / "yshopping-metadata-source-disposition-v1.json"
+)
 DEFAULT_REFERENCE_ROOT = Path(
     "/Users/karekin/Library/Mobile Documents/iCloud~md~obsidian/Documents/project/"
     "语兴好物（y shopping）-电商数仓搭建"
@@ -145,6 +148,20 @@ def load_game_source_dispositions(path: Path = GAME_SOURCE_DISPOSITIONS) -> dict
         value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise SourceAssetError(f"cannot load game source dispositions {path}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise SourceAssetError(f"{path}: root must be an object")
+    return value
+
+
+def load_metadata_source_dispositions(
+    path: Path = METADATA_SOURCE_DISPOSITIONS,
+) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SourceAssetError(
+            f"cannot load metadata source dispositions {path}: {exc}"
+        ) from exc
     if not isinstance(value, dict):
         raise SourceAssetError(f"{path}: root must be an object")
     return value
@@ -773,6 +790,38 @@ def _resolve_contract_reference(value: str) -> Path:
     return workspace_path if workspace_path.exists() else ROOT / path
 
 
+def _markdown_heading_fragment(line: str) -> str | None:
+    match = re.match(r"^\s*#{1,6}\s+(.+?)\s*#*\s*$", line)
+    if not match:
+        return None
+    heading = re.sub(r"[`*_~]", "", match.group(1)).strip().lower()
+    return re.sub(r"[^a-z0-9]+", "-", heading).strip("-")
+
+
+def _contract_reference_error(value: str) -> str | None:
+    path = _resolve_contract_reference(value)
+    if not path.is_file():
+        return f"missing file {path}"
+    if "#" not in value:
+        return None
+    fragment = value.split("#", 1)[1]
+    if not fragment:
+        return "empty fragment"
+    try:
+        content = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        return f"cannot inspect fragment in {path}: {exc}"
+    if fragment in content:
+        return None
+    normalized_fragment = fragment.lower().strip()
+    if any(
+        _markdown_heading_fragment(line) == normalized_fragment
+        for line in content.splitlines()
+    ):
+        return None
+    return f"missing fragment {fragment!r} in {path}"
+
+
 def _runtime_reconciliation_verified(value: Any) -> bool:
     evidence_ref = value.get("evidence_ref") if isinstance(value, dict) else None
     evidence_path: Path | None = None
@@ -892,14 +941,20 @@ def validate_game_source_dispositions(
             errors.append(f"{label}: requires backend_refs")
         else:
             for reference in asset["backend_refs"]:
-                if not _resolve_contract_reference(reference).is_file():
-                    errors.append(f"{label}: missing backend ref {reference}")
+                reference_error = _contract_reference_error(reference)
+                if reference_error:
+                    errors.append(
+                        f"{label}: invalid backend ref {reference}: {reference_error}"
+                    )
         if not _nonempty_strings(asset.get("lakehouse_refs")):
             errors.append(f"{label}: requires lakehouse_refs")
         else:
             for reference in asset["lakehouse_refs"]:
-                if not _resolve_contract_reference(reference).is_file():
-                    errors.append(f"{label}: missing lakehouse ref {reference}")
+                reference_error = _contract_reference_error(reference)
+                if reference_error:
+                    errors.append(
+                        f"{label}: invalid lakehouse ref {reference}: {reference_error}"
+                    )
         runtime = asset.get("runtime_nonempty_reconciliation")
         if not isinstance(runtime, dict):
             errors.append(f"{label}: requires runtime_nonempty_reconciliation")
@@ -1010,6 +1065,189 @@ def validate_game_source_dispositions(
     return errors
 
 
+def validate_metadata_source_dispositions(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    """Validate the reviewed ten-row metadata disposition, not broad lineage inference."""
+    errors: list[str] = []
+    contract = contract or load_metadata_source_dispositions()
+    expected = authoritative_ods_domain_assets(inventory, "元数据")
+    scope = contract.get("source_scope")
+    if not isinstance(scope, dict):
+        return ["metadata source dispositions requires source_scope"]
+    if scope.get("domain") != "元数据":
+        errors.append("metadata source dispositions source_scope.domain must be 元数据")
+    if scope.get("expected_asset_count") != len(expected):
+        errors.append(
+            "metadata source dispositions expected_asset_count differs from ODS overview: "
+            f"contract={scope.get('expected_asset_count')}, observed={len(expected)}"
+        )
+    if not isinstance(scope.get("source_detail_limit"), str) or not scope["source_detail_limit"].strip():
+        errors.append("metadata source dispositions must state the source detail limit")
+    for name, source in expected.items():
+        if len(source["anchors"]) != 1 or len(source["source_labels"]) != 1:
+            errors.append(
+                f"authoritative ODS 元数据 asset {name} must occur exactly once with one label: "
+                f"anchors={source['anchors']!r}, labels={source['source_labels']!r}"
+            )
+
+    policy = contract.get("verification_policy")
+    if not isinstance(policy, dict):
+        return errors + ["metadata source dispositions requires verification_policy"]
+    allowed_decisions = set(policy.get("allowed_decisions") or [])
+    runtime_statuses = set(policy.get("runtime_statuses") or [])
+    if allowed_decisions != {"reuse", "merge", "split", "derive", "correct", "reject"}:
+        errors.append("metadata source dispositions has an invalid decision vocabulary")
+    if runtime_statuses != {"missing", "pending", "verified"}:
+        errors.append("metadata source dispositions has an invalid runtime status vocabulary")
+    if policy.get("empty_tables_are_evidence") is not False:
+        errors.append("metadata source dispositions must reject empty tables as evidence")
+
+    assets = contract.get("assets")
+    if not isinstance(assets, list):
+        return errors + ["metadata source dispositions requires assets"]
+    seen: set[str] = set()
+    required_field_rules = {
+        "tenant", "business_key", "time", "status", "value_or_unit", "security_boundary"
+    }
+    for index, asset in enumerate(assets):
+        label = f"metadata source dispositions assets[{index}]"
+        if not isinstance(asset, dict):
+            errors.append(f"{label}: must be an object")
+            continue
+        name = asset.get("source_asset")
+        if not isinstance(name, str) or not name:
+            errors.append(f"{label}: requires source_asset")
+            continue
+        if name in seen:
+            errors.append(f"{label}: duplicate source_asset {name}")
+        seen.add(name)
+        observed = expected.get(name)
+        if observed is None:
+            errors.append(f"{label}: not an authoritative ODS 元数据 asset: {name}")
+        else:
+            if [asset.get("source_label")] != observed["source_labels"]:
+                errors.append(
+                    f"{label}: source label differs from ODS overview for {name}: "
+                    f"contract={asset.get('source_label')!r}, observed={observed['source_labels']!r}"
+                )
+            anchor = asset.get("source_anchor")
+            actual_anchor = (
+                (anchor.get("document"), anchor.get("line"))
+                if isinstance(anchor, dict) else None
+            )
+            if actual_anchor not in observed["anchors"]:
+                errors.append(
+                    f"{label}: source anchor differs from ODS overview for {name}: "
+                    f"contract={actual_anchor!r}, observed={observed['anchors']!r}"
+                )
+        if not isinstance(asset.get("source_grain"), str) or not asset["source_grain"].strip():
+            errors.append(f"{label}: requires source_grain")
+        if asset.get("decision") not in allowed_decisions:
+            errors.append(f"{label}: invalid decision {asset.get('decision')!r}")
+        for key in ("canonical_entities", "canonical_targets", "corrections"):
+            if not _nonempty_strings(asset.get(key)):
+                errors.append(f"{label}: requires non-empty {key}")
+        if not isinstance(asset.get("sor_owner"), str) or not asset["sor_owner"].strip():
+            errors.append(f"{label}: requires sor_owner")
+        field_rules = asset.get("field_rules")
+        if not isinstance(field_rules, dict) or set(field_rules) != required_field_rules:
+            errors.append(f"{label}: field_rules must define exactly {sorted(required_field_rules)}")
+        elif any(not isinstance(value, str) or not value.strip() for value in field_rules.values()):
+            errors.append(f"{label}: field_rules values must be non-empty strings")
+        for key in ("history_policy", "delete_policy", "backfill_policy"):
+            if not isinstance(asset.get(key), str) or not asset[key].strip():
+                errors.append(f"{label}: requires {key}")
+        for ref_key in ("backend_refs", "lakehouse_refs"):
+            references = asset.get(ref_key)
+            if not _nonempty_strings(references):
+                errors.append(f"{label}: requires {ref_key}")
+                continue
+            for reference in references:
+                reference_error = _contract_reference_error(reference)
+                if reference_error:
+                    errors.append(
+                        f"{label}: invalid {ref_key[:-1]} {reference}: {reference_error}"
+                    )
+        runtime = asset.get("runtime_nonempty_reconciliation")
+        if not isinstance(runtime, dict):
+            errors.append(f"{label}: requires runtime_nonempty_reconciliation")
+        else:
+            if runtime.get("status") not in runtime_statuses:
+                errors.append(f"{label}: invalid runtime reconciliation status")
+            gate_ref = runtime.get("gate_ref")
+            if not isinstance(gate_ref, str) or not gate_ref.strip():
+                errors.append(f"{label}: runtime reconciliation requires gate_ref")
+            elif not _resolve_contract_reference(gate_ref).is_file():
+                errors.append(f"{label}: missing runtime gate {gate_ref}")
+            for count_key in ("row_count", "tenant_count"):
+                count = runtime.get(count_key)
+                if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+                    errors.append(f"{label}: {count_key} must be a non-negative integer")
+            if runtime.get("status") == "verified" and not _runtime_reconciliation_verified(runtime):
+                errors.append(
+                    f"{label}: verified runtime reconciliation requires durable evidence, "
+                    "run id, and positive row/tenant counts"
+                )
+        if asset.get("specification_status") != "specified":
+            errors.append(f"{label}: specification_status must be specified")
+        if asset.get("verification_status") not in {"unverified", "verified"}:
+            errors.append(f"{label}: invalid verification_status")
+        if asset.get("verification_status") == "verified" and not _runtime_reconciliation_verified(runtime):
+            errors.append(
+                f"{label}: final verification is forbidden without non-empty runtime reconciliation"
+            )
+
+    if seen != set(expected):
+        errors.append(
+            "metadata source dispositions differ from authoritative ODS overview: "
+            f"missing={sorted(set(expected) - seen)}, extra={sorted(seen - set(expected))}"
+        )
+
+    required_design = {
+        "ods_meta_task_instance_di": ("split", "TaskRunObservation"),
+        "ods_meta_task_node_df": ("split", "TaskVersion"),
+        "ods_sla_parent_child_nodes_df": ("correct", "TaskDependency"),
+        "ods_sla_sla_task_df": ("merge", "TaskSla"),
+        "ods_meta_table_df": ("split", "DatasetVersion"),
+        "ods_meta_table_columns_df": ("merge", "FieldVersion"),
+        "ods_meta_table_lineage_df": ("correct", "LineageVersion"),
+        "ods_meta_dq_dqc_df": ("split", "DqcRuleVersion"),
+        "ods_meta_dq_dqc_instance_df": ("split", "DqcResult"),
+        "ods_metrics_metrics_info_df": ("split", "MetricVersion"),
+    }
+    by_name = {
+        asset.get("source_asset"): asset for asset in assets if isinstance(asset, dict)
+    }
+    for name, (decision, entity_fragment) in required_design.items():
+        asset = by_name.get(name)
+        if asset is None:
+            continue
+        if asset.get("decision") != decision:
+            errors.append(f"metadata source disposition {name}: decision must be {decision}")
+        if not any(entity_fragment in entity for entity in asset.get("canonical_entities", [])):
+            errors.append(
+                f"metadata source disposition {name}: canonical entities must include {entity_fragment}"
+            )
+
+    task_run = by_name.get("ods_meta_task_instance_di", {})
+    if "exact minor units" not in task_run.get("field_rules", {}).get("value_or_unit", ""):
+        errors.append("metadata task-run disposition must use exact minor-unit cost")
+    if "raw sql_content" not in task_run.get("field_rules", {}).get("security_boundary", ""):
+        errors.append("metadata task-run disposition must forbid raw SQL")
+    dependency = by_name.get("ods_sla_parent_child_nodes_df", {})
+    if "direct edges only" not in dependency.get("field_rules", {}).get("value_or_unit", ""):
+        errors.append("metadata dependency disposition must retain direct edges only")
+    lineage = by_name.get("ods_meta_table_lineage_df", {})
+    if "SOURCE_TO_TARGET" not in lineage.get("field_rules", {}).get("status", ""):
+        errors.append("metadata lineage disposition must normalize SOURCE_TO_TARGET direction")
+    metric = by_name.get("ods_metrics_metrics_info_df", {})
+    metric_units = metric.get("field_rules", {}).get("value_or_unit", "")
+    if "grain_code and metric_unit are distinct" not in metric_units:
+        errors.append("metadata metric disposition must separate grain from unit")
+    return errors
+
+
 def game_disposition_status(
     inventory: dict[str, Any], contract: dict[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -1037,6 +1275,42 @@ def game_disposition_status(
         "game_detailed_disposition_percent": round(len(specified) * 100.0 / denominator, 2),
         "game_runtime_nonempty_reconciled_percent": round(len(reconciled) * 100.0 / denominator, 2),
         "game_final_disposition_verified_percent": round(len(verified) * 100.0 / denominator, 2),
+    }
+
+
+def metadata_disposition_status(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    contract = contract or load_metadata_source_dispositions()
+    expected_count = len(authoritative_ods_domain_assets(inventory, "元数据"))
+    assets = contract.get("assets", []) if isinstance(contract, dict) else []
+    specified = [
+        asset for asset in assets
+        if isinstance(asset, dict) and asset.get("specification_status") == "specified"
+    ]
+    reconciled = [
+        asset for asset in assets
+        if isinstance(asset, dict)
+        and _runtime_reconciliation_verified(asset.get("runtime_nonempty_reconciliation"))
+    ]
+    verified = [
+        asset for asset in reconciled if asset.get("verification_status") == "verified"
+    ]
+    denominator = expected_count or 1
+    return {
+        "metadata_source_asset_count": expected_count,
+        "metadata_detailed_disposition_specified_count": len(specified),
+        "metadata_runtime_nonempty_reconciled_count": len(reconciled),
+        "metadata_final_disposition_verified_count": len(verified),
+        "metadata_detailed_disposition_percent": round(
+            len(specified) * 100.0 / denominator, 2
+        ),
+        "metadata_runtime_nonempty_reconciled_percent": round(
+            len(reconciled) * 100.0 / denominator, 2
+        ),
+        "metadata_final_disposition_verified_percent": round(
+            len(verified) * 100.0 / denominator, 2
+        ),
     }
 
 
@@ -1076,6 +1350,19 @@ def disposition_status(
     candidate_count = inventory["summary"]["unique_by_kind"]["candidate"]
     preliminary_count = len(routed) + len(rejected)
     game_status = game_disposition_status(inventory)
+    metadata_status = metadata_disposition_status(inventory)
+    detailed_count = (
+        game_status["game_detailed_disposition_specified_count"]
+        + metadata_status["metadata_detailed_disposition_specified_count"]
+    )
+    runtime_count = (
+        game_status["game_runtime_nonempty_reconciled_count"]
+        + metadata_status["metadata_runtime_nonempty_reconciled_count"]
+    )
+    verified_count = (
+        game_status["game_final_disposition_verified_count"]
+        + metadata_status["metadata_final_disposition_verified_count"]
+    )
     return {
         "candidate_asset_count": candidate_count,
         "authoritative_ods_overview_asset_count": len(source_assets),
@@ -1093,30 +1380,22 @@ def disposition_status(
         "bounded_domain_asset_count": len(bounded),
         "explicit_rejection_count": len(rejected),
         "preliminary_handled_count": preliminary_count,
-        "detailed_disposition_specified_count": game_status[
-            "game_detailed_disposition_specified_count"
-        ],
-        "runtime_nonempty_reconciled_count": game_status[
-            "game_runtime_nonempty_reconciled_count"
-        ],
-        "final_disposition_verified_count": game_status[
-            "game_final_disposition_verified_count"
-        ],
+        "detailed_disposition_specified_count": detailed_count,
+        "runtime_nonempty_reconciled_count": runtime_count,
+        "final_disposition_verified_count": verified_count,
         "routing_percent": round(len(routed) * 100.0 / candidate_count, 2),
         "preliminary_handled_percent": round(preliminary_count * 100.0 / candidate_count, 2),
         "detailed_disposition_specified_percent": round(
-            game_status["game_detailed_disposition_specified_count"]
-            * 100.0 / candidate_count, 2
+            detailed_count * 100.0 / candidate_count, 2
         ),
         "runtime_nonempty_reconciled_percent": round(
-            game_status["game_runtime_nonempty_reconciled_count"]
-            * 100.0 / candidate_count, 2
+            runtime_count * 100.0 / candidate_count, 2
         ),
         "final_disposition_percent": round(
-            game_status["game_final_disposition_verified_count"]
-            * 100.0 / candidate_count, 2
+            verified_count * 100.0 / candidate_count, 2
         ),
         **game_status,
+        **metadata_status,
     }
 
 
@@ -1216,7 +1495,10 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"({status['detailed_disposition_specified_percent']:.2f}% overall); "
         f"game={status['game_detailed_disposition_specified_count']}/"
         f"{status['game_source_asset_count']} "
-        f"({status['game_detailed_disposition_percent']:.2f}%)"
+        f"({status['game_detailed_disposition_percent']:.2f}%); "
+        f"metadata={status['metadata_detailed_disposition_specified_count']}/"
+        f"{status['metadata_source_asset_count']} "
+        f"({status['metadata_detailed_disposition_percent']:.2f}%)"
     )
     yield (
         "non-empty runtime reconciliations: "
@@ -1224,12 +1506,19 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"({status['runtime_nonempty_reconciled_percent']:.2f}% overall); "
         f"game={status['game_runtime_nonempty_reconciled_count']}/"
         f"{status['game_source_asset_count']} "
-        f"({status['game_runtime_nonempty_reconciled_percent']:.2f}%)"
+        f"({status['game_runtime_nonempty_reconciled_percent']:.2f}%); "
+        f"metadata={status['metadata_runtime_nonempty_reconciled_count']}/"
+        f"{status['metadata_source_asset_count']} "
+        f"({status['metadata_runtime_nonempty_reconciled_percent']:.2f}%)"
     )
     yield (
         "final semantic dispositions verified: "
         f"{status['final_disposition_verified_count']}/{status['candidate_asset_count']} "
-        f"({status['final_disposition_percent']:.2f}%); routing is not completion"
+        f"({status['final_disposition_percent']:.2f}%); "
+        f"game={status['game_final_disposition_verified_count']}/"
+        f"{status['game_source_asset_count']}, "
+        f"metadata={status['metadata_final_disposition_verified_count']}/"
+        f"{status['metadata_source_asset_count']}; routing is not completion"
     )
 
 
@@ -1245,6 +1534,7 @@ def main() -> int:
     errors.extend(validate_source_domain_policy(inventory))
     errors.extend(validate_source_asset_routes(inventory))
     errors.extend(validate_game_source_dispositions(inventory))
+    errors.extend(validate_metadata_source_dispositions(inventory))
     if errors:
         raise SourceAssetError("; ".join(errors))
     if args.command == "inventory":

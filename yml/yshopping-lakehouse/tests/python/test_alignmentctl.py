@@ -77,9 +77,9 @@ class AlignmentCtlTest(unittest.TestCase):
         self.assertEqual(100.0, score["overall_percent"])
         self.assertEqual(100.0, score["backend_percent"])
         self.assertEqual(100.0, score["lakehouse_percent"])
-        self.assertEqual(42.0, score["earned_surface_points"])
-        self.assertEqual(42, score["eligible_surface_count"])
-        self.assertEqual(1, score["excluded_unit_count"])
+        self.assertEqual(44.0, score["earned_surface_points"])
+        self.assertEqual(44, score["eligible_surface_count"])
+        self.assertEqual(0, score["excluded_unit_count"])
 
     def test_similarity_floor_rejects_regression_but_keeps_target_visible(self):
         manifest = ALIGNMENT.load(ALIGNMENT.DEFAULT_MANIFEST)

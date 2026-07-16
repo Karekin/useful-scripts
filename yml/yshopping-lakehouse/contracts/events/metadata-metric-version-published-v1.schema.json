@@ -1,0 +1,8 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://cloudmold.local/contracts/metadata-metric-version-published-v1.schema.json","title":"metadata.metric.version_published payload v1","type":"object","additionalProperties":false,
+  "required":["definition_id","definition_code","definition_version","display_name","owner_principal_id","specification_sha256","artifact_ref","previous_status","current_status","grain_code","metric_unit","aggregation_type","expression_sha256","filter_sha256","dimensions_sha256","semantic_version"],
+  "properties":{
+    "definition_id":{"$ref":"#/$defs/id"},"definition_code":{"$ref":"#/$defs/code"},"definition_version":{"type":"integer","minimum":1},"display_name":{"type":"string","minLength":3,"maxLength":160},"owner_principal_id":{"$ref":"#/$defs/id"},"specification_sha256":{"$ref":"#/$defs/sha"},"artifact_ref":{"$ref":"#/$defs/ref"},"previous_status":{"type":"string","enum":["DRAFT","PUBLISHED"]},"current_status":{"type":"string","const":"PUBLISHED"},"grain_code":{"$ref":"#/$defs/code"},"metric_unit":{"$ref":"#/$defs/code"},"aggregation_type":{"type":"string","enum":["SUM","COUNT","COUNT_DISTINCT","MIN","MAX","AVG","RATIO","SNAPSHOT"]},"expression_sha256":{"$ref":"#/$defs/sha"},"filter_sha256":{"$ref":"#/$defs/sha"},"dimensions_sha256":{"$ref":"#/$defs/sha"},"semantic_version":{"type":"string","pattern":"^[1-9][0-9]{0,8}\\.[0-9]{1,9}\\.[0-9]{1,9}$"}
+  },
+  "$defs":{"id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9_.-]{1,127}$"},"code":{"type":"string","pattern":"^[A-Za-z][A-Za-z0-9_.-]{1,127}$"},"sha":{"type":"string","pattern":"^[0-9a-f]{64}$"},"ref":{"type":"string","pattern":"^(?:sha256:[0-9a-f]{64}|restricted:[A-Za-z0-9][A-Za-z0-9._/-]{7,159})$"}}
+}

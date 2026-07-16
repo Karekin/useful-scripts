@@ -1,0 +1,13 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://cloudmold.local/contracts/metadata-task-run-observed-v1.schema.json","title":"metadata.task_run.observed payload v1","type":"object","additionalProperties":false,
+  "required":["run_id","task_id","task_version","attempt","observation_sequence","previous_status","current_status","scheduled_at","started_at","finished_at","duration_millis","compute_cost_minor","cost_currency","resource_millis","rows_read","rows_written","source_checkpoint_ref","output_snapshot_ref","error_ref"],
+  "properties":{
+    "run_id":{"$ref":"#/$defs/id"},"task_id":{"$ref":"#/$defs/id"},"task_version":{"type":"integer","minimum":1},"attempt":{"type":"integer","minimum":1},"observation_sequence":{"type":"integer","minimum":1},"previous_status":{"type":["string","null"],"enum":[null,"SCHEDULED","RUNNING","SUCCEEDED","FAILED","CANCELLED"]},"current_status":{"type":"string","enum":["SCHEDULED","RUNNING","SUCCEEDED","FAILED","CANCELLED"]},"scheduled_at":{"type":"string","format":"date-time"},"started_at":{"type":["string","null"],"format":"date-time"},"finished_at":{"type":["string","null"],"format":"date-time"},"duration_millis":{"type":["integer","null"],"minimum":0},"compute_cost_minor":{"type":["integer","null"],"minimum":0},"cost_currency":{"type":"string","pattern":"^[A-Z]{3}$"},"resource_millis":{"type":["integer","null"],"minimum":0},"rows_read":{"type":["integer","null"],"minimum":0},"rows_written":{"type":["integer","null"],"minimum":0},"source_checkpoint_ref":{"anyOf":[{"$ref":"#/$defs/ref"},{"type":"null"}]},"output_snapshot_ref":{"anyOf":[{"$ref":"#/$defs/ref"},{"type":"null"}]},"error_ref":{"anyOf":[{"$ref":"#/$defs/ref"},{"type":"null"}]}
+  },
+  "allOf":[
+    {"if":{"properties":{"current_status":{"enum":["SUCCEEDED","FAILED","CANCELLED"]}}},"then":{"properties":{"started_at":{"type":"string"},"finished_at":{"type":"string"},"duration_millis":{"type":"integer"}}}},
+    {"if":{"properties":{"current_status":{"const":"SUCCEEDED"}}},"then":{"properties":{"output_snapshot_ref":{"$ref":"#/$defs/ref"},"error_ref":{"type":"null"}}}},
+    {"if":{"properties":{"current_status":{"const":"FAILED"}}},"then":{"properties":{"error_ref":{"$ref":"#/$defs/ref"}}}}
+  ],
+  "$defs":{"id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9_.-]{1,127}$"},"ref":{"type":"string","pattern":"^(?:sha256:[0-9a-f]{64}|restricted:[A-Za-z0-9][A-Za-z0-9._/-]{7,159})$"}}
+}

@@ -142,8 +142,8 @@
       "ADS": {"candidate_names": 57, "create_targets": 48, "insert_targets": 42, "dependency_edges": 116, "unresolved_edges": 8}
     },
     "totals": {"candidate_names": 664, "create_targets": 440, "insert_targets": 261, "dependency_edges": 634, "unresolved_edges": 40},
-    "current_model_sql_files": 158,
-    "current_model_targets": 264,
+    "current_model_sql_files": 162,
+    "current_model_targets": 302,
     "known_high_confidence_issues": [
       "DWD 子订单当日任务误从主订单 ODS 取数，且子订单 DDL 缺逗号。",
       "SCM 操作 DDL 缺逗号并重复 operator_name。",
@@ -641,9 +641,17 @@
       "id": "metadata",
       "source_anchor": "main:124-125,2209-2331",
       "target_processes": ["表", "字段", "任务", "血缘", "运行", "SLA", "DQC", "告警", "治理"],
-      "backend": {"status": "deferred", "refs": [], "gaps": []},
-      "lakehouse": {"status": "deferred", "refs": [], "gaps": []},
-      "next_gate": "先由文件化契约和 CI 承担最小治理，D4 再按规模引入元数据控制面。"
+      "backend": {
+        "status": "partial",
+        "refs": ["yudao-cloud/cloudmold-module-metadata", "yudao-cloud/sql/cloudmold/V20260716_33__canonical_metadata_first_slice.sql"],
+        "gaps": ["已建立 DataSource/Dataset/Field、Task/Dependency/SLA、append-only TaskRun observation、version-bound Lineage、DQC Rule/Result 与 Metric 权威，10 类事件可重放字段和直接依赖明细，MySQL recursive+graph guard 拒绝任意深度环", "真实生产元数据导入、告警、历史回填、运行编排、非空重启重放和逐租户生产验证尚未完成"]
+      },
+      "lakehouse": {
+        "status": "partial",
+        "refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-metadata-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-metadata-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-metadata-current.sql", "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-metadata-readiness.sql"],
+        "gaps": ["10 类 strict contract 已形成定义版本历史/current、字段清单、直接依赖边、运行观测、精确 DQC 版本/字段/sequence、血缘、指标与 readiness；字段/直接依赖可由 count+sequence+端点重放", "StarRocks 4.0.12 不支持 WITH RECURSIVE，湖仓只验证 self/duplicate/2-edge cycle 并显式保持 transitive_dag_runtime_verified=false；真实非空流量、历史回填、重启重放、告警和持续新鲜度证据尚未完成"]
+      },
+      "next_gate": "接入一条受控非空 DataSource→Dataset/Field→Task/Dependency/SLA→TaskRun→Lineage→DQC→Metric 链路，验证事件重放、字段/直接依赖完整性、MySQL 传递 DAG、跨租户隔离与 StarRocks 对账。"
     },
     {
       "id": "product_onboarding",

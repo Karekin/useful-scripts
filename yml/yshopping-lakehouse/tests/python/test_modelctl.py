@@ -62,9 +62,9 @@ class ModelCtlTest(unittest.TestCase):
             positions["models/dws/dws-canonical-paid-order-cancellation-saga-current.sql"],
         )
 
-    def test_models_extend_manifest_to_one_hundred_fifty_eight_in_dependency_order(self):
+    def test_models_extend_manifest_to_one_hundred_sixty_two_in_dependency_order(self):
         order = MODEL.load_order()
-        self.assertEqual(len(order), 158)
+        self.assertEqual(len(order), 162)
         positions = {entry: index for index, entry in enumerate(order)}
         paid_dws = "models/dws/dws-canonical-paid-order-cancellation-saga-current.sql"
         paid_ads = "models/ads/ads-canonical-paid-order-cancellation-saga-readiness.sql"
@@ -171,6 +171,15 @@ class ModelCtlTest(unittest.TestCase):
         self.assertLess(positions[pilot_batch_dim], positions[pilot_dws])
         self.assertLess(positions[pilot_item_dim], positions[pilot_dws])
         self.assertLess(positions[pilot_dws], positions[pilot_ads])
+
+        metadata_dwd = "models/dwd/dwd-canonical-metadata-event.sql"
+        metadata_dim = "models/dim/dim-canonical-metadata-current.sql"
+        metadata_dws = "models/dws/dws-canonical-metadata-current.sql"
+        metadata_ads = "models/ads/ads-canonical-metadata-readiness.sql"
+        self.assertLess(positions["models/dwd/dwd-domain-event.sql"], positions[metadata_dwd])
+        self.assertLess(positions[metadata_dwd], positions[metadata_dim])
+        self.assertLess(positions[metadata_dim], positions[metadata_dws])
+        self.assertLess(positions[metadata_dws], positions[metadata_ads])
 
     def test_shadow_models_follow_historical_admission_and_full_denominator_dependencies(self):
         positions = {entry: index for index, entry in enumerate(MODEL.load_order())}

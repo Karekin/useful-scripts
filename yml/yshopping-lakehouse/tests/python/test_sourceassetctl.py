@@ -24,6 +24,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_source_domain_policy(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_source_asset_routes(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_game_source_dispositions(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_metadata_source_dispositions(self.inventory))
         self.assertEqual(6, len(self.inventory["documents"]))
 
     def test_inventory_is_complete_and_deterministic_for_the_locked_snapshot(self):
@@ -129,12 +130,12 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual(110, status["bounded_domain_asset_count"])
         self.assertEqual(5, status["explicit_rejection_count"])
         self.assertEqual(718, status["preliminary_handled_count"])
-        self.assertEqual(19, status["detailed_disposition_specified_count"])
+        self.assertEqual(29, status["detailed_disposition_specified_count"])
         self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
         self.assertEqual(99.3, status["routing_percent"])
         self.assertEqual(100.0, status["preliminary_handled_percent"])
-        self.assertEqual(2.65, status["detailed_disposition_specified_percent"])
+        self.assertEqual(4.04, status["detailed_disposition_specified_percent"])
         self.assertEqual(0.0, status["runtime_nonempty_reconciled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
         inferred = SOURCE_ASSETS.infer_source_domains(self.inventory)
@@ -145,6 +146,10 @@ class SourceAssetCtlTest(unittest.TestCase):
             ["ods_overview"],
             inferred["ods:object:ods_eliminate_user_coin_log_df"]["evidence_kinds"],
         )
+        lines = list(SOURCE_ASSETS.disposition_lines(self.inventory))
+        self.assertTrue(any("metadata=10/10 (100.00%)" in line for line in lines))
+        self.assertTrue(any("metadata=0/10 (0.00%)" in line for line in lines))
+        self.assertTrue(any("metadata=0/10; routing is not completion" in line for line in lines))
 
     def test_game_dispositions_cover_exact_authoritative_overview_rows(self):
         observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "游戏")
@@ -232,7 +237,7 @@ class SourceAssetCtlTest(unittest.TestCase):
             asset = by_name[name]
             self.assertEqual("derive", asset["decision"])
             self.assertTrue(all(entity.startswith("analytics.") for entity in asset["canonical_entities"]))
-            self.assertTrue(any("README.md#leaderboards" in ref for ref in asset["backend_refs"]))
+            self.assertTrue(any("README.md#Leaderboards" in ref for ref in asset["backend_refs"]))
         self.assertEqual(
             [
                 "dws_canonical_gamification_currency_leaderboard_input_current",
@@ -314,6 +319,153 @@ class SourceAssetCtlTest(unittest.TestCase):
         mislabeled = json.loads(json.dumps(contract))
         mislabeled["assets"][0]["source_label"] = "金币"
         errors = SOURCE_ASSETS.validate_game_source_dispositions(self.inventory, mislabeled)
+        self.assertTrue(any("source label differs" in error for error in errors))
+
+    def test_all_game_implementation_references_and_fragments_resolve(self):
+        contract = SOURCE_ASSETS.load_game_source_dispositions()
+        references = [
+            reference
+            for asset in contract["assets"]
+            for key in ("backend_refs", "lakehouse_refs")
+            for reference in asset[key]
+        ]
+        self.assertEqual(100, len(references))
+        self.assertEqual(
+            [],
+            [
+                (reference, SOURCE_ASSETS._contract_reference_error(reference))
+                for reference in references
+                if SOURCE_ASSETS._contract_reference_error(reference)
+            ],
+        )
+
+    def test_contract_reference_with_nonexistent_fragment_is_rejected(self):
+        contract = SOURCE_ASSETS.load_game_source_dispositions()
+        broken = json.loads(json.dumps(contract))
+        original = broken["assets"][0]["backend_refs"][0].split("#", 1)[0]
+        broken["assets"][0]["backend_refs"][0] = (
+            original + "#fragment_that_cannot_exist_in_cloudmold"
+        )
+        errors = SOURCE_ASSETS.validate_game_source_dispositions(self.inventory, broken)
+        self.assertTrue(any("missing fragment" in error for error in errors))
+
+    def test_metadata_dispositions_cover_exact_authoritative_overview_rows(self):
+        observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "元数据")
+        contract = SOURCE_ASSETS.load_metadata_source_dispositions()
+        names = [asset["source_asset"] for asset in contract["assets"]]
+        self.assertEqual(10, len(observed))
+        self.assertEqual(10, len(names))
+        self.assertEqual(set(observed), set(names))
+        self.assertEqual(len(names), len(set(names)))
+        self.assertEqual(
+            {line for item in observed.values() for _, line in item["anchors"]},
+            set(range(284, 294)),
+        )
+        for asset in contract["assets"]:
+            source = observed[asset["source_asset"]]
+            self.assertEqual([asset["source_label"]], source["source_labels"])
+            self.assertIn(
+                (asset["source_anchor"]["document"], asset["source_anchor"]["line"]),
+                source["anchors"],
+            )
+
+    def test_metadata_dispositions_are_fully_specified_but_not_runtime_verified(self):
+        self.assertEqual(
+            {
+                "metadata_source_asset_count": 10,
+                "metadata_detailed_disposition_specified_count": 10,
+                "metadata_runtime_nonempty_reconciled_count": 0,
+                "metadata_final_disposition_verified_count": 0,
+                "metadata_detailed_disposition_percent": 100.0,
+                "metadata_runtime_nonempty_reconciled_percent": 0.0,
+                "metadata_final_disposition_verified_percent": 0.0,
+            },
+            SOURCE_ASSETS.metadata_disposition_status(self.inventory),
+        )
+        contract = SOURCE_ASSETS.load_metadata_source_dispositions()
+        for asset in contract["assets"]:
+            self.assertEqual("specified", asset["specification_status"])
+            self.assertEqual("unverified", asset["verification_status"])
+            runtime = asset["runtime_nonempty_reconciliation"]
+            self.assertEqual("missing", runtime["status"])
+            self.assertIsNone(runtime["evidence_ref"])
+            self.assertEqual(0, runtime["row_count"])
+            self.assertEqual(0, runtime["tenant_count"])
+
+    def test_all_metadata_implementation_references_and_fragments_resolve(self):
+        contract = SOURCE_ASSETS.load_metadata_source_dispositions()
+        references = [
+            reference
+            for asset in contract["assets"]
+            for key in ("backend_refs", "lakehouse_refs")
+            for reference in asset[key]
+        ]
+        self.assertEqual(60, len(references))
+        self.assertEqual(
+            [],
+            [
+                (reference, SOURCE_ASSETS._contract_reference_error(reference))
+                for reference in references
+                if SOURCE_ASSETS._contract_reference_error(reference)
+            ],
+        )
+
+    def test_metadata_dispositions_encode_corrected_authority_boundaries(self):
+        contract = SOURCE_ASSETS.load_metadata_source_dispositions()
+        by_name = {asset["source_asset"]: asset for asset in contract["assets"]}
+        task_run = by_name["ods_meta_task_instance_di"]
+        self.assertIn("metadata.TaskRunObservation", task_run["canonical_entities"])
+        self.assertIn("exact minor units", task_run["field_rules"]["value_or_unit"])
+        self.assertIn("raw sql_content", task_run["field_rules"]["security_boundary"])
+        dependency = by_name["ods_sla_parent_child_nodes_df"]
+        self.assertEqual("correct", dependency["decision"])
+        self.assertIn("direct edges only", dependency["field_rules"]["value_or_unit"])
+        table = by_name["ods_meta_table_df"]
+        self.assertIn("analytics.DatasetPhysicalObservation", table["canonical_entities"])
+        lineage = by_name["ods_meta_table_lineage_df"]
+        self.assertEqual("correct", lineage["decision"])
+        self.assertIn("SOURCE_TO_TARGET", lineage["field_rules"]["status"])
+        dqc = by_name["ods_meta_dq_dqc_df"]
+        self.assertIn("monitor_sql is never stored raw", dqc["field_rules"]["security_boundary"])
+        result = by_name["ods_meta_dq_dqc_instance_df"]
+        self.assertIn(
+            "task_run_id plus observation_sequence",
+            result["field_rules"]["business_key"],
+        )
+        metric = by_name["ods_metrics_metrics_info_df"]
+        self.assertIn(
+            "grain_code and metric_unit are distinct",
+            metric["field_rules"]["value_or_unit"],
+        )
+
+    def test_metadata_final_verification_fails_closed_without_runtime_evidence(self):
+        contract = SOURCE_ASSETS.load_metadata_source_dispositions()
+        broken = json.loads(json.dumps(contract))
+        broken["assets"][0]["verification_status"] = "verified"
+        errors = SOURCE_ASSETS.validate_metadata_source_dispositions(self.inventory, broken)
+        self.assertTrue(any("forbidden without non-empty" in error for error in errors))
+
+        incomplete = json.loads(json.dumps(contract))
+        runtime = incomplete["assets"][0]["runtime_nonempty_reconciliation"]
+        runtime.update({"status": "verified", "evidence_ref": "/tmp/metadata.json"})
+        errors = SOURCE_ASSETS.validate_metadata_source_dispositions(self.inventory, incomplete)
+        self.assertTrue(any("positive row/tenant counts" in error for error in errors))
+
+    def test_metadata_contract_rejects_missing_duplicate_or_mislabeled_assets(self):
+        contract = SOURCE_ASSETS.load_metadata_source_dispositions()
+        missing = json.loads(json.dumps(contract))
+        missing["assets"].pop()
+        errors = SOURCE_ASSETS.validate_metadata_source_dispositions(self.inventory, missing)
+        self.assertTrue(any("differ from authoritative ODS overview" in error for error in errors))
+
+        duplicate = json.loads(json.dumps(contract))
+        duplicate["assets"][1] = json.loads(json.dumps(duplicate["assets"][0]))
+        errors = SOURCE_ASSETS.validate_metadata_source_dispositions(self.inventory, duplicate)
+        self.assertTrue(any("duplicate source_asset" in error for error in errors))
+
+        mislabeled = json.loads(json.dumps(contract))
+        mislabeled["assets"][0]["source_label"] = "任务"
+        errors = SOURCE_ASSETS.validate_metadata_source_dispositions(self.inventory, mislabeled)
         self.assertTrue(any("source label differs" in error for error in errors))
 
     def test_qualified_names_and_markdown_bold_are_parsed_without_losing_source_location(self):
