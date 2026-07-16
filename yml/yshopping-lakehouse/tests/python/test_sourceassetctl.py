@@ -270,12 +270,12 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual(110, status["bounded_domain_asset_count"])
         self.assertEqual(6, status["explicit_rejection_count"])
         self.assertEqual(718, status["preliminary_handled_count"])
-        self.assertEqual(114, status["detailed_disposition_specified_count"])
+        self.assertEqual(124, status["detailed_disposition_specified_count"])
         self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
         self.assertEqual(99.16, status["routing_percent"])
         self.assertEqual(100.0, status["preliminary_handled_percent"])
-        self.assertEqual(15.88, status["detailed_disposition_specified_percent"])
+        self.assertEqual(17.27, status["detailed_disposition_specified_percent"])
         self.assertEqual(0.0, status["runtime_nonempty_reconciled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
         self.assertIn(
@@ -311,7 +311,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertTrue(any("ticket=0/15 (0.00%)" in line for line in lines))
         self.assertTrue(any("supply_chain=23/23 (100.00%)" in line for line in lines))
         self.assertTrue(any("supply_chain=0/23 (0.00%)" in line for line in lines))
-        self.assertTrue(any("llm=4/16 (25.00%)" in line for line in lines))
+        self.assertTrue(any("llm=14/16 (87.50%)" in line for line in lines))
         self.assertTrue(any("llm=0/16 (0.00%)" in line for line in lines))
         self.assertTrue(any("llm=0/16; routing is not completion" in line for line in lines))
 
@@ -1524,27 +1524,31 @@ class SourceAssetCtlTest(unittest.TestCase):
         references = [reference for asset in contract["ddl_backed_assets"] for key in ("backend_refs", "lakehouse_refs") for reference in asset[key]]
         self.assertEqual([], [(reference, SOURCE_ASSETS._contract_reference_error(reference)) for reference in references if SOURCE_ASSETS._contract_reference_error(reference)])
 
-    def test_llm_dispositions_lock_all_sixteen_overview_assets_without_alias_inference(self):
+    def test_llm_dispositions_lock_fourteen_ddls_and_two_conflicts_without_alias_inference(self):
         contract = SOURCE_ASSETS.load_llm_source_dispositions()
         observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "大模型")
         detailed = {asset["source_asset"] for asset in contract["ddl_backed_assets"]}
         conflicts = {asset["source_asset"] for asset in contract["name_conflict_assets"]}
-        overview_only = {
+        ytoken_detailed = {
             asset["source_asset"]
-            for group in contract["overview_only_groups"]
+            for group in contract["ddl_backed_groups"]
             for asset in group["assets"]
         }
         self.assertEqual(16, len(observed))
-        self.assertEqual(set(observed), detailed | conflicts | overview_only)
-        self.assertEqual((4, 2, 10), (len(detailed), len(conflicts), len(overview_only)))
+        self.assertEqual(set(observed), detailed | conflicts | ytoken_detailed)
+        self.assertEqual((14, 2), (len(detailed) + len(ytoken_detailed), len(conflicts)))
+        self.assertEqual(
+            {"ddl_backed": 14, "name_conflict": 2, "overview_only": 0},
+            contract["source_scope"]["expected_source_evidence_counts"],
+        )
         self.assertEqual([], SOURCE_ASSETS.validate_llm_source_dispositions(self.inventory))
 
     def test_llm_boundaries_reject_secret_attempt_payment_and_ai_authority_fabrication(self):
         contract = SOURCE_ASSETS.load_llm_source_dispositions()
         detailed = {asset["source_asset"]: asset for asset in contract["ddl_backed_assets"]}
-        overview = {
+        ytoken = {
             asset["source_asset"]: asset
-            for group in contract["overview_only_groups"]
+            for group in contract["ddl_backed_groups"]
             for asset in group["assets"]
         }
         self.assertIn(
@@ -1557,21 +1561,30 @@ class SourceAssetCtlTest(unittest.TestCase):
         )
         self.assertIn(
             "a top-up row alone is not payment success",
-            overview["ods_paimon_ytoken_top_up_ri"]["table_rule"],
+            ytoken["ods_paimon_ytoken_top_up_ri"]["table_rule"],
         )
-        finding = contract["unadvertised_detailed_findings"][0]
-        self.assertEqual("reject", finding["decision"])
-        self.assertFalse(finding["denominator_credit"])
-        self.assertIn("password_salt", finding["finding"])
+        self.assertIn(
+            "reject password ingestion",
+            " ".join(ytoken["ods_paimon_ytoken_user_ri"]["corrections"]),
+        )
+        self.assertIn(
+            "api_key is secret material",
+            ytoken["ods_paimon_ytoken_token_ri"]["table_rule"],
+        )
+        findings = contract["unadvertised_detailed_findings"]
+        self.assertEqual(["reject", "derive"], [finding["decision"] for finding in findings])
+        self.assertTrue(all(not finding["denominator_credit"] for finding in findings))
+        self.assertIn("password_salt", findings[0]["finding"])
+        self.assertIn("restricted search-behavior", findings[1]["finding"])
 
-    def test_llm_status_credits_only_four_same_name_ddls_and_no_runtime_evidence(self):
+    def test_llm_status_credits_fourteen_same_name_ddls_and_no_runtime_evidence(self):
         self.assertEqual(
             {
                 "llm_source_asset_count": 16,
-                "llm_detailed_disposition_specified_count": 4,
+                "llm_detailed_disposition_specified_count": 14,
                 "llm_runtime_nonempty_reconciled_count": 0,
                 "llm_final_disposition_verified_count": 0,
-                "llm_detailed_disposition_percent": 25.0,
+                "llm_detailed_disposition_percent": 87.5,
                 "llm_runtime_nonempty_reconciled_percent": 0.0,
                 "llm_final_disposition_verified_percent": 0.0,
             },
@@ -1592,10 +1605,14 @@ class SourceAssetCtlTest(unittest.TestCase):
         false_verification["ddl_backed_assets"][0]["verification_status"] = "verified"
         errors = SOURCE_ASSETS.validate_llm_source_dispositions(self.inventory, false_verification)
         self.assertTrue(any("forbidden without governed reconciliation" in error for error in errors))
+        ytoken_evidence_drift = json.loads(json.dumps(contract))
+        ytoken_evidence_drift["ddl_backed_groups"][0]["assets"][0]["detail_anchor"]["heading_line"] = 1
+        errors = SOURCE_ASSETS.validate_llm_source_dispositions(self.inventory, ytoken_evidence_drift)
+        self.assertTrue(any("detailed evidence differs" in error for error in errors))
         security_drift = json.loads(json.dumps(contract))
         security_drift["unadvertised_detailed_findings"][0]["decision"] = "reuse"
         errors = SOURCE_ASSETS.validate_llm_source_dispositions(self.inventory, security_drift)
-        self.assertTrue(any("account credential finding differs" in error for error in errors))
+        self.assertTrue(any("account or Skill-search finding differs" in error for error in errors))
 
     def test_all_llm_implementation_references_resolve(self):
         contract = SOURCE_ASSETS.load_llm_source_dispositions()
@@ -1604,6 +1621,11 @@ class SourceAssetCtlTest(unittest.TestCase):
             for asset in contract["ddl_backed_assets"]
             for key in ("backend_refs", "lakehouse_refs")
             for reference in asset[key]
+        ] + [
+            reference
+            for group in contract["ddl_backed_groups"]
+            for key in ("backend_refs", "lakehouse_refs")
+            for reference in group[key]
         ]
         self.assertEqual(
             [],
