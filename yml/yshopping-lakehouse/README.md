@@ -70,6 +70,11 @@ heading context, and statement-like lines that still require manual disposition
 are reported separately. The inventory is evidence input only: it never executes
 or silently repairs prototype SQL. Every listed asset and every unparsed statement
 must eventually receive an explicit semantic decision before 100% can be claimed.
+`./scripts/lakehousectl source-disposition-status` separately reports routing
+progress and final disposition progress. The ODS overview currently provides
+authoritative Chinese-domain evidence for 281 of the 718 names; routing those
+assets does not grant completion credit until row-level split decisions, grains,
+SoR, field handling, targets and reconciliation evidence are all recorded.
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The older 95.24%

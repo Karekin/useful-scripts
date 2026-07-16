@@ -3,6 +3,7 @@ import importlib.util
 import json
 import tempfile
 import unittest
+from collections import Counter
 from pathlib import Path
 
 
@@ -20,6 +21,7 @@ class SourceAssetCtlTest(unittest.TestCase):
 
     def test_checked_in_source_snapshot_validates(self):
         self.assertEqual([], SOURCE_ASSETS.validate_inventory(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_source_domain_policy(self.inventory))
         self.assertEqual(6, len(self.inventory["documents"]))
 
     def test_inventory_is_complete_and_deterministic_for_the_locked_snapshot(self):
@@ -91,6 +93,40 @@ class SourceAssetCtlTest(unittest.TestCase):
         }
         self.assertIn(("typing", "python_import"), reference_kinds)
         self.assertIn(("tt0", "cte"), reference_kinds)
+
+    def test_ods_overview_is_authoritative_business_domain_evidence(self):
+        domains = Counter()
+        for asset in self.inventory["logical_assets"]:
+            for domain in asset["source_domains"]:
+                domains[domain] += 1
+        self.assertEqual(
+            {
+                "正向订单": 11, "逆向订单": 7, "支付": 14, "库存": 3,
+                "供应链": 23, "活动": 56, "优惠券": 6, "推送": 2,
+                "游戏": 19, "赔付": 3, "工单": 15, "用户": 30,
+                "商家": 7, "广告": 7, "社区": 33, "收藏": 2,
+                "算法": 1, "中台": 3, "商品": 10, "大模型": 16,
+                "情报系统": 3, "元数据": 10,
+            },
+            dict(domains),
+        )
+        game = next(
+            item for item in self.inventory["logical_assets"]
+            if item["normalized_name"] == "ods_eliminate_user_coin_log_df"
+        )
+        self.assertEqual(["游戏"], game["source_domains"])
+        self.assertEqual(["游戏用户能量记录/库下金币记录"], game["source_labels"])
+
+    def test_domain_routing_is_measured_but_never_credited_as_final_disposition(self):
+        status = SOURCE_ASSETS.disposition_status(self.inventory)
+        self.assertEqual(718, status["candidate_asset_count"])
+        self.assertEqual(281, status["authoritative_ods_overview_asset_count"])
+        self.assertEqual(281, status["domain_routed_asset_count"])
+        self.assertEqual(53, status["bounded_domain_asset_count"])
+        self.assertEqual(5, status["explicit_rejection_count"])
+        self.assertEqual(0, status["final_disposition_verified_count"])
+        self.assertEqual(39.14, status["routing_percent"])
+        self.assertEqual(0.0, status["final_disposition_percent"])
 
     def test_qualified_names_and_markdown_bold_are_parsed_without_losing_source_location(self):
         assets = {item["asset_id"]: item for item in self.inventory["assets"]}

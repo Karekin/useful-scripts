@@ -6,7 +6,7 @@ COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
 STARROCKS_CONTAINER=${STARROCKS_CONTAINER:-yshopping-starrocks}
 
 usage() {
-  echo "usage: lakehousectl {config-check|contract-test|source-assets|semantic-status|start|submit-cdc|submit-catalog-cdc|submit-legacy-mall-cdc|submit-event-cdc|apply-models|health|test|reconcile|reconcile-canonical-inventory|reconcile-canonical-inventory-lot|reconcile-canonical-inventory-migration|reconcile-canonical-catalog|reconcile-canonical-commerce|reconcile-canonical-commerce-v2|reconcile-canonical-cancellation-saga|reconcile-canonical-paid-cancellation-saga|reconcile-canonical-aftersales|reconcile-canonical-listing-unpublish-saga|reconcile-canonical-merchant|reconcile-canonical-merchant-deposit|reconcile-canonical-warehouse-network} [--tenant ID] [--run-id ID] [--saga-id UUID] [--merchant-id UUID] [--warehouse-id UUID] [--source-system CODE] [--source-type CODE] [--source-id ID]"
+  echo "usage: lakehousectl {config-check|contract-test|source-assets|source-disposition-status|semantic-status|start|submit-cdc|submit-catalog-cdc|submit-legacy-mall-cdc|submit-event-cdc|apply-models|health|test|reconcile|reconcile-canonical-inventory|reconcile-canonical-inventory-lot|reconcile-canonical-inventory-migration|reconcile-canonical-catalog|reconcile-canonical-commerce|reconcile-canonical-commerce-v2|reconcile-canonical-cancellation-saga|reconcile-canonical-paid-cancellation-saga|reconcile-canonical-aftersales|reconcile-canonical-listing-unpublish-saga|reconcile-canonical-merchant|reconcile-canonical-merchant-deposit|reconcile-canonical-warehouse-network} [--tenant ID] [--run-id ID] [--saga-id UUID] [--merchant-id UUID] [--warehouse-id UUID] [--source-system CODE] [--source-type CODE] [--source-id ID]"
 }
 
 sql() {
@@ -137,6 +137,9 @@ case "$COMMAND" in
     ;;
   source-assets)
     "$ROOT_DIR/scripts/sourceassetctl" summary
+    ;;
+  source-disposition-status)
+    "$ROOT_DIR/scripts/sourceassetctl" disposition-status
     ;;
   semantic-status)
     "$ROOT_DIR/scripts/alignmentctl" semantic-score

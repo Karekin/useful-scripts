@@ -21,6 +21,7 @@ from typing import Any, Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 ALIGNMENT_MANIFEST = ROOT / "contracts" / "yshopping-model-alignment-v1.json"
+SOURCE_DOMAIN_POLICY = ROOT / "contracts" / "yshopping-source-domain-policy-v1.json"
 DEFAULT_REFERENCE_ROOT = Path(
     "/Users/karekin/Library/Mobile Documents/iCloud~md~obsidian/Documents/project/"
     "语兴好物（y shopping）-电商数仓搭建"
@@ -117,8 +118,24 @@ def load_alignment_manifest(path: Path = ALIGNMENT_MANIFEST) -> dict[str, Any]:
     return value
 
 
+def load_source_domain_policy(path: Path = SOURCE_DOMAIN_POLICY) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SourceAssetError(f"cannot load source domain policy {path}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise SourceAssetError(f"{path}: root must be an object")
+    return value
+
+
 def _heading_path(headings: dict[int, str]) -> list[str]:
     return [headings[level] for level in sorted(headings)]
+
+
+def _clean_markdown_cell(value: str) -> str:
+    value = re.sub(r"<br\s*/?>", "", value, flags=re.IGNORECASE)
+    value = re.sub(r"<[^>]+>", "", value)
+    return value.replace("\\", "").strip()
 
 
 def _asset_id(layer: str, kind: str, normalized_name: str) -> str:
@@ -136,6 +153,8 @@ def _occurrence(
     relation: str | None = None,
     object_type: str | None = None,
     reference_kind: str | None = None,
+    source_domain: str | None = None,
+    source_label: str | None = None,
 ) -> dict[str, Any]:
     value: dict[str, Any] = {
         "document": filename,
@@ -151,6 +170,10 @@ def _occurrence(
         value["object_type"] = object_type.upper()
     if reference_kind:
         value["reference_kind"] = reference_kind
+    if source_domain:
+        value["source_domain"] = source_domain
+    if source_label:
+        value["source_label"] = source_label
     return value
 
 
@@ -214,6 +237,8 @@ def extract_inventory(reference_root: Path = DEFAULT_REFERENCE_ROOT) -> dict[str
         fence_marker: str | None = None
         fence_language = ""
         cte_aliases: set[str] = set()
+        in_ods_overview = False
+        ods_overview_domain = ""
         for line_number, line in enumerate(lines, start=1):
             stripped = line.lstrip()
             opening_marker = "```" if stripped.startswith("```") else "~~~" if stripped.startswith("~~~") else None
@@ -244,6 +269,20 @@ def extract_inventory(reference_root: Path = DEFAULT_REFERENCE_ROOT) -> dict[str
                         "heading_path": _heading_path(headings),
                     }
                 )
+                if layer == "ODS":
+                    in_ods_overview = headings[level] == "数据表总览"
+
+            source_domain = None
+            source_label = None
+            if in_ods_overview and line.startswith("|"):
+                table_row = line.strip()
+                cells = [_clean_markdown_cell(cell) for cell in table_row[1:-1].split("|")]
+                if len(cells) >= 3 and cells[0] not in {"数据库", "---"}:
+                    if cells[0]:
+                        ods_overview_domain = cells[0]
+                    if ods_overview_domain and cells[1] not in {"", "---"}:
+                        source_domain = ods_overview_domain
+                        source_label = cells[1]
 
             # Markdown bold markers occasionally appear inside a quoted SQL
             # identifier.  They are presentation syntax, not part of the name.
@@ -268,6 +307,8 @@ def extract_inventory(reference_root: Path = DEFAULT_REFERENCE_ROOT) -> dict[str
                         document_layer=layer,
                         headings=headings,
                         object_type=match.group("object_type"),
+                        source_domain=source_domain,
+                        source_label=source_label,
                     ),
                 )
 
@@ -289,6 +330,8 @@ def extract_inventory(reference_root: Path = DEFAULT_REFERENCE_ROOT) -> dict[str
                         qualified_name=qualified,
                         document_layer=layer,
                         headings=headings,
+                        source_domain=source_domain,
+                        source_label=source_label,
                     ),
                 )
 
@@ -355,6 +398,8 @@ def extract_inventory(reference_root: Path = DEFAULT_REFERENCE_ROOT) -> dict[str
                     qualified_name=qualified,
                     document_layer=layer,
                     headings=headings,
+                    source_domain=source_domain,
+                    source_label=source_label,
                 )
                 suffix = normalized.split("_", 1)[1]
                 if not suffix.strip("_"):
@@ -401,6 +446,8 @@ def extract_inventory(reference_root: Path = DEFAULT_REFERENCE_ROOT) -> dict[str
                 "layer": asset["layer"],
                 "declared_layer": asset["declared_layer"],
                 "document_layers": [],
+                "source_domains": [],
+                "source_labels": [],
                 "normalized_name": asset["normalized_name"],
                 "roles": [],
                 "occurrences": [],
@@ -409,6 +456,10 @@ def extract_inventory(reference_root: Path = DEFAULT_REFERENCE_ROOT) -> dict[str
         logical["roles"].append(asset["kind"])
         logical["document_layers"].extend(asset["document_layers"])
         for occurrence in asset["occurrences"]:
+            if occurrence.get("source_domain"):
+                logical["source_domains"].append(occurrence["source_domain"])
+            if occurrence.get("source_label"):
+                logical["source_labels"].append(occurrence["source_label"])
             logical_occurrence = {"role": asset["kind"], **occurrence}
             key = (
                 logical_occurrence["role"],
@@ -426,6 +477,8 @@ def extract_inventory(reference_root: Path = DEFAULT_REFERENCE_ROOT) -> dict[str
     for logical in logical_assets:
         logical["roles"] = sorted(set(logical["roles"]))
         logical["document_layers"] = sorted(set(logical["document_layers"]))
+        logical["source_domains"] = sorted(set(logical["source_domains"]))
+        logical["source_labels"] = sorted(set(logical["source_labels"]))
         logical["occurrences"].sort(
             key=lambda item: (item["document"], item["line"], item["role"])
         )
@@ -549,6 +602,93 @@ def validate_inventory(
     return errors
 
 
+def validate_source_domain_policy(
+    inventory: dict[str, Any],
+    policy: dict[str, Any] | None = None,
+    manifest: dict[str, Any] | None = None,
+) -> list[str]:
+    errors: list[str] = []
+    policy = policy or load_source_domain_policy()
+    manifest = manifest or load_alignment_manifest()
+    domains = policy.get("domains")
+    if not isinstance(domains, dict) or not domains:
+        return ["source domain policy requires domains"]
+    observed_domains = {
+        domain
+        for item in inventory.get("logical_assets", [])
+        for domain in item.get("source_domains", [])
+    }
+    if set(domains) != observed_domains:
+        errors.append(
+            "source domain policy differs from ODS overview: "
+            f"policy={sorted(domains)}, observed={sorted(observed_domains)}"
+        )
+    allowed_units = set(manifest.get("required_alignment_units", []))
+    for domain, rule in domains.items():
+        label = f"source domain policy {domain}"
+        if not isinstance(rule, dict):
+            errors.append(f"{label}: rule must be an object")
+            continue
+        units = rule.get("allowed_alignment_units")
+        contexts = rule.get("canonical_contexts")
+        if not isinstance(units, list) or not units:
+            errors.append(f"{label}: requires allowed_alignment_units")
+        elif set(units) - allowed_units:
+            errors.append(f"{label}: unknown units {sorted(set(units) - allowed_units)}")
+        if not isinstance(contexts, list) or not contexts:
+            errors.append(f"{label}: requires canonical_contexts")
+        if not isinstance(rule.get("requires_row_level_split"), bool):
+            errors.append(f"{label}: requires_row_level_split must be boolean")
+    logical_names = {item["normalized_name"] for item in inventory.get("logical_assets", [])}
+    rejections = policy.get("explicit_rejections")
+    if not isinstance(rejections, dict) or not rejections:
+        errors.append("source domain policy requires explicit_rejections")
+    else:
+        missing = set(rejections) - logical_names
+        if missing:
+            errors.append(f"explicit rejections do not exist in source inventory: {sorted(missing)}")
+        for name, reason in rejections.items():
+            if not isinstance(reason, str) or not reason.strip():
+                errors.append(f"explicit rejection {name}: requires reason")
+    return errors
+
+
+def disposition_status(
+    inventory: dict[str, Any], policy: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    policy = policy or load_source_domain_policy()
+    domains = policy["domains"]
+    source_assets = [
+        item for item in inventory["logical_assets"] if item.get("source_domains")
+    ]
+    routed = [
+        item
+        for item in source_assets
+        if all(domain in domains for domain in item["source_domains"])
+    ]
+    bounded = [
+        item
+        for item in routed
+        if all(not domains[domain]["requires_row_level_split"] for domain in item["source_domains"])
+    ]
+    rejected_names = set(policy.get("explicit_rejections", {}))
+    rejected = [
+        item for item in inventory["logical_assets"]
+        if item["normalized_name"] in rejected_names
+    ]
+    candidate_count = inventory["summary"]["unique_by_kind"]["candidate"]
+    return {
+        "candidate_asset_count": candidate_count,
+        "authoritative_ods_overview_asset_count": len(source_assets),
+        "domain_routed_asset_count": len(routed),
+        "bounded_domain_asset_count": len(bounded),
+        "explicit_rejection_count": len(rejected),
+        "final_disposition_verified_count": 0,
+        "routing_percent": round(len(routed) * 100.0 / candidate_count, 2),
+        "final_disposition_percent": 0.0,
+    }
+
+
 def summary_lines(inventory: dict[str, Any]) -> Iterable[str]:
     summary = inventory["summary"]
     yield (
@@ -563,17 +703,38 @@ def summary_lines(inventory: dict[str, Any]) -> Iterable[str]:
         yield f"{layer}: " + ", ".join(f"{key}={value}" for key, value in values.items())
 
 
+def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
+    status = disposition_status(inventory)
+    yield (
+        "source disposition status: "
+        f"{status['domain_routed_asset_count']}/{status['candidate_asset_count']} "
+        f"assets domain-routed ({status['routing_percent']:.2f}%), "
+        f"{status['bounded_domain_asset_count']} have a bounded single-domain route, "
+        f"{status['explicit_rejection_count']} placeholders explicitly rejected"
+    )
+    yield (
+        "final semantic dispositions verified: "
+        f"{status['final_disposition_verified_count']}/{status['candidate_asset_count']} "
+        f"({status['final_disposition_percent']:.2f}%); routing is not completion"
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=("validate", "summary", "inventory"))
+    parser.add_argument(
+        "command", choices=("validate", "summary", "inventory", "disposition-status")
+    )
     parser.add_argument("--reference-root", type=Path, default=DEFAULT_REFERENCE_ROOT)
     args = parser.parse_args()
     inventory = extract_inventory(args.reference_root)
     errors = validate_inventory(inventory)
+    errors.extend(validate_source_domain_policy(inventory))
     if errors:
         raise SourceAssetError("; ".join(errors))
     if args.command == "inventory":
         print(json.dumps(inventory, ensure_ascii=False, indent=2))
+    elif args.command == "disposition-status":
+        print("\n".join(disposition_lines(inventory)))
     else:
         print("\n".join(summary_lines(inventory)))
     return 0

@@ -1,0 +1,36 @@
+{
+  "contract_version": 1,
+  "purpose": "Route the authoritative 281-row ODS overview into bounded canonical contexts without treating routing as final semantic disposition.",
+  "completion_rule": "A routed asset remains partial until it has an explicit grain, SoR, field decision, canonical targets, delete/history policy and non-empty reconciliation evidence.",
+  "domains": {
+    "正向订单": {"allowed_alignment_units": ["trade.order", "trade.payment", "trade.reverse", "product_onboarding"], "canonical_contexts": ["order_management", "payment", "fulfillment", "catalog_product"], "requires_row_level_split": true},
+    "逆向订单": {"allowed_alignment_units": ["trade.reverse", "trade.payment"], "canonical_contexts": ["after_sales", "refund", "return_fulfillment"], "requires_row_level_split": true},
+    "支付": {"allowed_alignment_units": ["trade.payment"], "canonical_contexts": ["payment", "account_ledger", "invoicing"], "requires_row_level_split": true},
+    "库存": {"allowed_alignment_units": ["trade.inventory"], "canonical_contexts": ["inventory"], "requires_row_level_split": false},
+    "供应链": {"allowed_alignment_units": ["trade.supply_chain", "supply_chain_quality", "trade.inventory"], "canonical_contexts": ["warehouse_operations", "quality_inspection", "inventory"], "requires_row_level_split": true},
+    "活动": {"allowed_alignment_units": ["activity", "game", "coupon", "push"], "canonical_contexts": ["promotion", "gamification", "coupon", "notification"], "requires_row_level_split": true},
+    "优惠券": {"allowed_alignment_units": ["coupon"], "canonical_contexts": ["coupon"], "requires_row_level_split": false},
+    "推送": {"allowed_alignment_units": ["push"], "canonical_contexts": ["notification"], "requires_row_level_split": false},
+    "游戏": {"allowed_alignment_units": ["game"], "canonical_contexts": ["gamification"], "requires_row_level_split": false},
+    "赔付": {"allowed_alignment_units": ["customer_service", "trade.reverse", "trade.payment"], "canonical_contexts": ["customer_claim", "compensation_ledger"], "requires_row_level_split": true},
+    "工单": {"allowed_alignment_units": ["customer_service", "ai_operations", "user_risk_graph"], "canonical_contexts": ["customer_service", "risk_decisioning", "ai_operations"], "requires_row_level_split": true},
+    "用户": {"allowed_alignment_units": ["user_identity", "user_risk_graph"], "canonical_contexts": ["identity", "risk_decisioning"], "requires_row_level_split": true},
+    "商家": {"allowed_alignment_units": ["seller_core", "seller_lifecycle", "trade.payment"], "canonical_contexts": ["merchant", "merchant_lifecycle", "merchant_ledger"], "requires_row_level_split": true},
+    "广告": {"allowed_alignment_units": ["advertising"], "canonical_contexts": ["advertising"], "requires_row_level_split": false},
+    "社区": {"allowed_alignment_units": ["community", "ai_operations", "trade.payment"], "canonical_contexts": ["community", "moderation", "creator_ledger"], "requires_row_level_split": true},
+    "收藏": {"allowed_alignment_units": ["collect"], "canonical_contexts": ["favorite"], "requires_row_level_split": false},
+    "算法": {"allowed_alignment_units": ["user_risk_graph"], "canonical_contexts": ["risk_decisioning"], "requires_row_level_split": false},
+    "中台": {"allowed_alignment_units": ["metadata", "user_risk_graph"], "canonical_contexts": ["platform_observability", "risk_decisioning"], "requires_row_level_split": true},
+    "商品": {"allowed_alignment_units": ["product_onboarding"], "canonical_contexts": ["catalog_product", "listing", "product_operations"], "requires_row_level_split": true},
+    "大模型": {"allowed_alignment_units": ["ai_operations", "token_platform"], "canonical_contexts": ["ai_operations", "token_platform"], "requires_row_level_split": true},
+    "情报系统": {"allowed_alignment_units": ["ai_operations"], "canonical_contexts": ["intelligence_operations"], "requires_row_level_split": false},
+    "元数据": {"allowed_alignment_units": ["metadata"], "canonical_contexts": ["data_platform_metadata"], "requires_row_level_split": false}
+  },
+  "explicit_rejections": {
+    "ods__": "incomplete placeholder identifier",
+    "dim__": "incomplete placeholder identifier",
+    "dwd_xxx_xx": "teaching placeholder without a business grain",
+    "ods_coupon_coupon_": "truncated teaching identifier without a source contract",
+    "ods_mysql_table_name_df": "generic template identifier without a source contract"
+  }
+}
