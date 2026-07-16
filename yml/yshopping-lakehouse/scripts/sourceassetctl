@@ -54,6 +54,9 @@ PAYMENT_SOURCE_SCHEMA_REQUEST = (
 ADVERTISING_SOURCE_SCHEMA_REQUEST = (
     ROOT / "contracts" / "yshopping-advertising-source-schema-request-v1.json"
 )
+COMMUNITY_SOURCE_DISPOSITIONS = (
+    ROOT / "contracts" / "yshopping-community-source-disposition-v1.json"
+)
 ENGAGEMENT_SOURCE_DISPOSITIONS = (
     ROOT / "contracts" / "yshopping-engagement-source-disposition-v1.json"
 )
@@ -305,6 +308,12 @@ def load_advertising_source_schema_request(
     path: Path = ADVERTISING_SOURCE_SCHEMA_REQUEST,
 ) -> dict[str, Any]:
     return _load_json_object(path, "advertising source schema request")
+
+
+def load_community_source_dispositions(
+    path: Path = COMMUNITY_SOURCE_DISPOSITIONS,
+) -> dict[str, Any]:
+    return _load_json_object(path, "community source dispositions")
 
 
 def load_engagement_source_dispositions(
@@ -3041,6 +3050,218 @@ def advertising_disposition_status(
     }
 
 
+def validate_community_source_dispositions(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    """Validate Community content, interaction, moderation and live boundaries."""
+    errors: list[str] = []
+    contract = contract or load_community_source_dispositions()
+    expected = authoritative_ods_domain_assets(inventory, "社区")
+    scope = contract.get("source_scope")
+    if not isinstance(scope, dict):
+        return ["community source dispositions require source_scope"]
+    document = scope.get("authoritative_document")
+    if scope.get("domain") != "社区" or scope.get("expected_asset_count") != len(expected):
+        errors.append("community source scope differs from authoritative ODS overview")
+    if scope.get("expected_source_evidence_counts") != {"ddl_backed": 30, "name_conflict": 3}:
+        errors.append("community source evidence counts must remain 30 ddl_backed and 3 name_conflict")
+
+    policy = contract.get("verification_policy")
+    if not isinstance(policy, dict) or policy.get("empty_tables_are_evidence") is not False:
+        errors.append("community empty tables must not be evidence")
+        decisions: set[str] = set()
+    else:
+        decisions = set(policy.get("allowed_decisions") or [])
+        if decisions != {"reuse", "merge", "split", "derive", "correct", "reject"}:
+            errors.append("community allowed decisions differ")
+        for key in ("specified_definition", "verified_definition"):
+            if not isinstance(policy.get(key), str) or not policy[key].strip():
+                errors.append(f"community verification policy requires {key}")
+
+    profiles = contract.get("semantic_profiles")
+    expected_profiles = {
+        "content", "social_interaction", "moderation", "messaging_and_search",
+        "live_session", "live_economy", "ai_red_team",
+    }
+    profile_fields = {
+        "canonical_entities", "grain", "identity", "history", "security", "authority",
+        "corrections", "model_status", "backend_refs", "lakehouse_refs",
+    }
+    if not isinstance(profiles, dict) or set(profiles) != expected_profiles:
+        errors.append(f"community semantic profiles must define exactly {sorted(expected_profiles)}")
+        profiles = {}
+    for name, profile in profiles.items():
+        label = f"community semantic profile {name}"
+        if not isinstance(profile, dict) or set(profile) != profile_fields:
+            errors.append(f"{label}: fields differ")
+            continue
+        if not _nonempty_strings(profile.get("canonical_entities")):
+            errors.append(f"{label}: requires canonical entities")
+        if not _nonempty_strings(profile.get("corrections")) or len(profile["corrections"]) < 2:
+            errors.append(f"{label}: requires multiple explicit corrections")
+        for key in ("grain", "identity", "history", "security", "authority"):
+            if not isinstance(profile.get(key), str) or not profile[key].strip():
+                errors.append(f"{label}: requires {key}")
+        if profile.get("model_status") not in {"partial", "missing", "rejected"}:
+            errors.append(f"{label}: invalid model_status")
+        for kind in ("backend_refs", "lakehouse_refs"):
+            values = profile.get(kind)
+            if not _nonempty_strings(values):
+                errors.append(f"{label}: requires {kind}")
+                continue
+            for value in values:
+                reference_error = _contract_reference_error(value)
+                if reference_error:
+                    errors.append(f"{label}: {kind} reference {value!r}: {reference_error}")
+
+    logical_by_name = {
+        asset["normalized_name"]: asset for asset in inventory.get("logical_assets", [])
+    }
+
+    def exact_ods_create_lines(name: str) -> list[int]:
+        lines: list[int] = []
+        for occurrence in logical_by_name.get(name, {}).get("occurrences", []):
+            if occurrence.get("role") != "create_target" or occurrence.get("document") != document:
+                continue
+            try:
+                normalized = normalize_identifier(occurrence.get("qualified_name", ""))[1]
+            except SourceAssetError:
+                continue
+            if normalized == name:
+                lines.append(occurrence.get("line"))
+        return lines
+
+    ddl_assets = contract.get("ddl_backed_assets")
+    conflicts = contract.get("name_conflict_assets")
+    if not isinstance(ddl_assets, list) or not isinstance(conflicts, list):
+        return errors + ["community dispositions require ddl_backed_assets and name_conflict_assets"]
+    if len(ddl_assets) != 30 or len(conflicts) != 3:
+        errors.append("community disposition evidence list counts differ")
+    seen: set[str] = set()
+    ddl_fields = {
+        "source_asset", "source_label", "overview_line", "detail_line", "profile",
+        "decision", "specification_status", "verification_status",
+    }
+    for index, asset in enumerate(ddl_assets):
+        label = f"community ddl_backed_assets[{index}]"
+        if not isinstance(asset, dict) or set(asset) != ddl_fields:
+            errors.append(f"{label}: fields differ")
+            continue
+        name = asset.get("source_asset")
+        if name in seen:
+            errors.append(f"{label}: duplicate source_asset {name}")
+        seen.add(name)
+        observed = expected.get(name)
+        if observed is None:
+            errors.append(f"{label}: not an authoritative Community asset: {name}")
+            continue
+        if observed.get("source_labels") != [asset.get("source_label")]:
+            errors.append(f"{label}: source label differs for {name}")
+        if (document, asset.get("overview_line")) not in observed.get("anchors", []):
+            errors.append(f"{label}: source anchor differs for {name}")
+        if asset.get("detail_line") not in exact_ods_create_lines(name):
+            errors.append(f"{label}: same-name ODS DDL evidence differs for {name}")
+        if asset.get("profile") not in expected_profiles or asset.get("decision") not in decisions:
+            errors.append(f"{label}: invalid semantic profile or decision")
+        if asset.get("specification_status") != "specified" or asset.get("verification_status") != "unverified":
+            errors.append(f"{label}: DDL-backed asset must be specified and runtime-unverified")
+
+    conflict_fields = {
+        "source_asset", "source_label", "overview_line", "actual_create_asset",
+        "actual_create_line", "profile", "decision", "conflict_rule", "specification_status",
+    }
+    for index, asset in enumerate(conflicts):
+        label = f"community name_conflict_assets[{index}]"
+        if not isinstance(asset, dict) or set(asset) != conflict_fields:
+            errors.append(f"{label}: fields differ")
+            continue
+        name = asset.get("source_asset")
+        if name in seen:
+            errors.append(f"{label}: duplicate source_asset {name}")
+        seen.add(name)
+        observed = expected.get(name)
+        if observed is None:
+            errors.append(f"{label}: not an authoritative Community asset: {name}")
+            continue
+        if observed.get("source_labels") != [asset.get("source_label")]:
+            errors.append(f"{label}: source label differs for {name}")
+        if (document, asset.get("overview_line")) not in observed.get("anchors", []):
+            errors.append(f"{label}: source anchor differs for {name}")
+        if exact_ods_create_lines(name):
+            errors.append(f"{label}: advertised asset now has same-name ODS DDL and requires reclassification")
+        actual = asset.get("actual_create_asset")
+        if asset.get("actual_create_line") not in exact_ods_create_lines(actual):
+            errors.append(f"{label}: conflicting physical CREATE evidence differs for {name}")
+        if asset.get("profile") not in expected_profiles or asset.get("decision") not in decisions:
+            errors.append(f"{label}: invalid semantic profile or decision")
+        if not isinstance(asset.get("conflict_rule"), str) or not asset["conflict_rule"].strip():
+            errors.append(f"{label}: requires conflict_rule")
+        if asset.get("specification_status") != "provisional":
+            errors.append(f"{label}: name conflict must remain provisional")
+    if seen != set(expected):
+        errors.append(
+            "community dispositions differ from authoritative overview: "
+            f"missing={sorted(set(expected) - seen)}, extra={sorted(seen - set(expected))}"
+        )
+
+    runtime = contract.get("runtime_nonempty_reconciliation")
+    required_runtime = {"gate_ref", "evidence_ref", "run_id", "row_count", "tenant_count", "status"}
+    if not isinstance(runtime, dict) or set(runtime) != required_runtime:
+        errors.append("community runtime reconciliation fields differ")
+    else:
+        if runtime.get("status") != "missing" or runtime.get("evidence_ref") is not None or runtime.get("run_id") is not None:
+            errors.append("community runtime reconciliation must remain missing without evidence")
+        if runtime.get("row_count") != 0 or runtime.get("tenant_count") != 0:
+            errors.append("community empty runtime evidence cannot receive credit")
+        gate_error = _contract_reference_error(runtime.get("gate_ref", ""))
+        if gate_error:
+            errors.append(f"community runtime gate reference: {gate_error}")
+
+    social = profiles.get("social_interaction", {})
+    if "cannot reconstruct history" not in social.get("history", ""):
+        errors.append("community social snapshots must not fabricate like/follow removal history")
+    moderation = profiles.get("moderation", {})
+    if "only the owning service" not in moderation.get("authority", "") or "policy versions" not in moderation.get("authority", ""):
+        errors.append("community moderation must separate reviewed decision from owning effects")
+    messaging = profiles.get("messaging_and_search", {})
+    if "consent for model training" not in messaging.get("authority", ""):
+        errors.append("community messages/search must not imply model-training consent")
+    economy = profiles.get("live_economy", {})
+    economy_text = " ".join(str(economy.get(key, "")) for key in ("grain", "identity", "history", "security", "authority", "corrections"))
+    for token in ("ISO currency", "integer minor unit", "Payment", "Ledger", "never proves settlement"):
+        if token not in economy_text:
+            errors.append(f"community live economy must require {token}")
+    red_team = profiles.get("ai_red_team", {})
+    if "cannot impersonate a real user" not in red_team.get("authority", "") or "attack production" not in red_team.get("authority", ""):
+        errors.append("community AI red-team data must not become production identity or attack authority")
+    return errors
+
+
+def community_disposition_status(
+    inventory: dict[str, Any], contract: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    contract = contract or load_community_source_dispositions()
+    expected_count = len(authoritative_ods_domain_assets(inventory, "社区"))
+    assets = contract.get("ddl_backed_assets", []) if isinstance(contract, dict) else []
+    specified = [
+        asset for asset in assets
+        if isinstance(asset, dict) and asset.get("specification_status") == "specified"
+    ]
+    runtime = contract.get("runtime_nonempty_reconciliation", {}) if isinstance(contract, dict) else {}
+    reconciled = len(specified) if _runtime_reconciliation_verified(runtime, "community") else 0
+    verified = reconciled if all(asset.get("verification_status") == "verified" for asset in specified) else 0
+    denominator = expected_count or 1
+    return {
+        "community_source_asset_count": expected_count,
+        "community_detailed_disposition_specified_count": len(specified),
+        "community_runtime_nonempty_reconciled_count": reconciled,
+        "community_final_disposition_verified_count": verified,
+        "community_detailed_disposition_percent": round(len(specified) * 100.0 / denominator, 2),
+        "community_runtime_nonempty_reconciled_percent": round(reconciled * 100.0 / denominator, 2),
+        "community_final_disposition_verified_percent": round(verified * 100.0 / denominator, 2),
+    }
+
+
 def validate_engagement_source_dispositions(
     inventory: dict[str, Any], contract: dict[str, Any] | None = None
 ) -> list[str]:
@@ -4501,6 +4722,7 @@ def disposition_status(
     coupon_status = coupon_disposition_status(inventory)
     user_status = user_disposition_status(inventory)
     advertising_status = advertising_disposition_status(inventory)
+    community_status = community_disposition_status(inventory)
     engagement_status = engagement_disposition_status(inventory)
     compensation_status = compensation_disposition_status(inventory)
     ticket_status = ticket_disposition_status(inventory)
@@ -4516,6 +4738,7 @@ def disposition_status(
         + coupon_status["coupon_detailed_disposition_specified_count"]
         + user_status["user_detailed_disposition_specified_count"]
         + advertising_status["advertising_detailed_disposition_specified_count"]
+        + community_status["community_detailed_disposition_specified_count"]
         + engagement_status["engagement_detailed_disposition_specified_count"]
         + compensation_status["compensation_detailed_disposition_specified_count"]
         + ticket_status["ticket_detailed_disposition_specified_count"]
@@ -4532,6 +4755,7 @@ def disposition_status(
         + coupon_status["coupon_runtime_nonempty_reconciled_count"]
         + user_status["user_runtime_nonempty_reconciled_count"]
         + advertising_status["advertising_runtime_nonempty_reconciled_count"]
+        + community_status["community_runtime_nonempty_reconciled_count"]
         + engagement_status["engagement_runtime_nonempty_reconciled_count"]
         + compensation_status["compensation_runtime_nonempty_reconciled_count"]
         + ticket_status["ticket_runtime_nonempty_reconciled_count"]
@@ -4548,6 +4772,7 @@ def disposition_status(
         + coupon_status["coupon_final_disposition_verified_count"]
         + user_status["user_final_disposition_verified_count"]
         + advertising_status["advertising_final_disposition_verified_count"]
+        + community_status["community_final_disposition_verified_count"]
         + engagement_status["engagement_final_disposition_verified_count"]
         + compensation_status["compensation_final_disposition_verified_count"]
         + ticket_status["ticket_final_disposition_verified_count"]
@@ -4594,6 +4819,7 @@ def disposition_status(
         **coupon_status,
         **user_status,
         **advertising_status,
+        **community_status,
         **engagement_status,
         **compensation_status,
         **ticket_status,
@@ -4721,6 +4947,9 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"advertising={status['advertising_detailed_disposition_specified_count']}/"
         f"{status['advertising_source_asset_count']} "
         f"({status['advertising_detailed_disposition_percent']:.2f}%); "
+        f"community={status['community_detailed_disposition_specified_count']}/"
+        f"{status['community_source_asset_count']} "
+        f"({status['community_detailed_disposition_percent']:.2f}%); "
         f"engagement={status['engagement_detailed_disposition_specified_count']}/"
         f"{status['engagement_source_asset_count']} "
         f"({status['engagement_detailed_disposition_percent']:.2f}%); "
@@ -4768,6 +4997,9 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"advertising={status['advertising_runtime_nonempty_reconciled_count']}/"
         f"{status['advertising_source_asset_count']} "
         f"({status['advertising_runtime_nonempty_reconciled_percent']:.2f}%); "
+        f"community={status['community_runtime_nonempty_reconciled_count']}/"
+        f"{status['community_source_asset_count']} "
+        f"({status['community_runtime_nonempty_reconciled_percent']:.2f}%); "
         f"engagement={status['engagement_runtime_nonempty_reconciled_count']}/"
         f"{status['engagement_source_asset_count']} "
         f"({status['engagement_runtime_nonempty_reconciled_percent']:.2f}%); "
@@ -4807,6 +5039,8 @@ def disposition_lines(inventory: dict[str, Any]) -> Iterable[str]:
         f"{status['user_source_asset_count']}, "
         f"advertising={status['advertising_final_disposition_verified_count']}/"
         f"{status['advertising_source_asset_count']}, "
+        f"community={status['community_final_disposition_verified_count']}/"
+        f"{status['community_source_asset_count']}, "
         f"engagement={status['engagement_final_disposition_verified_count']}/"
         f"{status['engagement_source_asset_count']}, "
         f"compensation={status['compensation_final_disposition_verified_count']}/"
@@ -4842,6 +5076,7 @@ def main() -> int:
     errors.extend(validate_user_source_dispositions(inventory))
     errors.extend(validate_payment_source_schema_request(inventory))
     errors.extend(validate_advertising_source_schema_request(inventory))
+    errors.extend(validate_community_source_dispositions(inventory))
     errors.extend(validate_engagement_source_dispositions(inventory))
     errors.extend(validate_compensation_source_dispositions(inventory))
     errors.extend(validate_ticket_source_dispositions(inventory))

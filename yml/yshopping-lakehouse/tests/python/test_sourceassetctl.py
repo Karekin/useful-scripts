@@ -154,6 +154,7 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual([], SOURCE_ASSETS.validate_user_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_payment_source_schema_request(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_advertising_source_schema_request(self.inventory))
+        self.assertEqual([], SOURCE_ASSETS.validate_community_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_engagement_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_compensation_source_dispositions(self.inventory))
         self.assertEqual([], SOURCE_ASSETS.validate_ticket_source_dispositions(self.inventory))
@@ -272,12 +273,12 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertEqual(110, status["bounded_domain_asset_count"])
         self.assertEqual(6, status["explicit_rejection_count"])
         self.assertEqual(718, status["preliminary_handled_count"])
-        self.assertEqual(129, status["detailed_disposition_specified_count"])
+        self.assertEqual(159, status["detailed_disposition_specified_count"])
         self.assertEqual(0, status["runtime_nonempty_reconciled_count"])
         self.assertEqual(0, status["final_disposition_verified_count"])
         self.assertEqual(99.16, status["routing_percent"])
         self.assertEqual(100.0, status["preliminary_handled_percent"])
-        self.assertEqual(17.97, status["detailed_disposition_specified_percent"])
+        self.assertEqual(22.14, status["detailed_disposition_specified_percent"])
         self.assertEqual(0.0, status["runtime_nonempty_reconciled_percent"])
         self.assertEqual(0.0, status["final_disposition_percent"])
         self.assertIn(
@@ -306,6 +307,8 @@ class SourceAssetCtlTest(unittest.TestCase):
         self.assertTrue(any("user=2/30 (6.67%)" in line for line in lines))
         self.assertTrue(any("user=0/30 (0.00%)" in line for line in lines))
         self.assertTrue(any("advertising=0/7 (0.00%)" in line for line in lines))
+        self.assertTrue(any("community=30/33 (90.91%)" in line for line in lines))
+        self.assertTrue(any("community=0/33 (0.00%)" in line for line in lines))
         self.assertTrue(any("engagement=4/4 (100.00%)" in line for line in lines))
         self.assertTrue(any("engagement=0/4 (0.00%)" in line for line in lines))
         self.assertTrue(any("compensation=1/3 (33.33%)" in line for line in lines))
@@ -1385,6 +1388,98 @@ class SourceAssetCtlTest(unittest.TestCase):
             for values in contract["implementation_refs"].values()
             for reference in values
         ]
+        self.assertEqual(
+            [],
+            [
+                (reference, SOURCE_ASSETS._contract_reference_error(reference))
+                for reference in references
+                if SOURCE_ASSETS._contract_reference_error(reference)
+            ],
+        )
+
+    def test_community_dispositions_cover_exact_30_ddl_and_3_name_conflicts(self):
+        contract = SOURCE_ASSETS.load_community_source_dispositions()
+        observed = SOURCE_ASSETS.authoritative_ods_domain_assets(self.inventory, "社区")
+        ddl_names = {asset["source_asset"] for asset in contract["ddl_backed_assets"]}
+        conflict_names = {asset["source_asset"] for asset in contract["name_conflict_assets"]}
+        self.assertEqual(33, len(observed))
+        self.assertEqual(30, len(ddl_names))
+        self.assertEqual(3, len(conflict_names))
+        self.assertEqual(set(observed), ddl_names | conflict_names)
+        self.assertEqual(
+            {
+                "ods_community_community_comment_di",
+                "ods_community_community_follows_di",
+                "ods_community_ecology_selected_audit_result_df",
+            },
+            conflict_names,
+        )
+        self.assertEqual([], SOURCE_ASSETS.validate_community_source_dispositions(self.inventory))
+
+    def test_community_profiles_preserve_history_privacy_money_and_effect_authority(self):
+        profiles = SOURCE_ASSETS.load_community_source_dispositions()["semantic_profiles"]
+        self.assertIn("cannot reconstruct history", profiles["social_interaction"]["history"])
+        self.assertIn("only the owning service", profiles["moderation"]["authority"])
+        self.assertIn("policy versions", profiles["moderation"]["authority"])
+        self.assertIn("consent for model training", profiles["messaging_and_search"]["authority"])
+        economy = " ".join(str(value) for value in profiles["live_economy"].values())
+        for token in ("ISO currency", "integer minor unit", "Payment", "Ledger", "never proves settlement"):
+            self.assertIn(token, economy)
+        self.assertIn("cannot impersonate a real user", profiles["ai_red_team"]["authority"])
+        self.assertIn("attack production", profiles["ai_red_team"]["authority"])
+
+    def test_community_status_credits_definition_only_not_runtime_or_final(self):
+        status = SOURCE_ASSETS.community_disposition_status(self.inventory)
+        self.assertEqual(33, status["community_source_asset_count"])
+        self.assertEqual(30, status["community_detailed_disposition_specified_count"])
+        self.assertEqual(90.91, status["community_detailed_disposition_percent"])
+        self.assertEqual(0, status["community_runtime_nonempty_reconciled_count"])
+        self.assertEqual(0, status["community_final_disposition_verified_count"])
+
+    def test_community_dispositions_reject_missing_duplicate_weakened_and_conflict_drift(self):
+        contract = SOURCE_ASSETS.load_community_source_dispositions()
+        missing = json.loads(json.dumps(contract))
+        missing["ddl_backed_assets"].pop()
+        errors = SOURCE_ASSETS.validate_community_source_dispositions(self.inventory, missing)
+        self.assertTrue(any("differ from authoritative overview" in error for error in errors))
+
+        duplicate = json.loads(json.dumps(contract))
+        duplicate["ddl_backed_assets"][1] = json.loads(json.dumps(duplicate["ddl_backed_assets"][0]))
+        errors = SOURCE_ASSETS.validate_community_source_dispositions(self.inventory, duplicate)
+        self.assertTrue(any("duplicate source_asset" in error for error in errors))
+
+        weakened = json.loads(json.dumps(contract))
+        weakened["semantic_profiles"]["moderation"]["authority"] = "model output is final"
+        errors = SOURCE_ASSETS.validate_community_source_dispositions(self.inventory, weakened)
+        self.assertTrue(any("separate reviewed decision" in error for error in errors))
+
+        drifted_inventory = json.loads(json.dumps(self.inventory))
+        logical = next(
+            asset for asset in drifted_inventory["logical_assets"]
+            if asset["normalized_name"] == "ods_community_community_comment_di"
+        )
+        logical["occurrences"].append(
+            {
+                "role": "create_target",
+                "document": "ODS语兴好物（y shopping）电商数据表.md",
+                "line": 9999,
+                "qualified_name": "ods_community_community_comment_di",
+            }
+        )
+        errors = SOURCE_ASSETS.validate_community_source_dispositions(
+            drifted_inventory, contract
+        )
+        self.assertTrue(any("requires reclassification" in error for error in errors))
+
+    def test_all_community_profile_references_resolve(self):
+        contract = SOURCE_ASSETS.load_community_source_dispositions()
+        references = [
+            reference
+            for profile in contract["semantic_profiles"].values()
+            for key in ("backend_refs", "lakehouse_refs")
+            for reference in profile[key]
+        ]
+        references.append(contract["runtime_nonempty_reconciliation"]["gate_ref"])
         self.assertEqual(
             [],
             [

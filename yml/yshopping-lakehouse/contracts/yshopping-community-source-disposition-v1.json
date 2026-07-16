@@ -1,0 +1,150 @@
+{
+  "contract_version": 1,
+  "contract_id": "yshopping.community.source-disposition.v1",
+  "source_scope": {
+    "domain": "社区",
+    "authoritative_document": "ODS语兴好物（y shopping）电商数据表.md",
+    "authoritative_overview_lines": "214-246",
+    "expected_asset_count": 33,
+    "expected_source_evidence_counts": {"ddl_backed": 30, "name_conflict": 3},
+    "source_detail_limit": "Thirty overview assets have a same-name ODS CREATE. Comment is advertised as _di but created as _df, follows is advertised as follows_di but created as usersfollows_di, and selected ecology audit recreates the community audit table; these three remain physical-name conflicts."
+  },
+  "verification_policy": {
+    "specified_definition": "Same-name ODS DDL plus an explicit content, interaction, moderation, messaging, live-commerce, financial or AI-safety semantic profile with authority and privacy boundaries.",
+    "verified_definition": "Non-empty production full-denominator reconciliation with tenant, source identity, Principal, content/session/case/payment keys, event history, policy/model versions, independently accepted effects and restricted payload controls.",
+    "empty_tables_are_evidence": false,
+    "allowed_decisions": ["reuse", "merge", "split", "derive", "correct", "reject"],
+    "runtime_statuses": ["missing", "pending", "verified"]
+  },
+  "semantic_profiles": {
+    "content": {
+      "canonical_entities": ["engagement.CommunityContent", "identity.PrincipalReference", "catalog.ProductReference", "storage.RestrictedObjectReference", "risk.ModerationDecisionReference"],
+      "grain": "one versioned community content aggregate plus immutable publish, edit, visibility, deletion and selection transitions",
+      "identity": "content, author Principal, mentioned Principals, Catalog product, media objects, taxonomy and moderation case identities remain distinct",
+      "history": "denormalized counters and latest audit fields are projections; edits, deletes, visibility and selection decisions append with source version and event time",
+      "security": "body, media URLs, usernames, mentions, location/tool JSON and raw moderation payloads stay tokenized or in restricted storage",
+      "authority": "Community owns content lifecycle; Risk/Moderation owns decisions, Catalog/Listing owns product saleability, and counters never authorize state",
+      "corrections": ["STRING lists and JSON require versioned schemas and element mappings", "BIGINT/string timestamps require timezone and source precision", "source productid is not a canonical SKU, SPU or Listing without mapping"],
+      "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-engagement/cloudmold-module-engagement-server/src/main/java/cn/iocoder/yudao/module/cloudmold/engagement/dal/dataobject/CommunityContentDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-engagement-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dim/dim-canonical-engagement-current.sql"]
+    },
+    "social_interaction": {
+      "canonical_entities": ["engagement.CommunityInteraction", "identity.PrincipalReference", "engagement.CommunityContentReference", "engagement.RelationshipState"],
+      "grain": "one immutable comment, reaction, share or relationship command/event; current membership is a separate projection",
+      "identity": "actor, target author, content, comment, parent/quoted comment and relationship counterpart remain distinct tenant-scoped identities",
+      "history": "like removal and unfollow rows are deleted from some source snapshots, so those tables cannot reconstruct history without operation/CDC tombstone evidence",
+      "security": "comment bodies, mentions, images, IP and behavioral identities are restricted and never broad analytical dimensions",
+      "authority": "an interaction changes only its owned reaction/relationship state; counts are derived and cannot publish, moderate, pay or rank content directly",
+      "corrections": ["require operation type, idempotency key and event time for reversible interactions", "resolve _di/_df and follows/usersfollows physical names before ingestion", "validate content/comment/Principal mappings and reject orphans"],
+      "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-engagement/cloudmold-module-engagement-server/src/main/java/cn/iocoder/yudao/module/cloudmold/engagement/dal/dataobject/CommunityInteractionDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-engagement-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-engagement-current.sql"]
+    },
+    "moderation": {
+      "canonical_entities": ["engagement.ModerationCase", "risk.Signal", "risk.PolicyVersion", "risk.Review", "risk.Decision", "identity.PrincipalReference", "engagement.AcceptedContentEffect"],
+      "grain": "case, machine observation, human review, appeal, decision and accepted owning-domain effect are separately keyed immutable records",
+      "identity": "content/business object, reporter, subject, reviewer, operator, policy, model invocation, audit attempt, appeal and effect identities remain distinct",
+      "history": "latest result snapshots never replace audit log, review, appeal, reversal or effect history; deletion retires projections only",
+      "security": "published content, reports, reasons, remarks, actor names, IP/media and raw machine JSON remain restricted or tokenized",
+      "authority": "machine tags and quality results are signals; reviewed decisions require policy versions, and only the owning service may apply hide, ban, mute, refund or commerce effects",
+      "corrections": ["normalize inconsistent audit/tag/status dictionaries and misspelled fields", "require model and policy versions plus accepted-effect causation", "separate current case state from append-only audit and appeal histories"],
+      "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-engagement/cloudmold-module-engagement-server/src/main/java/cn/iocoder/yudao/module/cloudmold/engagement/dal/dataobject/CommunityModerationCaseDO.java", "yudao-cloud/cloudmold-module-risk/cloudmold-module-risk-server/src/main/java/cn/iocoder/yudao/module/cloudmold/risk/dal/dataobject/RiskRecords.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-engagement-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-risk-event.sql"]
+    },
+    "messaging_and_search": {
+      "canonical_entities": ["engagement.PrivateMessage", "engagement.MessageDeliveryAttempt", "engagement.SearchObservation", "identity.PrincipalReference", "storage.RestrictedObjectReference"],
+      "grain": "one immutable message send/delivery attempt or one search observation, never a mutable user profile",
+      "identity": "sender, recipient, message, delivery attempt, search session/query and referenced content/product remain distinct",
+      "history": "send, delivery, read, recall and moderation events append; search observations retain governed purpose and retention windows",
+      "security": "private message bodies, search text, prompts, media, participant identities and inferred intent are highly restricted",
+      "authority": "message/search observations do not prove consent for model training, marketing, user profiling, moderation or commerce actions",
+      "corrections": ["add delivery/read/recall identities instead of inferring success from a row", "require explicit processing purpose, consent basis and retention", "split community and product search without treating a boolean as canonical taxonomy"],
+      "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-engagement/cloudmold-module-engagement-server/src/main/java/cn/iocoder/yudao/module/cloudmold/engagement/dal/dataobject/CommunityInteractionDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-engagement-event.sql"]
+    },
+    "live_session": {
+      "canonical_entities": ["engagement.LiveSession", "engagement.LivePresenceEvent", "engagement.LiveProductBinding", "catalog.ProductReference", "listing.OfferReference", "identity.PrincipalReference"],
+      "grain": "versioned room/session, append-only join/leave/presence and independently versioned product binding",
+      "identity": "room, live session/log, host, viewer, product, SKU/SPU, Listing/Offer and moderation case identities remain distinct",
+      "history": "room status, presence, product binding and moderation transitions append; current participant/product lists are projections",
+      "security": "live URLs, titles, user identities, presence times, comments and media references are restricted",
+      "authority": "Community owns live session state; Catalog/Listing owns product identity and saleability, Moderation owns decisions, and presence never proves purchase",
+      "corrections": ["separate room identity from each live session/log", "map source product identifiers to exact Listing/Offer", "require join/leave pairing, duplicate and late-event rules"],
+      "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-engagement/cloudmold-module-engagement-server/src/main/java/cn/iocoder/yudao/module/cloudmold/engagement/dal/dataobject/CommunityContentDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-engagement-event.sql"]
+    },
+    "live_economy": {
+      "canonical_entities": ["engagement.LiveGiftEntitlement", "payment.PaymentReference", "ledger.LedgerTransactionReference", "order.OrderReference", "merchant.MerchantReference", "identity.PrincipalReference"],
+      "grain": "gift entitlement/claim, recharge payment attempt, tip payment and creator commission accrual/settlement are separate records",
+      "identity": "room/session, giver, receiver/creator, gift definition, entitlement, order, payment attempt, ledger transaction and settlement remain distinct",
+      "history": "authorization, claim, capture, refund, commission accrual, adjustment and settlement append with reversals rather than overwrite",
+      "security": "payer/payee identities, provider references and settlement details are restricted; no raw instrument or credential data is accepted",
+      "authority": "Community records intent/context only; Payment and Ledger own money effects, Order owns entitlement provenance, and approval or gift delivery never proves settlement",
+      "corrections": ["all money requires ISO currency, integer minor unit, rounding and named funder/payee", "reconcile recharge, tip and commission to exact Payment/Ledger entries", "gift count/value cannot be combined with money without a versioned price and entitlement"],
+      "model_status": "missing",
+      "backend_refs": ["yudao-cloud/cloudmold-module-payment/cloudmold-module-payment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/payment/dal/dataobject/PaymentTransactionDO.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-payment-status-event.sql"]
+    },
+    "ai_red_team": {
+      "canonical_entities": ["ai_operations.WorkflowRunReference", "ai_operations.InvocationAttempt", "risk.TestScenario", "risk.SyntheticSubject", "storage.RestrictedObjectReference", "identity.ServiceAccountReference"],
+      "grain": "one versioned synthetic persona, generated content/resource or red-team test attempt with model/prompt/scenario lineage",
+      "identity": "service account, synthetic persona, scenario, invocation, generated asset, target test subject and reviewed finding remain distinct",
+      "history": "prompts, model versions, attempts, generated outputs, findings, review and remediation append; source deletion cannot erase accepted audit history",
+      "security": "personas, prompts, generated content/media, attack payloads, credentials and target identifiers remain restricted; secrets stay in a vault",
+      "authority": "red-team output is test evidence only and cannot impersonate a real user, publish content, attack production, ban a subject or create commerce effects",
+      "corrections": ["prove synthetic identity and isolated environment for every attempt", "bind outputs to immutable model/prompt/scenario versions", "require human acceptance and owning-domain remediation references"],
+      "model_status": "partial",
+      "backend_refs": ["yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aioperations/dal/dataobject/AiInvocationAttemptDO.java", "yudao-cloud/cloudmold-module-risk/cloudmold-module-risk-server/src/main/java/cn/iocoder/yudao/module/cloudmold/risk/dal/dataobject/RiskRecords.java"],
+      "lakehouse_refs": ["useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-ai-operations-event.sql", "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-risk-event.sql"]
+    }
+  },
+  "ddl_backed_assets": [
+    {"source_asset":"ods_community_community_trend_df","source_label":"动态明细","overview_line":214,"detail_line":1988,"profile":"content","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_audit_result_df","source_label":"审核结果表","overview_line":215,"detail_line":2061,"profile":"moderation","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_audit_log_di","source_label":"审核日志表","overview_line":216,"detail_line":2098,"profile":"moderation","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_trend_favorite_di","source_label":"动态喜欢表","overview_line":218,"detail_line":2551,"profile":"social_interaction","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_trend_share_di","source_label":"动态分享表","overview_line":219,"detail_line":2576,"profile":"social_interaction","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_trend_comment_favorite_di","source_label":"评论喜欢表","overview_line":220,"detail_line":2603,"profile":"social_interaction","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_search_di","source_label":"搜索表","overview_line":222,"detail_line":2660,"profile":"messaging_and_search","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_commission_df","source_label":"创作分佣表","overview_line":223,"detail_line":2686,"profile":"live_economy","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_message_di","source_label":"私信表","overview_line":224,"detail_line":2709,"profile":"messaging_and_search","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_report_df","source_label":"举报表","overview_line":225,"detail_line":2733,"profile":"moderation","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_apply_df","source_label":"申诉表","overview_line":226,"detail_line":2770,"profile":"moderation","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_live_reply_result_di","source_label":"直播弹幕审核结果表","overview_line":227,"detail_line":2800,"profile":"moderation","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_room_df","source_label":"直播间创建表","overview_line":228,"detail_line":2837,"profile":"live_session","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_live_products_df","source_label":"直播间商品表","overview_line":229,"detail_line":2875,"profile":"live_session","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_live_user_gift_log_di","source_label":"用户直播间领取礼物日志表","overview_line":230,"detail_line":2910,"profile":"live_economy","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_live_user_login_log_di","source_label":"用户进入退出房间日志表","overview_line":231,"detail_line":2937,"profile":"live_session","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_live_recharge_df","source_label":"直播间充值表","overview_line":232,"detail_line":2983,"profile":"live_economy","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_ban_case_df","source_label":"直播封禁表","overview_line":233,"detail_line":3002,"profile":"moderation","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_quilty_check_df","source_label":"社区质检表","overview_line":234,"detail_line":3024,"profile":"moderation","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_community_live_tip_df","source_label":"用户打赏表","overview_line":235,"detail_line":2959,"profile":"live_economy","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_ecology_comment_audit_result_df","source_label":"生态审-点评","overview_line":237,"detail_line":2275,"profile":"moderation","decision":"merge","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_ecology_qa_audit_result_df","source_label":"生态审-问答","overview_line":238,"detail_line":2223,"profile":"moderation","decision":"merge","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_ecology_community_audit_result_df","source_label":"生态审-整体社区","overview_line":239,"detail_line":2125,"profile":"moderation","decision":"merge","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_ecology_creator_audit_result_df","source_label":"生态审-创作评级","overview_line":240,"detail_line":2326,"profile":"moderation","decision":"merge","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_ecology_user_audit_result_df","source_label":"生态审-商家&搬运账号","overview_line":241,"detail_line":2390,"profile":"moderation","decision":"merge","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_ecology_commercial_order_audit_result_df","source_label":"生态审-商单标注&营销感审核","overview_line":242,"detail_line":2428,"profile":"moderation","decision":"merge","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_ai_blue_content_df","source_label":"ai-社区蓝军内容表","overview_line":243,"detail_line":3076,"profile":"ai_red_team","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_ai_blue_user_info_df","source_label":"ai-蓝军社区蓝军运营账号用户人设表","overview_line":244,"detail_line":3047,"profile":"ai_red_team","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_ai_blue_resource_df","source_label":"ai-蓝军社区蓝军素材表","overview_line":245,"detail_line":3116,"profile":"ai_red_team","decision":"split","specification_status":"specified","verification_status":"unverified"},
+    {"source_asset":"ods_community_ai_blue_user_attack_df","source_label":"ai-社区蓝军用户攻击表","overview_line":246,"detail_line":3143,"profile":"ai_red_team","decision":"split","specification_status":"specified","verification_status":"unverified"}
+  ],
+  "name_conflict_assets": [
+    {"source_asset":"ods_community_community_comment_di","source_label":"评论表","overview_line":217,"actual_create_asset":"ods_community_community_comment_df","actual_create_line":2517,"profile":"social_interaction","decision":"correct","conflict_rule":"Do not equate advertised incremental _di with created full-snapshot _df. Require the physical source, CDC/delete semantics and immutable comment operation identity before credit.","specification_status":"provisional"},
+    {"source_asset":"ods_community_community_follows_di","source_label":"用户关注表","overview_line":221,"actual_create_asset":"ods_community_community_usersfollows_di","actual_create_line":2631,"profile":"social_interaction","decision":"correct","conflict_rule":"Do not alias follows_di to usersfollows_di. The source removes unfollowed rows, so require tombstones or an operation log before reconstructing relationship history.","specification_status":"provisional"},
+    {"source_asset":"ods_community_ecology_selected_audit_result_df","source_label":"生态审-精选","overview_line":236,"actual_create_asset":"ods_community_ecology_community_audit_result_df","actual_create_line":2175,"profile":"moderation","decision":"correct","conflict_rule":"The Selected heading recreates the Community audit table and repeats PARTITION/STORED clauses. Require a distinct physical selected source and business key before any alias or detailed credit.","specification_status":"provisional"}
+  ],
+  "runtime_nonempty_reconciliation": {
+    "gate_ref": "useful-scripts/yml/yshopping-lakehouse/tests/sql/23-canonical-promotion-engagement-customer-service-contract.sql",
+    "evidence_ref": null,
+    "run_id": null,
+    "row_count": 0,
+    "tenant_count": 0,
+    "status": "missing"
+  }
+}

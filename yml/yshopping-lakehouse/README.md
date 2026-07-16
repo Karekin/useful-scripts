@@ -93,7 +93,7 @@ zero-difference checks, and a separately checksummed independent verifier.
 Documentation volume estimates (for example “15.96 亿”) are never used as a
 denominator. A merely non-empty JSON file can no longer promote any of the 718
 assets to `verified`.
-The governed detailed-disposition numerator is now 129/718. The Product
+The governed detailed-disposition numerator is now 159/718. The Product
 slice covers all ten authoritative 商品 overview assets: nine DDL-backed assets
 are specified across Catalog, Listing, workflow, Identity/Merchant and Quality
 boundaries; the personnel salary asset remains provisional because its detailed
@@ -197,7 +197,21 @@ Advertising Placement/Interaction implementation is only a target boundary,
 not source-schema evidence. A platform or table name cannot prove impression,
 click or conversion grain; clicks and attribution cannot prove Order, Payment
 or settlement effects. Advertising receives 0/7 detailed, runtime and final
-credit, so the global governed numerator remains 129/718 (17.97%).
+credit; at the end of that slice the global governed numerator remained
+129/718 (17.97%).
+The Community slice covers all thirty-three authoritative overview assets.
+Thirty have same-name ODS DDL and are definition-specified through seven
+profiles: content, social interaction, moderation, messaging/search, live
+session, live economy and isolated AI red-team evidence. Comment `_di` is
+created as `_df`, follows is created as `usersfollows`, and the Selected ecology
+heading recreates the Community audit table; those three physical-name
+conflicts remain provisional. Removed likes/follows cannot be reconstructed
+from current snapshots, private text does not imply model-training consent,
+machine or human review does not itself apply owning-domain effects, and
+recharge/tips/commission require exact Payment/Ledger entries with ISO currency
+and integer minor units. AI blue-team rows cannot impersonate users or authorize
+production attacks. Community is therefore 30/33 detailed but 0/33 runtime and
+final; the global governed numerator is 159/718 (22.14%).
 `./scripts/lakehousectl semantic-status` reports the authoritative completion
 score: all 22 declared units and both backend/lakehouse surfaces stay in the
 denominator, and only gap-free `verified` surfaces earn credit. The 100.00%
