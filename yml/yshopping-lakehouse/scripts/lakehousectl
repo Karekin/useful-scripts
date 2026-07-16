@@ -6,7 +6,7 @@ COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
 STARROCKS_CONTAINER=${STARROCKS_CONTAINER:-yshopping-starrocks}
 
 usage() {
-  echo "usage: lakehousectl {config-check|contract-test|source-assets|source-disposition-status|semantic-status|start|submit-cdc|submit-catalog-cdc|submit-legacy-mall-cdc|submit-event-cdc|apply-models|health|test|reconcile|reconcile-canonical-inventory|reconcile-canonical-inventory-lot|reconcile-canonical-inventory-migration|reconcile-canonical-catalog|reconcile-canonical-commerce|reconcile-canonical-commerce-v2|reconcile-canonical-order-benefit|reconcile-canonical-cancellation-saga|reconcile-canonical-paid-cancellation-saga|reconcile-canonical-aftersales|reconcile-canonical-listing-unpublish-saga|reconcile-canonical-merchant|reconcile-canonical-merchant-deposit|reconcile-canonical-warehouse-network} [--tenant ID] [--run-id ID] [--after-sale-id UUID] [--saga-id UUID] [--merchant-id UUID] [--warehouse-id UUID] [--source-system CODE] [--source-type CODE] [--source-id ID]"
+  echo "usage: lakehousectl {config-check|contract-test|source-assets|source-disposition-status|semantic-status|start|submit-cdc|submit-catalog-cdc|submit-legacy-mall-cdc|submit-event-cdc|apply-models|health|test|reconcile|reconcile-legacy-trade-benefit-assessment|reconcile-canonical-inventory|reconcile-canonical-inventory-lot|reconcile-canonical-inventory-migration|reconcile-canonical-catalog|reconcile-canonical-commerce|reconcile-canonical-commerce-v2|reconcile-canonical-order-benefit|reconcile-canonical-cancellation-saga|reconcile-canonical-paid-cancellation-saga|reconcile-canonical-aftersales|reconcile-canonical-listing-unpublish-saga|reconcile-canonical-merchant|reconcile-canonical-merchant-deposit|reconcile-canonical-warehouse-network} [--tenant ID] [--run-id ID] [--after-sale-id UUID] [--saga-id UUID] [--merchant-id UUID] [--warehouse-id UUID] [--source-system CODE] [--source-type CODE] [--source-id ID]"
 }
 
 sql() {
@@ -197,6 +197,42 @@ case "$COMMAND" in
         JOIN yshopping_dwd.dwd_purchase_receipt_line r
           ON r.tenant_id=m.tenant_id AND r.receipt_id=m.biz_id AND r.receipt_line_id=m.biz_item_id
        WHERE r.tenant_id=$TENANT_ID AND r.run_id='$safe_run_id';"
+    run_tests
+    ;;
+  reconcile-legacy-trade-benefit-assessment)
+    test -n "$TENANT_ID" || { echo "--tenant is required" >&2; exit 2; }
+    require_running
+    result=$(sql --skip-column-names -e "
+      SELECT source_order_row_count, non_deleted_order_count, deleted_excluded_count,
+             no_benefit_order_count, benefit_evidence_pending_order_count,
+             quarantined_order_count, source_benefit_amount_minor,
+             component_count, component_amount_minor,
+             unresolved_identity_count, unresolved_funding_count,
+             import_allowed_component_count, production_migration_enabled,
+             exact_order_item_mapping_available, versioned_benefit_identity_available,
+             named_funding_breakdown_available, readiness_status, source_scope
+      FROM yshopping_ads.ads_legacy_trade_benefit_migration_readiness
+      WHERE tenant_id=$TENANT_ID;")
+    require_single_row "$result" "legacy Trade benefit migration assessment"
+    echo -e "source_orders\tnon_deleted\tdeleted\tno_benefit\tbenefit_pending\tquarantined\tsource_benefit\tcomponents\tcomponent_amount\tunresolved_identity\tunresolved_funding\timport_allowed\tproduction_enabled\torder_item_mapping\tbenefit_identity\tfunding_breakdown\treadiness\tsource_scope"
+    echo "$result"
+    read -r source_orders non_deleted deleted no_benefit benefit_pending quarantined \
+      source_benefit components component_amount unresolved_identity unresolved_funding \
+      import_allowed production_enabled order_item_mapping benefit_identity funding_breakdown \
+      readiness source_scope <<< "$result"
+    [[ "$source_orders" =~ ^[1-9][0-9]*$ \
+       && "$non_deleted" -eq $((no_benefit + benefit_pending + quarantined)) \
+       && "$source_benefit" == "$component_amount" \
+       && "$unresolved_identity" == "$components" \
+       && "$unresolved_funding" == "$components" \
+       && "$import_allowed" == "0" && "$production_enabled" == "0" \
+       && "$order_item_mapping" == "0" && "$benefit_identity" == "0" \
+       && "$funding_breakdown" == "0" \
+       && "$readiness" == "BLOCKED_REQUIRES_GOVERNED_EVIDENCE" \
+       && "$source_scope" == "LOCAL_YUDAO_TRADE_NOT_YSHOPPING_SOURCE" ]] || {
+      echo "legacy Trade benefit migration assessment reconciliation failed" >&2
+      exit 1
+    }
     run_tests
     ;;
   reconcile-canonical-inventory)

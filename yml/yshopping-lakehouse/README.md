@@ -194,14 +194,28 @@ end with Order `CANCELLED`. Run `tests/sql/14-canonical-aftersales-return-refund
 and reconcile the exact ERP Operator `run_id` with
 `lakehousectl reconcile-canonical-aftersales`.
 
-This slice intentionally supports one delivered Order item, one return
-shipment, one warehouse inspection and a full accepted return/refund. Partial
-acceptance, exchange, no-return refund, multi-item/multi-package returns,
-appeal/compensation and production payment providers remain outside this first
-contract. Compensation, coupon/discount allocation and nonzero return shipping
-fees remain explicit future metrics rather than being inferred from refund
-money. Empty after-sales tables prove only that the models and DQC parse;
-they are not business acceptance evidence.
+The current contract supports exact line selection from a multi-line delivered
+Fulfillment and cumulative partial-to-full returns across the same or different
+Order lines. Partial inspection acceptance, exchange, no-return refund,
+multi-package returns, appeal/compensation and production payment providers
+remain outside this slice. Compensation and nonzero return shipping fees remain
+explicit future metrics rather than being inferred from refund money. Empty
+after-sales tables prove only that the models and DQC parse; they are not
+business acceptance evidence.
+
+## Legacy Trade benefit migration assessment
+
+The four `legacy-trade-benefit` views assess the local Yudao Mall `trade_order`
+and `trade_order_item` current snapshots without treating them as Y-Shopping's
+`ods_trade_trade_discount_di` history. They conserve generic, coupon, point and
+VIP amounts separately; expose header/item and money defects; and split every
+nonzero component while keeping canonical import disabled. A local Trade row
+cannot become a canonical Order benefit until exact Order/item mappings,
+versioned benefit identity and a named funding breakdown are all supplied.
+
+Run `lakehousectl reconcile-legacy-trade-benefit-assessment --tenant <id>` to
+verify the nonempty denominator, component amount conservation, unresolved
+evidence counts and the fail-closed production fence before any migration work.
 
 ## Canonical identity, merchant and warehouse master data
 

@@ -19,7 +19,18 @@ class LakehouseCtlContractTest(unittest.TestCase):
         self.assertIn("reconcile-canonical-warehouse-network", result.stdout)
         self.assertIn("reconcile-canonical-listing-unpublish-saga", result.stdout)
         self.assertIn("reconcile-canonical-inventory-migration", result.stdout)
+        self.assertIn("reconcile-legacy-trade-benefit-assessment", result.stdout)
         self.assertIn("submit-legacy-mall-cdc", result.stdout)
+
+    def test_legacy_trade_benefit_assessment_fails_closed_on_missing_evidence(self):
+        script = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn('"$source_benefit" == "$component_amount"', script)
+        self.assertIn('"$unresolved_identity" == "$components"', script)
+        self.assertIn('"$unresolved_funding" == "$components"', script)
+        self.assertIn('"$import_allowed" == "0"', script)
+        self.assertIn('"$production_enabled" == "0"', script)
+        self.assertIn('"$readiness" == "BLOCKED_REQUIRES_GOVERNED_EVIDENCE"', script)
+        self.assertIn('"$source_scope" == "LOCAL_YUDAO_TRADE_NOT_YSHOPPING_SOURCE"', script)
 
     def test_order_benefit_reconciliation_requires_nonempty_conserved_evidence(self):
         script = SCRIPT.read_text(encoding="utf-8")
