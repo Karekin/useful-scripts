@@ -225,8 +225,8 @@
         "disposition": "Accept as a visual-only derived requirement for AI intelligence operations, with collected observations, model attempts, clues, classifications, accepted decisions and delivery effects kept at separate grains.",
         "canonical_targets": ["intelligence.IntelligenceObservation", "intelligence.Clue", "ai_operations.InvocationAttempt", "risk.RiskSignal", "risk.AcceptedDecision", "yshopping_ads.ads_canonical_ai_intelligence_readiness"],
         "semantic_rules": ["deduplicate third-party observations by source-qualified evidence identity", "bind model outputs to immutable invocation model prompt taxonomy and policy versions", "separate raw clue model classification human review accepted decision and downstream effect", "publish complete eligible observation and invocation denominators", "restrict source content publisher and subject identity by purpose and retention", "version late-arrival restatement delivery and decision timestamps explicitly"],
-        "model_status": "missing",
-        "reasons": ["The exact ADS target and complete ODS-to-dashboard flow are legible only in the architecture image.", "Existing contracts govern the source tables, but the canonical intelligence ADS readiness projection is not yet implemented or reconciled."]
+        "model_status": "partial",
+        "reasons": ["The exact ADS target and complete ODS-to-dashboard flow are legible only in the architecture image.", "The canonical observation/model-result/clue/review/alert pipeline and AI intelligence readiness projection are implemented and locally reconciled, but Y-Shopping production full-denominator source evidence is still missing."]
       }
     ]
   },

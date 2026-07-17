@@ -16,6 +16,7 @@ SELECT
     causation_id,
     idempotency_key,
     payload,
+    headers,
     payload_hash,
     destination,
     status AS delivery_status,

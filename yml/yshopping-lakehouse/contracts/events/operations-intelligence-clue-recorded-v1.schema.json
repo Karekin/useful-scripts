@@ -1,0 +1,6 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://cloudmold.local/contracts/operations-intelligence-clue-recorded-v1.schema.json","title":"operations_intelligence.clue.recorded payload v1","type":"object","additionalProperties":false,
+  "required":["clue_id","observation_id","model_result_id","clue_type","source_code","source_published_at","evidence_ref","evidence_sha256","current_status"],
+  "properties":{"clue_id":{"$ref":"#/$defs/id"},"observation_id":{"$ref":"#/$defs/id"},"model_result_id":{"anyOf":[{"$ref":"#/$defs/id"},{"type":"null"}]},"clue_type":{"$ref":"#/$defs/code"},"source_code":{"$ref":"#/$defs/code"},"source_published_at":{"type":"string","format":"date-time"},"evidence_ref":{"$ref":"#/$defs/evidence"},"evidence_sha256":{"$ref":"#/$defs/hash"},"current_status":{"type":"string","const":"OBSERVED"}},
+  "$defs":{"id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"},"code":{"type":"string","pattern":"^[A-Z][A-Z0-9_]{0,63}$"},"hash":{"type":"string","pattern":"^[0-9a-f]{64}$"},"evidence":{"type":"string","pattern":"^(?:sha256:[0-9a-f]{64}|restricted:[A-Za-z0-9_-]{16,128})$"}}
+}

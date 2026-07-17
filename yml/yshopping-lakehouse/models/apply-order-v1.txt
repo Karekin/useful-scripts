@@ -51,6 +51,7 @@ models/dwd/dwd-canonical-promotion-event.sql
 models/dwd/dwd-canonical-engagement-event.sql
 models/dwd/dwd-canonical-customer-service-event.sql
 models/dwd/dwd-canonical-ai-operations-event.sql
+models/dwd/dwd-canonical-operations-intelligence-event.sql
 models/dwd/dwd-canonical-token-platform-event.sql
 models/dwd/dwd-canonical-risk-event.sql
 models/dwd/dwd-canonical-gamification-event.sql
@@ -108,6 +109,7 @@ models/dim/dim-canonical-promotion-current.sql
 models/dim/dim-canonical-engagement-current.sql
 models/dim/dim-canonical-customer-service-current.sql
 models/dim/dim-canonical-ai-operations-current.sql
+models/dim/dim-canonical-operations-intelligence-current.sql
 models/dim/dim-canonical-token-platform-current.sql
 models/dim/dim-canonical-risk-current.sql
 models/dim/dim-canonical-gamification-current.sql
@@ -151,6 +153,7 @@ models/dws/dws-canonical-promotion-current.sql
 models/dws/dws-canonical-engagement-current.sql
 models/dws/dws-canonical-customer-service-current.sql
 models/dws/dws-canonical-ai-operations-current.sql
+models/dws/dws-canonical-operations-intelligence-current.sql
 models/dws/dws-canonical-token-platform-current.sql
 models/dws/dws-canonical-risk-current.sql
 models/dws/dws-canonical-gamification-current.sql
@@ -188,6 +191,7 @@ models/ads/ads-canonical-promotion-readiness.sql
 models/ads/ads-canonical-engagement-readiness.sql
 models/ads/ads-canonical-customer-service-readiness.sql
 models/ads/ads-canonical-ai-operations-readiness.sql
+models/ads/ads-canonical-operations-intelligence-readiness.sql
 models/ads/ads-canonical-token-platform-readiness.sql
 models/ads/ads-canonical-risk-readiness.sql
 models/ads/ads-canonical-gamification-readiness.sql

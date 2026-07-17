@@ -49,6 +49,11 @@
     "risk.review.status_changed": {"schema_version": 1, "aggregate_type": "risk_review_case", "payload_schema": "events/risk-review-status-changed-v1.schema.json", "example": "examples/risk-review-status-changed-v1.json"},
     "risk.decision.recorded": {"schema_version": 1, "aggregate_type": "risk_decision", "payload_schema": "events/risk-decision-recorded-v1.schema.json", "example": "examples/risk-decision-recorded-v1.json"},
     "risk.feedback.recorded": {"schema_version": 1, "aggregate_type": "risk_feedback", "payload_schema": "events/risk-feedback-recorded-v1.schema.json", "example": "examples/risk-feedback-recorded-v1.json"},
+    "operations_intelligence.observation.recorded": {"schema_version": 1, "aggregate_type": "intelligence_observation", "payload_schema": "events/operations-intelligence-observation-recorded-v1.schema.json", "example": "examples/operations-intelligence-observation-recorded-v1.json"},
+    "operations_intelligence.model_result.recorded": {"schema_version": 1, "aggregate_type": "intelligence_model_result", "payload_schema": "events/operations-intelligence-model-result-recorded-v1.schema.json", "example": "examples/operations-intelligence-model-result-recorded-v1.json"},
+    "operations_intelligence.clue.recorded": {"schema_version": 1, "aggregate_type": "intelligence_clue", "payload_schema": "events/operations-intelligence-clue-recorded-v1.schema.json", "example": "examples/operations-intelligence-clue-recorded-v1.json"},
+    "operations_intelligence.clue.reviewed": {"schema_version": 1, "aggregate_type": "intelligence_clue", "payload_schema": "events/operations-intelligence-clue-reviewed-v1.schema.json", "example": "examples/operations-intelligence-clue-reviewed-v1.json"},
+    "operations_intelligence.alert.status_changed": {"schema_version": 1, "aggregate_type": "operations_alert", "payload_schema": "events/operations-intelligence-alert-status-changed-v1.schema.json", "example": "examples/operations-intelligence-alert-status-changed-v1.json"},
     "promotion.campaign.state_changed": {
       "schema_version": 1,
       "aggregate_type": "promotion_campaign",

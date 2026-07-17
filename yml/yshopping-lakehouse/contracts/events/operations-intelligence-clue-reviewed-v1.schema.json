@@ -1,0 +1,7 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://cloudmold.local/contracts/operations-intelligence-clue-reviewed-v1.schema.json","title":"operations_intelligence.clue.reviewed payload v1","type":"object","additionalProperties":false,
+  "required":["clue_id","review_id","previous_status","current_status","decision","reason_code","reviewer_principal_id"],
+  "properties":{"clue_id":{"$ref":"#/$defs/id"},"review_id":{"type":"string","format":"uuid"},"previous_status":{"type":"string","const":"OBSERVED"},"current_status":{"type":"string","enum":["ACCEPTED","REJECTED"]},"decision":{"type":"string","enum":["ACCEPT","REJECT"]},"reason_code":{"$ref":"#/$defs/code"},"reviewer_principal_id":{"$ref":"#/$defs/id"}},
+  "allOf":[{"if":{"properties":{"decision":{"const":"ACCEPT"}}},"then":{"properties":{"current_status":{"const":"ACCEPTED"}}}},{"if":{"properties":{"decision":{"const":"REJECT"}}},"then":{"properties":{"current_status":{"const":"REJECTED"}}}}],
+  "$defs":{"id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"},"code":{"type":"string","pattern":"^[A-Z][A-Z0-9_]{0,63}$"}}
+}

@@ -1,0 +1,6 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://cloudmold.local/contracts/operations-intelligence-model-result-recorded-v1.schema.json","title":"operations_intelligence.model_result.recorded payload v1","type":"object","additionalProperties":false,
+  "required":["model_result_id","observation_id","invocation_attempt_ref","model_version_ref","outcome_code","score_basis_points","retry_no","evidence_ref","result_sha256"],
+  "properties":{"model_result_id":{"$ref":"#/$defs/id"},"observation_id":{"$ref":"#/$defs/id"},"invocation_attempt_ref":{"$ref":"#/$defs/id"},"model_version_ref":{"$ref":"#/$defs/id"},"outcome_code":{"type":"string","enum":["SUCCEEDED","FAILED","PARTIAL"]},"score_basis_points":{"type":["integer","null"],"minimum":0,"maximum":10000},"retry_no":{"type":"integer","minimum":0,"maximum":100},"evidence_ref":{"$ref":"#/$defs/evidence"},"result_sha256":{"$ref":"#/$defs/hash"}},
+  "$defs":{"id":{"type":"string","pattern":"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"},"hash":{"type":"string","pattern":"^[0-9a-f]{64}$"},"evidence":{"type":"string","pattern":"^(?:sha256:[0-9a-f]{64}|restricted:[A-Za-z0-9_-]{16,128})$"}}
+}
