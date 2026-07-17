@@ -461,6 +461,13 @@ explicit blockers. It never derives target IDs from legacy numeric IDs. The
 local run `44000000-0000-4000-8000-000000000001` preserves 238 orders and 251
 items, excludes 8 deleted orders and 10 deleted/order-deleted items, and admits
 zero of 230 active orders because all target mappings are genuinely absent.
+The governed V68 follow-up links only five real active Member rows through the
+Identity API. Source run `45000000-0000-4000-8000-000000000001` and target run
+`46000000-0000-4000-8000-000000000001` resolve 212 active orders, retain 18 as
+`MISSING`, and preserve target evidence hash
+`b280d19bdd5a349b72a8a47ade31b488ac368a63e42509b8892dab9fec44adb0` in both
+backend and StarRocks. Order, lifecycle, Catalog and OrderItem mappings remain
+zero, so all 230 active orders stay blocked and import/production remain false.
 Even a fully qualified target mapping can open only mapping admission; canonical
 import stays false until benefit identity, named funding, quarantine decisions,
 and independent production Y-Shopping evidence are also complete.
