@@ -15,6 +15,8 @@ SELECT
     target.source_item_count,
     target.active_item_count,
     target.excluded_item_count,
+    target.historical_product_identity_qualified_item_count,
+    target.historical_product_identity_unqualified_item_count,
     target.spu_mapping_qualified_item_count,
     target.sku_mapping_qualified_item_count,
     target.order_item_mapping_qualified_count,
@@ -38,13 +40,18 @@ SELECT
       WHEN target.canonical_import_allowed_order_count <> 0
         OR target.canonical_import_allowed_item_count <> 0 OR target.production_migration_enabled
         THEN 'BLOCKED_ILLEGAL_IMPORT_AUTHORITY'
+      WHEN target.historical_product_identity_qualified_item_count <> target.active_item_count
+        OR target.historical_product_identity_unqualified_item_count <> 0
+        THEN 'BLOCKED_HISTORICAL_PRODUCT_IDENTITY_NOT_QUALIFIED'
       WHEN target.mapping_admitted_order_count = target.active_order_count
         AND target.mapping_admitted_item_count = target.active_item_count
         THEN 'TARGET_MAPPING_READY_BUT_BENEFIT_GOVERNANCE_BLOCKED'
       ELSE 'BLOCKED_REQUIRES_EXPLICIT_TARGET_MAPPINGS'
     END AS readiness_status,
     target.mapping_admitted_order_count = target.active_order_count
-      AND target.mapping_admitted_item_count = target.active_item_count AS exact_target_mapping_available,
+      AND target.mapping_admitted_item_count = target.active_item_count
+      AND target.historical_product_identity_qualified_item_count = target.active_item_count
+      AS exact_target_mapping_available,
     FALSE AS canonical_import_available,
     FALSE AS production_migration_enabled,
     'LOCAL_YUDAO_TRADE_NOT_YSHOPPING_SOURCE' AS governed_scope,

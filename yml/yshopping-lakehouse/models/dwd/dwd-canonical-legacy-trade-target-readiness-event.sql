@@ -1,6 +1,7 @@
 CREATE OR REPLACE VIEW yshopping_dwd.dwd_canonical_legacy_trade_target_readiness_event AS
 SELECT
     event_id,
+    schema_version,
     tenant_id,
     aggregate_id AS order_readiness_id,
     aggregate_version AS readiness_version,
@@ -36,6 +37,6 @@ SELECT
     CAST(REPLACE(SUBSTR(get_json_string(payload, '$.assessed_at'), 1, 19), 'T', ' ') AS DATETIME) AS assessed_at
 FROM yshopping_dwd.dwd_domain_event
 WHERE event_type = 'order.migration.legacy_trade_target_readiness_assessed'
-  AND schema_version = 1
+  AND schema_version IN (1, 2)
   AND source_system = 'cloudmold-order'
   AND aggregate_type = 'legacy_trade_target_readiness';

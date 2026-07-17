@@ -6,6 +6,12 @@ WITH item_rollup AS (
         COUNT(*) AS source_item_count,
         SUM(CASE WHEN mapping_readiness_status <> 'EXCLUDED' THEN 1 ELSE 0 END) AS active_item_count,
         SUM(CASE WHEN mapping_readiness_status = 'EXCLUDED' THEN 1 ELSE 0 END) AS excluded_item_count,
+        SUM(CASE WHEN historical_product_identity_status = 'QUALIFIED'
+                      AND mapping_readiness_status <> 'EXCLUDED' THEN 1 ELSE 0 END)
+            AS historical_product_identity_qualified_item_count,
+        SUM(CASE WHEN historical_product_identity_status <> 'QUALIFIED'
+                      AND mapping_readiness_status <> 'EXCLUDED' THEN 1 ELSE 0 END)
+            AS historical_product_identity_unqualified_item_count,
         SUM(CASE WHEN spu_mapping_status = 'QUALIFIED' AND mapping_readiness_status <> 'EXCLUDED'
             THEN 1 ELSE 0 END) AS spu_mapping_qualified_item_count,
         SUM(CASE WHEN sku_mapping_status = 'QUALIFIED' AND mapping_readiness_status <> 'EXCLUDED'
@@ -48,6 +54,10 @@ SELECT
     COALESCE(MAX(item.source_item_count), 0) AS source_item_count,
     COALESCE(MAX(item.active_item_count), 0) AS active_item_count,
     COALESCE(MAX(item.excluded_item_count), 0) AS excluded_item_count,
+    COALESCE(MAX(item.historical_product_identity_qualified_item_count), 0)
+        AS historical_product_identity_qualified_item_count,
+    COALESCE(MAX(item.historical_product_identity_unqualified_item_count), 0)
+        AS historical_product_identity_unqualified_item_count,
     COALESCE(MAX(item.spu_mapping_qualified_item_count), 0) AS spu_mapping_qualified_item_count,
     COALESCE(MAX(item.sku_mapping_qualified_item_count), 0) AS sku_mapping_qualified_item_count,
     COALESCE(MAX(item.order_item_mapping_qualified_count), 0) AS order_item_mapping_qualified_count,

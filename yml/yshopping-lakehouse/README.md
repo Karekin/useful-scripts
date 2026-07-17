@@ -55,7 +55,7 @@ contexts: Merchant/Shop/Identity, Warehouse/Location, production-pilot
 admission and inventory shadow verification. It rejects source
 drift, duplicate authorities, cross-system ID equivalence, incomplete
 tenant-scoped keys, ungoverned PII or money, missing lakehouse layers, missing
-event evidence and drift from the current 194 SQL files/334 model objects. A
+event evidence and drift from the current 198 SQL files/338 model objects. A
 `missing`, `legacy_only` or `partial` status is an explicit open gate, not proof
 of complete alignment.
 
@@ -453,21 +453,29 @@ verify the nonempty denominator, component amount conservation, unresolved
 evidence counts and the fail-closed production fence before any migration work.
 
 The target-readiness stage is deliberately separate from source assessment.
-`order.migration.legacy_trade_target_readiness_assessed` v1 projects only
-qualified, versioned Member, Catalog SPU/SKU, Order, OrderItem and lifecycle
-mapping evidence. Missing or duplicate mappings, stale source snapshot hashes,
-SKU-to-SPU disagreement, or an OrderItem planned under another Order all remain
-explicit blockers. It never derives target IDs from legacy numeric IDs. The
-local run `44000000-0000-4000-8000-000000000001` preserves 238 orders and 251
-items, excludes 8 deleted orders and 10 deleted/order-deleted items, and admits
-zero of 230 active orders because all target mappings are genuinely absent.
-The governed V68 follow-up links only five real active Member rows through the
-Identity API. Source run `45000000-0000-4000-8000-000000000001` and target run
-`46000000-0000-4000-8000-000000000001` resolve 212 active orders, retain 18 as
-`MISSING`, and preserve target evidence hash
-`b280d19bdd5a349b72a8a47ade31b488ac368a63e42509b8892dab9fec44adb0` in both
-backend and StarRocks. Order, lifecycle, Catalog and OrderItem mappings remain
-zero, so all 230 active orders stay blocked and import/production remain false.
+`order.migration.legacy_trade_target_readiness_assessed` v1/v2 projects only
+qualified, versioned Member, historical product identity, Catalog SPU/SKU,
+Order, OrderItem and lifecycle mapping evidence. Missing or duplicate mappings,
+stale source snapshot hashes, SKU-to-SPU disagreement, or an OrderItem planned
+under another Order all remain explicit blockers. It never derives target IDs
+from legacy numeric IDs. The governed V68 source run
+`45000000-0000-4000-8000-000000000001` resolves 212 of 230 active Orders through
+five real active Member links and retains 18 as `MISSING`.
+
+V70 adds an independent historical product-identity admission stage. A current
+`product_spu/product_sku` relation is only an observation; it cannot prove the
+SPU/SKU relation at Order time. Run `4b000000-0000-4000-8000-000000000001`
+preserves all 251 source items, excludes 10, finds 142 active source pairs whose
+parent relation is unambiguous but still unversioned, 99 active items whose old
+SKU appears under multiple old SPUs, and 234 current relations that can only be
+observed. No item has an immutable historical product snapshot qualification,
+so historical identity/admission remains `0/241` and target mapping stays
+disabled. Target-readiness v2 run `4c000000-0000-4000-8000-000000000001`
+therefore reports 241 unqualified active items, admits zero of 230 active Orders,
+and preserves target evidence hash
+`4072734d305814a42e0ab7eacfbf2468ab569534584d0b8f84ea759e83f796f4` in both
+backend and StarRocks. Order, lifecycle, Catalog and OrderItem mappings also
+remain zero; import/production remain false.
 Even a fully qualified target mapping can open only mapping admission; canonical
 import stays false until benefit identity, named funding, quarantine decisions,
 and independent production Y-Shopping evidence are also complete.

@@ -60,6 +60,7 @@ models/dwd/dwd-legacy-activity-current.sql
 models/dwd/dwd-legacy-collect-current.sql
 models/dwd/dwd-legacy-trade-benefit-assessment.sql
 models/dwd/dwd-canonical-legacy-trade-benefit-assessment-event.sql
+models/dwd/dwd-canonical-legacy-trade-product-identity-event.sql
 models/dwd/dwd-canonical-legacy-trade-target-readiness-event.sql
 models/dwd/dwd-canonical-legacy-trade-benefit-governance-event.sql
 models/dim/dim-catalog-sku-current.sql
@@ -117,6 +118,7 @@ models/dim/dim-legacy-trade-benefit-component-assessment.sql
 models/dim/dim-canonical-legacy-trade-benefit-component-assessment.sql
 models/dim/dim-canonical-legacy-trade-benefit-item-assessment.sql
 models/dim/dim-canonical-legacy-trade-benefit-item-component-reconciliation.sql
+models/dim/dim-canonical-legacy-trade-product-identity-item.sql
 models/dim/dim-canonical-legacy-trade-target-readiness-item.sql
 models/dim/dim-canonical-legacy-trade-benefit-governance-component.sql
 models/dim/dim-canonical-legacy-trade-benefit-governance-quarantine.sql
@@ -156,6 +158,7 @@ models/dws/dws-legacy-activity-current.sql
 models/dws/dws-legacy-collect-current.sql
 models/dws/dws-legacy-trade-benefit-migration-assessment.sql
 models/dws/dws-canonical-legacy-trade-benefit-migration-assessment.sql
+models/dws/dws-canonical-legacy-trade-product-identity.sql
 models/dws/dws-canonical-legacy-trade-target-readiness.sql
 models/dws/dws-canonical-legacy-trade-benefit-governance.sql
 models/ads/ads-inventory-health.sql
@@ -191,5 +194,6 @@ models/ads/ads-legacy-activity-current.sql
 models/ads/ads-legacy-collect-current.sql
 models/ads/ads-legacy-trade-benefit-migration-readiness.sql
 models/ads/ads-canonical-legacy-trade-benefit-migration-readiness.sql
+models/ads/ads-canonical-legacy-trade-product-identity-readiness.sql
 models/ads/ads-canonical-legacy-trade-target-readiness.sql
 models/ads/ads-canonical-legacy-trade-benefit-governance-readiness.sql

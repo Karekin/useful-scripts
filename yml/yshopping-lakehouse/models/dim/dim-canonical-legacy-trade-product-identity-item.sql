@@ -1,0 +1,27 @@
+CREATE OR REPLACE VIEW yshopping_dim.dim_canonical_legacy_trade_product_identity_item AS
+SELECT
+    tenant_id,
+    identity_run_id,
+    source_migration_run_id,
+    identity_item_id,
+    candidate_id,
+    item_evidence_id,
+    legacy_order_id,
+    legacy_order_item_id,
+    legacy_spu_id,
+    legacy_sku_id,
+    source_item_evidence_hash,
+    source_parent_cardinality,
+    source_pair_status,
+    current_reference_status,
+    current_product_snapshot_hash,
+    qualification_id,
+    historical_identity_status,
+    blocker_codes,
+    identity_admission_allowed,
+    target_mapping_allowed,
+    evidence_hash,
+    governance_evidence_hash,
+    assessed_at,
+    'IMMUTABLE_ORDER_ITEM_PRODUCT_IDENTITY_QUALIFICATION' AS model_semantics
+FROM yshopping_dwd.dwd_canonical_legacy_trade_product_identity_event;
