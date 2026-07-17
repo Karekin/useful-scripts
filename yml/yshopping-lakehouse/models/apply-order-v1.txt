@@ -113,6 +113,7 @@ models/dim/dim-legacy-activity-current.sql
 models/dim/dim-legacy-collect-current.sql
 models/dim/dim-legacy-trade-benefit-component-assessment.sql
 models/dim/dim-canonical-legacy-trade-benefit-component-assessment.sql
+models/dim/dim-canonical-legacy-trade-benefit-item-assessment.sql
 models/dws/dws-product-warehouse-inventory.sql
 models/dws/dws-purchase-receipt-daily.sql
 models/dws/dws-canonical-catalog-style-current.sql

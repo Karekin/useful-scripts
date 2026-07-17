@@ -26,3 +26,21 @@ SELECT 'canonical_legacy_trade_false_import_readiness' AS check_name, COUNT(*) A
 FROM yshopping_ads.ads_canonical_legacy_trade_benefit_migration_readiness
 WHERE exact_order_item_mapping_available OR versioned_benefit_identity_available
    OR named_funding_breakdown_available OR governed_scope <> 'LOCAL_YUDAO_TRADE_NOT_YSHOPPING_SOURCE';
+
+SELECT 'canonical_legacy_trade_item_denominator_incomplete' AS check_name, COUNT(*) AS violations
+FROM yshopping_dws.dws_canonical_legacy_trade_benefit_migration_assessment
+WHERE item_evidence_complete
+  AND (source_item_count <> active_item_count + excluded_item_count
+    OR (declared_source_item_count IS NOT NULL AND source_item_count <> declared_source_item_count)
+    OR (declared_active_item_count IS NOT NULL AND active_item_count <> declared_active_item_count)
+    OR (declared_excluded_item_count IS NOT NULL AND excluded_item_count <> declared_excluded_item_count)
+    OR (declared_item_benefit_amount_minor IS NOT NULL
+        AND item_benefit_amount_minor <> declared_item_benefit_amount_minor)
+    OR (item_evidence_hash IS NOT NULL AND LENGTH(item_evidence_hash) <> 64)
+    OR source_item_count <= 0 OR import_allowed_item_count <> 0);
+
+SELECT 'canonical_legacy_trade_item_identity_or_import_open' AS check_name, COUNT(*) AS violations
+FROM yshopping_dim.dim_canonical_legacy_trade_benefit_item_assessment
+WHERE canonical_import_allowed
+   OR legacy_order_item_id IS NULL OR legacy_item_snapshot_hash IS NULL
+   OR source_product_identity_status NOT IN ('SOURCE_IDS_PRESENT','MISSING_SOURCE_IDS');

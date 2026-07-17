@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/order-migration-legacy-trade-benefit-assessed-v2.schema.json",
+  "title": "order.migration.legacy_trade_benefit_assessed payload v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "migration_run_id", "candidate_id", "source_scope", "legacy_order_id", "legacy_order_no",
+    "source_updated_at", "source_snapshot_hash", "is_deleted", "header_quantity", "item_row_count",
+    "item_quantity", "header_gross_amount_minor", "header_benefit_amount_minor",
+    "header_pay_amount_minor", "item_gross_amount_minor", "item_benefit_amount_minor",
+    "item_pay_amount_minor", "negative_money", "header_money_mismatch", "header_item_mismatch",
+    "invalid_item_money_count", "assessment_status", "blocker_codes", "canonical_import_allowed",
+    "components", "item_evidence_complete", "items", "policy_version", "verification_ref", "assessed_at"
+  ],
+  "properties": {
+    "migration_run_id": {"type": "string", "format": "uuid"},
+    "candidate_id": {"type": "string", "format": "uuid"},
+    "source_scope": {"type": "string", "const": "LOCAL_YUDAO_TRADE_CURRENT"},
+    "legacy_order_id": {"type": "integer", "minimum": 1},
+    "legacy_order_no": {"type": "string", "minLength": 1, "maxLength": 64},
+    "source_updated_at": {"type": "string", "format": "date-time"},
+    "source_snapshot_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "is_deleted": {"type": "boolean"},
+    "header_quantity": {"type": "integer"},
+    "item_row_count": {"type": "integer", "minimum": 0},
+    "item_quantity": {"type": "integer"},
+    "header_gross_amount_minor": {"type": "integer"},
+    "header_benefit_amount_minor": {"type": "integer"},
+    "header_pay_amount_minor": {"type": "integer"},
+    "item_gross_amount_minor": {"type": "integer"},
+    "item_benefit_amount_minor": {"type": "integer"},
+    "item_pay_amount_minor": {"type": "integer"},
+    "negative_money": {"type": "boolean"},
+    "header_money_mismatch": {"type": "boolean"},
+    "header_item_mismatch": {"type": "boolean"},
+    "invalid_item_money_count": {"type": "integer", "minimum": 0},
+    "assessment_status": {"type": "string", "enum": [
+      "DELETED_EXCLUDED", "NO_BENEFIT", "BENEFIT_REQUIRES_IDENTITY_AND_FUNDING",
+      "QUARANTINED_MONEY", "QUARANTINED_HEADER_ITEM"
+    ]},
+    "blocker_codes": {"type": "array", "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[A-Z0-9_]+$", "maxLength": 64}},
+    "canonical_import_allowed": {"type": "boolean", "const": false},
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["component_id", "component_type", "amount_minor", "source_reference",
+          "identity_resolution_status", "funding_resolution_status", "canonical_import_allowed"],
+        "properties": {
+          "component_id": {"type": "string", "format": "uuid"},
+          "component_type": {"type": "string", "enum": ["GENERIC_DISCOUNT", "COUPON", "POINT", "VIP"]},
+          "amount_minor": {"type": "integer", "not": {"const": 0}},
+          "source_reference": {"type": ["string", "null"], "maxLength": 128},
+          "identity_resolution_status": {"type": "string", "enum": [
+            "MISSING_SOURCE_REFERENCE", "AMBIGUOUS_SOURCE_REFERENCE", "SOURCE_REFERENCE_WITHOUT_VERSION",
+            "MISSING_ENTITLEMENT_VERSION", "MISSING_BENEFIT_VERSION"
+          ]},
+          "funding_resolution_status": {"type": "string", "const": "MISSING_NAMED_FUNDER_BREAKDOWN"},
+          "canonical_import_allowed": {"type": "boolean", "const": false}
+        }
+      }
+    },
+    "item_evidence_complete": {"type": "boolean", "const": true},
+    "run_source_item_count": {"type": "integer", "minimum": 1},
+    "run_active_item_count": {"type": "integer", "minimum": 0},
+    "run_excluded_item_count": {"type": "integer", "minimum": 0},
+    "run_item_evidence_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "run_item_evidence_benefit_amount_minor": {"type": "integer"},
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["item_evidence_id", "legacy_order_item_id", "legacy_item_snapshot_hash",
+          "source_updated_at", "is_deleted", "legacy_spu_id", "legacy_sku_id",
+          "source_product_identity_status", "item_quantity", "unit_price_minor", "gross_amount_minor",
+          "generic_discount_amount_minor", "coupon_amount_minor", "point_amount_minor", "vip_amount_minor",
+          "delivery_amount_minor", "adjust_amount_minor", "pay_amount_minor", "used_point_quantity",
+          "canonical_import_allowed"],
+        "properties": {
+          "item_evidence_id": {"type": "string", "format": "uuid"},
+          "legacy_order_item_id": {"type": "integer", "minimum": 1},
+          "legacy_item_snapshot_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "source_updated_at": {"type": "string", "format": "date-time"},
+          "is_deleted": {"type": "boolean"},
+          "legacy_spu_id": {"type": ["integer", "null"]},
+          "legacy_sku_id": {"type": ["integer", "null"]},
+          "source_product_identity_status": {"type": "string", "enum": ["SOURCE_IDS_PRESENT", "MISSING_SOURCE_IDS"]},
+          "item_quantity": {"type": "integer"},
+          "unit_price_minor": {"type": "integer"},
+          "gross_amount_minor": {"type": "integer"},
+          "generic_discount_amount_minor": {"type": "integer"},
+          "coupon_amount_minor": {"type": "integer"},
+          "point_amount_minor": {"type": "integer"},
+          "vip_amount_minor": {"type": "integer"},
+          "delivery_amount_minor": {"type": "integer"},
+          "adjust_amount_minor": {"type": "integer"},
+          "pay_amount_minor": {"type": "integer"},
+          "used_point_quantity": {"type": "integer"},
+          "canonical_import_allowed": {"type": "boolean", "const": false}
+        }
+      }
+    },
+    "policy_version": {"type": "string", "const": "legacy-trade-benefit-v3"},
+    "verification_ref": {"type": "string", "minLength": 1, "maxLength": 256},
+    "assessed_at": {"type": "string", "format": "date-time"}
+  }
+}

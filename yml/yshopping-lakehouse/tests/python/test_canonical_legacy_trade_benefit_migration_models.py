@@ -10,6 +10,7 @@ DQC = ROOT / "tests" / "sql" / "31-canonical-legacy-trade-benefit-migration-cont
 MODELS = (
     "models/dwd/dwd-canonical-legacy-trade-benefit-assessment-event.sql",
     "models/dim/dim-canonical-legacy-trade-benefit-component-assessment.sql",
+    "models/dim/dim-canonical-legacy-trade-benefit-item-assessment.sql",
     "models/dws/dws-canonical-legacy-trade-benefit-migration-assessment.sql",
     "models/ads/ads-canonical-legacy-trade-benefit-migration-readiness.sql",
 )
@@ -19,13 +20,18 @@ class CanonicalLegacyTradeBenefitMigrationModelsTest(unittest.TestCase):
     def test_event_contract_is_registered_and_fail_closed(self):
         manifest = json.loads(EVENT_MANIFEST.read_text(encoding="utf-8"))
         contract = manifest["events"]["order.migration.legacy_trade_benefit_assessed"]
-        self.assertEqual(contract["schema_version"], 1)
         self.assertEqual(contract["aggregate_type"], "legacy_trade_benefit_migration_assessment")
-        schema = json.loads((ROOT / "contracts" / contract["payload_schema"]).read_text(encoding="utf-8"))
-        self.assertEqual(schema["properties"]["canonical_import_allowed"]["const"], False)
-        component = schema["properties"]["components"]["items"]["properties"]
+        self.assertEqual([version["schema_version"] for version in contract["versions"]], [1, 2])
+        schema_v2 = json.loads((ROOT / "contracts" / contract["versions"][1]["payload_schema"])
+                               .read_text(encoding="utf-8"))
+        self.assertEqual(schema_v2["properties"]["canonical_import_allowed"]["const"], False)
+        self.assertEqual(schema_v2["properties"]["item_evidence_complete"]["const"], True)
+        component = schema_v2["properties"]["components"]["items"]["properties"]
         self.assertEqual(component["funding_resolution_status"]["const"], "MISSING_NAMED_FUNDER_BREAKDOWN")
         self.assertEqual(component["canonical_import_allowed"]["const"], False)
+        item = schema_v2["properties"]["items"]["items"]["properties"]
+        self.assertEqual(item["canonical_import_allowed"]["const"], False)
+        self.assertIn("legacy_order_item_id", item)
 
     def test_models_are_manifested_in_dependency_order(self):
         order = [line.strip() for line in MANIFEST.read_text(encoding="utf-8").splitlines()
@@ -38,7 +44,7 @@ class CanonicalLegacyTradeBenefitMigrationModelsTest(unittest.TestCase):
         self.assertEqual(positions, sorted(positions))
 
     def test_backend_is_reconciled_to_independent_offline_assessment(self):
-        ads = (ROOT / MODELS[3]).read_text(encoding="utf-8")
+        ads = (ROOT / MODELS[4]).read_text(encoding="utf-8")
         self.assertIn("dws_canonical_legacy_trade_benefit_migration_assessment backend", ads)
         self.assertIn("dws_legacy_trade_benefit_migration_assessment offline", ads)
         for metric in ("source_order_row_count", "non_deleted_order_count", "deleted_excluded_count",
@@ -53,6 +59,17 @@ class CanonicalLegacyTradeBenefitMigrationModelsTest(unittest.TestCase):
         self.assertIn("canonical_legacy_trade_backend_offline_mismatch", text)
         self.assertIn("canonical_legacy_trade_false_import_readiness", text)
         self.assertIn("LOCAL_YUDAO_TRADE_NOT_YSHOPPING_SOURCE", text)
+
+    def test_item_denominator_is_projected_without_opening_import(self):
+        dwd = (ROOT / MODELS[0]).read_text(encoding="utf-8")
+        dim_item = (ROOT / MODELS[2]).read_text(encoding="utf-8")
+        dws = (ROOT / MODELS[3]).read_text(encoding="utf-8")
+        self.assertIn("schema_version IN (1, 2)", dwd)
+        self.assertIn("event.schema_version = 2", dim_item)
+        self.assertIn("legacy_order_item_id", dim_item)
+        self.assertIn("source_item_count", dws)
+        self.assertIn("item_evidence_complete", dws)
+        self.assertIn("import_allowed_item_count", dws)
 
 
 if __name__ == "__main__":

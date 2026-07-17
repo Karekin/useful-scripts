@@ -36,11 +36,19 @@ SELECT
     json_query(payload, '$.blocker_codes') AS blocker_codes,
     CAST(get_json_string(payload, '$.canonical_import_allowed') AS BOOLEAN) AS canonical_import_allowed,
     json_query(payload, '$.components') AS components,
+    CAST(get_json_string(payload, '$.item_evidence_complete') AS BOOLEAN) AS item_evidence_complete,
+    CAST(get_json_string(payload, '$.run_source_item_count') AS BIGINT) AS run_source_item_count,
+    CAST(get_json_string(payload, '$.run_active_item_count') AS BIGINT) AS run_active_item_count,
+    CAST(get_json_string(payload, '$.run_excluded_item_count') AS BIGINT) AS run_excluded_item_count,
+    get_json_string(payload, '$.run_item_evidence_hash') AS run_item_evidence_hash,
+    CAST(get_json_string(payload, '$.run_item_evidence_benefit_amount_minor') AS BIGINT)
+        AS run_item_evidence_benefit_amount_minor,
+    json_query(payload, '$.items') AS items,
     get_json_string(payload, '$.policy_version') AS policy_version,
     get_json_string(payload, '$.verification_ref') AS verification_ref,
     CAST(REPLACE(SUBSTR(get_json_string(payload, '$.assessed_at'), 1, 19), 'T', ' ') AS DATETIME) AS assessed_at
 FROM yshopping_dwd.dwd_domain_event
 WHERE event_type = 'order.migration.legacy_trade_benefit_assessed'
-  AND schema_version = 1
+  AND schema_version IN (1, 2)
   AND source_system = 'cloudmold-order'
   AND aggregate_type = 'legacy_trade_benefit_migration_assessment';
