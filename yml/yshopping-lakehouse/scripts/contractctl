@@ -40,8 +40,41 @@ def type_matches(value: Any, expected: str) -> bool:
     }.get(expected, False)
 
 
-def validate_instance(value: Any, schema: dict[str, Any], path: str = "$") -> list[str]:
+def resolve_local_ref(root_schema: dict[str, Any], ref: str) -> dict[str, Any]:
+    if not ref.startswith("#/"):
+        raise ContractError(f"unsupported non-local schema reference: {ref}")
+    current: Any = root_schema
+    for token in ref[2:].split("/"):
+        token = token.replace("~1", "/").replace("~0", "~")
+        if not isinstance(current, dict) or token not in current:
+            raise ContractError(f"unresolvable schema reference: {ref}")
+        current = current[token]
+    if not isinstance(current, dict):
+        raise ContractError(f"schema reference does not resolve to an object: {ref}")
+    return current
+
+
+def validate_instance(value: Any, schema: dict[str, Any], path: str = "$",
+                      root_schema: dict[str, Any] | None = None) -> list[str]:
+    root_schema = root_schema or schema
     errors: list[str] = []
+    if "$ref" in schema:
+        errors.extend(validate_instance(value, resolve_local_ref(root_schema, schema["$ref"]),
+                                        path, root_schema))
+        schema = {key: child for key, child in schema.items() if key != "$ref"}
+    if "oneOf" in schema:
+        branch_errors = [validate_instance(value, branch, path, root_schema)
+                         for branch in schema["oneOf"]]
+        valid_branches = sum(not branch for branch in branch_errors)
+        if valid_branches != 1:
+            errors.append(f"{path}: expected exactly one oneOf branch, matched {valid_branches}")
+    for branch in schema.get("allOf", []):
+        errors.extend(validate_instance(value, branch, path, root_schema))
+    if "if" in schema:
+        condition_matches = not validate_instance(value, schema["if"], path, root_schema)
+        selected = schema.get("then") if condition_matches else schema.get("else")
+        if selected is not None:
+            errors.extend(validate_instance(value, selected, path, root_schema))
     expected = schema.get("type")
     allowed_types = expected if isinstance(expected, list) else [expected] if expected else []
     if allowed_types and not any(type_matches(value, item) for item in allowed_types):
@@ -58,16 +91,20 @@ def validate_instance(value: Any, schema: dict[str, Any], path: str = "$") -> li
             errors.extend(f"{path}.{key}: additional property" for key in value if key not in properties)
         for key, child in value.items():
             if key in properties:
-                errors.extend(validate_instance(child, properties[key], f"{path}.{key}"))
+                errors.extend(validate_instance(child, properties[key], f"{path}.{key}", root_schema))
     elif isinstance(value, list):
         if len(value) < schema.get("minItems", 0):
             errors.append(f"{path}: requires at least {schema['minItems']} items")
         if len(value) > schema.get("maxItems", sys.maxsize):
             errors.append(f"{path}: allows at most {schema['maxItems']} items")
+        if schema.get("uniqueItems"):
+            normalized = [json.dumps(item, sort_keys=True, separators=(",", ":")) for item in value]
+            if len(normalized) != len(set(normalized)):
+                errors.append(f"{path}: array items must be unique")
         item_schema = schema.get("items")
         if item_schema:
             for index, item in enumerate(value):
-                errors.extend(validate_instance(item, item_schema, f"{path}[{index}]"))
+                errors.extend(validate_instance(item, item_schema, f"{path}[{index}]", root_schema))
     elif isinstance(value, str):
         if len(value) < schema.get("minLength", 0):
             errors.append(f"{path}: shorter than minLength")

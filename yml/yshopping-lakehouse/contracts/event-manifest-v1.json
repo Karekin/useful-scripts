@@ -360,6 +360,21 @@
       "payload_schema": "events/order-migration-legacy-trade-target-readiness-assessed-v1.schema.json",
       "example": "examples/order-migration-legacy-trade-target-readiness-assessed-v1.json"
     },
+    "order.migration.legacy_trade_benefit_governance_assessed": {
+      "aggregate_type": "legacy_trade_benefit_governance_readiness",
+      "versions": [
+        {
+          "schema_version": 1,
+          "payload_schema": "events/order-migration-legacy-trade-benefit-governance-assessed-v1.schema.json",
+          "example": "examples/order-migration-legacy-trade-benefit-governance-assessed-v1.json"
+        },
+        {
+          "schema_version": 2,
+          "payload_schema": "events/order-migration-legacy-trade-benefit-governance-assessed-v2.schema.json",
+          "example": "examples/order-migration-legacy-trade-benefit-governance-assessed-v2.json"
+        }
+      ]
+    },
     "order.status.changed": {
       "aggregate_type": "order",
       "versions": [

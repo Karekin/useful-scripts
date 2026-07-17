@@ -1,0 +1,190 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/order-migration-legacy-trade-benefit-governance-assessed-v1.schema.json",
+  "title": "order.migration.legacy_trade_benefit_governance_assessed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "governance_run_id", "source_migration_run_id", "candidate_id", "legacy_order_id",
+    "governance_evidence_hash", "run_source_component_count",
+    "run_source_reference_present_count", "run_current_reference_observed_count",
+    "run_historical_identity_qualified_count", "run_identity_blocked_count",
+    "run_funding_qualified_count", "run_funding_blocked_count",
+    "run_source_quarantine_count", "run_quarantine_decided_count",
+    "run_quarantine_open_count", "run_governance_admitted_component_count",
+    "production_migration_enabled", "run_status", "components", "quarantine",
+    "policy_version", "verification_ref", "assessed_at"
+  ],
+  "properties": {
+    "governance_run_id": {"type": "string", "format": "uuid"},
+    "source_migration_run_id": {"type": "string", "format": "uuid"},
+    "candidate_id": {"type": "string", "format": "uuid"},
+    "legacy_order_id": {"type": "integer", "minimum": 1},
+    "governance_evidence_hash": {"$ref": "#/$defs/hash"},
+    "run_source_component_count": {"type": "integer", "minimum": 1},
+    "run_source_reference_present_count": {"type": "integer", "minimum": 0},
+    "run_current_reference_observed_count": {"type": "integer", "minimum": 0},
+    "run_historical_identity_qualified_count": {"type": "integer", "minimum": 0},
+    "run_identity_blocked_count": {"type": "integer", "minimum": 0},
+    "run_funding_qualified_count": {"type": "integer", "minimum": 0},
+    "run_funding_blocked_count": {"type": "integer", "minimum": 0},
+    "run_source_quarantine_count": {"type": "integer", "minimum": 0},
+    "run_quarantine_decided_count": {"type": "integer", "minimum": 0},
+    "run_quarantine_open_count": {"type": "integer", "minimum": 0},
+    "run_governance_admitted_component_count": {"type": "integer", "minimum": 0},
+    "production_migration_enabled": {"type": "boolean", "const": false},
+    "run_status": {
+      "type": "string",
+      "enum": [
+        "READY_FOR_COMBINED_ADMISSION",
+        "BLOCKED_REQUIRES_HISTORICAL_BENEFIT_FUNDING_AND_QUARANTINE_DECISIONS"
+      ]
+    },
+    "components": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/component"}
+    },
+    "quarantine": {
+      "oneOf": [{"type": "null"}, {"$ref": "#/$defs/quarantine"}]
+    },
+    "policy_version": {"type": "string", "const": "legacy-trade-benefit-governance-v1"},
+    "verification_ref": {"type": "string", "minLength": 1, "maxLength": 256},
+    "assessed_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "blockers": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[A-Z0-9_]+$", "maxLength": 64}
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component_governance_id", "component_id", "component_type",
+        "component_amount_minor", "source_reference", "source_component_evidence_hash",
+        "current_reference_status", "observed_source_table", "observed_source_id",
+        "observed_source_created_at", "observed_source_updated_at", "observed_source_status",
+        "observed_source_deleted", "observed_source_spu_id", "current_reference_snapshot_hash",
+        "identity_qualification_id", "historical_identity_status", "funding_share_count",
+        "funding_amount_minor", "funding_resolution_status", "governance_status",
+        "blocker_codes", "governance_admission_allowed", "canonical_import_allowed",
+        "evidence_hash"
+      ],
+      "properties": {
+        "component_governance_id": {"type": "string", "format": "uuid"},
+        "component_id": {"type": "string", "format": "uuid"},
+        "component_type": {"type": "string", "enum": ["GENERIC_DISCOUNT", "COUPON", "POINT", "VIP"]},
+        "component_amount_minor": {"type": "integer"},
+        "source_reference": {"type": ["string", "null"], "maxLength": 128},
+        "source_component_evidence_hash": {"$ref": "#/$defs/hash"},
+        "current_reference_status": {
+          "type": "string",
+          "enum": [
+            "CURRENT_REFERENCE_OBSERVED_NOT_HISTORICAL_VERSION", "MISSING_SOURCE_REFERENCE",
+            "SOURCE_REFERENCE_NOT_FOUND", "NON_VERSIONED_ENTITLEMENT_QUANTITY_ONLY"
+          ]
+        },
+        "observed_source_table": {"type": ["string", "null"], "maxLength": 64},
+        "observed_source_id": {"type": ["integer", "null"], "minimum": 1},
+        "observed_source_created_at": {"type": ["string", "null"], "format": "date-time"},
+        "observed_source_updated_at": {"type": ["string", "null"], "format": "date-time"},
+        "observed_source_status": {"type": ["string", "null"], "maxLength": 32},
+        "observed_source_deleted": {"type": ["boolean", "null"]},
+        "observed_source_spu_id": {"type": ["integer", "null"], "minimum": 1},
+        "current_reference_snapshot_hash": {
+          "oneOf": [{"type": "null"}, {"$ref": "#/$defs/hash"}]
+        },
+        "identity_qualification_id": {"type": ["string", "null"], "format": "uuid"},
+        "historical_identity_status": {
+          "type": "string",
+          "enum": [
+            "QUALIFIED", "BLOCKED_MISSING_HISTORICAL_VERSION",
+            "BLOCKED_MISSING_SOURCE_REFERENCE", "BLOCKED_SOURCE_REFERENCE_NOT_FOUND"
+          ]
+        },
+        "funding_share_count": {"type": "integer", "minimum": 0},
+        "funding_amount_minor": {"type": "integer", "minimum": 0},
+        "funding_resolution_status": {
+          "type": "string",
+          "enum": [
+            "QUALIFIED", "BLOCKED_MISSING_NAMED_FUNDER_BREAKDOWN",
+            "BLOCKED_FUNDING_AMOUNT_MISMATCH", "BLOCKED_SOURCE_COMPONENT_NOT_POSITIVE"
+          ]
+        },
+        "governance_status": {"type": "string", "enum": ["READY", "BLOCKED"]},
+        "blocker_codes": {"$ref": "#/$defs/blockers"},
+        "governance_admission_allowed": {"type": "boolean"},
+        "canonical_import_allowed": {"type": "boolean", "const": false},
+        "evidence_hash": {"$ref": "#/$defs/hash"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"governance_status": {"const": "READY"}}},
+          "then": {
+            "properties": {
+              "historical_identity_status": {"const": "QUALIFIED"},
+              "funding_resolution_status": {"const": "QUALIFIED"},
+              "governance_admission_allowed": {"const": true},
+              "blocker_codes": {"maxItems": 0}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"governance_status": {"const": "BLOCKED"}}},
+          "then": {
+            "properties": {
+              "governance_admission_allowed": {"const": false},
+              "blocker_codes": {"minItems": 1}
+            }
+          }
+        }
+      ]
+    },
+    "quarantine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "quarantine_governance_id", "legacy_order_no", "source_candidate_evidence_hash",
+        "source_assessment_status", "source_reason_codes", "decision_id", "decision_status",
+        "recommended_action", "blocker_codes", "canonical_import_allowed", "evidence_hash"
+      ],
+      "properties": {
+        "quarantine_governance_id": {"type": "string", "format": "uuid"},
+        "legacy_order_no": {"type": "string", "minLength": 1, "maxLength": 64},
+        "source_candidate_evidence_hash": {"$ref": "#/$defs/hash"},
+        "source_assessment_status": {"type": "string", "enum": ["QUARANTINED_MONEY", "QUARANTINED_HEADER_ITEM"]},
+        "source_reason_codes": {"$ref": "#/$defs/blockers"},
+        "decision_id": {"type": ["string", "null"], "format": "uuid"},
+        "decision_status": {"type": "string", "enum": ["DECIDED", "OPEN"]},
+        "recommended_action": {"type": "string", "enum": ["EXCLUDE_CONFIRMED_SOURCE_DEFECT", "CORRECT_SOURCE_AND_REASSESS"]},
+        "blocker_codes": {"$ref": "#/$defs/blockers"},
+        "canonical_import_allowed": {"type": "boolean", "const": false},
+        "evidence_hash": {"$ref": "#/$defs/hash"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"decision_status": {"const": "OPEN"}}},
+          "then": {
+            "properties": {
+              "decision_id": {"type": "null"},
+              "recommended_action": {"const": "CORRECT_SOURCE_AND_REASSESS"},
+              "blocker_codes": {"minItems": 1}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"decision_status": {"const": "DECIDED"}}},
+          "then": {
+            "properties": {
+              "decision_id": {"type": "string", "format": "uuid"},
+              "recommended_action": {"const": "EXCLUDE_CONFIRMED_SOURCE_DEFECT"},
+              "blocker_codes": {"maxItems": 0}
+            }
+          }
+        }
+      ]
+    }
+  }
+}

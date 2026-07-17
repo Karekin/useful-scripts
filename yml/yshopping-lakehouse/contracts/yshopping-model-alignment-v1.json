@@ -142,8 +142,8 @@
       "ADS": {"candidate_names": 57, "create_targets": 48, "insert_targets": 42, "dependency_edges": 116, "unresolved_edges": 8}
     },
     "totals": {"candidate_names": 664, "create_targets": 440, "insert_targets": 261, "dependency_edges": 634, "unresolved_edges": 40},
-    "current_model_sql_files": 189,
-    "current_model_targets": 329,
+    "current_model_sql_files": 194,
+    "current_model_targets": 334,
     "known_high_confidence_issues": [
       "DWD 子订单当日任务误从主订单 ODS 取数，且子订单 DDL 缺逗号。",
       "SCM 操作 DDL 缺逗号并重复 operator_name。",

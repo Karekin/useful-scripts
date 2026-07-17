@@ -21,6 +21,28 @@ class ContractCtlTest(unittest.TestCase):
         )
         self.assertTrue(any("UTC" in error for error in errors))
 
+    def test_local_refs_one_of_and_conditionals_are_enforced(self):
+        schema = {
+            "type": "object",
+            "$defs": {"code": {"type": "string", "pattern": "^[A-Z]+$"}},
+            "required": ["status", "code", "decision"],
+            "properties": {
+                "status": {"type": "string", "enum": ["OPEN", "DECIDED"]},
+                "code": {"$ref": "#/$defs/code"},
+                "decision": {"oneOf": [{"type": "null"}, {"type": "string"}]},
+            },
+            "allOf": [{
+                "if": {"properties": {"status": {"const": "OPEN"}}},
+                "then": {"properties": {"decision": {"type": "null"}}},
+            }],
+        }
+        self.assertEqual(CONTRACT.validate_instance(
+            {"status": "OPEN", "code": "VALID", "decision": None}, schema), [])
+        errors = CONTRACT.validate_instance(
+            {"status": "OPEN", "code": "invalid", "decision": "unexpected"}, schema)
+        self.assertTrue(any("does not match" in error for error in errors))
+        self.assertTrue(any("expected ['null']" in error for error in errors))
+
     def test_removed_property_is_breaking(self):
         old = {"type": "object", "required": ["id"], "properties": {"id": {"type": "string"}}}
         new = {"type": "object", "required": [], "properties": {}}
