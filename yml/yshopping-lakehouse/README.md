@@ -483,6 +483,19 @@ and preserves target evidence hash
 `4072734d305814a42e0ab7eacfbf2468ab569534584d0b8f84ea759e83f796f4` in both
 backend and StarRocks. Order, lifecycle, Catalog and OrderItem mappings also
 remain zero; import/production remain false.
+
+Historical product qualification review schema v2 adds a content-verification
+fence ahead of both review and final application. The evidence URI must be
+`evidence://sha256/<historical_product_snapshot_hash>`; the backend reads the
+bounded local evidence object at request time and again before the second
+independent approval, then publishes the verifier version, byte length and
+verification time. DWD through ADS retain those facts and block legacy v1
+QUALIFY or otherwise unverified qualification evidence while still allowing a
+legacy qualification to be revoked. No evidence object is bundled and no
+qualification is manufactured: the current governed count remains zero until
+an authentic retained snapshot and real DATA_OWNER/CHANGE_MANAGER reviews are
+available.
+
 Even a fully qualified target mapping can open only mapping admission; canonical
 import stays false until benefit identity, named funding, quarantine decisions,
 and independent production Y-Shopping evidence are also complete.

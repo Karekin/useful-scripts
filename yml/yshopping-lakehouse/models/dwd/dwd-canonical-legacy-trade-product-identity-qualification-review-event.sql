@@ -21,6 +21,11 @@ SELECT
     get_json_string(payload, '$.source_item_evidence_hash') AS source_item_evidence_hash,
     get_json_string(payload, '$.historical_product_snapshot_hash') AS historical_product_snapshot_hash,
     get_json_string(payload, '$.source_evidence_uri') AS source_evidence_uri,
+    get_json_string(payload, '$.evidence_verification_status') AS evidence_verification_status,
+    get_json_string(payload, '$.evidence_verifier_version') AS evidence_verifier_version,
+    CAST(get_json_string(payload, '$.evidence_content_length') AS BIGINT) AS evidence_content_length,
+    CAST(REPLACE(SUBSTR(get_json_string(payload, '$.evidence_verified_at'), 1, 19), 'T', ' ') AS DATETIME)
+        AS evidence_verified_at,
     get_json_string(payload, '$.qualification_ref') AS qualification_ref,
     get_json_string(payload, '$.scope_hash') AS scope_hash,
     CAST(get_json_string(payload, '$.requester_system_user_id') AS BIGINT) AS requester_system_user_id,
@@ -40,6 +45,6 @@ SELECT
     CAST(REPLACE(SUBSTR(get_json_string(payload, '$.reviewed_at'), 1, 19), 'T', ' ') AS DATETIME) AS reviewed_at
 FROM yshopping_dwd.dwd_domain_event
 WHERE event_type = 'order.migration.legacy_trade_product_identity_qualification_reviewed'
-  AND schema_version = 1
+  AND schema_version IN (1,2)
   AND source_system = 'cloudmold-order'
   AND aggregate_type = 'legacy_trade_product_identity_qualification_request';

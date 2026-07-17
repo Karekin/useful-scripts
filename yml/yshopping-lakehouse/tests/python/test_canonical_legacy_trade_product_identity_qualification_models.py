@@ -19,16 +19,31 @@ class CanonicalLegacyTradeProductIdentityQualificationModelsTest(unittest.TestCa
         manifest = json.loads(EVENT_MANIFEST.read_text(encoding="utf-8"))
         contract = manifest["events"][
             "order.migration.legacy_trade_product_identity_qualification_reviewed"]
-        self.assertEqual(contract["schema_version"], 1)
+        self.assertEqual([entry["schema_version"] for entry in contract["versions"]], [1, 2])
         self.assertEqual(contract["aggregate_type"],
                          "legacy_trade_product_identity_qualification_request")
-        schema = json.loads((ROOT / "contracts" / contract["payload_schema"])
+        schema = json.loads((ROOT / "contracts" / contract["versions"][-1]["payload_schema"])
                             .read_text(encoding="utf-8"))
         properties = schema["properties"]
         self.assertEqual(properties["canonical_import_allowed"]["const"], False)
         self.assertEqual(properties["production_migration_enabled"]["const"], False)
         self.assertEqual(properties["policy_version"]["const"],
-                         "legacy-trade-product-identity-qualification-v1")
+                         "legacy-trade-product-identity-qualification-v2")
+        self.assertEqual(properties["evidence_verification_status"]["enum"],
+                         ["VERIFIED", "LEGACY_UNVERIFIED"])
+        self.assertEqual(properties["evidence_verifier_version"]["enum"],
+                         ["filesystem-content-addressed-sha256-v1", "legacy-v0"])
+        self.assertEqual(properties["evidence_content_length"]["maximum"], 65536)
+        qualify_rule = next(
+            rule for rule in schema["allOf"]
+            if rule["if"]["properties"].get("action_type", {}).get("const") == "QUALIFY"
+        )
+        qualify_properties = qualify_rule["then"]["properties"]
+        self.assertEqual(qualify_properties["evidence_verification_status"]["const"],
+                         "VERIFIED")
+        self.assertEqual(qualify_properties["evidence_verifier_version"]["const"],
+                         "filesystem-content-addressed-sha256-v1")
+        self.assertEqual(qualify_properties["evidence_content_length"]["minimum"], 1)
         self.assertEqual(properties["approval_count"]["maximum"], 2)
         self.assertTrue(properties["approval_roles"]["uniqueItems"])
         self.assertTrue(properties["approver_system_user_ids"]["uniqueItems"])
@@ -37,7 +52,7 @@ class CanonicalLegacyTradeProductIdentityQualificationModelsTest(unittest.TestCa
         manifest = json.loads(EVENT_MANIFEST.read_text(encoding="utf-8"))
         contract = manifest["events"][
             "order.migration.legacy_trade_product_identity_qualification_reviewed"]
-        example = json.loads((ROOT / "contracts" / contract["example"])
+        example = json.loads((ROOT / "contracts" / contract["versions"][-1]["example"])
                              .read_text(encoding="utf-8"))["payload"]
         self.assertEqual(example["approval_count"], 2)
         self.assertEqual(set(example["approval_roles"]), {"DATA_OWNER", "CHANGE_MANAGER"})
@@ -46,6 +61,8 @@ class CanonicalLegacyTradeProductIdentityQualificationModelsTest(unittest.TestCa
                          example["approver_system_user_ids"])
         self.assertFalse(example["canonical_import_allowed"])
         self.assertFalse(example["production_migration_enabled"])
+        self.assertEqual(example["source_evidence_uri"],
+                         "evidence://sha256/" + example["historical_product_snapshot_hash"])
 
     def test_models_are_manifested_in_dependency_order(self):
         order = [line.strip() for line in MANIFEST.read_text(encoding="utf-8").splitlines()
@@ -62,6 +79,8 @@ class CanonicalLegacyTradeProductIdentityQualificationModelsTest(unittest.TestCa
         ads = (ROOT / MODELS[3]).read_text(encoding="utf-8")
         self.assertIn("actor_separation_mismatch_count", dws)
         self.assertIn("approval_set_hash", dws)
+        self.assertIn("evidence_verification_mismatch_count", dws)
+        self.assertIn("BLOCKED_HISTORICAL_PRODUCT_EVIDENCE_NOT_CONTENT_VERIFIED", ads)
         self.assertIn("FALSE AS canonical_import_available", ads)
         self.assertIn("FALSE AS production_migration_enabled", ads)
         self.assertIn("QUALIFICATION_REVIEW_IS_EVIDENCE_NOT_IMPORT_AUTHORITY", ads)
