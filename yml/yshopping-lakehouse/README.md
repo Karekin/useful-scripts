@@ -55,7 +55,7 @@ contexts: Merchant/Shop/Identity, Warehouse/Location, production-pilot
 admission and inventory shadow verification. It rejects source
 drift, duplicate authorities, cross-system ID equivalence, incomplete
 tenant-scoped keys, ungoverned PII or money, missing lakehouse layers, missing
-event evidence and drift from the current 202 SQL files/342 model objects. A
+event evidence and drift from the current 206 SQL files/361 model objects. A
 `missing`, `legacy_only` or `partial` status is an explicit open gate, not proof
 of complete alignment.
 
@@ -187,6 +187,22 @@ JSON, alert text, identities and model conclusions remain restricted; rules and
 taxonomies are immutable versions, alerts and model attempts append, and model
 scores or cluster membership cannot directly block users, refund money or
 change commerce state. Runtime and final verification remain zero.
+
+The first source-backed Intelligence taxonomy slice now governs
+`ods_intelligence_event_code_level_df` as a Risk-owned taxonomy head plus
+immutable effective-dated level-set versions. The source sample's `A/B/C`
+values remain categorical members; they are never coerced into severity,
+numeric score or automatic enforcement. Operations Intelligence observation
+schema v2 binds the exact taxonomy, definition version, effective time and one
+member level. A non-empty local TEST run proved v1 `A/B/C`, forward correction
+to v2 `A/B/C/D`, observation-time bindings to `B` and `D`, retirement, exact
+immutable replay and API -> transactional Outbox -> Flink CDC -> DWD/DIM/DWS/ADS
+reconciliation. The run produced five confirmed events, two immutable
+definitions, two governed observations and one retired head; all 15 dedicated
+DQC checks returned zero. This is deliberately local TEST evidence, not a
+Y-Shopping production snapshot or full-denominator reconciliation, so the
+asset remains `partial/unverified` and the global production/final numerator
+remains 0/719.
 The Advertising overview contains seven assets and none has a same-name
 field-level definition anywhere in the six source documents. A locked schema
 request therefore keeps all seven at `BLOCKED_MISSING_SOURCE_SCHEMA` and

@@ -1,6 +1,8 @@
 CREATE OR REPLACE VIEW yshopping_dim.dim_canonical_intelligence_observation_current AS
-SELECT event_id, tenant_id, observation_id, aggregate_version, event_occurred_at, recorded_at, source_system,
-       source_event_id, observation_type, subject_type, subject_ref, evidence_ref, content_sha256, observed_at
+SELECT event_id, tenant_id, observation_id, aggregate_version, event_occurred_at, recorded_at, schema_version,
+       source_system, source_event_id, observation_type, classification_contract_version,
+       taxonomy_id, taxonomy_version_id, taxonomy_definition_version, event_code, intelligence_level_code,
+       subject_type, subject_ref, evidence_ref, content_sha256, observed_at
 FROM (
     SELECT e.*, ROW_NUMBER() OVER (PARTITION BY tenant_id, observation_id
            ORDER BY aggregate_version DESC, recorded_at DESC, event_id DESC) AS rn

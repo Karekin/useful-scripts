@@ -1,17 +1,24 @@
 -- Governed operations-intelligence events. Raw source content is excluded by contract.
 CREATE OR REPLACE VIEW yshopping_dwd.dwd_canonical_intelligence_observation_event AS
 SELECT event_id, tenant_id, aggregate_id AS observation_id, aggregate_version, occurred_at AS event_occurred_at,
-       recorded_at, correlation_id, causation_id, idempotency_key,
+       recorded_at, correlation_id, causation_id, idempotency_key, schema_version,
        get_json_string(payload, '$.source_system') AS source_system,
        get_json_string(payload, '$.source_event_id') AS source_event_id,
        get_json_string(payload, '$.observation_type') AS observation_type,
+       CAST(COALESCE(get_json_string(payload, '$.classification_contract_version'), '1') AS BIGINT)
+           AS classification_contract_version,
+       get_json_string(payload, '$.taxonomy_id') AS taxonomy_id,
+       get_json_string(payload, '$.taxonomy_version_id') AS taxonomy_version_id,
+       CAST(get_json_string(payload, '$.taxonomy_definition_version') AS BIGINT) AS taxonomy_definition_version,
+       get_json_string(payload, '$.event_code') AS event_code,
+       get_json_string(payload, '$.intelligence_level_code') AS intelligence_level_code,
        get_json_string(payload, '$.subject_type') AS subject_type,
        get_json_string(payload, '$.subject_ref') AS subject_ref,
        get_json_string(payload, '$.evidence_ref') AS evidence_ref,
        get_json_string(payload, '$.content_sha256') AS content_sha256,
        CAST(get_json_string(payload, '$.observed_at') AS DATETIME) AS observed_at
 FROM yshopping_dwd.dwd_domain_event
-WHERE event_type = 'operations_intelligence.observation.recorded' AND schema_version = 1
+WHERE event_type = 'operations_intelligence.observation.recorded' AND schema_version IN (1, 2)
   AND source_system = 'cloudmold-operations-intelligence';
 
 CREATE OR REPLACE VIEW yshopping_dwd.dwd_canonical_intelligence_model_result_event AS

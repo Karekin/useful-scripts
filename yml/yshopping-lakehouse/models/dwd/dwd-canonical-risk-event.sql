@@ -13,6 +13,52 @@ SELECT event_id, tenant_id, aggregate_id AS policy_id, aggregate_version, occurr
 FROM yshopping_dwd.dwd_domain_event
 WHERE event_type = 'risk.policy.version_published' AND schema_version = 1 AND source_system = 'cloudmold-risk';
 
+-- Source-backed, immutable versions preserve the Y-Shopping multi-valued level set without coercing it to severity.
+CREATE OR REPLACE VIEW yshopping_dwd.dwd_canonical_intelligence_taxonomy_version_event AS
+SELECT event_id, tenant_id, aggregate_id AS taxonomy_id, aggregate_version, occurred_at, recorded_at,
+       correlation_id, causation_id, idempotency_key,
+       get_json_string(payload, '$.taxonomy_version_id') AS taxonomy_version_id,
+       CAST(get_json_string(payload, '$.definition_version') AS BIGINT) AS definition_version,
+       get_json_string(payload, '$.event_code') AS event_code,
+       get_json_string(payload, '$.level_codes') AS level_codes_json,
+       get_json_string(payload, '$.levels_sha256') AS levels_sha256,
+       get_json_string(payload, '$.previous_status') AS previous_status,
+       get_json_string(payload, '$.current_status') AS current_status,
+       get_json_string(payload, '$.approved_by_principal_id') AS approved_by_principal_id,
+       CAST(get_json_string(payload, '$.effective_from') AS DATETIME) AS effective_from,
+       get_json_string(payload, '$.source_system') AS taxonomy_source_system,
+       get_json_string(payload, '$.source_table') AS source_table,
+       get_json_string(payload, '$.source_record_key') AS source_record_key,
+       get_json_string(payload, '$.source_version') AS source_version,
+       CAST(get_json_string(payload, '$.source_observed_at') AS DATETIME) AS source_observed_at,
+       get_json_string(payload, '$.source_evidence_ref') AS source_evidence_ref,
+       get_json_string(payload, '$.source_evidence_sha256') AS source_evidence_sha256
+FROM yshopping_dwd.dwd_domain_event
+WHERE event_type = 'risk.intelligence_event_taxonomy.version_published'
+  AND schema_version = 1 AND source_system = 'cloudmold-risk';
+
+CREATE OR REPLACE VIEW yshopping_dwd.dwd_canonical_intelligence_taxonomy_retirement_event AS
+SELECT event_id, tenant_id, aggregate_id AS taxonomy_id, aggregate_version, occurred_at, recorded_at,
+       correlation_id, causation_id, idempotency_key,
+       CAST(get_json_string(payload, '$.definition_version') AS BIGINT) AS definition_version,
+       get_json_string(payload, '$.event_code') AS event_code,
+       get_json_string(payload, '$.level_codes') AS level_codes_json,
+       get_json_string(payload, '$.previous_status') AS previous_status,
+       get_json_string(payload, '$.current_status') AS current_status,
+       get_json_string(payload, '$.retired_by_principal_id') AS retired_by_principal_id,
+       get_json_string(payload, '$.reason_code') AS reason_code,
+       CAST(get_json_string(payload, '$.retired_at') AS DATETIME) AS retired_at,
+       get_json_string(payload, '$.source_system') AS taxonomy_source_system,
+       get_json_string(payload, '$.source_table') AS source_table,
+       get_json_string(payload, '$.source_record_key') AS source_record_key,
+       get_json_string(payload, '$.source_version') AS source_version,
+       CAST(get_json_string(payload, '$.source_observed_at') AS DATETIME) AS source_observed_at,
+       get_json_string(payload, '$.source_evidence_ref') AS source_evidence_ref,
+       get_json_string(payload, '$.source_evidence_sha256') AS source_evidence_sha256
+FROM yshopping_dwd.dwd_domain_event
+WHERE event_type = 'risk.intelligence_event_taxonomy.retired'
+  AND schema_version = 1 AND source_system = 'cloudmold-risk';
+
 CREATE OR REPLACE VIEW yshopping_dwd.dwd_canonical_risk_signal_event AS
 SELECT event_id, tenant_id, aggregate_id AS signal_id, aggregate_version, occurred_at AS event_occurred_at, recorded_at,
        correlation_id, causation_id, idempotency_key,
