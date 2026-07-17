@@ -44,3 +44,36 @@ FROM yshopping_dim.dim_canonical_legacy_trade_benefit_item_assessment
 WHERE canonical_import_allowed
    OR legacy_order_item_id IS NULL OR legacy_item_snapshot_hash IS NULL
    OR source_product_identity_status NOT IN ('SOURCE_IDS_PRESENT','MISSING_SOURCE_IDS');
+
+SELECT 'canonical_legacy_trade_item_component_reconciliation_invalid' AS check_name, COUNT(*) AS violations
+FROM yshopping_dim.dim_canonical_legacy_trade_benefit_item_component_reconciliation
+WHERE component_type NOT IN ('GENERIC_DISCOUNT','COUPON','POINT','VIP')
+   OR reconciliation_id NOT REGEXP '^[0-9a-f]{64}$'
+   OR reconciliation_hash NOT REGEXP '^[0-9a-f]{64}$'
+   OR source_item_component_row_count < 0 OR item_component_row_count < 0
+   OR excluded_item_component_row_count < 0
+   OR source_item_component_row_count
+        <> item_component_row_count + excluded_item_component_row_count
+   OR source_item_component_amount_minor
+        <> item_component_amount_minor + excluded_item_component_amount_minor
+   OR header_component_count NOT IN (0,1)
+   OR reconciliation_status NOT IN ('MATCHED','MISSING_ITEM_COMPONENT','MISSING_HEADER_COMPONENT',
+                                     'AMOUNT_MISMATCH','EXCLUDED_SOURCE_ORDER_DELETED',
+                                     'EXCLUDED_SOURCE_ITEM_DELETED')
+   OR canonical_import_allowed;
+
+SELECT 'canonical_legacy_trade_unquarantined_item_component_difference' AS check_name,
+       COUNT(*) AS violations
+FROM yshopping_dim.dim_canonical_legacy_trade_benefit_item_component_reconciliation
+WHERE reconciliation_status NOT IN ('MATCHED','EXCLUDED_SOURCE_ORDER_DELETED',
+                                     'EXCLUDED_SOURCE_ITEM_DELETED')
+  AND order_assessment_status NOT LIKE 'QUARANTINED_%';
+
+SELECT 'canonical_legacy_trade_item_component_rollup_mismatch' AS check_name, COUNT(*) AS violations
+FROM yshopping_dws.dws_canonical_legacy_trade_benefit_migration_assessment
+WHERE item_evidence_complete
+  AND (item_component_reconciliation_count
+        <> matched_component_type_count + excluded_component_type_count + mismatched_component_type_count
+   OR active_item_component_row_count > source_item_component_row_count
+   OR item_header_component_gap_minor <> item_benefit_amount_minor - component_amount_minor
+   OR import_allowed_item_component_count <> 0);

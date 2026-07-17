@@ -11,6 +11,7 @@ MODELS = (
     "models/dwd/dwd-canonical-legacy-trade-benefit-assessment-event.sql",
     "models/dim/dim-canonical-legacy-trade-benefit-component-assessment.sql",
     "models/dim/dim-canonical-legacy-trade-benefit-item-assessment.sql",
+    "models/dim/dim-canonical-legacy-trade-benefit-item-component-reconciliation.sql",
     "models/dws/dws-canonical-legacy-trade-benefit-migration-assessment.sql",
     "models/ads/ads-canonical-legacy-trade-benefit-migration-readiness.sql",
 )
@@ -44,7 +45,7 @@ class CanonicalLegacyTradeBenefitMigrationModelsTest(unittest.TestCase):
         self.assertEqual(positions, sorted(positions))
 
     def test_backend_is_reconciled_to_independent_offline_assessment(self):
-        ads = (ROOT / MODELS[4]).read_text(encoding="utf-8")
+        ads = (ROOT / MODELS[5]).read_text(encoding="utf-8")
         self.assertIn("dws_canonical_legacy_trade_benefit_migration_assessment backend", ads)
         self.assertIn("dws_legacy_trade_benefit_migration_assessment offline", ads)
         for metric in ("source_order_row_count", "non_deleted_order_count", "deleted_excluded_count",
@@ -63,13 +64,21 @@ class CanonicalLegacyTradeBenefitMigrationModelsTest(unittest.TestCase):
     def test_item_denominator_is_projected_without_opening_import(self):
         dwd = (ROOT / MODELS[0]).read_text(encoding="utf-8")
         dim_item = (ROOT / MODELS[2]).read_text(encoding="utf-8")
-        dws = (ROOT / MODELS[3]).read_text(encoding="utf-8")
+        reconciliation = (ROOT / MODELS[3]).read_text(encoding="utf-8")
+        dws = (ROOT / MODELS[4]).read_text(encoding="utf-8")
         self.assertIn("schema_version IN (1, 2)", dwd)
         self.assertIn("event.schema_version = 2", dim_item)
         self.assertIn("legacy_order_item_id", dim_item)
         self.assertIn("source_item_count", dws)
         self.assertIn("item_evidence_complete", dws)
         self.assertIn("import_allowed_item_count", dws)
+        self.assertIn("item_component_amount_minor", reconciliation)
+        self.assertIn("source_item_component_row_count", reconciliation)
+        self.assertIn("excluded_item_component_row_count", reconciliation)
+        self.assertIn("reconciliation_hash", reconciliation)
+        self.assertIn("MISSING_HEADER_COMPONENT", reconciliation)
+        self.assertIn("item_header_component_gap_minor", dws)
+        self.assertIn("import_allowed_item_component_count", dws)
 
 
 if __name__ == "__main__":
