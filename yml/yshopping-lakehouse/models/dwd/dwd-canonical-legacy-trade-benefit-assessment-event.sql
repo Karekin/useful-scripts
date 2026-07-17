@@ -51,12 +51,20 @@ SELECT
     get_json_string(payload, '$.run_item_evidence_hash') AS run_item_evidence_hash,
     CAST(get_json_string(payload, '$.run_item_evidence_benefit_amount_minor') AS BIGINT)
         AS run_item_evidence_benefit_amount_minor,
+    CAST(get_json_string(payload, '$.run_product_snapshot_captured_item_count') AS BIGINT)
+        AS run_product_snapshot_captured_item_count,
+    CAST(get_json_string(payload, '$.run_product_snapshot_incomplete_item_count') AS BIGINT)
+        AS run_product_snapshot_incomplete_item_count,
+    get_json_string(payload, '$.run_product_snapshot_evidence_hash')
+        AS run_product_snapshot_evidence_hash,
+    CAST(get_json_string(payload, '$.run_product_snapshot_evidence_complete') AS BOOLEAN)
+        AS run_product_snapshot_evidence_complete,
     json_query(payload, '$.items') AS items,
     get_json_string(payload, '$.policy_version') AS policy_version,
     get_json_string(payload, '$.verification_ref') AS verification_ref,
     CAST(REPLACE(SUBSTR(get_json_string(payload, '$.assessed_at'), 1, 19), 'T', ' ') AS DATETIME) AS assessed_at
 FROM yshopping_dwd.dwd_domain_event
 WHERE event_type = 'order.migration.legacy_trade_benefit_assessed'
-  AND schema_version IN (1, 2, 3)
+  AND schema_version IN (1, 2, 3, 4)
   AND source_system = 'cloudmold-order'
   AND aggregate_type = 'legacy_trade_benefit_migration_assessment';

@@ -40,6 +40,11 @@ SELECT
       WHEN target.canonical_import_allowed_order_count <> 0
         OR target.canonical_import_allowed_item_count <> 0 OR target.production_migration_enabled
         THEN 'BLOCKED_ILLEGAL_IMPORT_AUTHORITY'
+      WHEN NOT source.product_snapshot_evidence_complete
+        OR source.product_snapshot_captured_item_count <> source.source_item_count
+        OR source.product_snapshot_incomplete_item_count <> 0
+        OR source.product_snapshot_evidence_hash IS NULL
+        THEN 'BLOCKED_PRODUCT_SNAPSHOT_EVIDENCE_INCOMPLETE'
       WHEN target.historical_product_identity_qualified_item_count <> target.active_item_count
         OR target.historical_product_identity_unqualified_item_count <> 0
         THEN 'BLOCKED_HISTORICAL_PRODUCT_IDENTITY_NOT_QUALIFIED'

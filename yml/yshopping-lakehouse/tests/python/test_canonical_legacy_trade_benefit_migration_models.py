@@ -22,10 +22,12 @@ class CanonicalLegacyTradeBenefitMigrationModelsTest(unittest.TestCase):
         manifest = json.loads(EVENT_MANIFEST.read_text(encoding="utf-8"))
         contract = manifest["events"]["order.migration.legacy_trade_benefit_assessed"]
         self.assertEqual(contract["aggregate_type"], "legacy_trade_benefit_migration_assessment")
-        self.assertEqual([version["schema_version"] for version in contract["versions"]], [1, 2, 3])
+        self.assertEqual([version["schema_version"] for version in contract["versions"]], [1, 2, 3, 4])
         schema_v2 = json.loads((ROOT / "contracts" / contract["versions"][1]["payload_schema"])
                                .read_text(encoding="utf-8"))
         schema_v3 = json.loads((ROOT / "contracts" / contract["versions"][2]["payload_schema"])
+                               .read_text(encoding="utf-8"))
+        schema_v4 = json.loads((ROOT / "contracts" / contract["versions"][3]["payload_schema"])
                                .read_text(encoding="utf-8"))
         self.assertEqual(schema_v2["properties"]["canonical_import_allowed"]["const"], False)
         self.assertEqual(schema_v2["properties"]["item_evidence_complete"]["const"], True)
@@ -39,6 +41,15 @@ class CanonicalLegacyTradeBenefitMigrationModelsTest(unittest.TestCase):
         self.assertIn("legacy_buyer_id", schema_v3["required"])
         self.assertIn("buyer_identity_status", schema_v3["required"])
         self.assertIn("legacy_buyer_id", schema_v3["properties"]["items"]["items"]["required"])
+        self.assertEqual(schema_v4["properties"]["policy_version"]["const"], "legacy-trade-benefit-v5")
+        self.assertIn("run_product_snapshot_evidence_hash", schema_v4["required"])
+        item_v4 = schema_v4["properties"]["items"]["items"]
+        for field in ("source_created_at", "legacy_spu_name", "legacy_sku_properties_json",
+                      "legacy_sku_pic_url", "historical_product_snapshot_hash",
+                      "product_snapshot_status", "product_snapshot_semantics"):
+            self.assertIn(field, item_v4["required"])
+        self.assertEqual(item_v4["properties"]["product_snapshot_semantics"]["const"],
+                         "ORDER_ITEM_ACCEPTED_PRODUCT_SNAPSHOT_V1")
 
     def test_models_are_manifested_in_dependency_order(self):
         order = [line.strip() for line in MANIFEST.read_text(encoding="utf-8").splitlines()
@@ -72,14 +83,18 @@ class CanonicalLegacyTradeBenefitMigrationModelsTest(unittest.TestCase):
         dim_item = (ROOT / MODELS[2]).read_text(encoding="utf-8")
         reconciliation = (ROOT / MODELS[3]).read_text(encoding="utf-8")
         dws = (ROOT / MODELS[4]).read_text(encoding="utf-8")
-        self.assertIn("schema_version IN (1, 2, 3)", dwd)
-        self.assertIn("event.schema_version IN (2, 3)", dim_item)
+        self.assertIn("schema_version IN (1, 2, 3, 4)", dwd)
+        self.assertIn("event.schema_version IN (2, 3, 4)", dim_item)
         self.assertIn("legacy_order_item_id", dim_item)
         self.assertIn("legacy_buyer_id", dim_item)
+        self.assertIn("historical_product_snapshot_hash", dim_item)
+        self.assertIn("product_snapshot_status", dim_item)
         self.assertIn("source_item_count", dws)
         self.assertIn("item_evidence_complete", dws)
         self.assertIn("buyer_lineage_complete", dws)
         self.assertIn("missing_buyer_identity_order_count", dws)
+        self.assertIn("product_snapshot_evidence_complete", dws)
+        self.assertIn("product_snapshot_captured_item_count", dws)
         self.assertIn("import_allowed_item_count", dws)
         self.assertIn("item_component_amount_minor", reconciliation)
         self.assertIn("source_item_component_row_count", reconciliation)

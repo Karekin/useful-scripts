@@ -22,6 +22,10 @@ WITH component_rollup AS (
         SUM(CASE WHEN is_deleted = FALSE AND order_assessment_status <> 'DELETED_EXCLUDED'
             THEN generic_discount_amount_minor + coupon_amount_minor + point_amount_minor + vip_amount_minor
             ELSE 0 END) AS item_benefit_amount_minor,
+        SUM(CASE WHEN product_snapshot_status = 'CAPTURED' THEN 1 ELSE 0 END)
+            AS product_snapshot_captured_item_count,
+        SUM(CASE WHEN product_snapshot_status = 'INCOMPLETE' THEN 1 ELSE 0 END)
+            AS product_snapshot_incomplete_item_count,
         SUM(CASE WHEN canonical_import_allowed THEN 1 ELSE 0 END) AS import_allowed_item_count
     FROM yshopping_dim.dim_canonical_legacy_trade_benefit_item_assessment
     GROUP BY tenant_id, migration_run_id
@@ -59,7 +63,7 @@ SELECT
     SUM(CASE WHEN event.assessment_status = 'BENEFIT_REQUIRES_IDENTITY_AND_FUNDING' THEN 1 ELSE 0 END)
         AS benefit_evidence_pending_order_count,
     SUM(CASE WHEN event.assessment_status LIKE 'QUARANTINED_%' THEN 1 ELSE 0 END) AS quarantined_order_count,
-    SUM(CASE WHEN event.is_deleted = FALSE AND event.schema_version = 3 THEN 1 ELSE 0 END)
+    SUM(CASE WHEN event.is_deleted = FALSE AND event.schema_version IN (3, 4) THEN 1 ELSE 0 END)
         AS buyer_lineage_order_count,
     SUM(CASE WHEN event.is_deleted = FALSE AND event.buyer_identity_status = 'RESOLVED' THEN 1 ELSE 0 END)
         AS resolved_buyer_identity_order_count,
@@ -78,6 +82,10 @@ SELECT
     COALESCE(MAX(item.active_item_count), 0) AS active_item_count,
     COALESCE(MAX(item.excluded_item_count), 0) AS excluded_item_count,
     COALESCE(MAX(item.item_benefit_amount_minor), 0) AS item_benefit_amount_minor,
+    COALESCE(MAX(item.product_snapshot_captured_item_count), 0)
+        AS product_snapshot_captured_item_count,
+    COALESCE(MAX(item.product_snapshot_incomplete_item_count), 0)
+        AS product_snapshot_incomplete_item_count,
     COALESCE(MAX(item.import_allowed_item_count), 0) AS import_allowed_item_count,
     COALESCE(MAX(item_component.item_component_reconciliation_count), 0)
         AS item_component_reconciliation_count,
@@ -89,17 +97,27 @@ SELECT
     COALESCE(MAX(item_component.item_header_component_gap_minor), 0) AS item_header_component_gap_minor,
     COALESCE(MAX(item_component.import_allowed_item_component_count), 0)
         AS import_allowed_item_component_count,
-    MIN(CASE WHEN event.schema_version IN (2, 3) AND event.item_evidence_complete THEN 1 ELSE 0 END) = 1
+    MIN(CASE WHEN event.schema_version IN (2, 3, 4) AND event.item_evidence_complete THEN 1 ELSE 0 END) = 1
         AS item_evidence_complete,
-    MIN(CASE WHEN event.schema_version = 3 AND event.legacy_buyer_id > 0
+    MIN(CASE WHEN event.schema_version IN (3, 4) AND event.legacy_buyer_id > 0
                   AND event.source_created_at IS NOT NULL
                   AND event.buyer_identity_status IN ('RESOLVED','MISSING','AMBIGUOUS')
              THEN 1 ELSE 0 END) = 1 AS buyer_lineage_complete,
+    MIN(CASE WHEN event.schema_version = 4 AND event.run_product_snapshot_evidence_complete
+             THEN 1 ELSE 0 END) = 1
+      AND COALESCE(MAX(item.product_snapshot_captured_item_count), 0)
+          = MAX(event.run_product_snapshot_captured_item_count)
+      AND COALESCE(MAX(item.product_snapshot_incomplete_item_count), 0)
+          = MAX(event.run_product_snapshot_incomplete_item_count)
+        AS product_snapshot_evidence_complete,
     MAX(event.run_source_item_count) AS declared_source_item_count,
     MAX(event.run_active_item_count) AS declared_active_item_count,
     MAX(event.run_excluded_item_count) AS declared_excluded_item_count,
     MAX(event.run_item_evidence_hash) AS item_evidence_hash,
     MAX(event.run_item_evidence_benefit_amount_minor) AS declared_item_benefit_amount_minor,
+    MAX(event.run_product_snapshot_captured_item_count) AS declared_product_snapshot_captured_item_count,
+    MAX(event.run_product_snapshot_incomplete_item_count) AS declared_product_snapshot_incomplete_item_count,
+    MAX(event.run_product_snapshot_evidence_hash) AS product_snapshot_evidence_hash,
     MAX(event.assessed_at) AS assessed_at,
     FALSE AS production_migration_enabled,
     'CANONICAL_LEGACY_TRADE_BENEFIT_MIGRATION_ASSESSMENT' AS model_semantics

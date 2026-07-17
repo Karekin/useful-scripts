@@ -351,6 +351,11 @@
           "schema_version": 3,
           "payload_schema": "events/order-migration-legacy-trade-benefit-assessed-v3.schema.json",
           "example": "examples/order-migration-legacy-trade-benefit-assessed-v3.json"
+        },
+        {
+          "schema_version": 4,
+          "payload_schema": "events/order-migration-legacy-trade-benefit-assessed-v4.schema.json",
+          "example": "examples/order-migration-legacy-trade-benefit-assessed-v4.json"
         }
       ]
     },

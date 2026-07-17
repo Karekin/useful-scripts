@@ -440,8 +440,15 @@ nonzero component while keeping canonical import disabled. A local Trade row
 cannot become a canonical Order benefit until exact Order/item mappings,
 versioned benefit identity and a named funding breakdown are all supplied.
 
-Fresh assessments use `legacy-trade-benefit-v4` and schema version 3. They also
-preserve source order creation/status and legacy buyer identity, including the
+Fresh assessments use `legacy-trade-benefit-v5` and schema version 4. In
+addition to source order creation/status and legacy buyer identity, every legacy
+Order Item now carries the product projection accepted at checkout: source
+creation time, SPU/SKU IDs, SPU name, SKU properties, image, unit price and a
+server-computed immutable snapshot digest. The run-level digest and complete
+denominator counts are projected through DWD, DIM and DWS; caller-supplied
+digests cannot qualify historical product identity. Missing product fields stay
+measurable and fail closed rather than being reconstructed from today's catalog.
+The buyer lineage still includes the
 exact versioned `MEMBER/MEMBER_USER` source mapping when one exists. Missing or
 ambiguous buyer mappings remain measurable blockers in DWD/DWS; they are never
 inferred from canonical Order rows or numeric ID coincidence. Item evidence must

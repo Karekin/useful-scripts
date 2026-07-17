@@ -41,11 +41,30 @@ WHERE canonical_import_available OR production_migration_enabled
    OR canonical_import_allowed_order_count<>0 OR canonical_import_allowed_item_count<>0
    OR governed_scope<>'LOCAL_YUDAO_TRADE_NOT_YSHOPPING_SOURCE';
 
+SELECT 'canonical_legacy_trade_target_product_snapshot_fence_missing' AS check_name, COUNT(*) AS violations
+FROM yshopping_ads.ads_canonical_legacy_trade_target_readiness target
+LEFT JOIN yshopping_dws.dws_canonical_legacy_trade_benefit_migration_assessment source
+  ON source.tenant_id = target.tenant_id
+ AND source.migration_run_id = target.source_migration_run_id
+WHERE (source.migration_run_id IS NOT NULL
+       AND (NOT source.product_snapshot_evidence_complete
+            OR source.product_snapshot_captured_item_count<>source.source_item_count
+            OR source.product_snapshot_incomplete_item_count<>0
+            OR source.product_snapshot_evidence_hash IS NULL))
+  AND target.readiness_status<>'BLOCKED_PRODUCT_SNAPSHOT_EVIDENCE_INCOMPLETE';
+
 SELECT 'canonical_legacy_trade_target_historical_identity_fence_missing' AS check_name, COUNT(*) AS violations
-FROM yshopping_ads.ads_canonical_legacy_trade_target_readiness
-WHERE (historical_product_identity_qualified_item_count<>active_item_count
-       OR historical_product_identity_unqualified_item_count<>0)
-  AND readiness_status<>'BLOCKED_HISTORICAL_PRODUCT_IDENTITY_NOT_QUALIFIED';
+FROM yshopping_ads.ads_canonical_legacy_trade_target_readiness target
+JOIN yshopping_dws.dws_canonical_legacy_trade_benefit_migration_assessment source
+  ON source.tenant_id = target.tenant_id
+ AND source.migration_run_id = target.source_migration_run_id
+WHERE source.product_snapshot_evidence_complete
+  AND source.product_snapshot_captured_item_count=source.source_item_count
+  AND source.product_snapshot_incomplete_item_count=0
+  AND source.product_snapshot_evidence_hash IS NOT NULL
+  AND (target.historical_product_identity_qualified_item_count<>target.active_item_count
+       OR target.historical_product_identity_unqualified_item_count<>0)
+  AND target.readiness_status<>'BLOCKED_HISTORICAL_PRODUCT_IDENTITY_NOT_QUALIFIED';
 
 SELECT 'canonical_legacy_trade_target_source_denominator_mismatch' AS check_name, COUNT(*) AS violations
 FROM yshopping_ads.ads_canonical_legacy_trade_target_readiness

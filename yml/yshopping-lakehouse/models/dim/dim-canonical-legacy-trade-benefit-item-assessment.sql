@@ -10,11 +10,19 @@ SELECT
     CAST(get_json_string(item.`value`, '$.legacy_order_item_id') AS BIGINT) AS legacy_order_item_id,
     CAST(get_json_string(item.`value`, '$.legacy_buyer_id') AS BIGINT) AS legacy_buyer_id,
     get_json_string(item.`value`, '$.legacy_item_snapshot_hash') AS legacy_item_snapshot_hash,
+    CAST(REPLACE(SUBSTR(get_json_string(item.`value`, '$.source_created_at'), 1, 19), 'T', ' ') AS DATETIME)
+        AS source_created_at,
     CAST(REPLACE(SUBSTR(get_json_string(item.`value`, '$.source_updated_at'), 1, 19), 'T', ' ') AS DATETIME)
         AS source_updated_at,
     CAST(get_json_string(item.`value`, '$.is_deleted') AS BOOLEAN) AS is_deleted,
     CAST(get_json_string(item.`value`, '$.legacy_spu_id') AS BIGINT) AS legacy_spu_id,
+    get_json_string(item.`value`, '$.legacy_spu_name') AS legacy_spu_name,
     CAST(get_json_string(item.`value`, '$.legacy_sku_id') AS BIGINT) AS legacy_sku_id,
+    get_json_string(item.`value`, '$.legacy_sku_properties_json') AS legacy_sku_properties_json,
+    get_json_string(item.`value`, '$.legacy_sku_pic_url') AS legacy_sku_pic_url,
+    get_json_string(item.`value`, '$.historical_product_snapshot_hash') AS historical_product_snapshot_hash,
+    get_json_string(item.`value`, '$.product_snapshot_status') AS product_snapshot_status,
+    get_json_string(item.`value`, '$.product_snapshot_semantics') AS product_snapshot_semantics,
     get_json_string(item.`value`, '$.source_product_identity_status') AS source_product_identity_status,
     CAST(get_json_string(item.`value`, '$.item_quantity') AS BIGINT) AS item_quantity,
     CAST(get_json_string(item.`value`, '$.unit_price_minor') AS BIGINT) AS unit_price_minor,
@@ -32,4 +40,4 @@ SELECT
     event.assessed_at
 FROM yshopping_dwd.dwd_canonical_legacy_trade_benefit_assessment_event event,
      LATERAL json_each(event.items) item
-WHERE event.schema_version IN (2, 3) AND event.item_evidence_complete;
+WHERE event.schema_version IN (2, 3, 4) AND event.item_evidence_complete;

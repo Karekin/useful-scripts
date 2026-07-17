@@ -102,3 +102,33 @@ WHERE buyer_lineage_complete
   AND buyer_lineage_order_count
       <>resolved_buyer_identity_order_count+missing_buyer_identity_order_count
         +ambiguous_buyer_identity_order_count;
+
+SELECT 'canonical_legacy_trade_v5_product_snapshot_run_invalid' AS check_name, COUNT(*) AS violations
+FROM yshopping_dwd.dwd_canonical_legacy_trade_benefit_assessment_event
+WHERE schema_version = 4
+  AND (policy_version <> 'legacy-trade-benefit-v5'
+    OR NOT run_product_snapshot_evidence_complete
+    OR run_product_snapshot_captured_item_count <> run_source_item_count
+    OR run_product_snapshot_incomplete_item_count <> 0
+    OR run_product_snapshot_evidence_hash NOT REGEXP '^[0-9a-f]{64}$');
+
+SELECT 'canonical_legacy_trade_v5_product_snapshot_item_invalid' AS check_name, COUNT(*) AS violations
+FROM yshopping_dim.dim_canonical_legacy_trade_benefit_item_assessment item
+JOIN yshopping_dwd.dwd_canonical_legacy_trade_benefit_assessment_event event
+  ON event.tenant_id=item.tenant_id AND event.migration_run_id=item.migration_run_id
+ AND event.candidate_id=item.candidate_id
+WHERE event.schema_version = 4
+  AND (item.source_created_at IS NULL OR item.legacy_spu_id <= 0 OR item.legacy_sku_id <= 0
+    OR item.legacy_spu_name IS NULL OR TRIM(item.legacy_spu_name) = ''
+    OR item.unit_price_minor < 0 OR item.product_snapshot_status <> 'CAPTURED'
+    OR item.product_snapshot_semantics <> 'ORDER_ITEM_ACCEPTED_PRODUCT_SNAPSHOT_V1'
+    OR item.historical_product_snapshot_hash NOT REGEXP '^[0-9a-f]{64}$');
+
+SELECT 'canonical_legacy_trade_v5_product_snapshot_rollup_mismatch' AS check_name, COUNT(*) AS violations
+FROM yshopping_dws.dws_canonical_legacy_trade_benefit_migration_assessment
+WHERE product_snapshot_evidence_complete
+  AND (product_snapshot_captured_item_count <> source_item_count
+    OR product_snapshot_incomplete_item_count <> 0
+    OR product_snapshot_captured_item_count <> declared_product_snapshot_captured_item_count
+    OR product_snapshot_incomplete_item_count <> declared_product_snapshot_incomplete_item_count
+    OR product_snapshot_evidence_hash NOT REGEXP '^[0-9a-f]{64}$');
