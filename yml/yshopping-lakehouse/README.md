@@ -440,6 +440,14 @@ nonzero component while keeping canonical import disabled. A local Trade row
 cannot become a canonical Order benefit until exact Order/item mappings,
 versioned benefit identity and a named funding breakdown are all supplied.
 
+Fresh assessments use `legacy-trade-benefit-v4` and schema version 3. They also
+preserve source order creation/status and legacy buyer identity, including the
+exact versioned `MEMBER/MEMBER_USER` source mapping when one exists. Missing or
+ambiguous buyer mappings remain measurable blockers in DWD/DWS; they are never
+inferred from canonical Order rows or numeric ID coincidence. Item evidence must
+carry the same legacy buyer as its source Order before any target mapping is
+considered.
+
 Run `lakehousectl reconcile-legacy-trade-benefit-assessment --tenant <id>` to
 verify the nonempty denominator, component amount conservation, unresolved
 evidence counts and the fail-closed production fence before any migration work.

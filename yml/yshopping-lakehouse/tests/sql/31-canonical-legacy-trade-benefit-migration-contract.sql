@@ -77,3 +77,28 @@ WHERE item_evidence_complete
    OR active_item_component_row_count > source_item_component_row_count
    OR item_header_component_gap_minor <> item_benefit_amount_minor - component_amount_minor
    OR import_allowed_item_component_count <> 0);
+
+SELECT 'canonical_legacy_trade_v4_buyer_lineage_invalid' AS check_name, COUNT(*) AS violations
+FROM yshopping_dwd.dwd_canonical_legacy_trade_benefit_assessment_event
+WHERE schema_version = 3
+  AND (policy_version <> 'legacy-trade-benefit-v4' OR source_created_at IS NULL OR legacy_buyer_id <= 0
+    OR legacy_order_status IS NULL OR buyer_identity_status NOT IN ('RESOLVED','MISSING','AMBIGUOUS')
+    OR (buyer_identity_status = 'RESOLVED'
+      AND (buyer_source_identity_id IS NULL OR buyer_principal_id IS NULL OR buyer_identity_version <= 0))
+    OR (buyer_identity_status <> 'RESOLVED'
+      AND (buyer_source_identity_id IS NOT NULL OR buyer_principal_id IS NOT NULL
+        OR buyer_identity_version IS NOT NULL)));
+
+SELECT 'canonical_legacy_trade_v4_item_buyer_lineage_mismatch' AS check_name, COUNT(*) AS violations
+FROM yshopping_dim.dim_canonical_legacy_trade_benefit_item_assessment item
+JOIN yshopping_dwd.dwd_canonical_legacy_trade_benefit_assessment_event event
+  ON event.tenant_id=item.tenant_id AND event.migration_run_id=item.migration_run_id
+ AND event.candidate_id=item.candidate_id
+WHERE event.schema_version=3 AND item.legacy_buyer_id<>event.legacy_buyer_id;
+
+SELECT 'canonical_legacy_trade_v4_buyer_rollup_mismatch' AS check_name, COUNT(*) AS violations
+FROM yshopping_dws.dws_canonical_legacy_trade_benefit_migration_assessment
+WHERE buyer_lineage_complete
+  AND buyer_lineage_order_count
+      <>resolved_buyer_identity_order_count+missing_buyer_identity_order_count
+        +ambiguous_buyer_identity_order_count;

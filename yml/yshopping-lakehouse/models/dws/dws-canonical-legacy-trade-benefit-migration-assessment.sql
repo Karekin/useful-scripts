@@ -59,6 +59,14 @@ SELECT
     SUM(CASE WHEN event.assessment_status = 'BENEFIT_REQUIRES_IDENTITY_AND_FUNDING' THEN 1 ELSE 0 END)
         AS benefit_evidence_pending_order_count,
     SUM(CASE WHEN event.assessment_status LIKE 'QUARANTINED_%' THEN 1 ELSE 0 END) AS quarantined_order_count,
+    SUM(CASE WHEN event.is_deleted = FALSE AND event.schema_version = 3 THEN 1 ELSE 0 END)
+        AS buyer_lineage_order_count,
+    SUM(CASE WHEN event.is_deleted = FALSE AND event.buyer_identity_status = 'RESOLVED' THEN 1 ELSE 0 END)
+        AS resolved_buyer_identity_order_count,
+    SUM(CASE WHEN event.is_deleted = FALSE AND event.buyer_identity_status = 'MISSING' THEN 1 ELSE 0 END)
+        AS missing_buyer_identity_order_count,
+    SUM(CASE WHEN event.is_deleted = FALSE AND event.buyer_identity_status = 'AMBIGUOUS' THEN 1 ELSE 0 END)
+        AS ambiguous_buyer_identity_order_count,
     SUM(CASE WHEN event.is_deleted = FALSE THEN event.header_benefit_amount_minor ELSE 0 END)
         AS source_benefit_amount_minor,
     COALESCE(MAX(component.component_count), 0) AS component_count,
@@ -81,8 +89,12 @@ SELECT
     COALESCE(MAX(item_component.item_header_component_gap_minor), 0) AS item_header_component_gap_minor,
     COALESCE(MAX(item_component.import_allowed_item_component_count), 0)
         AS import_allowed_item_component_count,
-    MIN(CASE WHEN event.schema_version = 2 AND event.item_evidence_complete THEN 1 ELSE 0 END) = 1
+    MIN(CASE WHEN event.schema_version IN (2, 3) AND event.item_evidence_complete THEN 1 ELSE 0 END) = 1
         AS item_evidence_complete,
+    MIN(CASE WHEN event.schema_version = 3 AND event.legacy_buyer_id > 0
+                  AND event.source_created_at IS NOT NULL
+                  AND event.buyer_identity_status IN ('RESOLVED','MISSING','AMBIGUOUS')
+             THEN 1 ELSE 0 END) = 1 AS buyer_lineage_complete,
     MAX(event.run_source_item_count) AS declared_source_item_count,
     MAX(event.run_active_item_count) AS declared_active_item_count,
     MAX(event.run_excluded_item_count) AS declared_excluded_item_count,

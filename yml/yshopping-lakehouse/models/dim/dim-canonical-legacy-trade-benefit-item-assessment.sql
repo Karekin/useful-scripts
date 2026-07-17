@@ -8,6 +8,7 @@ SELECT
     event.assessment_status AS order_assessment_status,
     get_json_string(item.`value`, '$.item_evidence_id') AS item_evidence_id,
     CAST(get_json_string(item.`value`, '$.legacy_order_item_id') AS BIGINT) AS legacy_order_item_id,
+    CAST(get_json_string(item.`value`, '$.legacy_buyer_id') AS BIGINT) AS legacy_buyer_id,
     get_json_string(item.`value`, '$.legacy_item_snapshot_hash') AS legacy_item_snapshot_hash,
     CAST(REPLACE(SUBSTR(get_json_string(item.`value`, '$.source_updated_at'), 1, 19), 'T', ' ') AS DATETIME)
         AS source_updated_at,
@@ -31,4 +32,4 @@ SELECT
     event.assessed_at
 FROM yshopping_dwd.dwd_canonical_legacy_trade_benefit_assessment_event event,
      LATERAL json_each(event.items) item
-WHERE event.schema_version = 2 AND event.item_evidence_complete;
+WHERE event.schema_version IN (2, 3) AND event.item_evidence_complete;

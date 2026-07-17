@@ -15,8 +15,16 @@ SELECT
     get_json_string(payload, '$.source_scope') AS source_scope,
     CAST(get_json_string(payload, '$.legacy_order_id') AS BIGINT) AS legacy_order_id,
     get_json_string(payload, '$.legacy_order_no') AS legacy_order_no,
+    CAST(REPLACE(SUBSTR(get_json_string(payload, '$.source_created_at'), 1, 19), 'T', ' ') AS DATETIME)
+        AS source_created_at,
     CAST(REPLACE(SUBSTR(get_json_string(payload, '$.source_updated_at'), 1, 19), 'T', ' ') AS DATETIME)
         AS source_updated_at,
+    CAST(get_json_string(payload, '$.legacy_buyer_id') AS BIGINT) AS legacy_buyer_id,
+    CAST(get_json_string(payload, '$.legacy_order_status') AS BIGINT) AS legacy_order_status,
+    get_json_string(payload, '$.buyer_source_identity_id') AS buyer_source_identity_id,
+    get_json_string(payload, '$.buyer_principal_id') AS buyer_principal_id,
+    CAST(get_json_string(payload, '$.buyer_identity_version') AS BIGINT) AS buyer_identity_version,
+    get_json_string(payload, '$.buyer_identity_status') AS buyer_identity_status,
     get_json_string(payload, '$.source_snapshot_hash') AS source_snapshot_hash,
     CAST(get_json_string(payload, '$.is_deleted') AS BOOLEAN) AS is_deleted,
     CAST(get_json_string(payload, '$.header_quantity') AS BIGINT) AS header_quantity,
@@ -49,6 +57,6 @@ SELECT
     CAST(REPLACE(SUBSTR(get_json_string(payload, '$.assessed_at'), 1, 19), 'T', ' ') AS DATETIME) AS assessed_at
 FROM yshopping_dwd.dwd_domain_event
 WHERE event_type = 'order.migration.legacy_trade_benefit_assessed'
-  AND schema_version IN (1, 2)
+  AND schema_version IN (1, 2, 3)
   AND source_system = 'cloudmold-order'
   AND aggregate_type = 'legacy_trade_benefit_migration_assessment';
