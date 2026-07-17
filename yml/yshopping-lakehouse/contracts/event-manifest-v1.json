@@ -360,6 +360,12 @@
       "payload_schema": "events/order-migration-legacy-trade-product-identity-assessed-v1.schema.json",
       "example": "examples/order-migration-legacy-trade-product-identity-assessed-v1.json"
     },
+    "order.migration.legacy_trade_product_identity_qualification_reviewed": {
+      "schema_version": 1,
+      "aggregate_type": "legacy_trade_product_identity_qualification_request",
+      "payload_schema": "events/order-migration-legacy-trade-product-identity-qualification-reviewed-v1.schema.json",
+      "example": "examples/order-migration-legacy-trade-product-identity-qualification-reviewed-v1.json"
+    },
     "order.migration.legacy_trade_target_readiness_assessed": {
       "aggregate_type": "legacy_trade_target_readiness",
       "versions": [

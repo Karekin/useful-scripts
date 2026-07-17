@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/order-migration-legacy-trade-product-identity-qualification-reviewed-v1.schema.json",
+  "title": "order.migration.legacy_trade_product_identity_qualification_reviewed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "request_id", "action_type", "target_qualification_id", "source_migration_run_id",
+    "item_evidence_id", "legacy_order_item_id", "historical_spu_id", "historical_sku_id",
+    "source_item_evidence_hash", "historical_product_snapshot_hash", "source_evidence_uri",
+    "qualification_ref", "scope_hash", "requester_system_user_id", "approval_count",
+    "approval_roles", "approver_system_user_ids", "approvals", "approval_set_hash",
+    "request_status", "qualification_id", "qualification_status", "request_version",
+    "canonical_import_allowed", "production_migration_enabled", "policy_version", "reviewed_at"
+  ],
+  "properties": {
+    "request_id": {"type": "string", "format": "uuid"},
+    "action_type": {"type": "string", "enum": ["QUALIFY", "REVOKE"]},
+    "target_qualification_id": {"type": ["string", "null"], "format": "uuid"},
+    "source_migration_run_id": {"type": "string", "format": "uuid"},
+    "item_evidence_id": {"type": "string", "format": "uuid"},
+    "legacy_order_item_id": {"type": "integer", "minimum": 1},
+    "historical_spu_id": {"type": "integer", "minimum": 1},
+    "historical_sku_id": {"type": "integer", "minimum": 1},
+    "source_item_evidence_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "historical_product_snapshot_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "source_evidence_uri": {"type": "string", "pattern": "^(s3|oss|restricted|evidence)://.+$", "maxLength": 512},
+    "qualification_ref": {"type": "string", "pattern": "^(evidence|ticket|change|review):.+$", "maxLength": 256},
+    "scope_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "requester_system_user_id": {"type": "integer", "minimum": 1},
+    "approval_count": {"type": "integer", "minimum": 0, "maximum": 2},
+    "approval_roles": {
+      "type": "array", "uniqueItems": true, "maxItems": 2,
+      "items": {"type": "string", "enum": ["DATA_OWNER", "CHANGE_MANAGER"]}
+    },
+    "approver_system_user_ids": {
+      "type": "array", "uniqueItems": true, "maxItems": 2,
+      "items": {"type": "integer", "minimum": 1}
+    },
+    "approvals": {
+      "type": "array", "maxItems": 2,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["approval_id", "approval_role", "approver_system_user_id", "evidence_ref", "expected_request_version", "status"],
+        "properties": {
+          "approval_id": {"type": "string", "format": "uuid"},
+          "approval_role": {"type": "string", "enum": ["DATA_OWNER", "CHANGE_MANAGER"]},
+          "approver_system_user_id": {"type": "integer", "minimum": 1},
+          "evidence_ref": {"type": "string", "pattern": "^(evidence|ticket|change|review):.+$", "maxLength": 256},
+          "expected_request_version": {"type": "integer", "enum": [1, 2]},
+          "status": {"const": "APPROVED"}
+        }
+      }
+    },
+    "approval_set_hash": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "request_status": {"type": "string", "enum": ["PENDING", "PARTIALLY_APPROVED", "APPLIED"]},
+    "qualification_id": {"type": ["string", "null"], "format": "uuid"},
+    "qualification_status": {"type": "string", "enum": ["NOT_APPLIED", "QUALIFIED", "REVOKED"]},
+    "request_version": {"type": "integer", "minimum": 1, "maximum": 3},
+    "canonical_import_allowed": {"const": false},
+    "production_migration_enabled": {"const": false},
+    "policy_version": {"const": "legacy-trade-product-identity-qualification-v1"},
+    "reviewed_at": {"type": "string", "format": "date-time"}
+  },
+  "allOf": [
+    {"if": {"properties": {"action_type": {"const": "QUALIFY"}}, "required": ["action_type"]}, "then": {"properties": {"target_qualification_id": {"type": "null"}}}},
+    {"if": {"properties": {"action_type": {"const": "REVOKE"}}, "required": ["action_type"]}, "then": {"properties": {"target_qualification_id": {"type": "string", "format": "uuid"}}}},
+    {"if": {"properties": {"request_status": {"const": "PENDING"}}, "required": ["request_status"]}, "then": {"properties": {"approval_count": {"const": 0}, "approval_roles": {"maxItems": 0}, "approver_system_user_ids": {"maxItems": 0}, "approvals": {"maxItems": 0}, "approval_set_hash": {"type": "null"}, "qualification_id": {"type": "null"}, "qualification_status": {"const": "NOT_APPLIED"}, "request_version": {"const": 1}}}},
+    {"if": {"properties": {"request_status": {"const": "PARTIALLY_APPROVED"}}, "required": ["request_status"]}, "then": {"properties": {"approval_count": {"const": 1}, "approval_roles": {"minItems": 1, "maxItems": 1}, "approver_system_user_ids": {"minItems": 1, "maxItems": 1}, "approvals": {"minItems": 1, "maxItems": 1}, "approval_set_hash": {"type": "null"}, "qualification_id": {"type": "null"}, "qualification_status": {"const": "NOT_APPLIED"}, "request_version": {"const": 2}}}},
+    {"if": {"properties": {"request_status": {"const": "APPLIED"}}, "required": ["request_status"]}, "then": {"properties": {"approval_count": {"const": 2}, "approval_roles": {"minItems": 2, "maxItems": 2}, "approver_system_user_ids": {"minItems": 2, "maxItems": 2}, "approvals": {"minItems": 2, "maxItems": 2}, "approval_set_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}, "qualification_id": {"type": "string", "format": "uuid"}, "request_version": {"const": 3}}}},
+    {"if": {"properties": {"request_status": {"const": "APPLIED"}, "action_type": {"const": "QUALIFY"}}, "required": ["request_status", "action_type"]}, "then": {"properties": {"qualification_status": {"const": "QUALIFIED"}}}},
+    {"if": {"properties": {"request_status": {"const": "APPLIED"}, "action_type": {"const": "REVOKE"}}, "required": ["request_status", "action_type"]}, "then": {"properties": {"qualification_status": {"const": "REVOKED"}}}}
+  ]
+}

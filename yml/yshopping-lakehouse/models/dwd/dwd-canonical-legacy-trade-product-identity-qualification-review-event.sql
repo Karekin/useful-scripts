@@ -1,0 +1,45 @@
+CREATE OR REPLACE VIEW yshopping_dwd.dwd_canonical_legacy_trade_product_identity_qualification_review_event AS
+SELECT
+    event_id,
+    schema_version,
+    tenant_id,
+    aggregate_id AS request_id,
+    aggregate_version AS request_version,
+    occurred_at,
+    recorded_at,
+    correlation_id,
+    causation_id,
+    idempotency_key,
+    get_json_string(payload, '$.request_id') AS payload_request_id,
+    get_json_string(payload, '$.action_type') AS action_type,
+    get_json_string(payload, '$.target_qualification_id') AS target_qualification_id,
+    get_json_string(payload, '$.source_migration_run_id') AS source_migration_run_id,
+    get_json_string(payload, '$.item_evidence_id') AS item_evidence_id,
+    CAST(get_json_string(payload, '$.legacy_order_item_id') AS BIGINT) AS legacy_order_item_id,
+    CAST(get_json_string(payload, '$.historical_spu_id') AS BIGINT) AS historical_spu_id,
+    CAST(get_json_string(payload, '$.historical_sku_id') AS BIGINT) AS historical_sku_id,
+    get_json_string(payload, '$.source_item_evidence_hash') AS source_item_evidence_hash,
+    get_json_string(payload, '$.historical_product_snapshot_hash') AS historical_product_snapshot_hash,
+    get_json_string(payload, '$.source_evidence_uri') AS source_evidence_uri,
+    get_json_string(payload, '$.qualification_ref') AS qualification_ref,
+    get_json_string(payload, '$.scope_hash') AS scope_hash,
+    CAST(get_json_string(payload, '$.requester_system_user_id') AS BIGINT) AS requester_system_user_id,
+    CAST(get_json_string(payload, '$.approval_count') AS BIGINT) AS approval_count,
+    json_query(payload, '$.approval_roles') AS approval_roles_json,
+    json_query(payload, '$.approver_system_user_ids') AS approver_system_user_ids_json,
+    CAST(get_json_string(payload, '$.approver_system_user_ids[0]') AS BIGINT) AS first_approver_system_user_id,
+    CAST(get_json_string(payload, '$.approver_system_user_ids[1]') AS BIGINT) AS second_approver_system_user_id,
+    json_query(payload, '$.approvals') AS approvals_json,
+    get_json_string(payload, '$.approval_set_hash') AS approval_set_hash,
+    get_json_string(payload, '$.request_status') AS request_status,
+    get_json_string(payload, '$.qualification_id') AS qualification_id,
+    get_json_string(payload, '$.qualification_status') AS qualification_status,
+    CAST(get_json_string(payload, '$.canonical_import_allowed') AS BOOLEAN) AS canonical_import_allowed,
+    CAST(get_json_string(payload, '$.production_migration_enabled') AS BOOLEAN) AS production_migration_enabled,
+    get_json_string(payload, '$.policy_version') AS policy_version,
+    CAST(REPLACE(SUBSTR(get_json_string(payload, '$.reviewed_at'), 1, 19), 'T', ' ') AS DATETIME) AS reviewed_at
+FROM yshopping_dwd.dwd_domain_event
+WHERE event_type = 'order.migration.legacy_trade_product_identity_qualification_reviewed'
+  AND schema_version = 1
+  AND source_system = 'cloudmold-order'
+  AND aggregate_type = 'legacy_trade_product_identity_qualification_request';
