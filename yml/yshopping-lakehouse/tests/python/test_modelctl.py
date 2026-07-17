@@ -62,9 +62,9 @@ class ModelCtlTest(unittest.TestCase):
             positions["models/dws/dws-canonical-paid-order-cancellation-saga-current.sql"],
         )
 
-    def test_models_extend_manifest_to_one_hundred_eighty_five_in_dependency_order(self):
+    def test_models_extend_manifest_to_one_hundred_eighty_nine_in_dependency_order(self):
         order = MODEL.load_order()
-        self.assertEqual(len(order), 185)
+        self.assertEqual(len(order), 189)
         positions = {entry: index for index, entry in enumerate(order)}
         paid_dws = "models/dws/dws-canonical-paid-order-cancellation-saga-current.sql"
         paid_ads = "models/ads/ads-canonical-paid-order-cancellation-saga-readiness.sql"

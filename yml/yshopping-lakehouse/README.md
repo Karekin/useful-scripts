@@ -452,6 +452,19 @@ Run `lakehousectl reconcile-legacy-trade-benefit-assessment --tenant <id>` to
 verify the nonempty denominator, component amount conservation, unresolved
 evidence counts and the fail-closed production fence before any migration work.
 
+The target-readiness stage is deliberately separate from source assessment.
+`order.migration.legacy_trade_target_readiness_assessed` v1 projects only
+qualified, versioned Member, Catalog SPU/SKU, Order, OrderItem and lifecycle
+mapping evidence. Missing or duplicate mappings, stale source snapshot hashes,
+SKU-to-SPU disagreement, or an OrderItem planned under another Order all remain
+explicit blockers. It never derives target IDs from legacy numeric IDs. The
+local run `44000000-0000-4000-8000-000000000001` preserves 238 orders and 251
+items, excludes 8 deleted orders and 10 deleted/order-deleted items, and admits
+zero of 230 active orders because all target mappings are genuinely absent.
+Even a fully qualified target mapping can open only mapping admission; canonical
+import stays false until benefit identity, named funding, quarantine decisions,
+and independent production Y-Shopping evidence are also complete.
+
 ## Canonical identity, merchant and warehouse master data
 
 The first M0A implementation slice adds versioned event families for

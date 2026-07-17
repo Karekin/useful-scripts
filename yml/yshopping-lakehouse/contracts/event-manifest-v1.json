@@ -354,6 +354,12 @@
         }
       ]
     },
+    "order.migration.legacy_trade_target_readiness_assessed": {
+      "schema_version": 1,
+      "aggregate_type": "legacy_trade_target_readiness",
+      "payload_schema": "events/order-migration-legacy-trade-target-readiness-assessed-v1.schema.json",
+      "example": "examples/order-migration-legacy-trade-target-readiness-assessed-v1.json"
+    },
     "order.status.changed": {
       "aggregate_type": "order",
       "versions": [

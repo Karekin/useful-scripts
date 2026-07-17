@@ -1,0 +1,26 @@
+CREATE OR REPLACE VIEW yshopping_dim.dim_canonical_legacy_trade_target_readiness_item AS
+SELECT
+    event.tenant_id,
+    event.target_readiness_run_id,
+    event.source_migration_run_id,
+    event.order_readiness_id,
+    event.candidate_id,
+    event.legacy_order_id,
+    get_json_string(item.`value`, '$.item_readiness_id') AS item_readiness_id,
+    CAST(get_json_string(item.`value`, '$.legacy_order_item_id') AS BIGINT) AS legacy_order_item_id,
+    get_json_string(item.`value`, '$.spu_mapping_status') AS spu_mapping_status,
+    get_json_string(item.`value`, '$.canonical_spu_id') AS canonical_spu_id,
+    get_json_string(item.`value`, '$.sku_mapping_status') AS sku_mapping_status,
+    get_json_string(item.`value`, '$.canonical_sku_id') AS canonical_sku_id,
+    get_json_string(item.`value`, '$.order_item_mapping_status') AS order_item_mapping_status,
+    get_json_string(item.`value`, '$.planned_order_item_id') AS planned_order_item_id,
+    get_json_string(item.`value`, '$.planned_order_id') AS planned_order_id,
+    get_json_string(item.`value`, '$.money_reconciliation_status') AS money_reconciliation_status,
+    get_json_string(item.`value`, '$.mapping_readiness_status') AS mapping_readiness_status,
+    json_query(item.`value`, '$.blocker_codes') AS blocker_codes,
+    CAST(get_json_string(item.`value`, '$.mapping_admission_allowed') AS BOOLEAN) AS mapping_admission_allowed,
+    CAST(get_json_string(item.`value`, '$.canonical_import_allowed') AS BOOLEAN) AS canonical_import_allowed,
+    get_json_string(item.`value`, '$.evidence_hash') AS evidence_hash,
+    event.assessed_at
+FROM yshopping_dwd.dwd_canonical_legacy_trade_target_readiness_event event,
+     LATERAL json_each(event.items) item;

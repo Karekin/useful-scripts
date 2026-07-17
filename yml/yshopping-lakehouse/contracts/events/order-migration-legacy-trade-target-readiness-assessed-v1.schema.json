@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/order-migration-legacy-trade-target-readiness-assessed-v1.schema.json",
+  "title": "order.migration.legacy_trade_target_readiness_assessed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "target_readiness_run_id", "source_migration_run_id", "order_readiness_id", "candidate_id",
+    "legacy_order_id", "buyer_identity_status", "buyer_principal_id", "order_mapping_plan_id",
+    "planned_order_id", "order_mapping_status", "canonical_order_status", "lifecycle_mapping_status",
+    "money_reconciliation_status", "active_item_count", "fully_mapped_item_count",
+    "mapping_readiness_status", "blocker_codes", "mapping_admission_allowed",
+    "canonical_import_allowed", "evidence_hash", "items", "run_target_mapping_evidence_hash",
+    "policy_version", "verification_ref", "assessed_at"
+  ],
+  "properties": {
+    "target_readiness_run_id": {"type": "string", "format": "uuid"},
+    "source_migration_run_id": {"type": "string", "format": "uuid"},
+    "order_readiness_id": {"type": "string", "format": "uuid"},
+    "candidate_id": {"type": "string", "format": "uuid"},
+    "legacy_order_id": {"type": "integer", "minimum": 1},
+    "buyer_identity_status": {"type": "string", "enum": ["RESOLVED", "MISSING", "AMBIGUOUS"]},
+    "buyer_principal_id": {"type": ["string", "null"], "format": "uuid"},
+    "order_mapping_plan_id": {"type": ["string", "null"], "format": "uuid"},
+    "planned_order_id": {"type": ["string", "null"], "format": "uuid"},
+    "order_mapping_status": {"type": "string", "enum": ["QUALIFIED", "MISSING", "AMBIGUOUS"]},
+    "canonical_order_status": {"type": ["string", "null"], "enum": [null, "PLACED", "INVENTORY_RESERVED", "PAYMENT_CONFIRMED", "SHIPPED", "COMPLETED", "CANCELLED", "REFUNDED", "RETURNED"]},
+    "lifecycle_mapping_status": {"type": "string", "enum": ["QUALIFIED", "MISSING", "AMBIGUOUS"]},
+    "money_reconciliation_status": {"type": "string", "enum": ["EXACT", "INVALID", "EXCLUDED"]},
+    "active_item_count": {"type": "integer", "minimum": 0},
+    "fully_mapped_item_count": {"type": "integer", "minimum": 0},
+    "mapping_readiness_status": {"type": "string", "enum": ["READY", "BLOCKED", "EXCLUDED"]},
+    "blocker_codes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Z0-9_]+$", "maxLength": 64}},
+    "mapping_admission_allowed": {"type": "boolean"},
+    "canonical_import_allowed": {"type": "boolean", "const": false},
+    "evidence_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "item_readiness_id", "legacy_order_item_id", "spu_mapping_status", "canonical_spu_id",
+          "sku_mapping_status", "canonical_sku_id", "order_item_mapping_status",
+          "planned_order_item_id", "planned_order_id", "money_reconciliation_status",
+          "mapping_readiness_status", "blocker_codes", "mapping_admission_allowed",
+          "canonical_import_allowed", "evidence_hash"
+        ],
+        "properties": {
+          "item_readiness_id": {"type": "string", "format": "uuid"},
+          "legacy_order_item_id": {"type": "integer", "minimum": 1},
+          "spu_mapping_status": {"type": "string", "enum": ["QUALIFIED", "MISSING", "AMBIGUOUS"]},
+          "canonical_spu_id": {"type": ["string", "null"], "format": "uuid"},
+          "sku_mapping_status": {"type": "string", "enum": ["QUALIFIED", "MISSING", "AMBIGUOUS"]},
+          "canonical_sku_id": {"type": ["string", "null"], "format": "uuid"},
+          "order_item_mapping_status": {"type": "string", "enum": ["QUALIFIED", "MISSING", "AMBIGUOUS"]},
+          "planned_order_item_id": {"type": ["string", "null"], "format": "uuid"},
+          "planned_order_id": {"type": ["string", "null"], "format": "uuid"},
+          "money_reconciliation_status": {"type": "string", "enum": ["EXACT", "INVALID", "EXCLUDED"]},
+          "mapping_readiness_status": {"type": "string", "enum": ["READY", "BLOCKED", "EXCLUDED"]},
+          "blocker_codes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Z0-9_]+$", "maxLength": 64}},
+          "mapping_admission_allowed": {"type": "boolean"},
+          "canonical_import_allowed": {"type": "boolean", "const": false},
+          "evidence_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+        }
+      }
+    },
+    "run_target_mapping_evidence_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "policy_version": {"type": "string", "const": "legacy-trade-target-readiness-v1"},
+    "verification_ref": {"type": "string", "minLength": 1, "maxLength": 256},
+    "assessed_at": {"type": "string", "format": "date-time"}
+  },
+  "allOf": [
+    {"if": {"properties": {"mapping_readiness_status": {"const": "READY"}}}, "then": {"properties": {"mapping_admission_allowed": {"const": true}, "blocker_codes": {"maxItems": 0}}}},
+    {"if": {"properties": {"mapping_readiness_status": {"enum": ["BLOCKED", "EXCLUDED"]}}}, "then": {"properties": {"mapping_admission_allowed": {"const": false}}}}
+  ]
+}
