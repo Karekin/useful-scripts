@@ -1,0 +1,371 @@
+#!/usr/bin/env python3
+"""Validate the governed attachment surface of the Y-Shopping reference corpus.
+
+Markdown SQL extraction cannot see model names that exist only in diagrams.  This
+tool locks every referenced attachment by content digest and requires explicit
+dispositions for OCR-detected identifiers that are absent from the Markdown text.
+OCR itself is a review aid, not a portable CI dependency; a changed byte invalidates
+the reviewed snapshot and forces a new governed review.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import re
+import sys
+from collections import Counter
+from pathlib import Path
+from typing import Any
+from urllib.parse import unquote
+
+
+ROOT = Path(__file__).resolve().parents[1]
+CONTRACT = ROOT / "contracts" / "yshopping-attachment-semantic-disposition-v1.json"
+DEFAULT_REFERENCE_ROOT = Path(
+    "/Users/karekin/Library/Mobile Documents/iCloud~md~obsidian/Documents/project/"
+    "语兴好物（y shopping）-电商数仓搭建"
+)
+DOCUMENTS = (
+    "语兴好物（y shopping）-电商数仓搭建.md",
+    "ODS语兴好物（y shopping）电商数据表.md",
+    "DIM语兴好物（y shopping）电商数据表.md",
+    "DWD_DWM语兴好物（y shopping）电商数据表.md",
+    "DWS语兴好物（y shopping）电商数据表.md",
+    "ADS语兴好物（y shopping）电商数据表.md",
+)
+ATTACHMENT_DIRECTORY = "图片和附件"
+IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+LINK_PATTERN = re.compile(
+    r"(?<!!)\[[^\]]*\]\((?P<link>[^)]+)\)|"
+    r"!\[[^\]]*\]\((?P<image>[^)]+)\)"
+)
+IDENTIFIER_PATTERN = re.compile(r"^(?:ods|dim|dwd|dwm|dws|ads)_[a-z][a-z0-9_]*$")
+ALLOWED_CLASSIFICATIONS = {
+    "canonical_alias",
+    "external_demo_rejected",
+    "generic_demo_rejected",
+    "ocr_false_positive",
+    "visual_derived_target",
+    "visual_source_dependency",
+}
+
+
+class AttachmentContractError(RuntimeError):
+    pass
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def load_contract(path: Path = CONTRACT) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise AttachmentContractError(f"cannot load attachment contract {path}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise AttachmentContractError(f"{path}: root must be an object")
+    return value
+
+
+def extract_snapshot(reference_root: Path = DEFAULT_REFERENCE_ROOT) -> dict[str, Any]:
+    attachment_root = reference_root / ATTACHMENT_DIRECTORY
+    if not attachment_root.is_dir():
+        raise AttachmentContractError(f"missing attachment directory: {attachment_root}")
+
+    files = sorted(path for path in attachment_root.iterdir() if path.is_file())
+    file_rows: list[dict[str, Any]] = []
+    content_digest = hashlib.sha256()
+    for path in files:
+        file_sha256 = sha256(path)
+        relative_path = f"{ATTACHMENT_DIRECTORY}/{path.name}"
+        size = path.stat().st_size
+        content_digest.update(
+            f"{relative_path}\0{size}\0{file_sha256}\n".encode("utf-8")
+        )
+        file_rows.append(
+            {
+                "path": relative_path,
+                "name": path.name,
+                "size": size,
+                "sha256": file_sha256,
+                "kind": "image" if path.suffix.lower() in IMAGE_SUFFIXES else "binary",
+            }
+        )
+
+    references: list[dict[str, Any]] = []
+    for document_name in DOCUMENTS:
+        document = reference_root / document_name
+        if not document.is_file():
+            raise AttachmentContractError(f"missing reference document: {document}")
+        for line_number, line in enumerate(document.read_text(encoding="utf-8").splitlines(), 1):
+            for match in LINK_PATTERN.finditer(line):
+                raw_path = (match.group("link") or match.group("image")).replace(r"\.", ".")
+                if f"{ATTACHMENT_DIRECTORY}/" not in raw_path:
+                    continue
+                name = unquote(raw_path.rsplit("/", 1)[-1])
+                references.append(
+                    {
+                        "document": document_name,
+                        "line": line_number,
+                        "raw_path": raw_path,
+                        "name": name,
+                    }
+                )
+
+    reference_digest = hashlib.sha256()
+    for item in sorted(
+        references,
+        key=lambda value: (
+            value["document"], value["line"], value["raw_path"], value["name"]
+        ),
+    ):
+        reference_digest.update(
+            (
+                f"{item['document']}\0{item['line']}\0{item['raw_path']}\0"
+                f"{item['name']}\n"
+            ).encode("utf-8")
+        )
+
+    path_prefixes = Counter(
+        item["raw_path"].rsplit("/", 1)[0] for item in references
+    )
+    return {
+        "attachment_count": len(file_rows),
+        "image_count": sum(item["kind"] == "image" for item in file_rows),
+        "binary_count": sum(item["kind"] == "binary" for item in file_rows),
+        "attachment_bytes": sum(item["size"] for item in file_rows),
+        "attachment_aggregate_sha256": content_digest.hexdigest(),
+        "reference_occurrence_count": len(references),
+        "unique_reference_count": len({item["name"] for item in references}),
+        "reference_aggregate_sha256": reference_digest.hexdigest(),
+        "reference_path_prefix_counts": dict(sorted(path_prefixes.items())),
+        "files": file_rows,
+        "references": references,
+    }
+
+
+def _nonempty_strings(value: Any, minimum: int = 1) -> bool:
+    return (
+        isinstance(value, list)
+        and len(value) >= minimum
+        and all(isinstance(item, str) and item.strip() for item in value)
+    )
+
+
+def validate_contract(
+    snapshot: dict[str, Any], contract: dict[str, Any] | None = None
+) -> list[str]:
+    contract = contract or load_contract()
+    errors: list[str] = []
+    if contract.get("contract_id") != "yshopping.attachment-semantic-disposition.v1":
+        errors.append("unexpected attachment contract id")
+
+    expected_snapshot = contract.get("snapshot")
+    snapshot_keys = (
+        "attachment_count",
+        "image_count",
+        "binary_count",
+        "attachment_bytes",
+        "attachment_aggregate_sha256",
+        "reference_occurrence_count",
+        "unique_reference_count",
+        "reference_aggregate_sha256",
+        "reference_path_prefix_counts",
+    )
+    if not isinstance(expected_snapshot, dict):
+        errors.append("snapshot contract must be an object")
+    else:
+        for key in snapshot_keys:
+            if expected_snapshot.get(key) != snapshot.get(key):
+                errors.append(
+                    f"attachment snapshot {key} drift: expected "
+                    f"{expected_snapshot.get(key)!r}, got {snapshot.get(key)!r}"
+                )
+
+    file_names = {item["name"] for item in snapshot["files"]}
+    referenced_names = [item["name"] for item in snapshot["references"]]
+    reference_counts = Counter(referenced_names)
+    missing_references = sorted(file_names - set(referenced_names))
+    missing_files = sorted(set(referenced_names) - file_names)
+    duplicate_references = sorted(name for name, count in reference_counts.items() if count != 1)
+    if missing_references:
+        errors.append(f"unreferenced attachments: {missing_references}")
+    if missing_files:
+        errors.append(f"attachment references without files: {missing_files}")
+    if duplicate_references:
+        errors.append(f"attachments must be referenced exactly once: {duplicate_references}")
+
+    review = contract.get("semantic_review")
+    if not isinstance(review, dict):
+        errors.append("semantic_review must be an object")
+        return errors
+    if review.get("reviewed_attachment_sha256") != snapshot.get(
+        "attachment_aggregate_sha256"
+    ):
+        errors.append("semantic review is not bound to the current attachment snapshot")
+    if review.get("ocr_swept_image_count") != snapshot.get("image_count"):
+        errors.append("OCR sweep must cover every image in the locked snapshot")
+
+    flagged = review.get("flagged_images")
+    if not isinstance(flagged, list):
+        errors.append("semantic_review.flagged_images must be a list")
+        flagged = []
+    if review.get("ocr_unseen_identifier_image_count") != len(flagged):
+        errors.append("OCR unseen-image count does not match flagged_images")
+    flagged_paths: set[str] = set()
+    governed_source_deltas = 0
+    governed_derived_deltas = 0
+    reference_locations = {
+        (item["name"], item["document"], item["line"])
+        for item in snapshot["references"]
+    }
+    for index, item in enumerate(flagged):
+        label = f"flagged_images[{index}]"
+        if not isinstance(item, dict):
+            errors.append(f"{label} must be an object")
+            continue
+        path = item.get("path")
+        name = Path(path).name if isinstance(path, str) else ""
+        if not isinstance(path, str) or not path.startswith(f"{ATTACHMENT_DIRECTORY}/"):
+            errors.append(f"{label}.path must use the canonical attachment directory")
+        elif name not in file_names:
+            errors.append(f"{label}.path does not exist in the snapshot")
+        elif path in flagged_paths:
+            errors.append(f"duplicate semantic review for {path}")
+        flagged_paths.add(path)
+        if (name, item.get("document"), item.get("line")) not in reference_locations:
+            errors.append(f"{label} document/line does not match the Markdown reference")
+        classification = item.get("classification")
+        if classification not in ALLOWED_CLASSIFICATIONS:
+            errors.append(f"{label}.classification is unsupported")
+        identifiers = item.get("ocr_identifiers")
+        if not _nonempty_strings(identifiers):
+            errors.append(f"{label}.ocr_identifiers must be non-empty strings")
+        elif any(not IDENTIFIER_PATTERN.fullmatch(value) for value in identifiers):
+            errors.append(f"{label}.ocr_identifiers contain invalid names")
+        if not isinstance(item.get("disposition"), str) or not item["disposition"].strip():
+            errors.append(f"{label}.disposition is required")
+        if not _nonempty_strings(item.get("reasons"), 2):
+            errors.append(f"{label}.reasons must contain at least two governed reasons")
+        if classification in {"visual_derived_target", "visual_source_dependency"}:
+            if not _nonempty_strings(item.get("canonical_targets"), 2):
+                errors.append(f"{label}.canonical_targets must contain at least two targets")
+            if not _nonempty_strings(item.get("semantic_rules"), 5):
+                errors.append(f"{label}.semantic_rules must contain at least five rules")
+            if item.get("model_status") not in {"missing", "partial", "implemented"}:
+                errors.append(f"{label}.model_status is invalid")
+        if classification == "visual_source_dependency":
+            governed_source_deltas += 1
+            runtime = item.get("runtime_nonempty_reconciliation")
+            if not isinstance(runtime, dict) or runtime.get("status") not in {
+                "missing", "pending", "verified"
+            }:
+                errors.append(f"{label} requires a runtime reconciliation status")
+            elif runtime.get("status") == "verified" and not (
+                isinstance(runtime.get("row_count"), int)
+                and runtime["row_count"] > 0
+                and isinstance(runtime.get("tenant_count"), int)
+                and runtime["tenant_count"] > 0
+                and isinstance(runtime.get("evidence_ref"), str)
+                and runtime["evidence_ref"].strip()
+            ):
+                errors.append(f"{label} cannot claim verified without non-empty evidence")
+        if classification == "visual_derived_target":
+            governed_derived_deltas += 1
+
+    universe = contract.get("governed_universe")
+    if not isinstance(universe, dict):
+        errors.append("governed_universe must be an object")
+    else:
+        if universe.get("markdown_source_candidate_count") != 718:
+            errors.append("governed_universe must retain the locked 718 Markdown candidates")
+        if universe.get("visual_source_dependency_count") != governed_source_deltas:
+            errors.append("visual source dependency count does not match reviewed images")
+        expected_total = 718 + governed_source_deltas
+        if universe.get("total_source_candidate_count") != expected_total:
+            errors.append("total governed source universe is inconsistent")
+        if universe.get("visual_derived_target_count") != governed_derived_deltas:
+            errors.append("visual derived target count does not match reviewed images")
+
+    binary = contract.get("binary_attachment_disposition")
+    if not isinstance(binary, dict):
+        errors.append("binary_attachment_disposition must be an object")
+    else:
+        path = binary.get("path")
+        file_by_path = {item["path"]: item for item in snapshot["files"]}
+        actual = file_by_path.get(path)
+        if not actual or actual.get("kind") != "binary":
+            errors.append("binary attachment path is absent or not binary")
+        elif binary.get("sha256") != actual.get("sha256"):
+            errors.append("binary attachment digest drift")
+        if binary.get("decision") != "reference_binary_rejected":
+            errors.append("binary attachment must be rejected as executable authority")
+        if binary.get("executable_admission") is not False:
+            errors.append("binary attachment executable admission must be false")
+        if not _nonempty_strings(binary.get("reasons"), 3):
+            errors.append("binary attachment rejection requires at least three reasons")
+    return errors
+
+
+def summary_lines(snapshot: dict[str, Any], contract: dict[str, Any]) -> list[str]:
+    review = contract["semantic_review"]
+    universe = contract["governed_universe"]
+    source_verified = sum(
+        item.get("runtime_nonempty_reconciliation", {}).get("status") == "verified"
+        for item in review["flagged_images"]
+        if item.get("classification") == "visual_source_dependency"
+    )
+    return [
+        (
+            "attachment governance: "
+            f"{snapshot['attachment_count']}/{snapshot['attachment_count']} content-addressed "
+            f"attachments referenced exactly once; images={snapshot['image_count']}, "
+            f"binaries={snapshot['binary_count']}"
+        ),
+        (
+            "attachment semantic review: "
+            f"{review['ocr_swept_image_count']}/{snapshot['image_count']} images OCR-swept, "
+            f"{len(review['flagged_images'])}/{review['ocr_unseen_identifier_image_count']} "
+            "unseen-identifier images explicitly dispositioned"
+        ),
+        (
+            "attachment-expanded governed source universe: "
+            f"{source_verified}/{universe['total_source_candidate_count']} finally verified "
+            f"(Markdown={universe['markdown_source_candidate_count']} + "
+            f"visual-only source dependencies={universe['visual_source_dependency_count']}); "
+            f"visual-only derived targets={universe['visual_derived_target_count']}"
+        ),
+    ]
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("command", choices=("validate", "summary"), nargs="?", default="validate")
+    parser.add_argument("--reference-root", type=Path, default=DEFAULT_REFERENCE_ROOT)
+    parser.add_argument("--contract", type=Path, default=CONTRACT)
+    args = parser.parse_args()
+    snapshot = extract_snapshot(args.reference_root)
+    contract = load_contract(args.contract)
+    errors = validate_contract(snapshot, contract)
+    if errors:
+        raise AttachmentContractError("; ".join(errors))
+    if args.command == "summary":
+        print("\n".join(summary_lines(snapshot, contract)))
+    else:
+        print("attachment semantic contract valid")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except AttachmentContractError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        raise SystemExit(1)

@@ -150,10 +150,12 @@ case "$COMMAND" in
     test -f "$ROOT_DIR/contracts/yshopping-supply-chain-source-disposition-v1.json"
     test -f "$ROOT_DIR/contracts/yshopping-llm-source-disposition-v1.json"
     test -f "$ROOT_DIR/contracts/yshopping-operations-intelligence-source-disposition-v1.json"
+    test -f "$ROOT_DIR/contracts/yshopping-attachment-semantic-disposition-v1.json"
     find "$ROOT_DIR/models" "$ROOT_DIR/tests/sql" -type f -name '*.sql' -size 0 | grep . && exit 1 || true
     "$ROOT_DIR/scripts/contractctl" validate
     "$ROOT_DIR/scripts/alignmentctl" validate
     "$ROOT_DIR/scripts/sourceassetctl" validate
+    "$ROOT_DIR/scripts/attachmentctl" validate --reference-root "$YSHOPPING_REFERENCE_ROOT"
     python3 "$ROOT_DIR/scripts/modelctl" validate
     echo "configuration valid"
     ;;
@@ -161,12 +163,14 @@ case "$COMMAND" in
     "$ROOT_DIR/scripts/contractctl" validate
     "$ROOT_DIR/scripts/alignmentctl" validate
     "$ROOT_DIR/scripts/sourceassetctl" validate
+    "$ROOT_DIR/scripts/attachmentctl" validate --reference-root "$YSHOPPING_REFERENCE_ROOT"
     ;;
   source-assets)
     "$ROOT_DIR/scripts/sourceassetctl" summary
     ;;
   source-disposition-status)
     "$ROOT_DIR/scripts/sourceassetctl" disposition-status
+    "$ROOT_DIR/scripts/attachmentctl" summary --reference-root "$YSHOPPING_REFERENCE_ROOT"
     ;;
   source-evidence-policy)
     "$ROOT_DIR/scripts/sourceevidencectl" validate-trade-admission \

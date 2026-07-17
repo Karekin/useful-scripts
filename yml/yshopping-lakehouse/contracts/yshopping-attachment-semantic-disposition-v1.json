@@ -1,0 +1,242 @@
+{
+  "contract_version": 1,
+  "contract_id": "yshopping.attachment-semantic-disposition.v1",
+  "purpose": "Govern every attachment in the complete Y-Shopping reference directory so image-only model names, external demonstrations and untrusted binaries cannot bypass the semantic coverage denominator.",
+  "policy": {
+    "content_addressing": "Every referenced attachment is locked by path, byte count and SHA-256; any byte, name or Markdown-reference change invalidates this review.",
+    "ocr_role": "macOS Vision accurate OCR over zh-Hans and en-US is review discovery evidence only, never production or CI authority.",
+    "visual_authority": "A legible business-model identifier in a Y-Shopping architecture diagram is governed even when absent from Markdown text; OCR fragments and external screenshots are explicitly corrected or rejected.",
+    "binary_authority": "Compiled or archived reference artifacts are never executed, imported or accepted as semantic evidence without source, build provenance, dependency review, license review and reproducible verification.",
+    "empty_tables_are_evidence": false
+  },
+  "snapshot": {
+    "attachment_count": 247,
+    "image_count": 246,
+    "binary_count": 1,
+    "attachment_bytes": 164479796,
+    "attachment_aggregate_sha256": "26a6fff3dd5a7b1d84b838319eebfa786c5178c1e3939307a08e470d658fec47",
+    "reference_occurrence_count": 247,
+    "unique_reference_count": 247,
+    "reference_aggregate_sha256": "03e7a78bcfb36a48b234ff8ab479f84126a5799902743bdf93fcaa7205ca6d6b",
+    "reference_path_prefix_counts": {
+      "../图片和附件": 28,
+      "图片和附件": 219
+    }
+  },
+  "governed_universe": {
+    "markdown_source_candidate_count": 718,
+    "visual_source_dependency_count": 1,
+    "total_source_candidate_count": 719,
+    "visual_derived_target_count": 2,
+    "counting_rule": "The visual-only HR source dependency expands the source candidate denominator. Visual-only ADS outputs are separately governed derived targets and do not masquerade as source tables."
+  },
+  "semantic_review": {
+    "reviewed_attachment_sha256": "26a6fff3dd5a7b1d84b838319eebfa786c5178c1e3939307a08e470d658fec47",
+    "ocr_engine": "Apple Vision VNRecognizeTextRequest accurate zh-Hans/en-US",
+    "ocr_swept_image_count": 246,
+    "ocr_table_identifier_image_count": 39,
+    "ocr_unseen_identifier_image_count": 20,
+    "reviewed_at": "2026-07-17T21:30:00+08:00",
+    "flagged_images": [
+      {
+        "path": "图片和附件/0d833788831a55f80ae6e41fa2ba81fa.jpeg",
+        "document": "语兴好物（y shopping）-电商数仓搭建.md",
+        "line": 512,
+        "ocr_identifiers": ["ods_trade_trade_order_dil"],
+        "classification": "ocr_false_positive",
+        "disposition": "Reject the OCR suffix l and bind the diagram to the documented ods_trade_trade_order_di source.",
+        "reasons": ["The image glyph for i was recognized as il.", "The surrounding trade lineage and Markdown DDL provide the exact canonical source spelling."]
+      },
+      {
+        "path": "图片和附件/1d510653c0e699ed775ef9beade9a8da.png",
+        "document": "语兴好物（y shopping）-电商数仓搭建.md",
+        "line": 1327,
+        "ocr_identifiers": ["ods_community_ecologyu"],
+        "classification": "ocr_false_positive",
+        "disposition": "Reject the merged OCR fragment; the seven ecology audit sources and their DWD/DWM flow are already individually governed from Markdown DDL.",
+        "reasons": ["No legible table in the diagram is named ods_community_ecologyu.", "The source and result tables are fully named in the community audit SQL sections."]
+      },
+      {
+        "path": "图片和附件/2c68a78ed9c7aca92425ac8d782107c0.png",
+        "document": "语兴好物（y shopping）-电商数仓搭建.md",
+        "line": 1998,
+        "ocr_identifiers": ["ads_ux_ai_overview_target", "dwd_ai_workflow_cs_app_", "ods_ai_workflow_request_i"],
+        "classification": "visual_derived_target",
+        "disposition": "Accept ads_ux_ai_overview_target as a corrected visual-only derived requirement; reject truncated OCR identifiers and bind their legible source tables to existing governed AI Operations and Customer Service assets.",
+        "canonical_targets": ["ai_operations.WorkflowRun", "ai_operations.InvocationAttempt", "customer_service.Ticket", "risk.RiskSignal", "yshopping_ads.ads_canonical_ai_operations_readiness", "yshopping_ads.ads_canonical_customer_service_readiness"],
+        "semantic_rules": ["count workflow runs and model attempts at distinct stable grains", "bind every AI result to application workflow prompt model and policy versions", "keep ticket risk signals separate from accepted risk decisions and business effects", "publish exact eligible ticket and invocation denominators", "restrict message content problem attribution and actor identity", "record late arrivals retries failures human review and restatements explicitly"],
+        "model_status": "partial",
+        "reasons": ["The ADS target name and end-to-end business flow are legible only in this architecture diagram.", "Existing canonical AI and Customer Service projections cover foundational facts but not the complete risk/attribution metric surface or production evidence."]
+      },
+      {
+        "path": "图片和附件/2c93afa39d43c301bfb7c0e0724a2afd.jpeg",
+        "document": "语兴好物（y shopping）-电商数仓搭建.md",
+        "line": 2149,
+        "ocr_identifiers": ["ads_em_atnd_dept_biz_1d"],
+        "classification": "external_demo_rejected",
+        "disposition": "Reject the HR attendance API screenshot as Y-Shopping table authority while retaining its API/search pattern as non-authoritative product inspiration.",
+        "reasons": ["The screenshot is an external knowledge-base response example rather than a Y-Shopping lineage declaration.", "No source contract, key, schema or Y-Shopping ownership evidence accompanies the identifier."]
+      },
+      {
+        "path": "图片和附件/428696bd4811af9d95a5fdeed9d8f089.png",
+        "document": "DWD_DWM语兴好物（y shopping）电商数据表.md",
+        "line": 11233,
+        "ocr_identifiers": ["dwd_dw_ng_all_log_realtime_v2"],
+        "classification": "external_demo_rejected",
+        "disposition": "Reject the Paimon console screenshot identifier as authority and retain the documented dwd_platform_ng_log_ri model boundary.",
+        "reasons": ["The surrounding section explicitly defines the governed platform log transform in text.", "A console screenshot supplies neither stable ownership nor a source-to-canonical contract."]
+      },
+      {
+        "path": "图片和附件/492fd651e2dbd81e14348700531629c7.png",
+        "document": "DWD_DWM语兴好物（y shopping）电商数据表.md",
+        "line": 11235,
+        "ocr_identifiers": ["dwd_dm_ng_alllog_realtime"],
+        "classification": "external_demo_rejected",
+        "disposition": "Reject the console-only alias and map the demonstrated append-log configuration to the governed platform-log lineage.",
+        "reasons": ["The identifier conflicts with the exact DWD name in the adjacent SQL.", "Storage configuration evidence does not establish a separate business grain or semantic authority."]
+      },
+      {
+        "path": "图片和附件/55aea05d53746f53deb8cd588d693451.png",
+        "document": "ODS语兴好物（y shopping）电商数据表.md",
+        "line": 5192,
+        "ocr_identifiers": ["ads_report_campus_ap", "ads_report_campus_apply_process", "ads_report_campusapply_comm", "dim_cycle", "dim_department_p", "dwd_ta_campus_termin", "dwd_ta_campus_terminate_p", "ods_ats_prod_rms_depa", "ods_ats_prod_rms_department_tab", "ods_ehr_okr_tb_date_tab", "ods_ehr_okr_tb_week_r", "ods_ehr_okr_tb_week_report_date"],
+        "classification": "external_demo_rejected",
+        "disposition": "Reject the campus/HR lineage screenshot as a Y-Shopping source inventory addition.",
+        "reasons": ["It is embedded as a metadata-lineage teaching example, not an e-commerce source declaration.", "The names are truncated by OCR and lack schemas, keys, ownership and reconciliation evidence."]
+      },
+      {
+        "path": "图片和附件/57653913b722bd829dfe546ddbef564b.jpeg",
+        "document": "语兴好物（y shopping）-电商数仓搭建.md",
+        "line": 1034,
+        "ocr_identifiers": ["ads_scores_upload_fqb_onin_v4_stage1_df"],
+        "classification": "external_demo_rejected",
+        "disposition": "Reject the alert UI example as an authoritative Y-Shopping asset.",
+        "reasons": ["The screenshot references an external risk/algo workspace and a one-off upload stage.", "It demonstrates alert presentation rather than an owned e-commerce model contract."]
+      },
+      {
+        "path": "图片和附件/59dc39c83baf8fd152493ec9b41f5546.png",
+        "document": "语兴好物（y shopping）-电商数仓搭建.md",
+        "line": 883,
+        "ocr_identifiers": ["ods_yx_base"],
+        "classification": "generic_demo_rejected",
+        "disposition": "Reject the namespace fragment because it is not a complete physical table identifier.",
+        "reasons": ["The token stops at a source database or namespace boundary.", "No table grain, schema, key or downstream lineage can be assigned to the fragment."]
+      },
+      {
+        "path": "图片和附件/6a0e5e79f6f9bf623b40720261ffd2a4.png",
+        "document": "语兴好物（y shopping）-电商数仓搭建.md",
+        "line": 1074,
+        "ocr_identifiers": ["ods_ng_all_10g"],
+        "classification": "ocr_false_positive",
+        "disposition": "Correct the OCR 10g fragment to the legible and documented ods_ng_all_log_ri realtime source.",
+        "reasons": ["OCR confused the characters log with 10g.", "The exact source and downstream indicator tables are specified in the ADS and DWD/DWM documents."]
+      },
+      {
+        "path": "图片和附件/83310035321736e030dc73529c727296.png",
+        "document": "语兴好物（y shopping）-电商数仓搭建.md",
+        "line": 1247,
+        "ocr_identifiers": ["dwd_collect_res", "dwd_record"],
+        "classification": "generic_demo_rejected",
+        "disposition": "Reject record and collect-result teaching labels as physical model authority.",
+        "reasons": ["The diagram uses generic queue labels without a domain-qualified grain.", "No DDL, stable key, source ownership or semantic definition exists for these names."]
+      },
+      {
+        "path": "图片和附件/8a3b85cfb0a953a433f3d990ddffb685.png",
+        "document": "语兴好物（y shopping）-电商数仓搭建.md",
+        "line": 2115,
+        "ocr_identifiers": ["dwm_com_audit_ai_blue_d"],
+        "classification": "ocr_false_positive",
+        "disposition": "Reject the truncated OCR token; bind the diagram to documented AI-blue input/output detail and ADS delivery/overview assets.",
+        "reasons": ["The diagram line wrap truncates a longer DWM identifier.", "Exact DWM names and transforms already exist in Markdown SQL and their dispositions."]
+      },
+      {
+        "path": "图片和附件/9a0d8a46c0946414189e12df44e65447.png",
+        "document": "ADS语兴好物（y shopping）电商数据表.md",
+        "line": 5716,
+        "ocr_identifiers": ["ads_risk_fengd_odps_alarm_dac", "ads_risk_fengd_odps_alarm_dqc", "ads_risk_fengd_odps_alarm_dqc_di"],
+        "classification": "external_demo_rejected",
+        "disposition": "Reject editor-tab and DQC job names as Y-Shopping business assets; retain only the demonstrated quality-control pattern.",
+        "reasons": ["The screenshot shows implementation tabs from a separate risk workspace.", "Job and alarm names are not business tables and provide no source/canonical ownership contract."]
+      },
+      {
+        "path": "图片和附件/aad463aedfd70772ffd00ccdacd7a87e.png",
+        "document": "ODS语兴好物（y shopping）电商数据表.md",
+        "line": 6701,
+        "ocr_identifiers": ["dwd_hc_tc_trade_order_detail_df", "dwd_tc_trade_sub_order_df"],
+        "classification": "external_demo_rejected",
+        "disposition": "Reject the task-error screenshot table names as source authority; preserve them only as restricted governance incident text.",
+        "reasons": ["The names occur inside an example error diagnosis, not a Y-Shopping source or target declaration.", "The screenshot explicitly describes a missing external table and proposed recreation in another workspace."]
+      },
+      {
+        "path": "图片和附件/b53b4b1b02086230a117071940311366.jpeg",
+        "document": "语兴好物（y shopping）-电商数仓搭建.md",
+        "line": 480,
+        "ocr_identifiers": ["ads_trade_aa", "dim_customer07_cust_info_df", "dim_customer07_cust_info_df_18095313", "ods_sxp_test_item_info"],
+        "classification": "external_demo_rejected",
+        "disposition": "Reject test/customer DQC screenshot identifiers as governed Y-Shopping business models.",
+        "reasons": ["The names are explicitly test or ad-hoc examples in a platform UI.", "They have no authoritative Y-Shopping DDL, ownership, grain or source evidence."]
+      },
+      {
+        "path": "图片和附件/b65bd5652bfea13b6c74d371a9934a34.png",
+        "document": "DIM语兴好物（y shopping）电商数据表.md",
+        "line": 2068,
+        "ocr_identifiers": ["ods_yx_base_employee_base"],
+        "classification": "visual_source_dependency",
+        "disposition": "Accept as a visual-only upstream source dependency for dim_hr_emp_df, split into restricted identity, workforce assignment, legal identity and payroll boundaries; never copy the wide row as a canonical employee aggregate.",
+        "canonical_targets": ["identity.Principal", "identity.SourceIdentity", "identity.ProfileVersion", "workforce.WorkerAssignmentReference", "privacy.RestrictedLegalIdentityReference", "payroll.RestrictedPayrollReference"],
+        "semantic_rules": ["source employee id is a qualified SourceIdentity rather than a universal Principal id", "workforce assignments are effective-time versions and cannot be reconstructed from the latest row", "legal identity contact address education and family fields are purpose-bound restricted records", "payroll and compensation fields remain outside general identity and analytics", "authorization cannot be inferred from staff leader department or employment flags", "deletion and termination retire assignments without erasing historical business attribution"],
+        "model_status": "partial",
+        "runtime_nonempty_reconciliation": {"status": "missing", "evidence_ref": null, "run_id": null, "row_count": 0, "tenant_count": 0},
+        "reasons": ["The exact upstream table is legible in the lineage screenshot and feeds a documented Y-Shopping DIM model.", "Because it is absent from Markdown text extraction, it adds one real source dependency to the governed denominator."]
+      },
+      {
+        "path": "图片和附件/bedc03644a5215bc872ae66e4d12d26d.png",
+        "document": "ODS语兴好物（y shopping）电商数据表.md",
+        "line": 6697,
+        "ocr_identifiers": ["ods_test_user_info"],
+        "classification": "external_demo_rejected",
+        "disposition": "Reject the test table screenshot as production source authority.",
+        "reasons": ["The identifier explicitly denotes a test table in a governance-automation example.", "No production ownership, stable key, schema contract or reconciliation evidence is supplied."]
+      },
+      {
+        "path": "图片和附件/c2b7214d435d02ad587ea860dc0da458.jpeg",
+        "document": "语兴好物（y shopping）-电商数仓搭建.md",
+        "line": 377,
+        "ocr_identifiers": ["ods_trade_trade_order_c"],
+        "classification": "ocr_false_positive",
+        "disposition": "Reject the truncated OCR suffix and bind the image to the documented order source lineage.",
+        "reasons": ["The screenshot crop/OCR truncates the physical suffix.", "The adjacent Markdown and source matrix provide the governed order asset names."]
+      },
+      {
+        "path": "图片和附件/e1ab4c9841fc0306c152b0fdb2a362cc.png",
+        "document": "ODS语兴好物（y shopping）电商数据表.md",
+        "line": 6703,
+        "ocr_identifiers": ["dwd_hc_tc_trade_order_detail_df", "dwd_tc_trade_sub_order_dfb"],
+        "classification": "external_demo_rejected",
+        "disposition": "Reject the task-diagnosis screenshot identifiers as source authority and correct the OCR dfb suffix only within restricted incident evidence.",
+        "reasons": ["The screenshot is output from an automated metadata error explanation.", "External missing-table text cannot add a business table without schema, owner, grain and source evidence."]
+      },
+      {
+        "path": "图片和附件/fdded11d46bfd93fc984fac743f781ea.png",
+        "document": "语兴好物（y shopping）-电商数仓搭建.md",
+        "line": 1920,
+        "ocr_identifiers": ["ads_ai_intelligence_target"],
+        "classification": "visual_derived_target",
+        "disposition": "Accept as a visual-only derived requirement for AI intelligence operations, with collected observations, model attempts, clues, classifications, accepted decisions and delivery effects kept at separate grains.",
+        "canonical_targets": ["intelligence.IntelligenceObservation", "intelligence.Clue", "ai_operations.InvocationAttempt", "risk.RiskSignal", "risk.AcceptedDecision", "yshopping_ads.ads_canonical_ai_intelligence_readiness"],
+        "semantic_rules": ["deduplicate third-party observations by source-qualified evidence identity", "bind model outputs to immutable invocation model prompt taxonomy and policy versions", "separate raw clue model classification human review accepted decision and downstream effect", "publish complete eligible observation and invocation denominators", "restrict source content publisher and subject identity by purpose and retention", "version late-arrival restatement delivery and decision timestamps explicitly"],
+        "model_status": "missing",
+        "reasons": ["The exact ADS target and complete ODS-to-dashboard flow are legible only in the architecture image.", "Existing contracts govern the source tables, but the canonical intelligence ADS readiness projection is not yet implemented or reconciled."]
+      }
+    ]
+  },
+  "binary_attachment_disposition": {
+    "path": "图片和附件/target.zip",
+    "sha256": "6d91c2172c73e8af46a6b440336ac291f49dda5865478568e6febd371de68f60",
+    "document": "DWS语兴好物（y shopping）电商数据表.md",
+    "line": 1005,
+    "decision": "reference_binary_rejected",
+    "executable_admission": false,
+    "reasons": ["The archive contains a compiled bitmap UDF JAR and class files without reviewed source or reproducible build provenance.", "Executing or importing a reference binary would create a supply-chain and licensing trust boundary outside the semantic model.", "Bitmap cohort semantics are reimplemented through governed engine-native models and independently tested rather than inferred from this artifact."]
+  }
+}
