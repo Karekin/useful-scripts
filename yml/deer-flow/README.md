@@ -34,6 +34,7 @@ scripts/deerflowctl doctor
 scripts/deerflowctl up
 scripts/deerflowctl bootstrap
 scripts/deerflowctl status
+scripts/deerflowctl smoke
 scripts/deerflowctl logs gateway
 scripts/deerflowctl down
 ```

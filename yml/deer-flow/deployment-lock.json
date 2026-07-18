@@ -1,0 +1,31 @@
+{
+  "schema_version": "cloudmold.deerflow-deployment/v1",
+  "verified_at": "2026-07-18T18:48:00+08:00",
+  "deerflow": {
+    "version": "v2.0.0",
+    "commit": "7e7f0410797693cf882594555ba414e0361d4c6f"
+  },
+  "images": {
+    "gateway": "sha256:8bee8d7f607b3fcfa89eb721403c1a8e760adf8a45f37801bbd09c8a5989395d",
+    "frontend": "sha256:65b67a63dde2473fff4a7d7a4bbe109fac20b25a6b2c41fc0d85e1996c09af9e",
+    "nginx_base": "sha256:4a73073bd557c65b759505da037898b61f1be6cbcc3c2c3aeac22d2a470c1752"
+  },
+  "network": {
+    "bind": "127.0.0.1",
+    "port": 2026
+  },
+  "persistence": {
+    "backend": "sqlite",
+    "restart_recovery_verified": true,
+    "full_recreate_recovery_verified": true
+  },
+  "skills": {
+    "authoritative_source": "useful-scripts/skills",
+    "discovered_count": 11
+  },
+  "model_smoke": {
+    "provider_reached": true,
+    "completed": false,
+    "blocker": "provider_account_insufficient_balance"
+  }
+}
