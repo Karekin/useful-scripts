@@ -1,6 +1,6 @@
 {
   "schema_version": "cloudmold.deerflow-deployment/v1",
-  "verified_at": "2026-07-18T18:48:00+08:00",
+  "verified_at": "2026-07-18T19:08:37+08:00",
   "deerflow": {
     "version": "v2.0.0",
     "commit": "7e7f0410797693cf882594555ba414e0361d4c6f"
@@ -24,8 +24,13 @@
     "discovered_count": 11
   },
   "model_smoke": {
+    "provider": "zhipu",
+    "model": "glm-5.2",
     "provider_reached": true,
-    "completed": false,
-    "blocker": "provider_account_insufficient_balance"
+    "direct_completion_verified": true,
+    "deerflow_completion_verified": true,
+    "thinking_tool_loop_verified": true,
+    "completed": true,
+    "blocker": null
   }
 }

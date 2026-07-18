@@ -10,7 +10,9 @@ Outbox, CDC, or lakehouse reconciliation.
 - Bind the UI and gateway proxy only to `127.0.0.1:2026`.
 - Use the local sandbox with host bash disabled.
 - Do not mount the host Docker socket or the full `~/.codex`/`~/.claude` trees.
-- Inject the model key from the process environment; never persist it here.
+- Inject the model key from the process environment, or read it from the
+  Git-ignored `runtime/zhipu-api-key` file with mode `0600`; never put it in a
+  tracked configuration file.
 - Use an isolated Docker client configuration for public images so a blocked
   desktop credential helper cannot stall deployment or expose registry auth.
 - Mount `useful-scripts/skills` read-only at DeerFlow's required
@@ -39,9 +41,12 @@ scripts/deerflowctl logs gateway
 scripts/deerflowctl down
 ```
 
-`OPENAI_API_KEY` and `OPENAI_BASE_URL` must be present in the calling
-environment for `up`. The current verified provider is the OpenAI-compatible
-Moonshot endpoint and the configured model is `kimi-k2.5`.
+The configured model is 智谱 `glm-5.2` through its OpenAI-compatible endpoint.
+`deerflowctl up` first uses `DEER_FLOW_MODEL_API_KEY`, then the ignored
+`runtime/zhipu-api-key`, and only then a generic `OPENAI_API_KEY` fallback.
+`DEER_FLOW_MODEL_BASE_URL` can override the default 智谱 endpoint for controlled
+testing. This precedence prevents unrelated shell-wide `OPENAI_*` variables
+from silently keeping DeerFlow on a stale provider.
 
 Rollback is deterministic: run `scripts/deerflowctl down`, check out the prior
 tag in the external DeerFlow repository, update `DEER_FLOW_EXPECTED_VERSION`,

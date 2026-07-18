@@ -6,7 +6,10 @@ USEFUL_SCRIPTS_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DEPLOYMENT_DIR="$USEFUL_SCRIPTS_ROOT/yml/deer-flow"
 DEER_FLOW_REPO="${DEER_FLOW_REPO:-$(cd "$USEFUL_SCRIPTS_ROOT/.." && pwd)/deer-flow}"
 DEER_FLOW_EXPECTED_VERSION="${DEER_FLOW_EXPECTED_VERSION:-v2.0.0}"
+DEER_FLOW_EXPECTED_MODEL_NAME="${DEER_FLOW_EXPECTED_MODEL_NAME:-glm-5-2}"
 DEER_FLOW_RUNTIME_DIR="${DEER_FLOW_RUNTIME_DIR:-$DEPLOYMENT_DIR/runtime}"
+DEER_FLOW_MODEL_KEY_FILE="${DEER_FLOW_MODEL_KEY_FILE:-$DEER_FLOW_RUNTIME_DIR/zhipu-api-key}"
+DEER_FLOW_DEFAULT_MODEL_BASE_URL="https://open.bigmodel.cn/api/paas/v4"
 export DOCKER_CONFIG="${DEER_FLOW_DOCKER_CONFIG:-$DEER_FLOW_RUNTIME_DIR/docker-config}"
 
 export DEER_FLOW_HOME="$DEER_FLOW_RUNTIME_DIR/home"
@@ -72,6 +75,19 @@ ensure_runtime_files() {
   fi
 }
 
+load_model_credentials() {
+  # Do not let unrelated shell-wide OPENAI_* variables silently select a stale
+  # provider. CloudMold-specific overrides win, followed by the ignored key
+  # file; generic OPENAI_API_KEY remains only as an explicit fallback.
+  if test -n "${DEER_FLOW_MODEL_API_KEY:-}"; then
+    export OPENAI_API_KEY="$DEER_FLOW_MODEL_API_KEY"
+  elif test -f "$DEER_FLOW_MODEL_KEY_FILE"; then
+    export OPENAI_API_KEY
+    OPENAI_API_KEY="$(<"$DEER_FLOW_MODEL_KEY_FILE")"
+  fi
+  export OPENAI_BASE_URL="${DEER_FLOW_MODEL_BASE_URL:-$DEER_FLOW_DEFAULT_MODEL_BASE_URL}"
+}
+
 wait_for_gateway() {
   local attempt
   for attempt in $(seq 1 60); do
@@ -132,10 +148,13 @@ case "${1:-status}" in
     "${compose[@]}" build frontend gateway
     ;;
   up)
+    load_model_credentials
     validate
     test -n "${OPENAI_API_KEY:-}" || fail "OPENAI_API_KEY is required for agent execution"
     test -n "${OPENAI_BASE_URL:-}" || fail "OPENAI_BASE_URL is required for agent execution"
-    "${compose[@]}" up --build -d --remove-orphans frontend gateway nginx
+    # Recreate services so model-provider environment changes cannot leave a
+    # healthy-looking container on stale credentials or endpoint settings.
+    "${compose[@]}" up --build --force-recreate -d --remove-orphans frontend gateway nginx
     wait_for_gateway
     bootstrap_admin
     "${compose[@]}" ps
@@ -168,6 +187,7 @@ case "${1:-status}" in
     models_json="$(curl --silent --fail --max-time 10 --cookie "$DEER_FLOW_HOME/.admin-cookie-jar" "http://${PORT}/api/models")"
     [[ "$skills_json" != *'"skills":[]'* ]] || fail "DeerFlow discovered no Skills"
     [[ "$models_json" == *'"models":['* ]] || fail "DeerFlow model catalog is unavailable"
+    [[ "$models_json" == *"\"name\":\"$DEER_FLOW_EXPECTED_MODEL_NAME\""* ]] || fail "expected model $DEER_FLOW_EXPECTED_MODEL_NAME is unavailable"
     printf 'DeerFlow health, authentication, Skill discovery, and model catalog checks passed.\n'
     ;;
   logs)

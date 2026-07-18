@@ -15,7 +15,11 @@
 - 本地管理员已初始化，凭据与 cookie 仅保存在被 Git 忽略且权限为 `0600` 的运行目录；未登录访问业务 API 返回 `401`
 - `/api/skills` 经认证返回 11 个 CloudMold Skill，涵盖 Dubbo、ERP、WMS、MES、DreamPlant 和全链路 QA
 - Store 已显式落到统一 SQLite 数据库；同一个 thread 经 `restart` 和完整 `down/up` 后仍可读取
-- `/api/models` 能发现 `kimi-k2-5`；真实推理请求已到达 Moonshot，但当前账户因余额不足返回 `429`，因此模型回合尚未验收为成功
+- `/api/models` 能发现智谱 `glm-5-2`（实际模型 ID 为 `glm-5.2`）
+- 智谱官方 API 直连验证返回 `CLOUDMOLD_ZHIPU_OK`
+- DeerFlow `/api/runs/wait` 真实模型回合返回 `CLOUDMOLD_DEERFLOW_GLM52_OK`
+- 开启思考后完成 `AI → ls tool → tool result → AI` 多轮链路，最终返回 `CLOUDMOLD_GLM52_TOOL_OK`；证明工具调用后的 `reasoning_content` 重放适配有效
+- 模型 Key 仅保存在 Git 忽略的 `runtime/zhipu-api-key`，权限为 `0600`；容器日志、配置和部署锁均不保存 Key
 - 容器均处于 `Up` 状态
 
 ## 可复现部署锁

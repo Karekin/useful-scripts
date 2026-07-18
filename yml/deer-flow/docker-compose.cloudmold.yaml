@@ -18,7 +18,7 @@ services:
         read_only: true
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.moonshot.cn/v1}
+      OPENAI_BASE_URL: ${DEER_FLOW_MODEL_BASE_URL:-https://open.bigmodel.cn/api/paas/v4}
       DEER_FLOW_SKILLS_PATH: /app/skills
       GATEWAY_ENABLE_DOCS: "false"
     mem_limit: 3g
