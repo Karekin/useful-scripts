@@ -13,9 +13,14 @@ Outbox, CDC, or lakehouse reconciliation.
 - Inject the model key from the process environment; never persist it here.
 - Use an isolated Docker client configuration for public images so a blocked
   desktop credential helper cannot stall deployment or expose registry auth.
-- Mount `useful-scripts/skills` read-only as DeerFlow's Skill catalog.
+- Mount `useful-scripts/skills` read-only at DeerFlow's required
+  `/app/skills/public` category path; the authoritative catalog stays flat and
+  is not copied or rewritten for DeerFlow.
 - Persist the unified SQLite database and run events under the ignored
   `runtime/home` directory.
+- Keep the generated local administrator password and cookie jar in the same
+  ignored directory with mode `0600`; `deerflowctl up` initializes or logs in
+  the local administrator without printing credentials.
 - Keep custom-agent and Skill self-evolution write APIs disabled until the
   CloudMold approval and audit boundary is implemented.
 
@@ -27,6 +32,7 @@ tag `v2.0.0` (`7e7f0410797693cf882594555ba414e0361d4c6f`).
 ```bash
 scripts/deerflowctl doctor
 scripts/deerflowctl up
+scripts/deerflowctl bootstrap
 scripts/deerflowctl status
 scripts/deerflowctl logs gateway
 scripts/deerflowctl down
@@ -40,3 +46,9 @@ Rollback is deterministic: run `scripts/deerflowctl down`, check out the prior
 tag in the external DeerFlow repository, update `DEER_FLOW_EXPECTED_VERSION`,
 then rebuild. Preserve `runtime/home` to retain task history, or copy it before
 a database migration.
+
+DeerFlow v2.0.0 still has a Store-provider compatibility gap: its Store reads
+the legacy `checkpointer` field while its Checkpointer already honors the
+unified `database` field. The CloudMold config intentionally points both fields
+at `runtime/home/data/deerflow.db`; remove the compatibility field only after an
+upstream version logs a persistent Store when configured with `database` alone.

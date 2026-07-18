@@ -11,7 +11,10 @@ services:
     volumes:
       - type: bind
         source: ${CLOUDMOLD_SKILLS_PATH:?CLOUDMOLD_SKILLS_PATH is required}
-        target: /app/skills
+        # DeerFlow discovers <root>/public/<skill>/SKILL.md. CloudMold keeps
+        # its authoritative Skills flat at useful-scripts/skills/<skill>, so
+        # mount that catalog directly as the read-only public category.
+        target: /app/skills/public
         read_only: true
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}

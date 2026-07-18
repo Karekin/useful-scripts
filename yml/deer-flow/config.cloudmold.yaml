@@ -80,6 +80,15 @@ database:
   backend: sqlite
   sqlite_dir: .deer-flow/data
 
+# DeerFlow v2.0.0's Store provider still reads the legacy checkpointer field
+# even though the unified database section already drives the checkpointer.
+# Point both at the same WAL-backed database so thread state and indexes survive
+# a Gateway restart. Remove this compatibility block once upstream's Store
+# provider derives its backend from database as documented.
+checkpointer:
+  type: sqlite
+  connection_string: /app/backend/.deer-flow/data/deerflow.db
+
 run_events:
   backend: db
   max_trace_content: 10240
