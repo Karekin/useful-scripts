@@ -184,6 +184,45 @@ services:
         max-size: "50m"
         max-file: "2"
 
+  # Long-lived northbound MCP adapter. It exposes only governed discovery and
+  # synchronous READ capabilities; writes enter the durable Skill Task plane.
+  cloudmold-hsf-mcp-server:
+    profiles: [ "agent" ]
+    build:
+      context: ../../../yudao-cloud/cloudmold-hsf-mcp-server
+    image: cloudmold/hsf-mcp-server:local
+    container_name: cloudmold-hsf-mcp-server
+    restart: unless-stopped
+    depends_on:
+      yudao-nacos:
+        condition: service_healthy
+      yudao-provider:
+        condition: service_healthy
+    environment:
+      CLOUDMOLD_RPC_GROUP: cloudmold-compose-internal
+      CLOUDMOLD_DUBBO_REGISTRY: nacos://yudao-nacos:8848
+      CLOUDMOLD_DUBBO_REGISTRY_GROUP: CLOUDMOLD_DUBBO
+      CLOUDMOLD_MCP_PORT: "49090"
+      JAVA_OPTS: -Xms128m -Xmx384m -Dfile.encoding=UTF-8 -Ddubbo.application.migration.step=FORCE_INTERFACE -Ddubbo.application.serialize-check-status=STRICT -Ddubbo.application.check-serializable=false -Ddubbo.hessian.allowNonSerializable=true
+    secrets:
+      - cloudmold_rpc_shared_secret
+      - cloudmold_mcp_bearer_token
+    ports:
+      - "127.0.0.1:49090:49090"
+    healthcheck:
+      test: [ "CMD-SHELL", "timeout 3 bash -c '</dev/tcp/127.0.0.1/49090'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks:
+      - yudao_network
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "2"
+
   yudao-redis:
     image: redis:6.2
     container_name: yudao-redis
@@ -368,6 +407,8 @@ volumes:
 secrets:
   cloudmold_rpc_shared_secret:
     file: ${CLOUDMOLD_RPC_SECRET_FILE:-./data/secrets/cloudmold-rpc-shared-secret}
+  cloudmold_mcp_bearer_token:
+    file: ${CLOUDMOLD_MCP_TOKEN_FILE:-./data/secrets/cloudmold-mcp-bearer-token}
 
 networks:
   yudao_network:

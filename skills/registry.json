@@ -9,6 +9,13 @@
       "owner": "cloudmold-platform"
     },
     {
+      "skill_id": "skill.cloudmold.platform.hsf-mcp-operator.v1",
+      "path": "cloudmold-hsf-mcp-operator",
+      "manifest": "cloudmold-hsf-mcp-operator/skill.json",
+      "status": "active",
+      "owner": "cloudmold-platform"
+    },
+    {
       "skill_id": "skill.cloudmold.quality.full-chain-qa.v1",
       "path": "cloudmold-full-chain-qa",
       "manifest": "cloudmold-full-chain-qa/skill.json",

@@ -1,0 +1,4 @@
+interface:
+  display_name: "CloudMold HSF MCP Operator"
+  short_description: "验证 DeerFlow、MCP 与 Dubbo 全链路"
+  default_prompt: "Use $cloudmold-hsf-mcp-operator to verify the DeerFlow-to-MCP-to-Dubbo control plane."

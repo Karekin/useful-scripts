@@ -8,6 +8,8 @@ services:
     cpus: 1.0
 
   gateway:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - type: bind
         source: ${CLOUDMOLD_SKILLS_PATH:?CLOUDMOLD_SKILLS_PATH is required}
@@ -20,6 +22,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_BASE_URL: ${DEER_FLOW_MODEL_BASE_URL:-https://open.bigmodel.cn/api/paas/v4}
       DEER_FLOW_SKILLS_PATH: /app/skills
+      CLOUDMOLD_MCP_AUTHORIZATION: ${CLOUDMOLD_MCP_AUTHORIZATION:-}
       GATEWAY_ENABLE_DOCS: "false"
     mem_limit: 3g
     cpus: 2.0

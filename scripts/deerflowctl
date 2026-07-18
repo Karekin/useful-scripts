@@ -10,6 +10,7 @@ DEER_FLOW_EXPECTED_MODEL_NAME="${DEER_FLOW_EXPECTED_MODEL_NAME:-glm-5-2}"
 DEER_FLOW_RUNTIME_DIR="${DEER_FLOW_RUNTIME_DIR:-$DEPLOYMENT_DIR/runtime}"
 DEER_FLOW_MODEL_KEY_FILE="${DEER_FLOW_MODEL_KEY_FILE:-$DEER_FLOW_RUNTIME_DIR/zhipu-api-key}"
 DEER_FLOW_DEFAULT_MODEL_BASE_URL="https://open.bigmodel.cn/api/paas/v4"
+CLOUDMOLD_MCP_TOKEN_FILE="${CLOUDMOLD_MCP_TOKEN_FILE:-$USEFUL_SCRIPTS_ROOT/yml/yudao/data/secrets/cloudmold-mcp-bearer-token}"
 export DOCKER_CONFIG="${DEER_FLOW_DOCKER_CONFIG:-$DEER_FLOW_RUNTIME_DIR/docker-config}"
 
 export DEER_FLOW_HOME="$DEER_FLOW_RUNTIME_DIR/home"
@@ -88,6 +89,13 @@ load_model_credentials() {
   export OPENAI_BASE_URL="${DEER_FLOW_MODEL_BASE_URL:-$DEER_FLOW_DEFAULT_MODEL_BASE_URL}"
 }
 
+load_mcp_credentials() {
+  test -f "$CLOUDMOLD_MCP_TOKEN_FILE" || fail "missing MCP bearer token file: $CLOUDMOLD_MCP_TOKEN_FILE"
+  test "$(wc -c < "$CLOUDMOLD_MCP_TOKEN_FILE")" -ge 32 || fail "MCP bearer token must contain at least 32 bytes"
+  export CLOUDMOLD_MCP_AUTHORIZATION
+  CLOUDMOLD_MCP_AUTHORIZATION="Bearer $(<"$CLOUDMOLD_MCP_TOKEN_FILE")"
+}
+
 wait_for_gateway() {
   local attempt
   for attempt in $(seq 1 60); do
@@ -149,6 +157,7 @@ case "${1:-status}" in
     ;;
   up)
     load_model_credentials
+    load_mcp_credentials
     validate
     test -n "${OPENAI_API_KEY:-}" || fail "OPENAI_API_KEY is required for agent execution"
     test -n "${OPENAI_BASE_URL:-}" || fail "OPENAI_BASE_URL is required for agent execution"
@@ -170,8 +179,10 @@ case "${1:-status}" in
     "${compose[@]}" down
     ;;
   restart)
+    load_model_credentials
+    load_mcp_credentials
     validate
-    "${compose[@]}" restart frontend gateway nginx
+    "${compose[@]}" up --build --force-recreate -d --remove-orphans frontend gateway nginx
     wait_for_gateway
     bootstrap_admin
     ;;
@@ -185,10 +196,13 @@ case "${1:-status}" in
     bootstrap_admin
     skills_json="$(curl --silent --fail --max-time 10 --cookie "$DEER_FLOW_HOME/.admin-cookie-jar" "http://${PORT}/api/skills")"
     models_json="$(curl --silent --fail --max-time 10 --cookie "$DEER_FLOW_HOME/.admin-cookie-jar" "http://${PORT}/api/models")"
+    mcp_json="$(curl --silent --fail --max-time 10 --cookie "$DEER_FLOW_HOME/.admin-cookie-jar" "http://${PORT}/api/mcp/config")"
     [[ "$skills_json" != *'"skills":[]'* ]] || fail "DeerFlow discovered no Skills"
     [[ "$models_json" == *'"models":['* ]] || fail "DeerFlow model catalog is unavailable"
     [[ "$models_json" == *"\"name\":\"$DEER_FLOW_EXPECTED_MODEL_NAME\""* ]] || fail "expected model $DEER_FLOW_EXPECTED_MODEL_NAME is unavailable"
-    printf 'DeerFlow health, authentication, Skill discovery, and model catalog checks passed.\n'
+    [[ "$mcp_json" == *'"cloudmold-hsf"'* ]] || fail "CloudMold HSF MCP server is not registered"
+    curl --silent --fail --max-time 5 "http://127.0.0.1:49090/health" >/dev/null || fail "CloudMold HSF MCP server is unavailable"
+    printf 'DeerFlow health, authentication, Skill discovery, model catalog, and HSF MCP registration checks passed.\n'
     ;;
   logs)
     validate

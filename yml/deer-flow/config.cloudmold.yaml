@@ -74,7 +74,9 @@ summarization:
       value: 32000
 
 agents_api:
-  enabled: false
+  # Enabled for the localhost-only CloudMold development control plane so the
+  # authenticated administrator can create and manage custom agents.
+  enabled: true
 
 skill_evolution:
   enabled: false

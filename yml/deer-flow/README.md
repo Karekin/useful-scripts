@@ -23,8 +23,10 @@ Outbox, CDC, or lakehouse reconciliation.
 - Keep the generated local administrator password and cookie jar in the same
   ignored directory with mode `0600`; `deerflowctl up` initializes or logs in
   the local administrator without printing credentials.
-- Keep custom-agent and Skill self-evolution write APIs disabled until the
-  CloudMold approval and audit boundary is implemented.
+- Keep Skill self-evolution write APIs disabled until the CloudMold approval and
+  audit boundary is implemented. The custom-agent management API is enabled for
+  the authenticated, localhost-only development control plane; do not expose
+  port 2026 beyond the local machine without adding a stronger admin boundary.
 
 ## Operations
 

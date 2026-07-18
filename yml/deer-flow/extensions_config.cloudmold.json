@@ -1,4 +1,14 @@
 {
-  "mcpServers": {},
+  "mcpServers": {
+    "cloudmold-hsf": {
+      "enabled": true,
+      "type": "http",
+      "url": "http://host.docker.internal:49090/mcp",
+      "headers": {
+        "Authorization": "$CLOUDMOLD_MCP_AUTHORIZATION"
+      },
+      "description": "Authenticated CloudMold capability catalog and read-only Dubbo invocation plane"
+    }
+  },
   "skills": {}
 }

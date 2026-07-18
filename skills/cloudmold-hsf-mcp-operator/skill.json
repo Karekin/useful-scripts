@@ -1,0 +1,25 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.platform.hsf-mcp-operator.v1",
+  "workflow_id": "workflow.cloudmold.platform.deerflow-mcp-dubbo.v1",
+  "name": "cloudmold-hsf-mcp-operator",
+  "version": "1.0.0",
+  "owner": "cloudmold-platform",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R1",
+  "ui_dependency": "none",
+  "allowed_environments": ["local", "test"],
+  "entrypoints": {
+    "plan": "scripts/hsf_mcp_operator.py plan",
+    "verify": "scripts/hsf_mcp_operator.py verify",
+    "invoke_read": "scripts/hsf_mcp_operator.py invoke-read",
+    "agent_e2e": "scripts/hsf_mcp_operator.py deerflow-e2e",
+    "full": "scripts/hsf_mcp_operator.py full"
+  },
+  "evidence": [
+    "run.json",
+    "mcp-verification.json",
+    "capability-read.json",
+    "deerflow-e2e.json"
+  ]
+}
