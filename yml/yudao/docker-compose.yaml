@@ -245,8 +245,8 @@ services:
         max-size: "50m"
         max-file: "2"
 
-  # Long-lived northbound MCP adapter. It exposes only governed discovery and
-  # synchronous READ capabilities; writes enter the durable Skill Task plane.
+  # Long-lived northbound MCP adapter. Direct capability invocation is READ-only;
+  # its fixed R1 command tools submit work to the durable Skill Task plane.
   cloudmold-hsf-mcp-server:
     profiles: [ "agent" ]
     build:
@@ -258,6 +258,8 @@ services:
       yudao-nacos:
         condition: service_healthy
       yudao-provider:
+        condition: service_healthy
+      cloudmold-skill-task-executor:
         condition: service_healthy
     environment:
       CLOUDMOLD_RPC_GROUP: cloudmold-compose-internal
