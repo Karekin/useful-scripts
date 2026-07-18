@@ -1,0 +1,741 @@
+#!/usr/bin/env python3
+"""Validate and synchronize the Y-Shopping commerce analytics data product."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import shutil
+import subprocess
+import sys
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal
+from pathlib import Path
+from typing import Any
+
+
+ROOT = Path(__file__).resolve().parents[1]
+PRODUCT = ROOT / "data-products" / "yshopping-commerce-analytics"
+LAKEHOUSE = ROOT / "yml" / "yshopping-lakehouse"
+SITE_DATA = LAKEHOUSE / "analytics" / "apps" / "cloudmold-analytics" / "app" / "data"
+MANIFEST = PRODUCT / "manifest-v1.json"
+CATALOG = PRODUCT / "kpis" / "ecommerce-kpi-catalog-v1.json"
+PORTFOLIO = PRODUCT / "reports" / "report-portfolio-v1.json"
+SNAPSHOT = PRODUCT / "snapshots" / "local-test" / "tenant-1" / "latest.json"
+COVERAGE = PRODUCT / "coverage" / "kpi-source-readiness-v1.json"
+BACKLOG = PRODUCT / "coverage" / "kpi-data-gap-backlog-v1.json"
+SOURCE_GRADUATION = PRODUCT / "coverage" / "source-graduation-plan-v1.json"
+ATTACHMENT_AUDIT = LAKEHOUSE / "contracts" / "yshopping-attachment-semantic-disposition-v1.json"
+ALLOWED_STATUSES = {
+    "runtime_local_test",
+    "repository_verified",
+    "model_ready_no_runtime",
+    "governed_source_only",
+}
+SITE_FILES = {
+    MANIFEST: SITE_DATA / "manifest.json",
+    CATALOG: SITE_DATA / "kpi-catalog.json",
+    PORTFOLIO: SITE_DATA / "report-portfolio.json",
+    SNAPSHOT: SITE_DATA / "dashboard-snapshot.json",
+    COVERAGE: SITE_DATA / "kpi-coverage.json",
+    BACKLOG: SITE_DATA / "kpi-gap-backlog.json",
+    SOURCE_GRADUATION: SITE_DATA / "source-graduation.json",
+}
+STARROCKS_CONTAINER = "yshopping-starrocks"
+
+
+class DataProductError(RuntimeError):
+    pass
+
+
+def load_json(path: Path) -> Any:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise DataProductError(f"cannot load {path}: {exc}") from exc
+
+
+def _duplicates(values: list[str]) -> list[str]:
+    return sorted({value for value in values if values.count(value) > 1})
+
+
+def validate() -> dict[str, int]:
+    manifest = load_json(MANIFEST)
+    catalog = load_json(CATALOG)
+    portfolio = load_json(PORTFOLIO)
+    snapshot = load_json(SNAPSHOT)
+    coverage = load_json(COVERAGE)
+    backlog = load_json(BACKLOG)
+    source_graduation = load_json(SOURCE_GRADUATION)
+    audit = load_json(ATTACHMENT_AUDIT)
+
+    expected_paths = {
+        "kpi_catalog": "kpis/ecommerce-kpi-catalog-v1.json",
+        "report_portfolio": "reports/report-portfolio-v1.json",
+        "latest_snapshot": "snapshots/local-test/tenant-1/latest.json",
+        "coverage_audit": "coverage/kpi-source-readiness-v1.json",
+        "gap_backlog": "coverage/kpi-data-gap-backlog-v1.json",
+        "source_graduation_plan": "coverage/source-graduation-plan-v1.json",
+    }
+    if manifest.get("canonical_paths") != expected_paths:
+        raise DataProductError("manifest canonical_paths does not match the versioned bundle")
+
+    model_files = sorted((LAKEHOUSE / "models").glob("**/*.sql"))
+    actual_layers: dict[str, int] = {}
+    for path in model_files:
+        relative = path.relative_to(LAKEHOUSE / "models")
+        layer = relative.parts[0] if len(relative.parts) > 1 else "bootstrap"
+        actual_layers[layer] = actual_layers.get(layer, 0) + 1
+    source = manifest["source_system"]
+    if source["sql_models"] != len(model_files):
+        raise DataProductError(
+            f"manifest sql_models={source['sql_models']} but repository contains {len(model_files)}"
+        )
+    if source["model_layers"] != actual_layers:
+        raise DataProductError(
+            f"manifest model_layers={source['model_layers']} but repository contains {actual_layers}"
+        )
+
+    governed_total = audit["governed_universe"]["total_source_candidate_count"]
+    if source["governed_source_candidates"] != governed_total:
+        raise DataProductError(
+            "manifest governed source denominator disagrees with attachment audit: "
+            f"{source['governed_source_candidates']} != {governed_total}"
+        )
+
+    graduation_summary = source_graduation.get("summary", {})
+    if graduation_summary.get("governed_candidate_universe") != governed_total:
+        raise DataProductError("source graduation universe disagrees with attachment audit")
+    if graduation_summary.get("terminal_disposition_complete") != governed_total:
+        raise DataProductError("every governed source candidate must have a terminal disposition")
+    if (
+        graduation_summary.get("static_admission_review_queue", 0)
+        + graduation_summary.get("rejected_or_quarantined", 0)
+        != governed_total
+    ):
+        raise DataProductError("source graduation static admission counts must conserve the universe")
+    if graduation_summary.get("active_model_pipeline_violations") != 0:
+        raise DataProductError("source graduation plan cannot publish with admission-fence violations")
+    if graduation_summary.get("production_admission_ready") != source["production_admission_ready_sources"]:
+        raise DataProductError("source graduation admission-ready count disagrees with manifest")
+    gates = source_graduation.get("gates", [])
+    if [gate.get("order") for gate in gates] != list(range(1, len(gates) + 1)):
+        raise DataProductError("source graduation gates must be ordered contiguously")
+    if not gates or gates[-1].get("value") != source["production_admission_ready_sources"]:
+        raise DataProductError("source graduation terminal gate must expose the admission-ready count")
+
+    metrics = catalog.get("metrics", [])
+    metric_ids = [metric.get("id", "") for metric in metrics]
+    duplicates = _duplicates(metric_ids)
+    if duplicates:
+        raise DataProductError(f"duplicate KPI ids: {duplicates}")
+    for metric in metrics:
+        missing = sorted(
+            {"id", "name", "roles", "stage", "class", "formula", "grain", "dimensions", "source", "status", "owner", "freshness"}
+            - metric.keys()
+        )
+        if missing:
+            raise DataProductError(f"{metric.get('id', '<unknown>')}: missing fields {missing}")
+        if metric["status"] not in ALLOWED_STATUSES:
+            raise DataProductError(f"{metric['id']}: invalid status {metric['status']}")
+
+    computability = coverage.get("computability", {})
+    assessed_metrics = []
+    for bucket in (
+        "existing_model_direct",
+        "fields_available_new_mart",
+        "missing_authoritative_semantics",
+    ):
+        assessed_metrics.extend(computability.get(bucket, []))
+    if _duplicates(assessed_metrics):
+        raise DataProductError(f"coverage audit repeats KPI ids: {_duplicates(assessed_metrics)}")
+    if set(assessed_metrics) != set(metric_ids):
+        raise DataProductError(
+            "coverage audit must classify every governed KPI exactly once; "
+            f"missing={sorted(set(metric_ids) - set(assessed_metrics))}, "
+            f"unknown={sorted(set(assessed_metrics) - set(metric_ids))}"
+        )
+    delivered_metrics = set(coverage.get("delivery", {}).get("delivered_metric_ids", []))
+    if not delivered_metrics <= set(metric_ids):
+        raise DataProductError(
+            f"coverage delivery contains unknown KPIs: {sorted(delivered_metrics - set(metric_ids))}"
+        )
+    coverage_summary = coverage.get("summary", {})
+    expected_coverage_counts = {
+        "total_kpis": len(metric_ids),
+        "existing_model_direct": len(computability.get("existing_model_direct", [])),
+        "fields_available_new_mart": len(computability.get("fields_available_new_mart", [])),
+        "missing_authoritative_semantics": len(computability.get("missing_authoritative_semantics", [])),
+        "delivered_in_role_metric_mart": len(delivered_metrics),
+    }
+    if coverage_summary != expected_coverage_counts:
+        raise DataProductError(
+            f"coverage summary={coverage_summary} but classified counts={expected_coverage_counts}"
+        )
+
+    tasks = backlog.get("tasks", [])
+    task_ids = [task.get("id", "") for task in tasks]
+    if not tasks or _duplicates(task_ids):
+        raise DataProductError(f"gap backlog must contain unique tasks: {_duplicates(task_ids)}")
+    for task in tasks:
+        if task.get("priority") not in {"P0", "P1", "P2"}:
+            raise DataProductError(f"{task.get('id')}: invalid backlog priority")
+        unknown = sorted(set(task.get("unlocks", [])) - set(metric_ids))
+        if unknown:
+            raise DataProductError(f"{task.get('id')}: unknown KPI unlocks {unknown}")
+        if not task.get("acceptance"):
+            raise DataProductError(f"{task.get('id')}: missing acceptance criteria")
+        if task.get("status") not in {
+            "ready", "design_required", "in_progress", "planned", "blocked_semantics"
+        }:
+            raise DataProductError(f"{task.get('id')}: invalid backlog status")
+        if not task.get("owner") or not task.get("next_gate"):
+            raise DataProductError(f"{task.get('id')}: backlog task needs owner and next gate")
+
+    view_ids = [view.get("id", "") for view in portfolio.get("views", [])]
+    if _duplicates(view_ids):
+        raise DataProductError(f"duplicate report view ids: {_duplicates(view_ids)}")
+    known_metrics = set(metric_ids)
+    assigned_metrics: list[str] = []
+    for view in portfolio.get("views", []):
+        view_metric_list = list(dict.fromkeys(view.get("primary_metrics", []) + view.get("supporting_metrics", [])))
+        referenced = set(view_metric_list)
+        unknown = sorted(referenced - known_metrics)
+        if unknown:
+            raise DataProductError(f"{view['id']}: unknown KPI references {unknown}")
+        if not view.get("scope_note"):
+            raise DataProductError(f"{view['id']}: missing scope note")
+        assigned_metrics.extend(view_metric_list)
+    if _duplicates(assigned_metrics):
+        raise DataProductError(f"report views repeat KPI ownership: {_duplicates(assigned_metrics)}")
+    if set(assigned_metrics) != known_metrics:
+        raise DataProductError(
+            "report views must assign every KPI exactly once; "
+            f"missing={sorted(known_metrics - set(assigned_metrics))}"
+        )
+
+    snapshot_metrics = snapshot.get("metrics", {})
+    unknown_snapshot_metrics = sorted(set(snapshot_metrics) - known_metrics)
+    if unknown_snapshot_metrics:
+        raise DataProductError(f"snapshot contains ungoverned KPI ids: {unknown_snapshot_metrics}")
+    for metric_id, reading in snapshot_metrics.items():
+        if reading.get("status") not in ALLOWED_STATUSES:
+            raise DataProductError(f"{metric_id}: snapshot has invalid status")
+        if "value" not in reading:
+            raise DataProductError(f"{metric_id}: snapshot value is missing")
+    if snapshot.get("evidence_scope") != "LOCAL_TEST":
+        raise DataProductError("checked-in snapshot must remain explicitly labeled LOCAL_TEST")
+
+    snapshot_text = SNAPSHOT.read_text(encoding="utf-8").lower()
+    forbidden = [field for field in manifest["forbidden_fields"] if field.lower() in snapshot_text]
+    if forbidden:
+        raise DataProductError(f"snapshot contains forbidden field names: {sorted(forbidden)}")
+
+    return {
+        "metrics": len(metrics),
+        "views": len(view_ids),
+        "snapshot_metrics": len(snapshot_metrics),
+        "sql_models": len(model_files),
+        "governed_sources": governed_total,
+    }
+
+
+def sync_site() -> dict[str, int]:
+    summary = validate()
+    SITE_DATA.mkdir(parents=True, exist_ok=True)
+    for source, destination in SITE_FILES.items():
+        shutil.copy2(source, destination)
+    return summary
+
+
+def _query_starrocks(sql: str) -> list[list[str]]:
+    command = [
+        "docker", "exec", "-i", STARROCKS_CONTAINER,
+        "mysql", "-h127.0.0.1", "-P9030", "-uroot",
+        "--batch", "--raw", "--skip-column-names",
+        "--init-command=SET new_planner_optimize_timeout=30000",
+    ]
+    try:
+        result = subprocess.run(
+            command,
+            input=sql,
+            text=True,
+            capture_output=True,
+            check=True,
+            timeout=45,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise DataProductError(
+            "local StarRocks query exceeded 45s; aborting instead of exhausting the Docker control plane"
+        ) from exc
+    except (OSError, subprocess.CalledProcessError) as exc:
+        detail = getattr(exc, "stderr", "") or str(exc)
+        raise DataProductError(f"cannot query local StarRocks: {detail.strip()}") from exc
+    return [line.split("\t") for line in result.stdout.splitlines() if line.strip()]
+
+
+def _json_number(raw: str) -> int | float:
+    number = Decimal(raw)
+    if number == number.to_integral_value():
+        return int(number)
+    return float(round(number, 6))
+
+
+def _mask_identifier(raw: str) -> str:
+    if len(raw) <= 14:
+        return raw
+    return f"{raw[:8]}…{raw[-5:]}"
+
+
+def _overlay_metric_rows(snapshot: dict[str, Any], metric_rows: list[list[str]]) -> int:
+    metrics = snapshot.setdefault("metrics", {})
+    for row in metric_rows:
+        if len(row) != 8:
+            raise DataProductError(f"unexpected StarRocks metric row shape: {row}")
+        metric_id, raw_value, unit, raw_source_count, raw_numerator, raw_denominator, note, freshness = row
+        numerator = _json_number(raw_numerator)
+        denominator = _json_number(raw_denominator) if raw_denominator else None
+        source_count = int(raw_source_count)
+        sample_note = note
+        if denominator is not None:
+            sample_note += f"；样本 {numerator}/{denominator}"
+            if denominator < source_count:
+                sample_note += f"；可观测覆盖 {denominator}/{source_count}"
+        else:
+            sample_note += f"；来源行数 {source_count}"
+        metrics[metric_id] = {
+            "value": _json_number(raw_value),
+            "unit": unit,
+            "status": "runtime_local_test",
+            "note": sample_note,
+            "freshness": freshness,
+        }
+    return len(metric_rows)
+
+
+def refresh_merchant_local_snapshot(tenant_id: int = 1) -> dict[str, int]:
+    if tenant_id <= 0:
+        raise DataProductError("tenant_id must be a positive integer")
+
+    metric_rows = _query_starrocks(
+        "SELECT metric_id, CAST(metric_value AS STRING), unit, source_row_count, "
+        "CAST(numerator AS STRING), COALESCE(CAST(denominator AS STRING), ''), "
+        "evidence_note, DATE_FORMAT(data_freshness_at, '%Y-%m-%d %H:%i:%s') "
+        "FROM yshopping_ads.ads_ecommerce_merchant_role_metrics "
+        f"WHERE tenant_id = {tenant_id} ORDER BY metric_id"
+    )
+    if len(metric_rows) != 6:
+        raise DataProductError(
+            f"merchant snapshot requires 6 governed metrics, received {len(metric_rows)}"
+        )
+
+    snapshot = load_json(SNAPSHOT)
+    _overlay_metric_rows(snapshot, metric_rows)
+    snapshot["snapshot_id"] = f"tenant-{tenant_id}-merchant-local-test-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    snapshot["generated_at"] = datetime.now(timezone(timedelta(hours=8))).isoformat(timespec="seconds")
+    snapshot["tenant_label"] = f"Tenant {tenant_id}"
+    snapshot["warning"] = "本地 TEST/开发库真实聚合；商家指标来自真实 API 事件、数仓模型与质量校验，不代表生产全量"
+    SNAPSHOT.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return validate()
+
+
+def refresh_operations_local_snapshot(tenant_id: int = 1) -> dict[str, int]:
+    if tenant_id <= 0:
+        raise DataProductError("tenant_id must be a positive integer")
+
+    metric_rows = _query_starrocks(
+        "SELECT metric_id, CAST(metric_value AS STRING), unit, source_row_count, "
+        "CAST(numerator AS STRING), COALESCE(CAST(denominator AS STRING), ''), "
+        "evidence_note, DATE_FORMAT(data_freshness_at, '%Y-%m-%d %H:%i:%s') "
+        "FROM yshopping_ads.ads_ecommerce_operations_role_metrics "
+        f"WHERE tenant_id = {tenant_id} ORDER BY metric_id"
+    )
+    if len(metric_rows) != 3:
+        raise DataProductError(
+            f"operations snapshot requires 3 governed metrics, received {len(metric_rows)}"
+        )
+
+    snapshot = load_json(SNAPSHOT)
+    _overlay_metric_rows(snapshot, metric_rows)
+    snapshot["snapshot_id"] = f"tenant-{tenant_id}-operations-local-test-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    snapshot["generated_at"] = datetime.now(timezone(timedelta(hours=8))).isoformat(timespec="seconds")
+    snapshot["tenant_label"] = f"Tenant {tenant_id}"
+    snapshot["warning"] = "本地 TEST/开发库真实聚合；运营漏斗来自行为 Session、支付归因与 Canonical 支付事实，不代表生产全量"
+    SNAPSHOT.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return validate()
+
+
+def refresh_buyer_local_snapshot(tenant_id: int = 1) -> dict[str, int]:
+    if tenant_id <= 0:
+        raise DataProductError("tenant_id must be a positive integer")
+
+    metric_rows = _query_starrocks(
+        "SELECT metric_id, CAST(metric_value AS STRING), unit, source_row_count, "
+        "CAST(numerator AS STRING), COALESCE(CAST(denominator AS STRING), ''), "
+        "evidence_note, DATE_FORMAT(data_freshness_at, '%Y-%m-%d %H:%i:%s') "
+        "FROM yshopping_ads.ads_ecommerce_buyer_role_metrics "
+        f"WHERE tenant_id = {tenant_id} ORDER BY metric_id"
+    )
+    if len(metric_rows) != 3:
+        raise DataProductError(
+            f"buyer and fulfillment snapshot requires 3 governed metrics, received {len(metric_rows)}"
+        )
+
+    snapshot = load_json(SNAPSHOT)
+    _overlay_metric_rows(snapshot, metric_rows)
+    snapshot["snapshot_id"] = f"tenant-{tenant_id}-buyer-local-test-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    snapshot["generated_at"] = datetime.now(timezone(timedelta(hours=8))).isoformat(timespec="seconds")
+    snapshot["tenant_label"] = f"Tenant {tenant_id}"
+    snapshot["warning"] = "本地 TEST/开发库真实聚合；买家首单来自版本化 Session 严格支付归因，配送体验来自冻结版本的 Fulfillment 承诺，不代表生产全量"
+    SNAPSHOT.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return validate()
+
+
+def refresh_merchandise_local_snapshot(tenant_id: int = 1) -> dict[str, int]:
+    if tenant_id <= 0:
+        raise DataProductError("tenant_id must be a positive integer")
+
+    metric_rows = _query_starrocks(
+        "SELECT metric_id, CAST(metric_value AS STRING), unit, source_row_count, "
+        "CAST(numerator AS STRING), COALESCE(CAST(denominator AS STRING), ''), "
+        "evidence_note, DATE_FORMAT(data_freshness_at, '%Y-%m-%d %H:%i:%s') "
+        "FROM yshopping_ads.ads_ecommerce_merchandise_role_metrics "
+        f"WHERE tenant_id = {tenant_id} ORDER BY metric_id"
+    )
+    if len(metric_rows) != 3:
+        raise DataProductError(
+            f"merchandise snapshot requires 3 governed metrics, received {len(metric_rows)}"
+        )
+
+    snapshot = load_json(SNAPSHOT)
+    _overlay_metric_rows(snapshot, metric_rows)
+    snapshot["snapshot_id"] = f"tenant-{tenant_id}-merchandise-local-test-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    snapshot["generated_at"] = datetime.now(timezone(timedelta(hours=8))).isoformat(timespec="seconds")
+    snapshot["tenant_label"] = f"Tenant {tenant_id}"
+    snapshot["warning"] = "本地 TEST/开发库真实聚合；库存周转与库龄来自完整 FIFO 成本证据，采购 OTIF 来自版本化承诺与审批收货，不代表生产全量"
+    SNAPSHOT.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return validate()
+
+
+def refresh_finance_local_snapshot(tenant_id: int = 1) -> dict[str, int]:
+    if tenant_id <= 0:
+        raise DataProductError("tenant_id must be a positive integer")
+
+    metric_rows = _query_starrocks(
+        "SELECT metric_id, CAST(metric_value AS STRING), unit, source_row_count, "
+        "CAST(numerator AS STRING), COALESCE(CAST(denominator AS STRING), ''), "
+        "evidence_note, DATE_FORMAT(data_freshness_at, '%Y-%m-%d %H:%i:%s') "
+        "FROM yshopping_ads.ads_ecommerce_finance_role_metrics "
+        f"WHERE tenant_id = {tenant_id} ORDER BY metric_id"
+    )
+    if len(metric_rows) != 7:
+        raise DataProductError(
+            f"finance snapshot requires 7 governed metrics, received {len(metric_rows)}"
+        )
+
+    snapshot = load_json(SNAPSHOT)
+    _overlay_metric_rows(snapshot, metric_rows)
+    snapshot["snapshot_id"] = f"tenant-{tenant_id}-finance-local-test-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    snapshot["generated_at"] = datetime.now(timezone(timedelta(hours=8))).isoformat(timespec="seconds")
+    snapshot["tenant_label"] = f"Tenant {tenant_id}"
+    snapshot["warning"] = "本地 TEST/开发库真实聚合；盈利来自订单时点成本与资金事实，风险零值附支付订单分母，不代表生产全量"
+    SNAPSHOT.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return validate()
+
+
+def refresh_service_local_snapshot(tenant_id: int = 1) -> dict[str, int]:
+    if tenant_id <= 0:
+        raise DataProductError("tenant_id must be a positive integer")
+
+    metric_rows = _query_starrocks(
+        "SELECT metric_id, CAST(metric_value AS STRING), unit, source_row_count, "
+        "CAST(numerator AS STRING), COALESCE(CAST(denominator AS STRING), ''), "
+        "evidence_note, DATE_FORMAT(data_freshness_at, '%Y-%m-%d %H:%i:%s') "
+        "FROM yshopping_ads.ads_ecommerce_service_role_metrics "
+        f"WHERE tenant_id = {tenant_id} ORDER BY metric_id"
+    )
+    if len(metric_rows) != 4:
+        raise DataProductError(
+            f"service snapshot requires 4 governed metrics, received {len(metric_rows)}"
+        )
+
+    snapshot = load_json(SNAPSHOT)
+    _overlay_metric_rows(snapshot, metric_rows)
+    snapshot["snapshot_id"] = f"tenant-{tenant_id}-service-local-test-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    snapshot["generated_at"] = datetime.now(timezone(timedelta(hours=8))).isoformat(timespec="seconds")
+    snapshot["tenant_label"] = f"Tenant {tenant_id}"
+    snapshot["warning"] = "本地 TEST/开发库真实聚合；一次解决和 SLA 仅统计显式合格工单，CSAT 仅使用买家反馈，风险缺陷附支付订单分母，不代表生产全量"
+    SNAPSHOT.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return validate()
+
+
+def refresh_local_snapshot(tenant_id: int = 1) -> dict[str, int]:
+    if tenant_id <= 0:
+        raise DataProductError("tenant_id must be a positive integer")
+
+    catalog_metric_ids = {
+        metric["id"] for metric in load_json(CATALOG)["metrics"]
+    }
+    role_model = (
+        LAKEHOUSE / "models/ads/ads-ecommerce-role-metrics.sql"
+    ).read_text(encoding="utf-8")
+    fixed_role_metric_ids = sorted(
+        catalog_metric_ids.intersection(
+            re.findall(r"'([a-z][a-z0-9_]*\.[a-z0-9_.]+)'", role_model)
+        )
+    )
+    metric_rows: list[list[str]] = []
+    for start in range(0, len(fixed_role_metric_ids), 5):
+        metric_batch = fixed_role_metric_ids[start:start + 5]
+        metric_filter = ", ".join(f"'{metric_id}'" for metric_id in metric_batch)
+        rows = _query_starrocks(
+            "SELECT metric_id, CAST(metric_value AS STRING), unit, source_row_count, "
+            "CAST(numerator AS STRING), COALESCE(CAST(denominator AS STRING), ''), "
+            "evidence_note, DATE_FORMAT(data_freshness_at, '%Y-%m-%d %H:%i:%s') "
+            "FROM yshopping_ads.ads_ecommerce_role_metrics "
+            f"WHERE tenant_id = {tenant_id} AND metric_id IN ({metric_filter}) "
+            "ORDER BY metric_id"
+        )
+        returned_metric_ids = [row[0] for row in rows]
+        if len(returned_metric_ids) != len(set(returned_metric_ids)):
+            raise DataProductError(
+                f"role metric batch returned duplicate tenant rows: {returned_metric_ids}"
+            )
+        metric_rows.extend(rows)
+    if not metric_rows:
+        raise DataProductError(f"no governed role metrics for local tenant {tenant_id}")
+
+    snapshot = load_json(SNAPSHOT)
+    _overlay_metric_rows(snapshot, metric_rows)
+    metrics = snapshot.setdefault("metrics", {})
+
+    manifest = load_json(MANIFEST)
+    repository_metrics = {
+        "governance.governed_source_candidates": (
+            manifest["source_system"]["governed_source_candidates"],
+            "路线图与附件审计后的严格分母",
+        ),
+        "governance.strict_final_source_count": (
+            manifest["source_system"]["production_admission_ready_sources"],
+            "LOCAL_TEST/PRE_PROD 完整门禁通过且具备生产发布条件的来源数",
+        ),
+        "governance.sql_model_count": (
+            manifest["source_system"]["sql_models"],
+            "版本库内 ADS/DWS/DWD/DIM/Bootstrap SQL 模型",
+        ),
+    }
+    for metric_id, (value, note) in repository_metrics.items():
+        metrics[metric_id] = {
+            "value": value,
+            "unit": "count",
+            "status": "repository_verified",
+            "note": note,
+            "freshness": manifest["updated_at"],
+        }
+
+    commerce_rows = _query_starrocks(
+        "SELECT readiness_status, COUNT(*) FROM yshopping_ads.ads_canonical_commerce_v2_readiness "
+        f"WHERE tenant_id = {tenant_id} GROUP BY readiness_status ORDER BY readiness_status"
+    )
+    commerce_total = sum(int(row[1]) for row in commerce_rows)
+    commerce_closure = [
+        {
+            "label": f"交易 · {'已对账' if status == 'RECONCILED' else '处理中'}",
+            "value": int(count),
+            "total": commerce_total,
+            "tone": "green" if status == "RECONCILED" else "amber",
+        }
+        for status, count in commerce_rows
+    ]
+    aftersales_rows = _query_starrocks(
+        "SELECT readiness_status, COUNT(*) FROM yshopping_ads.ads_canonical_after_sale_readiness "
+        f"WHERE tenant_id = {tenant_id} GROUP BY readiness_status ORDER BY readiness_status"
+    )
+    aftersales_total = sum(int(row[1]) for row in aftersales_rows)
+    commerce_closure.extend(
+        {
+            "label": f"售后 · {'已对账' if status == 'RECONCILED' else '待恢复'}",
+            "value": int(count),
+            "total": aftersales_total,
+            "tone": "green" if status == "RECONCILED" else "amber",
+        }
+        for status, count in aftersales_rows
+    )
+
+    warehouse_rows = _query_starrocks(
+        "SELECT warehouse_id, CAST(SUM(available_quantity) AS STRING), COUNT(*) "
+        "FROM yshopping_ads.ads_canonical_inventory_health "
+        f"WHERE tenant_id = {tenant_id} AND health_status NOT IN ('INVALID', 'NON_SELLABLE') "
+        "GROUP BY warehouse_id ORDER BY SUM(available_quantity) DESC, warehouse_id LIMIT 5"
+    )
+    responsibility_rows = _query_starrocks(
+        "SELECT responsibility, recovery_status, readiness_status, COUNT(*), "
+        "CAST(SUM(refunded_amount_minor) / 100.0 AS STRING) "
+        "FROM yshopping_ads.ads_canonical_after_sale_readiness "
+        f"WHERE tenant_id = {tenant_id} GROUP BY responsibility, recovery_status, readiness_status "
+        "ORDER BY responsibility, recovery_status, readiness_status"
+    )
+    legacy_rows = _query_starrocks(
+        "SELECT active_order_count, paid_order_count, paid_buyer_count, repeat_buyer_rate, "
+        "gross_paid_amount_yuan, refunded_amount_yuan, net_paid_amount_yuan, "
+        "quality_flag_count, unpaid_terminal_order_count, refund_exceeds_paid_order_count, "
+        "paid_order_missing_pay_time_count, active_item_on_deleted_order_count, "
+        "DATE_FORMAT(data_freshness_at, '%Y-%m-%d %H:%i:%s') "
+        "FROM yshopping_ads.ads_legacy_commerce_source_metrics "
+        f"WHERE tenant_id = {tenant_id}"
+    )
+
+    snapshot["snapshot_id"] = f"tenant-{tenant_id}-local-test-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    snapshot["generated_at"] = datetime.now(timezone(timedelta(hours=8))).isoformat(timespec="seconds")
+    snapshot["tenant_label"] = f"Tenant {tenant_id}"
+    snapshot["warning"] = "本地 TEST/开发库真实聚合；各指标附样本量与覆盖率，不代表生产全量"
+    snapshot["breakdowns"] = {
+        "commerce_closure": commerce_closure,
+        "warehouse_inventory_top5": [
+            {
+                "warehouse": _mask_identifier(warehouse),
+                "available_quantity": _json_number(available),
+                "balance_count": int(balance_count),
+                "health": "健康",
+            }
+            for warehouse, available, balance_count in warehouse_rows
+        ],
+        "aftersales_responsibility": [
+            {
+                "party": responsibility or "未标注",
+                "recovery": recovery,
+                "readiness": readiness,
+                "case_count": int(case_count),
+                "refund_yuan": _json_number(refund_yuan),
+            }
+            for responsibility, recovery, readiness, case_count, refund_yuan in responsibility_rows
+        ],
+    }
+    if legacy_rows:
+        if len(legacy_rows) != 1 or len(legacy_rows[0]) != 13:
+            raise DataProductError(f"unexpected legacy source row shape: {legacy_rows}")
+        (
+            active_orders, paid_orders, paid_buyers, repeat_rate,
+            gross_paid, refunded, net_paid, quality_flags,
+            unpaid_terminal, refund_exceeds_paid, missing_pay_time,
+            active_item_deleted_order, legacy_freshness,
+        ) = legacy_rows[0]
+        snapshot["legacy_source_only"] = {
+            "evidence_scope": "LEGACY_SOURCE_ONLY",
+            "warning": "旧 Trade 当前状态快照，包含质量异常且身份映射未闭合；禁止与 Canonical 指标相加",
+            "freshness": legacy_freshness,
+            "active_order_count": int(active_orders),
+            "paid_order_count": int(paid_orders),
+            "paid_buyer_count": int(paid_buyers),
+            "repeat_buyer_rate": _json_number(repeat_rate),
+            "gross_paid_amount_yuan": _json_number(gross_paid),
+            "refunded_amount_yuan": _json_number(refunded),
+            "net_paid_amount_yuan": _json_number(net_paid),
+            "quality_flag_count": int(quality_flags),
+            "quality_flags": {
+                "unpaid_terminal_orders": int(unpaid_terminal),
+                "refund_exceeds_paid_orders": int(refund_exceeds_paid),
+                "paid_orders_missing_pay_time": int(missing_pay_time),
+                "active_items_on_deleted_orders": int(active_item_deleted_order),
+            },
+        }
+    SNAPSHOT.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return validate()
+
+
+def refresh_all_local_snapshot(tenant_id: int = 1) -> dict[str, int]:
+    """Refresh the complete role snapshot from one current StarRocks state."""
+    refresh_local_snapshot(tenant_id)
+    for refresher in (
+        refresh_merchant_local_snapshot,
+        refresh_operations_local_snapshot,
+        refresh_buyer_local_snapshot,
+        refresh_merchandise_local_snapshot,
+        refresh_finance_local_snapshot,
+        refresh_service_local_snapshot,
+    ):
+        refresher(tenant_id)
+
+    snapshot = load_json(SNAPSHOT)
+    snapshot["snapshot_id"] = (
+        f"tenant-{tenant_id}-all-roles-local-test-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    )
+    snapshot["generated_at"] = datetime.now(
+        timezone(timedelta(hours=8))
+    ).isoformat(timespec="seconds")
+    snapshot["warning"] = (
+        "本地 TEST/开发库同批次完整聚合；核心经营、角色主题与治理指标均已刷新，"
+        "各指标保留样本量与覆盖率，不代表生产全量"
+    )
+    SNAPSHOT.write_text(
+        json.dumps(snapshot, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return validate()
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "command",
+        choices=[
+            "validate",
+            "sync-site",
+            "status",
+            "refresh-all-local-snapshot",
+            "refresh-local-snapshot",
+            "refresh-merchant-local-snapshot",
+            "refresh-operations-local-snapshot",
+            "refresh-buyer-local-snapshot",
+            "refresh-merchandise-local-snapshot",
+            "refresh-finance-local-snapshot",
+            "refresh-service-local-snapshot",
+        ],
+    )
+    parser.add_argument("--tenant", type=int, default=1)
+    args = parser.parse_args()
+    try:
+        if args.command == "refresh-all-local-snapshot":
+            summary = refresh_all_local_snapshot(args.tenant)
+            print(f"all-role local snapshot refreshed for tenant {args.tenant}: {summary}")
+        elif args.command == "refresh-merchant-local-snapshot":
+            summary = refresh_merchant_local_snapshot(args.tenant)
+            print(f"merchant local StarRocks snapshot refreshed at {SNAPSHOT}")
+        elif args.command == "refresh-operations-local-snapshot":
+            summary = refresh_operations_local_snapshot(args.tenant)
+            print(f"operations local StarRocks snapshot refreshed at {SNAPSHOT}")
+        elif args.command == "refresh-buyer-local-snapshot":
+            summary = refresh_buyer_local_snapshot(args.tenant)
+            print(f"buyer local StarRocks snapshot refreshed at {SNAPSHOT}")
+        elif args.command == "refresh-merchandise-local-snapshot":
+            summary = refresh_merchandise_local_snapshot(args.tenant)
+            print(f"merchandise local StarRocks snapshot refreshed at {SNAPSHOT}")
+        elif args.command == "refresh-finance-local-snapshot":
+            summary = refresh_finance_local_snapshot(args.tenant)
+            print(f"finance local StarRocks snapshot refreshed at {SNAPSHOT}")
+        elif args.command == "refresh-service-local-snapshot":
+            summary = refresh_service_local_snapshot(args.tenant)
+            print(f"service local StarRocks snapshot refreshed at {SNAPSHOT}")
+        elif args.command == "refresh-local-snapshot":
+            summary = refresh_local_snapshot(args.tenant)
+            print(f"local StarRocks snapshot refreshed at {SNAPSHOT}")
+        elif args.command == "sync-site":
+            summary = sync_site()
+            print(f"site data synchronized to {SITE_DATA}")
+        else:
+            summary = validate()
+        print(
+            "commerce analytics valid: "
+            f"{summary['metrics']} KPIs, {summary['views']} views, "
+            f"{summary['snapshot_metrics']} snapshot metrics, "
+            f"{summary['sql_models']} SQL models, {summary['governed_sources']} governed sources"
+        )
+        return 0
+    except DataProductError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

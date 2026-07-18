@@ -1,0 +1,73 @@
+{
+  "scenario": "canonical-paid-order-cancellation-saga-v1",
+  "purpose": "Prove durable paid-but-unshipped cancellation across exact Order, Payment, Fulfillment, Inventory reservation, and one shared cancellation Saga.",
+  "environment_policy": "local, demo, or disposable test tenant only; start-only recovery drill is local/test only",
+  "runner": "scripts/canonical_paid_order_cancellation_saga_runner.py",
+  "credentials": "environment variables only; never command arguments, scenario files, or ledgers",
+  "cancellation_mode": "PAID_UNSHIPPED",
+  "routes": {
+    "command": "/admin-api/cloudmold/order-cancellation-saga/command",
+    "query": "/admin-api/cloudmold/order-cancellation-saga/get"
+  },
+  "flow": [
+    "create and publish one governed Listing offer",
+    "receive 10 fixture units",
+    "place Order from the exact published offer",
+    "reserve 2 units and bind the exact reservation to the Order item",
+    "capture 39800 CNY minor units through INTERNAL_TEST and confirm Order payment",
+    "create one complete Fulfillment in CREATED without Shipment",
+    "submit one Saga START with cancellationMode PAID_UNSHIPPED and exact orderId; the backend derives and validates the Order-owned paymentId and Fulfillment",
+    "START atomically fences Order and Fulfillment before the worker can refund or release",
+    "poll the read-only Saga route until COMPLETED or fail closed on MANUAL_REVIEW/timeout",
+    "prove Fulfillment request/finalize, Payment refund, Inventory release, and Order finalize replay as immutable duplicates",
+    "replay all 14 client-issued commands, including the identical START, as immutable duplicates"
+  ],
+  "expected": {
+    "listing": "PUBLISHED/v6",
+    "order_at_request": "PAYMENT_CONFIRMED/v3",
+    "order_fence": "CANCELLATION_PENDING/v4",
+    "order_terminal": "CANCELLED/v5",
+    "payment_at_request": "CAPTURED/v1",
+    "payment_terminal": "REFUNDED/v2",
+    "captured_amount_minor": 39800,
+    "refunded_amount_minor": 39800,
+    "fulfillment_at_request": "CREATED/v1",
+    "fulfillment_fence": "CANCELLATION_PENDING/v2",
+    "fulfillment_terminal": "CANCELLED/v3",
+    "shipment_count": 0,
+    "inventory": "10/0/10/v3",
+    "reservation": "RELEASED",
+    "cancellation_saga": "COMPLETED/v9",
+    "client_commands": 14,
+    "internal_duplicate_proofs": 5,
+    "all_replay_duplicate": true
+  },
+  "stable_internal_commands": [
+    "cancel-saga:<sagaId>:fulfillment:<fulfillmentId>:request",
+    "cancel-saga:<sagaId>:fulfillment:<fulfillmentId>:finalize",
+    "cancel-saga:<sagaId>:payment:<paymentId>:refund",
+    "cancel-saga:<sagaId>:release:<reservationId>",
+    "cancel-saga:<sagaId>:order-finalize"
+  ],
+  "invariants": [
+    "Saga START contains cancellationMode PAID_UNSHIPPED and orderId, contains no client-supplied paymentId/fulfillmentId, and contains no fault-injection field",
+    "Order and Fulfillment cancellation fences are durable before asynchronous compensation starts",
+    "Fulfillment is cancelled before Payment refund, Inventory release, and Order finalization",
+    "Payment is fully refunded exactly once and captured_amount_minor equals refunded_amount_minor",
+    "the exact TRADE_ORDER reservation is released once and terminal available stock returns to 10",
+    "Fulfillment never owns a Shipment, carrier, waybill, or tracking event",
+    "Saga COMPLETED requires one cancelled Fulfillment, one refunded Payment, and every reservation RELEASED",
+    "the same START payload returns its immutable REQUESTED/v1 result when replayed"
+  ],
+  "restart_recovery": {
+    "worker_switch": "cloudmold.order-cancellation-saga.enabled",
+    "start_command": "run with --completion-mode start-only while the normal worker is disabled",
+    "paused_expected": "Saga REQUESTED/v1 with Order and Fulfillment fences already durable",
+    "resume_command": "restart with the worker enabled and rerun the same run_id using --completion-mode wait",
+    "resume_expected": "all setup commands and START replay as duplicate; worker resumes to COMPLETED/v9",
+    "fault_api": "none"
+  },
+  "fault_injection": "not exposed by this runner; deterministic backend failure injection belongs only to test scope",
+  "lakehouse_reconcile": "lakehousectl reconcile-canonical-paid-cancellation-saga --tenant <tenant> --run-id <run_id>",
+  "cleanup": "refund, Fulfillment cancellation, reservation release, and Order cancellation are the compensation; retain immutable audit evidence"
+}

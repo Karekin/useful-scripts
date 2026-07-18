@@ -1,0 +1,42 @@
+{
+  "scenario": "canonical-catalog-first-slice-v1",
+  "purpose": "Define a deterministic apparel Style/SPU and two-color by three-size canonical SKU matrix, execute its governed lifecycle to ACTIVE, then prove idempotency and lakehouse lineage.",
+  "environment_policy": "local or disposable test tenant only",
+  "routes": [
+    "POST /admin-api/cloudmold/catalog/sku/define",
+    "POST /admin-api/cloudmold/catalog/lifecycle"
+  ],
+  "dimensions": {
+    "colors": ["BLACK", "WHITE"],
+    "size_group": "WOMEN_TOP",
+    "sizes": ["S", "M", "L"],
+    "base_uom": "PCS",
+    "initial_status": "DRAFT"
+  },
+  "expected": {
+    "styles": 1,
+    "spus": 1,
+    "skus": 6,
+    "primary_barcodes": 6,
+    "definition_events": 6,
+    "mandatory_lifecycle_events": 10,
+    "maximum_lifecycle_events_when_shared_dimensions_are_first_activated": 16,
+    "lakehouse_colors": 2,
+    "lakehouse_sizes": 3,
+    "readiness_status": "CATALOG_ACTIVE"
+  },
+  "invariants": [
+    "tenant comes from the trusted request context, never the payload",
+    "business codes are normalized before persistence",
+    "Brand and Category references remain source-qualified until their canonical domains exist",
+    "Style, SPU, Color, SizeGroup, Size, SKU, Barcode, operation result, and Outbox commit atomically",
+    "same idempotency key and payload returns the immutable first result",
+    "same run_id replay creates no new aggregate, barcode, operation, or event",
+    "definition responses expose the current status and optimistic version of every shared entity",
+    "tenant-level Color, SizeGroup, and Size are activated only when DRAFT and reused when already ACTIVE",
+    "Style becomes ACTIVE, SPU follows DRAFT to SUBMITTED to APPROVED to ACTIVE, and all six SKU become ACTIVE",
+    "ACTIVE Catalog status still does not imply Pricing, Listing, or channel publication",
+    "StarRocks reconciles to one Style, one SPU, six active SKU, two colors, three sizes, and CATALOG_ACTIVE"
+  ],
+  "cleanup": "none; use run-scoped business codes and retain records plus ledgers as audit evidence"
+}

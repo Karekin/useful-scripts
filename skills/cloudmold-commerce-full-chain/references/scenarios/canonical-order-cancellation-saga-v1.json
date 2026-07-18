@@ -1,0 +1,55 @@
+{
+  "scenario": "canonical-order-cancellation-saga-v1",
+  "purpose": "Prove durable, Order-fenced, release-before-cancel recovery for an inventory-reserved Order created from an exact published Listing offer.",
+  "environment_policy": "local, demo, or disposable test tenant only",
+  "runner": "scripts/canonical_order_cancellation_saga_runner.py",
+  "credentials": "environment variables only; never command arguments, scenario files, or ledgers",
+  "flow": [
+    "create and publish one governed Listing offer",
+    "receive 10 fixture units",
+    "place Order from the exact published Listing offer",
+    "reserve 2 units and bind the exact reservation to the Order item",
+    "submit exactly one durable cancellation Saga START command",
+    "let the Saga establish CANCELLATION_PENDING before releasing Inventory",
+    "poll the read-only Saga route until COMPLETED or fail closed on MANUAL_REVIEW/timeout",
+    "prove the Saga-owned RELEASE is an immutable duplicate and Inventory is 10/0/10/v3",
+    "prove the Saga-owned FINALIZE_CANCELLATION is an immutable duplicate and Order is CANCELLED/v4",
+    "prove the terminal Order has no payment, fulfillment, or shipment reference",
+    "replay all 11 client-issued commands and require immutable duplicate results, including START"
+  ],
+  "expected": {
+    "listing": "PUBLISHED/v6",
+    "order_at_request": "INVENTORY_RESERVED/v2",
+    "order_terminal": "CANCELLED/v4",
+    "inventory": "10/0/10/v3",
+    "reservation": "RELEASED",
+    "cancellation_saga": "COMPLETED",
+    "payment_commands": 0,
+    "fulfillment_commands": 0,
+    "client_commands": 11,
+    "all_client_command_replays_duplicate": true,
+    "internal_release_replay_duplicate": true,
+    "internal_finalize_replay_duplicate": true
+  },
+  "invariants": [
+    "PLACE_FROM_LISTING includes the exact listing_id and listing_offer_id",
+    "Saga START contains no fault-injection field",
+    "Order enters CANCELLATION_PENDING before any Inventory release, fencing concurrent payment",
+    "Saga snapshots the exact TRADE_ORDER reservation, Order ID, Order item ID, SKU, quantity, owner, and warehouse dimension",
+    "Saga reaches COMPLETED only after released_reservation_count equals expected_reservation_count",
+    "the Saga-owned Inventory RELEASE uses one stable idempotency key and replays as duplicate",
+    "the Saga-owned FINALIZE_CANCELLATION uses one stable idempotency key and replays as duplicate",
+    "terminal Inventory is exactly on_hand=10, reserved=0, available=10",
+    "terminal Order payment_id, fulfillment_id, and shipment_id are all null",
+    "the executed-domain ledger contains no payment or fulfillment command",
+    "the same START payload returns its immutable initial REQUESTED result as duplicate"
+  ],
+  "failure_policy": {
+    "retryable": "the backend persists RETRY_SCHEDULED with lease and backoff evidence",
+    "terminal": "MANUAL_REVIEW makes the runner fail closed with only the error code",
+    "timeout": "the runner fails without issuing RELEASE, CANCEL, RETRY, or fault-injection commands"
+  },
+  "fault_injection": "not exposed by this runner; deterministic recovery faults belong only to backend test scope",
+  "lakehouse_reconcile": "lakehousectl reconcile-canonical-cancellation-saga --tenant <tenant> --run-id <run_id>",
+  "cleanup": "the release and cancellation are the compensation; retain immutable operation, Saga, history, Outbox, and redacted runner evidence"
+}

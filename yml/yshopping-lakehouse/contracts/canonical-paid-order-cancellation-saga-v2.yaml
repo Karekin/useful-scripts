@@ -46,6 +46,8 @@ invariants:
   - Order transitions PAYMENT_CONFIRMED through CANCELLATION_PENDING to CANCELLED
   - Fulfillment transitions CREATED through CANCELLATION_PENDING to CANCELLED without a shipment
   - Payment transitions CAPTURED to REFUNDED with payable equal to captured equal to refunded
+  - responsibility_party and responsibility_code are governed and remain stable for the whole saga
+  - only PAID_UNSHIPPED plus MERCHANT responsibility can count toward merchant cancellation rate
   - every exact TRADE_ORDER reservation is released once and no SALE_SHIPMENT exists
   - all effects carry the same cancellation Saga identity and their stable step ordinal
   - recorded effect times are nondecreasing in effect_order and causation proves happened-before

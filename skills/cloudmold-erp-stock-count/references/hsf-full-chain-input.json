@@ -1,0 +1,29 @@
+{
+  "authority": {
+    "reference": {
+      "merchantId": "620f333a-9623-45cc-ae57-01dc3eab8df8",
+      "shopId": "363da101-298e-4da2-9e0a-4d5a7d015153"
+    },
+    "operator": {
+      "merchantId": "620f333a-9623-45cc-ae57-01dc3eab8df8",
+      "shopId": "363da101-298e-4da2-9e0a-4d5a7d015153",
+      "principalId": "b63f7129-f912-4207-b689-b5af681d2902",
+      "roleCode": "OWNER"
+    }
+  },
+  "command": {
+    "checkTime": "2026-07-18T14:25:00",
+    "remark": "CloudMold HSF full-chain stock count",
+    "items": [
+      {
+        "warehouseId": 3,
+        "productId": 3,
+        "productPrice": 39.8,
+        "stockCount": 9,
+        "actualCount": 9,
+        "count": 0,
+        "remark": "same-snapshot zero variance"
+      }
+    ]
+  }
+}

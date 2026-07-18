@@ -21,8 +21,8 @@ retention requirements are proven.
 2. Create a least-privilege MySQL CDC account (see below).
 3. Copy `.env.example` to `.env` and replace the local CDC password.
 4. Run `docker compose up -d --build starrocks jobmanager taskmanager`.
-5. Submit the four bounded CDC jobs with `lakehousectl`: ERP, Catalog, Outbox and
-   Legacy Mall alignment.
+5. Submit the bounded CDC jobs with `lakehousectl`: ERP, Catalog, Outbox,
+   Legacy Mall alignment and the masked legacy commerce observation slice.
 
 The local UIs are StarRocks FE on port 8030 and Flink on port 8081.
 
@@ -39,9 +39,12 @@ tests. Operate it through one entry point:
 ./scripts/lakehousectl submit-catalog-cdc
 ./scripts/lakehousectl submit-event-cdc
 ./scripts/lakehousectl submit-legacy-mall-cdc
+./scripts/lakehousectl submit-legacy-commerce-observability-cdc
 ./scripts/lakehousectl apply-models
 ./scripts/lakehousectl health
 ./scripts/lakehousectl test
+./scripts/lakehousectl report-contract-test
+./scripts/lakehousectl report-status
 ./scripts/lakehousectl reconcile --tenant 1 --run-id <erp-scenario-run-id>
 ./scripts/lakehousectl reconcile-canonical-inventory-lot --tenant 1 --run-id <inventory-lot-run-id>
 ./scripts/lakehousectl reconcile-canonical-commerce-v2 --tenant 1 --run-id <commerce-v2-run-id>
@@ -55,9 +58,35 @@ contexts: Merchant/Shop/Identity, Warehouse/Location, production-pilot
 admission and inventory shadow verification. It rejects source
 drift, duplicate authorities, cross-system ID equivalence, incomplete
 tenant-scoped keys, ungoverned PII or money, missing lakehouse layers, missing
-event evidence and drift from the current 206 SQL files/361 model objects. A
+event evidence and drift from the current 208 SQL files/363 model objects. A
 `missing`, `legacy_only` or `partial` status is an explicit open gate, not proof
 of complete alignment.
+
+## AI-native analytics contracts
+
+The `analytics/` directory is the versioned interface between governed
+StarRocks ADS/DWS data and any report renderer. It contains 21 metric contracts,
+four report specifications, privacy-minimized Wren MDL models/cubes and business
+rules. The definitions are tool-agnostic: Wren is the preferred AI context and
+generation layer, while a mature BI renderer can consume the same contracts
+when RLS, scheduled delivery or operational support requires it.
+
+```bash
+./scripts/reportctl validate
+./scripts/reportctl catalog
+./scripts/reportctl prompt supply-chain-health
+./scripts/reportctl metric-sql inventory.available_quantity --tenant 1
+./scripts/reportctl wren-check
+```
+
+`prompt` emits a governed Agent handoff without allowing the Agent to invent
+datasets, measures or dimensions. Every report requires a tenant filter, only
+ADS/DWS sources are admitted, embedded queries are rejected, sensitive columns
+are omitted from Wren, and local evidence cannot be promoted to production.
+The checked-in Wren project uses its MySQL connector only as a StarRocks
+compatibility POC; credentials stay in `~/.wren/profiles.yml` and must never be
+committed or shipped to a browser. `report-status` reads only aggregate source
+counts and freshness from the local StarRocks instance.
 
 `./scripts/lakehousectl source-assets` runs the stricter source inventory used
 for the 100% governed-semantic-alignment program. The locked snapshot contains
@@ -202,7 +231,7 @@ definitions, two governed observations and one retired head; all 15 dedicated
 DQC checks returned zero. This is deliberately local TEST evidence, not a
 Y-Shopping production snapshot or full-denominator reconciliation, so the
 asset remains `partial/unverified` and the global production/final numerator
-remains 0/719.
+remains 0/718.
 The Advertising overview contains seven assets and none has a same-name
 field-level definition anywhere in the six source documents. A locked schema
 request therefore keeps all seven at `BLOCKED_MISSING_SOURCE_SCHEMA` and
@@ -354,6 +383,21 @@ favorites. All capability flags for canonical identity, allocation/refund
 history, activity events, preference scoring and reminder effects remain
 false. This raises structural model-surface similarity from 54.76% to 61.90%;
 it does not close the canonical Coupon/Order/AfterSale design gaps.
+
+## Masked legacy commerce observation slice
+
+The dedicated observation CDC job mirrors only `pay_order`, `pay_refund`,
+`member_user`, `product_browse_history` and `trade_cart`. Per-table projections
+remove payment notification payloads, network identifiers, error/free-text
+fields, member credentials, contact details and profile PII before StarRocks.
+Use `submit-legacy-commerce-observability-cdc` to start the stream and
+`reconcile-legacy-commerce-observability` to require source/ODS total and active
+row equality while reporting unresolved member and payment/order mappings.
+
+These five sources remain local prototype/current-state evidence. Browse and
+cart rows cannot reconstruct sessions or historical funnel events, and legacy
+payment/refund rows cannot become canonical money facts until identity,
+authority and history admission checks pass.
 
 ## Canonical Listing, fulfillment and commerce v2
 

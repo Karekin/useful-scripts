@@ -1,7 +1,8 @@
 CREATE OR REPLACE VIEW yshopping_dim.dim_canonical_fulfillment_current AS
 SELECT
     event_id, schema_version, tenant_id, fulfillment_id, fulfillment_no, order_id, order_no, run_id,
-    aggregate_version, seller_id, warehouse_id, previous_status, current_status,
+    aggregate_version, seller_id, warehouse_id, delivery_promise_version_ref,
+    promised_delivery_at, promise_frozen_at, previous_status, current_status,
     shipment_id, carrier_code, waybill_no, shipped_at, in_transit_at, delivered_at,
     reason, cancellation_saga_id, step_ordinal,
     correlation_id, occurred_at, recorded_at, fulfillment_event_count

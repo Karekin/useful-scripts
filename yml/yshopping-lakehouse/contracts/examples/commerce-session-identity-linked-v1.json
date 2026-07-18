@@ -1,0 +1,28 @@
+{
+  "event_id": "93000000-0000-4000-8000-000000000005",
+  "event_type": "commerce.session.identity_linked",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "commerce_session",
+  "aggregate_id": "93000000-0000-4000-8000-000000000002",
+  "aggregate_version": 3,
+  "event_sequence": 3,
+  "idempotency_key": "commerce-session-identity-link-example-1",
+  "correlation_id": "93000000-0000-4000-8000-000000000003",
+  "causation_id": "93000000-0000-4000-8000-000000000001",
+  "occurred_at": "2026-07-18T01:00:30.000Z",
+  "recorded_at": "2026-07-18T01:00:30.100Z",
+  "source_system": "cloudmold-commerce-behavior",
+  "payload": {
+    "run_id": "93000000-0000-4000-8000-000000000010",
+    "session_id": "93000000-0000-4000-8000-000000000002",
+    "previous_principal_id": null,
+    "current_principal_id": "93000000-0000-4000-8000-000000000006",
+    "link_version": 1,
+    "session_status": "ACTIVE",
+    "linked_at": "2026-07-18T01:00:30.000Z",
+    "source_system": "MEMBER",
+    "source_type": "MEMBER_USER",
+    "source_id": "247"
+  }
+}

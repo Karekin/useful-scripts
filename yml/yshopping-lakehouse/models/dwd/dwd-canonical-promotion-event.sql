@@ -89,7 +89,56 @@ SELECT event_id, tenant_id, aggregate_id AS interaction_id, aggregate_version,
        get_json_string(payload, '$.order_ref') AS order_ref,
        CAST(get_json_string(payload, '$.attribution_amount_minor') AS BIGINT) AS attribution_amount_minor,
        get_json_string(payload, '$.currency_code') AS currency_code,
-       CAST(get_json_string(payload, '$.occurred_at') AS DATETIME) AS occurred_at
+       COALESCE(
+           CAST(get_json_string(payload, '$.occurred_at') AS DATETIME),
+           occurred_at
+       ) AS occurred_at
 FROM yshopping_dwd.dwd_domain_event
 WHERE event_type = 'promotion.advertising_interaction.recorded' AND schema_version = 1
+  AND source_system = 'cloudmold-promotion';
+
+CREATE OR REPLACE VIEW yshopping_dwd.dwd_canonical_advertising_ledger_event AS
+SELECT event_id, tenant_id, aggregate_id AS ledger_entry_id, aggregate_version,
+       occurred_at AS event_occurred_at, recorded_at, correlation_id, causation_id, idempotency_key,
+       get_json_string(payload, '$.ledger_entry_code') AS ledger_entry_code,
+       get_json_string(payload, '$.campaign_id') AS campaign_id,
+       get_json_string(payload, '$.placement_id') AS placement_id,
+       get_json_string(payload, '$.merchant_id') AS merchant_id,
+       get_json_string(payload, '$.entry_type') AS entry_type,
+       get_json_string(payload, '$.charge_model') AS charge_model,
+       get_json_string(payload, '$.revenue_type') AS revenue_type,
+       get_json_string(payload, '$.source_interaction_id') AS source_interaction_id,
+       get_json_string(payload, '$.order_ref') AS order_ref,
+       CAST(get_json_string(payload, '$.amount_minor') AS BIGINT) AS amount_minor,
+       get_json_string(payload, '$.currency_code') AS currency_code,
+       COALESCE(
+           CAST(get_json_string(payload, '$.occurred_at') AS DATETIME),
+           occurred_at
+       ) AS occurred_at
+FROM yshopping_dwd.dwd_domain_event
+WHERE event_type = 'promotion.advertising_ledger.recorded' AND schema_version = 1
+  AND source_system = 'cloudmold-promotion';
+
+CREATE OR REPLACE VIEW yshopping_dwd.dwd_canonical_promotion_experiment_result_event AS
+SELECT event_id, tenant_id, aggregate_id AS experiment_id, aggregate_version,
+       occurred_at AS event_occurred_at, recorded_at, correlation_id, causation_id, idempotency_key,
+       get_json_string(payload, '$.experiment_code') AS experiment_code,
+       get_json_string(payload, '$.campaign_id') AS campaign_id,
+       get_json_string(payload, '$.merchant_id') AS merchant_id,
+       CAST(get_json_string(payload, '$.measured_from') AS DATETIME) AS measured_from,
+       CAST(get_json_string(payload, '$.measured_to') AS DATETIME) AS measured_to,
+       CAST(get_json_string(payload, '$.baseline_contribution_profit_minor') AS BIGINT)
+           AS baseline_contribution_profit_minor,
+       CAST(get_json_string(payload, '$.treatment_contribution_profit_minor') AS BIGINT)
+           AS treatment_contribution_profit_minor,
+       CAST(get_json_string(payload, '$.incremental_contribution_profit_minor') AS BIGINT)
+           AS incremental_contribution_profit_minor,
+       CAST(get_json_string(payload, '$.promotion_cost_minor') AS BIGINT) AS promotion_cost_minor,
+       CAST(get_json_string(payload, '$.eligible_population_count') AS INT) AS eligible_population_count,
+       CAST(get_json_string(payload, '$.treatment_population_count') AS INT) AS treatment_population_count,
+       CAST(get_json_string(payload, '$.control_population_count') AS INT) AS control_population_count,
+       get_json_string(payload, '$.currency_code') AS currency_code,
+       get_json_string(payload, '$.methodology_ref') AS methodology_ref
+FROM yshopping_dwd.dwd_domain_event
+WHERE event_type = 'promotion.experiment_result.upserted' AND schema_version = 1
   AND source_system = 'cloudmold-promotion';

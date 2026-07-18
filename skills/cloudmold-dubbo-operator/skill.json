@@ -1,0 +1,27 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.platform.dubbo-operator.v1",
+  "workflow_id": "workflow.cloudmold.platform.dubbo-capability-plane.v1",
+  "name": "cloudmold-dubbo-operator",
+  "version": "1.0.0",
+  "owner": "cloudmold-platform",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R2",
+  "ui_dependency": "none",
+  "allowed_environments": ["local", "test"],
+  "entrypoints": {
+    "plan": "scripts/dubbo_operator.py plan",
+    "deploy": "scripts/dubbo_operator.py full",
+    "inspect": "scripts/dubbo_operator.py status",
+    "invoke": "scripts/dubbo_operator.py invoke"
+  },
+  "evidence": [
+    "run.json",
+    "commands.jsonl",
+    "provider.log",
+    "verification.json",
+    "executor.log",
+    "capabilities.json",
+    "capability-result.json"
+  ]
+}

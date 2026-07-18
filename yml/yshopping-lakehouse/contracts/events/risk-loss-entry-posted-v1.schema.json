@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/risk-loss-entry-posted-v1.schema.json",
+  "title": "risk.loss_entry.posted payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["loss_entry_id", "order_id", "payment_id", "dispute_id", "decision_id", "entry_type", "signed_amount_minor", "currency_code", "external_ref", "occurred_at"],
+  "properties": {
+    "loss_entry_id": {"type": "string", "format": "uuid"},
+    "order_id": {"type": "string", "format": "uuid"},
+    "payment_id": {"type": ["string", "null"], "format": "uuid"},
+    "dispute_id": {"type": ["string", "null"], "format": "uuid"},
+    "decision_id": {"type": ["string", "null"], "format": "uuid"},
+    "entry_type": {"type": "string", "enum": ["CONFIRMED_RISK_LOSS", "CHARGEBACK_LOSS", "SERVICE_COMPENSATION_LOSS", "REVERSAL"]},
+    "signed_amount_minor": {"type": "integer", "not": {"const": 0}},
+    "currency_code": {"type": "string", "const": "CNY"},
+    "external_ref": {"type": ["string", "null"], "pattern": "^[A-Za-z0-9][A-Za-z0-9:_-]{1,127}$"},
+    "occurred_at": {"type": "string", "format": "date-time"}
+  }
+}

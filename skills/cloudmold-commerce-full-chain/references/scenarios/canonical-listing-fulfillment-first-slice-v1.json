@@ -1,0 +1,50 @@
+{
+  "scenario": "canonical-listing-fulfillment-first-slice-v1",
+  "purpose": "Prove the governed channel-publication and physical-fulfillment slice from an ACTIVE canonical apparel SKU through a published Listing, exact offer-based order, payment, delivery, refund, and return.",
+  "environment_policy": "local, demo, or disposable test tenant only",
+  "runner": "scripts/canonical_listing_fulfillment_runner.py",
+  "credentials": "environment variables only; never command arguments, scenario files, or ledgers",
+  "inputs": {
+    "catalog": "ACTIVE same-tenant Catalog ledger with canonical SPU and SKU identities",
+    "channel": "YSHOPPING_INTERNAL",
+    "quantity": "2.000000 PCS",
+    "unit_price_minor": 19900,
+    "currency": "CNY",
+    "payment_provider": "INTERNAL_TEST",
+    "carrier": "INTERNAL_TEST"
+  },
+  "flow": [
+    "create Listing draft for one canonical SPU and one explicit SKU offer",
+    "submit, pass completion, approve business, approve risk, and publish",
+    "receive 10 fixture units and place Order from the exact published Listing offer",
+    "reserve inventory, bind reservation, capture exact payment, and confirm payment",
+    "create one complete fulfillment suborder from the exact Order item and reservation",
+    "ship inventory, create shipment, bind the validated fulfillment and shipment to Order",
+    "record in-transit and delivered tracking states before completing Order",
+    "fully refund, return inventory separately, and close Order as RETURNED",
+    "immediately replay all 23 commands and require immutable duplicate results"
+  ],
+  "expected": {
+    "listing": "PUBLISHED/v6",
+    "listing_approvals": ["COMPLETION", "BUSINESS", "RISK"],
+    "order": "RETURNED/v7",
+    "payment": "REFUNDED/v2",
+    "fulfillment": "DELIVERED/v4",
+    "inventory": "10/0/10/v4",
+    "payable_minor": 39800,
+    "business_commands": 23,
+    "all_replay_duplicate": true
+  },
+  "invariants": [
+    "Order uses PLACE_FROM_LISTING and stores listing_id, listing_offer_id, revision, version, channel, and shop snapshots",
+    "Listing publication requires all three governed approvals",
+    "Fulfillment contains the complete first-slice Order and exact reservation references",
+    "Listing-backed Order uses SHIP_WITH_FULFILLMENT and is rejected unless the referenced Fulfillment and Shipment are already shipped",
+    "Listing-backed Order uses COMPLETE_AFTER_DELIVERY and is rejected unless Fulfillment is delivered",
+    "money is CNY integer minor units and Order, capture, and refund totals are equal",
+    "refund does not restore physical inventory; RETURN is a separate command",
+    "all commands are replayed immediately and no replay may change the immutable first result",
+    "the runner emits aggregate IDs and expected terminal states as a lakehouse integration hook without assuming an external command name"
+  ],
+  "cleanup": "none; retain run-scoped balances, histories, transactions, tracking events, Outbox, and external ledger evidence"
+}

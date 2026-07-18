@@ -35,6 +35,9 @@
     "step_ordinal": 5,
     "attempt": 1,
     "reason": "buyer cancelled after payment before shipment",
+    "responsibility_party": "MERCHANT",
+    "responsibility_code": "MERCHANT_STOCKOUT",
+    "counts_toward_paid_cancellation_rate": true,
     "expected_reservation_count": 1,
     "released_reservation_count": 1,
     "reservations": [{

@@ -1,0 +1,30 @@
+{
+  "event_id": "93000000-0000-4000-8000-000000000001",
+  "event_type": "commerce.session.status_changed",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "commerce_session",
+  "aggregate_id": "93000000-0000-4000-8000-000000000002",
+  "aggregate_version": 2,
+  "event_sequence": 2,
+  "idempotency_key": "commerce-session-status-example-1",
+  "correlation_id": "93000000-0000-4000-8000-000000000003",
+  "causation_id": "93000000-0000-4000-8000-000000000004",
+  "occurred_at": "2026-07-18T01:00:05.000Z",
+  "recorded_at": "2026-07-18T01:00:05.100Z",
+  "source_system": "cloudmold-commerce-behavior",
+  "payload": {
+    "run_id": "93000000-0000-4000-8000-000000000010",
+    "session_id": "93000000-0000-4000-8000-000000000002",
+    "principal_id": null,
+    "previous_status": null,
+    "current_status": "ACTIVE",
+    "channel_code": "ORGANIC_SEARCH",
+    "entrypoint_code": "SEARCH",
+    "started_at": "2026-07-18T01:00:00.000Z",
+    "last_activity_at": "2026-07-18T01:00:00.000Z",
+    "source_system": "YSHOPPING",
+    "source_type": "WEB_SESSION",
+    "source_id": "yshop-web-20260718-0001"
+  }
+}

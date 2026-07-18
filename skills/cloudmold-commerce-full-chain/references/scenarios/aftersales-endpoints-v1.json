@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "contract": "cloudmold-aftersales-v1",
+  "endpoints": {
+    "listing_command": {
+      "method": "post",
+      "path": "/admin-api/cloudmold/listing/command"
+    },
+    "inventory_command": {
+      "method": "post",
+      "path": "/admin-api/cloudmold/inventory/command"
+    },
+    "order_command": {
+      "method": "post",
+      "path": "/admin-api/cloudmold/order/command"
+    },
+    "payment_command": {
+      "method": "post",
+      "path": "/admin-api/cloudmold/payment/command"
+    },
+    "promotion_command": {
+      "method": "post",
+      "path": "/admin-api/cloudmold/promotion/command"
+    },
+    "fulfillment_command": {
+      "method": "post",
+      "path": "/admin-api/cloudmold/fulfillment/command"
+    },
+    "aftersales_command": {
+      "method": "post",
+      "path": "/admin-api/cloudmold/aftersale/command"
+    },
+    "aftersales_query": {
+      "method": "get",
+      "path": "/admin-api/cloudmold/aftersale/get",
+      "id_parameter": "afterSaleId"
+    },
+    "aftersales_query_by_order_item": {
+      "method": "get",
+      "path": "/admin-api/cloudmold/aftersale/get-by-order-item",
+      "order_id_parameter": "orderId",
+      "order_item_id_parameter": "orderItemId"
+    }
+  },
+  "operations": {
+    "request": "REQUEST",
+    "approve": "APPROVE",
+    "hand_over_return": "HAND_OVER_RETURN",
+    "mark_return_in_transit": "MARK_RETURN_IN_TRANSIT",
+    "receive_return": "RECEIVE_RETURN",
+    "accept_inspection": "ACCEPT_INSPECTION",
+    "retry_resolution": "RETRY_RESOLUTION"
+  },
+  "terminal": {
+    "listing": "PUBLISHED/v6",
+    "forward_fulfillment": "DELIVERED/v4",
+    "case_status": "COMPLETED",
+    "case_version": 4,
+    "return_fulfillment_status": "INSPECTION_ACCEPTED",
+    "return_fulfillment_version": 5,
+    "resolution_saga_status": "COMPLETED",
+    "partial_resolution_saga_version": 8,
+    "partial_resolution_saga_version_semantics": "zero-benefit partial baseline; add two versions per durable retry",
+    "partial_governed_benefit_resolution_saga_version": 10,
+    "resolution_saga_version": 12,
+    "resolution_saga_version_semantics": "zero-benefit full-return baseline; add two versions per durable retry",
+    "governed_benefit_resolution_saga_version": 14,
+    "governed_benefit_resolution_saga_version_semantics": "benefit full-return baseline; add two versions per durable retry",
+    "refund_status": "SUCCEEDED",
+    "partial_order": "COMPLETED without commercial version transition",
+    "partial_payment": "PARTIALLY_REFUNDED",
+    "order": "RETURNED/v7 only after cumulative full return",
+    "payment": "REFUNDED after cumulative captured money is exhausted",
+    "inventory": "10/0/10/v4 for one return case",
+    "partial_then_full_payment": "REFUNDED/v3 after two cumulative refund deltas",
+    "partial_then_full_inventory": "10/0/10/v5 after two exact return deltas",
+    "governed_benefit_amount_invariant": "grossAmount = benefitAmount + netRefundAmount",
+    "governed_benefit_reversal_status": "RECORDED",
+    "entitlement_backed_promotion_terminal": "RETURNED/v5"
+  }
+}

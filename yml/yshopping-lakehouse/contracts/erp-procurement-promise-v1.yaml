@@ -1,0 +1,51 @@
+name: erp-procurement-promise
+version: 1
+owner: CloudMold
+scope: procurement-promise-otif
+
+identity:
+  technical_key: [tenant_id, promise_id]
+  business_key: [tenant_id, purchase_order_line_id]
+  source_system: cloudmold-integration-yudao
+
+required_fields:
+  tenant_id: BIGINT NOT NULL
+  promise_id: VARCHAR(36) NOT NULL
+  purchase_order_id: BIGINT NOT NULL
+  purchase_order_line_id: BIGINT NOT NULL
+  promised_receipt_at: DATETIME NOT NULL
+  promise_timezone: VARCHAR(64) NOT NULL
+  grace_minutes: INT NOT NULL
+  pause_minutes: INT NOT NULL
+  promise_frozen_at: DATETIME NOT NULL
+  status: ENUM(ACTIVE,CANCELLED) NOT NULL
+  version: BIGINT NOT NULL
+
+measures:
+  ordered_quantity: DECIMAL(24,6)
+  total_received_quantity: DECIMAL(24,6)
+  on_time_received_quantity: DECIMAL(24,6)
+
+models:
+  facts:
+    - dwd_canonical_procurement_purchase_promise_event
+    - dwd_purchase_order_line
+    - dwd_purchase_receipt_line
+  dimensions:
+    - dim_canonical_procurement_purchase_promise_current
+  summaries:
+    - dws_canonical_procurement_otif_current
+  applications:
+    - ads_canonical_procurement_otif_metrics
+
+invariants:
+  - one active governed promise snapshot per tenant + purchase_order_line_id
+  - promised_receipt_at, grace_minutes and pause_minutes are explicit and never inferred from remarks at query time
+  - on_time_received_quantity only counts approved receipt lines whose occurred_at is not later than promised_receipt_at plus grace_minutes plus pause_minutes
+  - OTIF denominator counts only ACTIVE promises whose effective deadline is already observable by the current evidence freshness watermark
+  - order-level OTIF is true only when every due line on the purchase order is on_time_in_full
+
+known_limits:
+  - supplier, warehouse and category still originate from ERP current-state projections rather than a canonical procurement red zone
+  - warehouse-level OTIF splits remain dependent on receipt-line warehouse mapping and can be null when no approved receipt exists
+  - promised_receipt_at is stored in UTC with a separate IANA timezone label; rendering by local business day is a downstream concern

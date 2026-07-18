@@ -1,0 +1,41 @@
+{
+  "scenario": "yshopping-aftersales-vertical-v1",
+  "version": 1,
+  "child_runs": {
+    "catalog": "<parent>-cat",
+    "projection": "<parent>-proj",
+    "master": "<parent>-master",
+    "aftersales": "<parent>-aftersale"
+  },
+  "flow": [
+    "ensure the CloudMold event Outbox CDC job is RUNNING with a completed checkpoint before business writes",
+    "run preflight DQC against populated CDC facts rather than empty lakehouse tables",
+    "Catalog define and activate six apparel SKU",
+    "create or replay 18 Mall/ERP/WMS identity projections",
+    "link a real System source to a canonical Principal and activate its Merchant, Shop, and Warehouse network",
+    "pass the exact Principal, Merchant, Shop, and Warehouse IDs from the SUCCEEDED master ledger into commerce",
+    "defer the master authorization Listing so commerce creates exactly one business Listing",
+    "execute canonical Listing/Fulfillment steps 1-19 with no fabricated master-data defaults",
+    "execute governed AfterSale and reverse fulfillment",
+    "poll backend-owned resolution Saga to completion",
+    "replay all 25 client write commands as immutable duplicates",
+    "run read-only Catalog and after-sales lakehouse reconciliation"
+  ],
+  "required_lakehouse_commands": [
+    "config-check",
+    "contract-test",
+    "submit-event-cdc",
+    "apply-models",
+    "test",
+    "reconcile-canonical-catalog",
+    "reconcile-canonical-merchant",
+    "reconcile-canonical-warehouse-network",
+    "reconcile-canonical-aftersales"
+  ],
+  "forbidden_shortcuts": [
+    "internal-company or internal-shop fallback identities",
+    "creating master data without passing its ledger to the commerce child",
+    "using a run_id as a Merchant, Shop, Principal, or Warehouse identity"
+  ],
+  "cleanup": "No destructive cleanup after refund. Preserve run-scoped OLTP, Outbox, CDC, lakehouse and external ledger evidence."
+}

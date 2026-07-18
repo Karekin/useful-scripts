@@ -1,0 +1,39 @@
+{
+  "scenario": "yshopping-catalog-inventory-vertical-v1",
+  "purpose": "Run one AI-operated Y-Shopping vertical from canonical apparel master data through Inventory and governed lakehouse reconciliation.",
+  "environment_policy": "local, demo, or disposable test tenant only",
+  "runner": "scripts/yshopping_vertical_runner.py",
+  "flow": [
+    "define one Style/SPU and six SKU",
+    "reuse or activate tenant-level color and size dimensions",
+    "submit, approve, and activate the SPU plus six SKU",
+    "plan ownership-safe PENDING identity projections for all six SKU to Mall, ERP, and WMS",
+    "select one ACTIVE canonical SKU from the Catalog ledger",
+    "receive 10, reserve 3, ship 3, return 1, reserve 2, release 2",
+    "wait for Outbox CDC",
+    "reconcile Catalog DWD/DIM/DWS/ADS",
+    "reconcile Inventory DWD/DWS/ADS",
+    "run every lakehouse DQC"
+  ],
+  "expected": {
+    "catalog_readiness": "CATALOG_ACTIVE",
+    "catalog_skus": 6,
+    "legacy_identity_projections": 18,
+    "projection_state": "PENDING",
+    "inventory_on_hand": "8.000000",
+    "inventory_reserved": "0.000000",
+    "inventory_available": "8.000000",
+    "inventory_version": 6,
+    "lakehouse_reconciled": true
+  },
+  "invariants": [
+    "Inventory accepts only an ACTIVE same-tenant canonical SKU",
+    "projection payloads exclude price, stock, listing, delivery, finance, and analytical ownership",
+    "projection replay reports changed_count zero and creates no new snapshots",
+    "same parent run_id replay creates no new Catalog or Inventory operations, aggregates, ledger entries, or Outbox events",
+    "all business writes use Admin REST and never bypass the service layer with direct SQL",
+    "credentials remain environment-only and run ledgers are redacted",
+    "the parent ledger links child Catalog, compatibility projection, Inventory, and lakehouse evidence"
+  ],
+  "cleanup": "none; retain run-scoped immutable evidence"
+}

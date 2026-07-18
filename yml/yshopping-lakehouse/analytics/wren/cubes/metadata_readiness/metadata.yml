@@ -1,0 +1,9 @@
+name: metadata_readiness_cube
+base_object: metadata_readiness
+measures:
+  - {name: dataset_count, expression: "SUM(metadata_readiness.dataset_count)", type: BIGINT}
+  - {name: failed_dqc_result_count, expression: "SUM(metadata_readiness.failed_dqc_result_count)", type: BIGINT}
+  - {name: invalid_reference_count, expression: "SUM(invalid_dqc_reference_count + unresolved_lineage_endpoint_count + invalid_task_run_count)", type: BIGINT}
+dimensions:
+  - {name: tenant_id, expression: tenant_id, type: BIGINT}
+  - {name: readiness_status, expression: readiness_status, type: VARCHAR}

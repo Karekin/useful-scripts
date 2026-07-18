@@ -1,0 +1,50 @@
+{
+  "scenario": "canonical-order-payment-first-slice-v1",
+  "purpose": "Drive one canonical commerce order through inventory reservation, test capture, shipment, completion, full refund, and physical return.",
+  "environment_policy": "local, demo, or disposable test tenant only",
+  "runner": "scripts/canonical_order_payment_runner.py",
+  "inputs": {
+    "canonical_sku": "ACTIVE in the same-tenant canonical Catalog",
+    "quantity": "2.000000 PCS",
+    "unit_price_minor": 19900,
+    "currency": "CNY",
+    "payment_provider": "INTERNAL_TEST",
+    "payment_mode": "test only"
+  },
+  "flow": [
+    "receive 10 run-scoped fixture units",
+    "place one multi-line-capable canonical order with one selected SKU line",
+    "reserve 2 and bind the reservation to the canonical order item",
+    "capture the exact payable amount through INTERNAL_TEST",
+    "confirm payment, ship inventory, ship and complete the order",
+    "fully refund the captured payment",
+    "confirm refund, return 2 inventory units, and close the order as RETURNED",
+    "replay every command and require immutable duplicate results"
+  ],
+  "expected": {
+    "order_status": "RETURNED",
+    "order_version": 7,
+    "order_events": 7,
+    "payment_status": "REFUNDED",
+    "payment_version": 2,
+    "payment_events": 2,
+    "payable_minor": 39800,
+    "captured_minor": 39800,
+    "refunded_minor": 39800,
+    "inventory_on_hand": "10.000000",
+    "inventory_reserved": "0.000000",
+    "inventory_available": "10.000000",
+    "inventory_version": 4,
+    "commerce_inventory_events": 3
+  },
+  "invariants": [
+    "all commands use Admin REST and share one run_id",
+    "the order references an ACTIVE canonical SKU and every order item has one reservation",
+    "Money uses CNY integer minor units and order, capture, and refund amounts match",
+    "refund uses the same provider as capture and is full-only in the first slice",
+    "refund success does not restore inventory; a separate RETURN command is required",
+    "every state transition emits one versioned Outbox event",
+    "replay creates no new order, payment, inventory, transaction, history, or event rows"
+  ],
+  "cleanup": "none; retain the run-scoped balance, state history, transactions, and Outbox as immutable evidence"
+}

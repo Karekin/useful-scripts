@@ -1,0 +1,10 @@
+{
+  "authority": {
+    "reference": {"merchantId": "620f333a-9623-45cc-ae57-01dc3eab8df8", "shopId": "363da101-298e-4da2-9e0a-4d5a7d015153"},
+    "operator": {"merchantId": "620f333a-9623-45cc-ae57-01dc3eab8df8", "shopId": "363da101-298e-4da2-9e0a-4d5a7d015153", "principalId": "b63f7129-f912-4207-b689-b5af681d2902", "roleCode": "OWNER"}
+  },
+  "unitMeasure": {"code": "CMEA0718A", "name": "件", "primaryFlag": true, "primaryId": null, "changeRate": null, "status": 0, "remark": "HSF MES master data"},
+  "itemType": {"parentId": 0, "code": "CMPROD0718A", "name": "CloudMold HSF 产成品", "itemOrProduct": "PRODUCT", "sort": 1, "status": 0, "remark": "HSF MES product projection"},
+  "item": {"code": "CMMESITEM0718A", "name": "CloudMold 全链路商品", "specification": "同一商品 MES 投影", "safeStockFlag": false, "minStock": 0, "maxStock": 0, "highValue": false, "batchFlag": false, "remark": "SPU fad37740 / SKU 0f28a3ac MES projection"},
+  "workOrder": {"code": "CMWO0718A", "name": "CloudMold 全链路商品生产工单", "type": 1, "orderSourceType": 1, "orderSourceCode": "XSCK20260718000001", "quantity": 2, "clientId": null, "vendorId": null, "batchCode": "CMBATCH0718A", "requestDate": "2026-07-20T18:00:00", "parentId": 0, "remark": "HSF MES create-confirm-finish"}
+}

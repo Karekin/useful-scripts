@@ -1,0 +1,19 @@
+{
+  "scenario": "canonical-inventory-first-slice-v1",
+  "description": "Canonical receive, reserve, ship, return, reserve, and release with immutable ledger and Outbox.",
+  "input_contract": {
+    "canonical_sku": "must be ACTIVE in the same-tenant canonical Catalog",
+    "preferred_evidence": "--catalog-ledger from canonical-catalog-first-slice-v1",
+    "base_uom": "PCS",
+    "legacy_default_sku": "forbidden"
+  },
+  "steps": [
+    {"operation": "RECEIVE", "quantity": "10.000000", "expected": ["10.000000", "0.000000", "10.000000", 1]},
+    {"operation": "RESERVE", "quantity": "3.000000", "expected": ["10.000000", "3.000000", "7.000000", 2]},
+    {"operation": "SHIP", "quantity": "3.000000", "expected": ["7.000000", "0.000000", "7.000000", 3]},
+    {"operation": "RETURN", "quantity": "1.000000", "expected": ["8.000000", "0.000000", "8.000000", 4]},
+    {"operation": "RESERVE", "quantity": "2.000000", "expected": ["8.000000", "2.000000", "6.000000", 5]},
+    {"operation": "RELEASE", "quantity": "2.000000", "expected": ["8.000000", "0.000000", "8.000000", 6]}
+  ],
+  "cleanup": "No physical cleanup. Use a run-scoped balance; ledger, Outbox, and terminal reservations are immutable evidence."
+}

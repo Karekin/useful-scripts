@@ -69,12 +69,15 @@ WHERE payable_amount_minor < 0 OR captured_amount_minor < 0 OR refunded_amount_m
 UNION ALL
 SELECT 'canonical_payment_order_match', COUNT(*)
 FROM yshopping_dim.dim_canonical_payment_current payment
-LEFT JOIN yshopping_dim.dim_canonical_order_current order_current
-  ON order_current.tenant_id = payment.tenant_id AND order_current.order_id = payment.order_id
-WHERE order_current.order_id IS NULL
-   OR order_current.payable_amount_minor <> payment.payable_amount_minor
-   OR order_current.currency_code <> payment.currency_code
-   OR order_current.run_id <> payment.run_id
+LEFT JOIN yshopping_dwd.dwd_canonical_order_status_event order_payment
+  ON order_payment.tenant_id = payment.tenant_id
+ AND order_payment.order_id = payment.order_id
+ AND order_payment.payment_id = payment.payment_id
+ AND order_payment.current_status = 'PAYMENT_CONFIRMED'
+WHERE order_payment.order_id IS NULL
+   OR order_payment.payable_amount_minor <> payment.payable_amount_minor
+   OR order_payment.currency_code <> payment.currency_code
+   OR order_payment.run_id <> payment.run_id
 UNION ALL
 SELECT 'canonical_payment_test_provider_boundary', COUNT(*)
 FROM yshopping_dwd.dwd_canonical_payment_status_event

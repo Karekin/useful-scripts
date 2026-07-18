@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "report_id": "supply-chain-health",
+  "version": "1.0",
+  "title": "采购与库存健康看板",
+  "owner": "CloudMold Supply Chain",
+  "lifecycle": "pilot",
+  "publication_scope": "local_test",
+  "datasets": ["yshopping_ads.ads_canonical_inventory_health", "yshopping_ads.ads_purchase_fulfillment"],
+  "filters": [
+    {"field":"tenant_id","type":"tenant","required":true},
+    {"field":"warehouse_id","type":"identifier","required":false},
+    {"field":"supplier_id","type":"identifier","required":false},
+    {"field":"health_status","type":"status","required":false}
+  ],
+  "metrics": ["inventory.balance_count", "inventory.available_quantity", "inventory.low_stock_balance_count", "inventory.out_of_stock_balance_count", "inventory.canonical_v3_rate", "procurement.purchase_order_count", "procurement.receipt_fulfillment_rate", "procurement.open_order_count"],
+  "sections": [
+    {"id":"overview","title":"供应链概览","charts":[
+      {"id":"inventory-kpis","type":"kpi","title":"库存健康","metrics":["inventory.available_quantity","inventory.low_stock_balance_count","inventory.out_of_stock_balance_count","inventory.canonical_v3_rate"],"group_by":[]},
+      {"id":"procurement-kpis","type":"kpi","title":"采购履约","metrics":["procurement.purchase_order_count","procurement.receipt_fulfillment_rate","procurement.open_order_count"],"group_by":[]}
+    ]},
+    {"id":"breakdown","title":"结构与异常","charts":[
+      {"id":"warehouse-health","type":"stacked_bar","title":"仓库库存健康分布","metrics":["inventory.balance_count"],"group_by":["warehouse_id","health_status"]},
+      {"id":"supplier-fulfillment","type":"bar","title":"供应商收货履约","metrics":["procurement.receipt_fulfillment_rate","procurement.open_order_count"],"group_by":["supplier_id"],"limit":30}
+    ]}
+  ],
+  "guardrails": ["库存只能使用 canonical inventory balance，不从 WMS 作业表重算账面库存。", "location、lot 或 owner 未解析时必须保留 LEGACY_UNRESOLVED，不允许填默认值。", "采购履约率分母为 ordered_quantity，分母为零时失败关闭。"],
+  "evidence": {"status":"partial","kind":"local_runtime","notes":"本地采购与库存已有非空样本；真实 WMS/MES 物理作业、生产仓位与批次证据仍缺失。"}
+}

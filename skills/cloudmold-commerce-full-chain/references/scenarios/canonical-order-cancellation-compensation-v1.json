@@ -1,0 +1,37 @@
+{
+  "scenario": "canonical-order-cancellation-compensation-v1",
+  "purpose": "Prove release-before-cancel compensation for an inventory-reserved Order created from an exact published Listing offer.",
+  "environment_policy": "local, demo, or disposable test tenant only",
+  "runner": "scripts/canonical_order_cancellation_runner.py",
+  "credentials": "environment variables only; never command arguments, scenario files, or ledgers",
+  "flow": [
+    "create and publish one governed Listing offer",
+    "receive 10 fixture units",
+    "place Order from the exact published Listing offer",
+    "reserve 2 units and bind the exact reservation to the Order item",
+    "release the reservation with the same TRADE_ORDER business identity",
+    "cancel only after Order validates that every reservation is RELEASED",
+    "prove the terminal Order has no payment, fulfillment, or shipment reference",
+    "immediately replay all 12 commands and require immutable duplicate results"
+  ],
+  "expected": {
+    "listing": "PUBLISHED/v6",
+    "order": "CANCELLED/v3",
+    "inventory": "10/0/10/v3",
+    "reservation": "RELEASED",
+    "payment_commands": 0,
+    "fulfillment_commands": 0,
+    "business_commands": 12,
+    "all_replay_duplicate": true
+  },
+  "invariants": [
+    "PLACE_FROM_LISTING includes explicit listing_id and listing_offer_id",
+    "RELEASE uses the same reservation, business type, Order ID, and Order item ID as RESERVE",
+    "CANCEL executes only after canonical Inventory proves the reservation is RELEASED",
+    "terminal Inventory is exactly on_hand=10, reserved=0, available=10",
+    "the executed-domain ledger contains no payment or fulfillment command",
+    "terminal Order payment_id, fulfillment_id, and shipment_id are all null",
+    "the runner emits run-scoped absence expectations as a lakehouse integration hook without assuming an external command name"
+  ],
+  "cleanup": "the release and cancellation are the compensation; retain immutable ledger, histories, and Outbox evidence"
+}

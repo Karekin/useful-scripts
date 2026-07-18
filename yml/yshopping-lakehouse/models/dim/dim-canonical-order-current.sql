@@ -1,12 +1,16 @@
 CREATE OR REPLACE VIEW yshopping_dim.dim_canonical_order_current AS
-SELECT
-    event_id, schema_version, tenant_id, order_id, order_no, run_id, buyer_id, aggregate_version,
-    previous_status, current_status, product_amount_minor, shipping_amount_minor,
-    discount_amount_minor, payable_amount_minor, currency_code, payment_id,
-    cancellation_saga_id, pre_cancellation_status, cancellation_mode, step_ordinal,
-    fulfillment_id, shipment_id, refund_id,
-    reason, correlation_id, occurred_at, recorded_at, order_event_count
-FROM (
+WITH history AS (
+    SELECT
+        tenant_id,
+        order_id,
+        MAX(cancellation_saga_id) AS cancellation_saga_id,
+        MAX(pre_cancellation_status) AS pre_cancellation_status,
+        MAX(cancellation_mode) AS cancellation_mode,
+        MAX(responsibility_party) AS responsibility_party,
+        MAX(responsibility_code) AS responsibility_code
+    FROM yshopping_dwd.dwd_canonical_order_status_event
+    GROUP BY tenant_id, order_id
+), latest AS (
     SELECT event.*,
            COUNT(*) OVER (PARTITION BY tenant_id, order_id) AS order_event_count,
            ROW_NUMBER() OVER (
@@ -14,5 +18,22 @@ FROM (
                ORDER BY aggregate_version DESC, recorded_at DESC, event_id DESC
            ) AS row_num
     FROM yshopping_dwd.dwd_canonical_order_status_event event
-) ranked
-WHERE row_num = 1;
+)
+SELECT
+    latest.event_id, latest.schema_version, latest.tenant_id, latest.order_id, latest.order_no,
+    latest.run_id, latest.buyer_id, latest.aggregate_version,
+    latest.previous_status, latest.current_status, latest.product_amount_minor,
+    latest.shipping_amount_minor, latest.discount_amount_minor, latest.payable_amount_minor,
+    latest.currency_code, latest.payment_id,
+    COALESCE(latest.cancellation_saga_id, history.cancellation_saga_id) AS cancellation_saga_id,
+    COALESCE(latest.pre_cancellation_status, history.pre_cancellation_status) AS pre_cancellation_status,
+    COALESCE(latest.cancellation_mode, history.cancellation_mode) AS cancellation_mode,
+    COALESCE(latest.responsibility_party, history.responsibility_party) AS responsibility_party,
+    COALESCE(latest.responsibility_code, history.responsibility_code) AS responsibility_code,
+    latest.step_ordinal, latest.fulfillment_id, latest.shipment_id, latest.refund_id,
+    latest.reason, latest.correlation_id, latest.occurred_at, latest.recorded_at,
+    latest.order_event_count
+FROM latest
+JOIN history
+  ON history.tenant_id = latest.tenant_id AND history.order_id = latest.order_id
+WHERE latest.row_num = 1;

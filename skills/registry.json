@@ -1,0 +1,82 @@
+{
+  "schema_version": "cloudmold.skill-registry/v1",
+  "skills": [
+    {
+      "skill_id": "skill.cloudmold.platform.dubbo-operator.v1",
+      "path": "cloudmold-dubbo-operator",
+      "manifest": "cloudmold-dubbo-operator/skill.json",
+      "status": "partial",
+      "owner": "cloudmold-platform"
+    },
+    {
+      "skill_id": "skill.cloudmold.quality.full-chain-qa.v1",
+      "path": "cloudmold-full-chain-qa",
+      "manifest": "cloudmold-full-chain-qa/skill.json",
+      "status": "partial",
+      "owner": "cloudmold-platform"
+    },
+    {
+      "skill_id": "skill.cloudmold.erp.procurement.v1",
+      "path": "cloudmold-erp-procurement",
+      "manifest": "cloudmold-erp-procurement/skill.json",
+      "status": "partial",
+      "owner": "cloudmold-erp"
+    },
+    {
+      "skill_id": "skill.cloudmold.erp.sales.v1",
+      "path": "cloudmold-erp-sales",
+      "manifest": "cloudmold-erp-sales/skill.json",
+      "status": "partial",
+      "owner": "cloudmold-erp"
+    },
+    {
+      "skill_id": "skill.cloudmold.erp.stock-transfer.v1",
+      "path": "cloudmold-erp-stock-transfer",
+      "manifest": "cloudmold-erp-stock-transfer/skill.json",
+      "status": "partial",
+      "owner": "cloudmold-erp"
+    },
+    {
+      "skill_id": "skill.cloudmold.erp.stock-count.v1",
+      "path": "cloudmold-erp-stock-count",
+      "manifest": "cloudmold-erp-stock-count/skill.json",
+      "status": "partial",
+      "owner": "cloudmold-erp"
+    },
+    {
+      "skill_id": "skill.cloudmold.erp.finance.v1",
+      "path": "cloudmold-erp-finance",
+      "manifest": "cloudmold-erp-finance/skill.json",
+      "status": "partial",
+      "owner": "cloudmold-finance"
+    },
+    {
+      "skill_id": "skill.cloudmold.wms.operations.v1",
+      "path": "cloudmold-wms-operations",
+      "manifest": "cloudmold-wms-operations/skill.json",
+      "status": "partial",
+      "owner": "cloudmold-wms"
+    },
+    {
+      "skill_id": "skill.cloudmold.mes.production.v1",
+      "path": "cloudmold-mes-production",
+      "manifest": "cloudmold-mes-production/skill.json",
+      "status": "partial",
+      "owner": "cloudmold-mes"
+    },
+    {
+      "skill_id": "skill.cloudmold.commerce.full-chain-hsf.v1",
+      "path": "cloudmold-commerce-full-chain",
+      "manifest": "cloudmold-commerce-full-chain/skill.json",
+      "status": "active",
+      "owner": "cloudmold-commerce"
+    },
+    {
+      "skill_id": "skill.cloudmold.dreamplant.knowledge.v1",
+      "path": "cloudmold-dreamplant-knowledge",
+      "manifest": "cloudmold-dreamplant-knowledge/skill.json",
+      "status": "active",
+      "owner": "cloudmold-dreamplant"
+    }
+  ]
+}

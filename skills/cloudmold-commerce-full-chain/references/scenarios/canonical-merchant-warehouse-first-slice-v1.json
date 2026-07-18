@@ -1,0 +1,43 @@
+{
+  "scenario_id": "canonical-merchant-warehouse-first-slice-v1",
+  "version": 1,
+  "purpose": "Prove one real System account maps to a canonical Principal, owns an approved and activated Merchant/Shop, publishes an authorized Listing, and operates one canonical Warehouse/Zone/Location mapped from a real ERP warehouse.",
+  "environment_scope": ["local", "demo", "test"],
+  "source_inputs": {
+    "system_admin_source_id": "required existing active SYSTEM/SYSTEM_ADMIN_USER source backed by system_users.id in the selected tenant",
+    "erp_warehouse_source_id": "required existing non-deleted erp_warehouse.id in the selected tenant"
+  },
+  "source_identity_policy": "Resolve and reuse an existing ACTIVE System source link; create it only when absent. Reuse is read-only and reduces public writes from 21 to 20.",
+  "warehouse_network_policy": "Resolve and reuse an existing ready Warehouse/Zone/Location network for the exact ERP source; create and map the network only when absent. Reuse removes eight public writes.",
+  "listing_policy": "proof publishes one authorization Listing for standalone master-data verification; defer creates no Listing and delegates the single business Listing to the downstream commerce Skill.",
+  "writes": [
+    "identity.source.linked",
+    "merchant onboarding DRAFT -> SUBMITTED -> UNDER_REVIEW -> APPROVED",
+    "merchant PENDING_ACTIVATION -> ACTIVE",
+    "shop DRAFT -> ACTIVE",
+    "listing DRAFT -> SUBMITTED -> COMPLETION_PASSED -> BUSINESS_APPROVED -> RISK_APPROVED -> PUBLISHED",
+    "warehouse/zone/location DRAFT -> ACTIVE",
+    "ERP warehouse source mapping",
+    "warehouse OWNER principal assignment"
+  ],
+  "invariants": [
+    "principal_id is not the System source account ID",
+    "Merchant, Shop, LegalEntity, and Principal IDs are pairwise distinct",
+    "the active Shop belongs to the active Merchant and has exactly one active OWNER assignment",
+    "Listing creation and publication use the exact active Merchant, Shop, channel, Principal, and OWNER assignment",
+    "the canonical warehouse ID is not the ERP warehouse source ID",
+    "the active Location belongs to the active Zone and Warehouse",
+    "the ERP source mapping resolves to the exact canonical warehouse",
+    "all public write commands replay as immutable duplicates: proof mode uses 12/13/20/21 writes and deferred mode uses 6/7/14/15 according to safe source-link and Warehouse-network reuse",
+    "merchant ADS ends MERCHANT_SHOP_READY",
+    "warehouse ADS ends WAREHOUSE_NETWORK_READY"
+  ],
+  "forbidden_shortcuts": [
+    "default or fabricated Principal, Merchant, Shop, Warehouse, Zone, or Location",
+    "copying system_users.id or erp_warehouse.id into a canonical ID",
+    "direct table writes by the runner",
+    "raw PII, credentials, or source warehouse names in the ledger",
+    "empty readiness views as acceptance evidence"
+  ],
+  "cleanup": "No destructive cleanup. Resources are run-scoped and retained with operation, history, Outbox, CDC, and reconciliation evidence."
+}

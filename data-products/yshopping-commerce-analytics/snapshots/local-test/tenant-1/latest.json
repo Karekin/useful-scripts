@@ -1,0 +1,626 @@
+{
+  "schema_version": 1,
+  "snapshot_id": "tenant-1-all-roles-local-test-20260718153337",
+  "generated_at": "2026-07-18T15:33:37+08:00",
+  "evidence_scope": "LOCAL_TEST",
+  "tenant_label": "Tenant 1",
+  "pipeline": "Wren 0.13.0 → MySQL Connector → StarRocks ADS",
+  "warning": "本地 TEST/开发库同批次完整聚合；核心经营、角色主题与治理指标均已刷新，各指标保留样本量与覆盖率，不代表生产全量",
+  "metrics": {
+    "commerce.order_count": {
+      "value": 28,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "Paid canonical orders across current schema versions；来源行数 28",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "commerce.reconciled_rate": {
+      "value": 13.043478,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Commerce-v2 orders passing full cross-domain reconciliation；样本 3/23",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "commerce.captured_amount_yuan": {
+      "value": 9163,
+      "unit": "yuan",
+      "status": "runtime_local_test",
+      "note": "Captured amount across current canonical payments；样本 916300/100",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "aftersales.case_count": {
+      "value": 13,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "Distinct canonical after-sale cases；来源行数 13",
+      "freshness": "2026-07-18 05:53:06"
+    },
+    "aftersales.reconciled_rate": {
+      "value": 100,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "After-sale cases passing full reconciliation；样本 13/13",
+      "freshness": "2026-07-18 05:53:06"
+    },
+    "aftersales.refunded_amount_yuan": {
+      "value": 4226,
+      "unit": "yuan",
+      "status": "runtime_local_test",
+      "note": "Succeeded canonical after-sale refunds；样本 422600/100",
+      "freshness": "2026-07-18 05:53:05"
+    },
+    "aftersales.recovery_required_count": {
+      "value": 0,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "After-sale cases requiring or awaiting manual recovery；来源行数 13",
+      "freshness": "2026-07-18 05:53:06"
+    },
+    "inventory.balance_count": {
+      "value": 40,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "Canonical inventory balance rows；来源行数 40",
+      "freshness": "2026-07-18 06:57:43"
+    },
+    "inventory.available_quantity": {
+      "value": 371,
+      "unit": "quantity",
+      "status": "runtime_local_test",
+      "note": "Sellable canonical inventory balances；来源行数 40",
+      "freshness": "2026-07-18 06:57:43"
+    },
+    "inventory.canonical_v3_rate": {
+      "value": 15,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Inventory balances with canonical V3 dimensions resolved；样本 6/40",
+      "freshness": "2026-07-18 06:57:43"
+    },
+    "inventory.low_stock_balance_count": {
+      "value": 1,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "Inventory balances classified LOW_STOCK；来源行数 40",
+      "freshness": "2026-07-18 06:57:43"
+    },
+    "inventory.out_of_stock_balance_count": {
+      "value": 0,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "Inventory balances classified OUT_OF_STOCK；来源行数 40",
+      "freshness": "2026-07-18 06:57:43"
+    },
+    "procurement.purchase_order_count": {
+      "value": 1,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "Approved purchase orders in the fulfillment mart；来源行数 1",
+      "freshness": "2026-07-12 18:10:12"
+    },
+    "procurement.receipt_fulfillment_rate": {
+      "value": 100,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Received quantity divided by approved ordered quantity；样本 10/10",
+      "freshness": "2026-07-12 18:10:12"
+    },
+    "procurement.open_order_count": {
+      "value": 0,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "Purchase orders in OPEN or PARTIAL fulfillment status；来源行数 1",
+      "freshness": "2026-07-12 18:10:12"
+    },
+    "governance.dataset_count": {
+      "value": 2,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "当前治理聚合面"
+    },
+    "governance.failed_dqc_result_count": {
+      "value": 0,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "本地运行结果"
+    },
+    "governance.invalid_reference_count": {
+      "value": 0,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "质量、血缘与任务引用"
+    },
+    "governance.governed_source_candidates": {
+      "value": 719,
+      "unit": "count",
+      "status": "repository_verified",
+      "note": "路线图与附件审计后的严格分母",
+      "freshness": "2026-07-18T23:15:00+08:00"
+    },
+    "governance.strict_final_source_count": {
+      "value": 5,
+      "unit": "count",
+      "status": "repository_verified",
+      "note": "LOCAL_TEST/PRE_PROD 完整门禁通过且具备生产发布条件的来源数",
+      "freshness": "2026-07-18T23:15:00+08:00"
+    },
+    "governance.sql_model_count": {
+      "value": 258,
+      "unit": "count",
+      "status": "repository_verified",
+      "note": "版本库内 ADS/DWS/DWD/DIM/Bootstrap SQL 模型",
+      "freshness": "2026-07-18T23:15:00+08:00"
+    },
+    "ai.observation_count": {
+      "value": 3,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "当前 AI 治理聚合"
+    },
+    "ai.pending_clue_count": {
+      "value": 0,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "没有积压"
+    },
+    "ai.invalid_taxonomy_reference_count": {
+      "value": 0,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "taxonomy 引用有效"
+    },
+    "buyer.category_breadth_90d": {
+      "value": 1,
+      "unit": "ratio",
+      "status": "runtime_local_test",
+      "note": "Average mapped categories per paid buyer in trailing 90 days；样本 21/21",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "buyer.order_frequency_90d": {
+      "value": 1.333333,
+      "unit": "ratio",
+      "status": "runtime_local_test",
+      "note": "Trailing 90-day paid orders per active buyer; loaded-history scope；样本 28/21",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "buyer.repeat_purchase_rate_90d": {
+      "value": 9.52381,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Trailing 90 days relative to latest loaded paid order; loaded-history scope；样本 2/21",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "buyer.return_rate": {
+      "value": 70.588235,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Returned order lines divided by fulfilled order lines；样本 12/17",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "catalog.active_sku_count": {
+      "value": 102,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "Distinct canonical SKUs in ACTIVE status；来源行数 114",
+      "freshness": "2026-07-18 05:28:34"
+    },
+    "catalog.selection_breadth": {
+      "value": 13,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "Distinct in-stock SKU/category combinations with a sellable offer；来源行数 15",
+      "freshness": "2026-07-18 06:57:43"
+    },
+    "commerce.average_order_value_yuan": {
+      "value": 327.25,
+      "unit": "yuan",
+      "status": "runtime_local_test",
+      "note": "Captured amount divided by paid canonical orders；样本 916300/2800",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "commerce.gmv_yuan": {
+      "value": 9163,
+      "unit": "yuan",
+      "status": "runtime_local_test",
+      "note": "Captured amount before refunds；样本 916300/100",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "commerce.net_gmv_yuan": {
+      "value": 1592,
+      "unit": "yuan",
+      "status": "runtime_local_test",
+      "note": "Captured amount minus cumulative refunded amount；样本 159200/100",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "commerce.paid_buyer_count": {
+      "value": 21,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "Distinct buyers on paid canonical orders；来源行数 28",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "finance.discount_funding_yuan": {
+      "value": 190,
+      "unit": "yuan",
+      "status": "runtime_local_test",
+      "note": "Platform, merchant and third-party benefit funding allocations；样本 19000/100",
+      "freshness": "2026-07-16 18:39:21"
+    },
+    "inventory.in_stock_rate": {
+      "value": 100,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Positive inventory among observable sellable offers; source_row_count is all sellable offers；样本 14/14；可观测覆盖 14/15",
+      "freshness": "2026-07-18 06:57:43"
+    },
+    "inventory.stockout_rate": {
+      "value": 0,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Zero inventory among observable sellable offers; missing inventory mapping is excluded；样本 0/14；可观测覆盖 14/15",
+      "freshness": "2026-07-18 06:57:43"
+    },
+    "listing.active_offer_count": {
+      "value": 15,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "Enabled published offer with active SKU and merchant/shop；来源行数 15",
+      "freshness": "2026-07-18 06:42:04"
+    },
+    "listing.approval_rate": {
+      "value": 100,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Published listings passing the governed review workflow；样本 25/25",
+      "freshness": "2026-07-18 06:42:04"
+    },
+    "merchant.active_merchant_count": {
+      "value": 6,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "Active merchant/shop with at least one sellable offer；样本 6/7",
+      "freshness": "2026-07-18 06:42:04"
+    },
+    "payment.success_rate": {
+      "value": 100,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Canonical current payments; local fixture population must be shown with sample size；样本 28/28",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "promotion.coupon_redemption_rate": {
+      "value": 25,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Current canonical entitlement occupancy; returned rights are not counted as currently used；样本 3/12",
+      "freshness": "2026-07-16 18:40:26"
+    },
+    "buyer.refund_cycle_hours": {
+      "value": 0.001944,
+      "unit": "hours",
+      "status": "runtime_local_test",
+      "note": "Median hours from refund requested to success; future-dated simulation events are excluded；来源行数 8",
+      "freshness": "2026-07-16 18:40:26"
+    },
+    "inventory.sell_through_rate_30d": {
+      "value": 3.738318,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Net shipped quantity divided by opening available plus purchase receipts over the trailing 30 observed days；样本 8/214",
+      "freshness": "2026-07-18 06:57:43"
+    },
+    "service.first_response_minutes": {
+      "value": 2.25,
+      "unit": "minutes",
+      "status": "runtime_local_test",
+      "note": "Median minutes from first customer inbound to first agent outbound; tickets without both events remain absent；来源行数 4",
+      "freshness": "2026-07-18 04:16:32"
+    },
+    "funnel.add_to_cart_rate": {
+      "value": 100,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Distinct linked-or-anonymous subjects adding to cart after observable PDP engagement；样本 1/1；可观测覆盖 1/8",
+      "freshness": "2026-07-18 05:22:58"
+    },
+    "funnel.checkout_start_rate": {
+      "value": 100,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Distinct linked-or-anonymous subjects starting checkout after cart engagement；样本 1/1；可观测覆盖 1/8",
+      "freshness": "2026-07-18 05:22:58"
+    },
+    "funnel.product_detail_view_count": {
+      "value": 6,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "Append-only governed PDP_VIEWED events；来源行数 26",
+      "freshness": "2026-07-18 05:23:15"
+    },
+    "search.success_rate": {
+      "value": 100,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Searches with an exposed result and a governed click/PDP/cart/checkout continuation；样本 2/2",
+      "freshness": "2026-07-18 03:23:18"
+    },
+    "traffic.visitor_count": {
+      "value": 1,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "Distinct linked principal, falling back to anonymous session; LOCAL_TEST governed behavior events；来源行数 8",
+      "freshness": "2026-07-18 05:22:58"
+    },
+    "marketing.ad_roas": {
+      "value": 3.98,
+      "unit": "ratio",
+      "status": "runtime_local_test",
+      "note": "Governed attributed order amount divided by immutable advertising spend ledger；样本 39800/10000",
+      "freshness": "2026-07-18 05:24:41"
+    },
+    "marketing.promotion_roi": {
+      "value": 0.75,
+      "unit": "ratio",
+      "status": "runtime_local_test",
+      "note": "Governed experiment incremental contribution profit divided by booked promotion cost；样本 12000/16000",
+      "freshness": "2026-07-18 05:24:41"
+    },
+    "merchant.cancellation_rate": {
+      "value": 3.571429,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Merchant-responsible completed paid-unshipped cancellations divided by paid canonical orders; unpaid cancellations stay auditable but are excluded from the numerator；样本 1/28",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "merchant.net_sales_yuan": {
+      "value": 5458,
+      "unit": "yuan",
+      "status": "runtime_local_test",
+      "note": "Governed merchant order-item sales less discounts, settled refunds, and merchant-responsible cancellation residuals；样本 545800/100",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "merchant.new_buyer_count": {
+      "value": 1,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "Distinct buyers whose first strictly attributed paid order is with the governed merchant；来源行数 1",
+      "freshness": "2026-07-18 05:39:34"
+    },
+    "merchant.store_conversion_rate": {
+      "value": 100,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Strict shop-level paid buyers divided by validated listing-offer store visitors；样本 1/1",
+      "freshness": "2026-07-18 05:39:34"
+    },
+    "buyer.new_paid_buyer_count": {
+      "value": 5,
+      "unit": "count",
+      "status": "runtime_local_test",
+      "note": "First-ever paid buyers on latest loaded paid business day 2026-07-18；来源行数 28",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "funnel.cart_abandonment_rate": {
+      "value": 0,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Distinct cart subjects without strict session payment attribution in loaded behavior history；样本 0/1；可观测覆盖 1/8",
+      "freshness": "2026-07-18 05:22:58"
+    },
+    "funnel.visit_to_pay_rate": {
+      "value": 100,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Strict session payment-attributed subjects divided by linked-or-anonymous visitors；样本 1/1；可观测覆盖 1/8",
+      "freshness": "2026-07-18 05:22:58"
+    },
+    "buyer.delivery_promise_hit_rate": {
+      "value": 100,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Delivered before or at the versioned delivery promise frozen by Fulfillment CREATE；样本 1/1",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "buyer.time_to_first_order_hours": {
+      "value": 0.174722,
+      "unit": "hours",
+      "status": "runtime_local_test",
+      "note": "Median hours from first linked governed visit to first strictly attributed paid order；来源行数 1",
+      "freshness": "2026-07-18 04:25:05"
+    },
+    "inventory.aged_stock_value_yuan": {
+      "value": 840,
+      "unit": "yuan",
+      "status": "runtime_local_test",
+      "note": "FIFO remaining inventory cost received more than 90 days ago；来源行数 1",
+      "freshness": "2026-07-18 07:33:36"
+    },
+    "inventory.turnover_days": {
+      "value": 240,
+      "unit": "days",
+      "status": "runtime_local_test",
+      "note": "FIFO-valued inventory divided by trailing 90-day cost of goods sold, multiplied by 90；样本 96000/36000",
+      "freshness": "2026-07-18 07:33:36"
+    },
+    "procurement.otif_rate": {
+      "value": 100,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Purchase orders received on time and in full against an active versioned promise；样本 1/1",
+      "freshness": "2026-07-18 04:29:10"
+    },
+    "finance.contribution_margin_rate": {
+      "value": 39.698492,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Contribution profit after merchandise, variable fulfillment, after-sale loss and platform-funded marketing divided by net sales；样本 158/398",
+      "freshness": "2026-07-18 05:23:08"
+    },
+    "finance.gross_profit_yuan": {
+      "value": 158,
+      "unit": "yuan",
+      "status": "runtime_local_test",
+      "note": "Net sales less merchandise cost frozen on canonical order items；来源行数 2",
+      "freshness": "2026-07-18 05:23:08"
+    },
+    "finance.net_revenue_yuan": {
+      "value": 398,
+      "unit": "yuan",
+      "status": "runtime_local_test",
+      "note": "Order-line net sales after governed discount allocation and cumulative refunds；来源行数 2",
+      "freshness": "2026-07-18 05:23:08"
+    },
+    "platform.take_rate": {
+      "value": 0.309239,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Governed platform revenue ledger divided by canonical GMV；样本 24/7761",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "risk.chargeback_rate": {
+      "value": 0,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Distinct paid orders with an OPEN/WON/LOST chargeback dispute lifecycle；样本 0/28",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "risk.flagged_order_rate": {
+      "value": 0,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Distinct paid orders linked to a governed risk review case；样本 0/28",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "risk.loss_amount_yuan": {
+      "value": 0,
+      "unit": "yuan",
+      "status": "runtime_local_test",
+      "note": "Signed risk loss ledger: confirmed risk, chargeback and service compensation less reversals；样本 0/100",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "buyer.csat": {
+      "value": 50,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Buyer-authored satisfied feedback divided by valid buyer feedback; internal QA excluded；样本 1/2",
+      "freshness": "2026-07-18 04:16:32"
+    },
+    "service.first_contact_resolution_rate": {
+      "value": 50,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Eligible resolved tickets closed without reopen or repeated customer contact；样本 1/2",
+      "freshness": "2026-07-18 04:16:32"
+    },
+    "service.order_defect_rate": {
+      "value": 3.571429,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Distinct paid orders with customer-service defect references, adjudicated risk review or payment dispute；样本 1/28",
+      "freshness": "2026-07-18 06:42:05"
+    },
+    "service.resolution_sla_rate": {
+      "value": 50,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Resolved tickets completed by their frozen versioned SLA deadline；样本 1/2",
+      "freshness": "2026-07-18 04:16:32"
+    },
+    "fulfillment.on_time_delivery_rate": {
+      "value": 100,
+      "unit": "percent",
+      "status": "runtime_local_test",
+      "note": "Delivered before or at the versioned delivery promise frozen by Fulfillment CREATE；样本 1/1",
+      "freshness": "2026-07-18 06:42:05"
+    }
+  },
+  "breakdowns": {
+    "commerce_closure": [
+      {
+        "label": "交易 · 处理中",
+        "value": 20,
+        "total": 23,
+        "tone": "amber"
+      },
+      {
+        "label": "交易 · 已对账",
+        "value": 3,
+        "total": 23,
+        "tone": "green"
+      },
+      {
+        "label": "售后 · 已对账",
+        "value": 13,
+        "total": 13,
+        "tone": "green"
+      }
+    ],
+    "warehouse_inventory_top5": [
+      {
+        "warehouse": "72778a33…688ee",
+        "available_quantity": 154,
+        "balance_count": 17,
+        "health": "健康"
+      },
+      {
+        "warehouse": "migratio…anary",
+        "available_quantity": 10,
+        "balance_count": 1,
+        "health": "健康"
+      },
+      {
+        "warehouse": "migratio…nary2",
+        "available_quantity": 10,
+        "balance_count": 1,
+        "health": "健康"
+      },
+      {
+        "warehouse": "scenario…0716c",
+        "available_quantity": 10,
+        "balance_count": 1,
+        "health": "健康"
+      },
+      {
+        "warehouse": "scenario…rsale",
+        "available_quantity": 10,
+        "balance_count": 1,
+        "health": "健康"
+      }
+    ],
+    "aftersales_responsibility": [
+      {
+        "party": "BUYER",
+        "recovery": "NOT_REQUIRED",
+        "readiness": "RECONCILED",
+        "case_count": 12,
+        "refund_yuan": 3866
+      },
+      {
+        "party": "BUYER",
+        "recovery": "RECOVERED",
+        "readiness": "RECONCILED",
+        "case_count": 1,
+        "refund_yuan": 360
+      }
+    ]
+  },
+  "legacy_source_only": {
+    "evidence_scope": "LEGACY_SOURCE_ONLY",
+    "warning": "旧 Trade 当前状态快照，包含质量异常且身份映射未闭合；禁止与 Canonical 指标相加",
+    "freshness": "2025-05-11 17:37:57",
+    "active_order_count": 230,
+    "paid_order_count": 105,
+    "paid_buyer_count": 9,
+    "repeat_buyer_rate": 33.333333,
+    "gross_paid_amount_yuan": 149426.79,
+    "refunded_amount_yuan": 43010.78,
+    "net_paid_amount_yuan": 106416.01,
+    "quality_flag_count": 175,
+    "quality_flags": {
+      "unpaid_terminal_orders": 3,
+      "refund_exceeds_paid_orders": 1,
+      "paid_orders_missing_pay_time": 7,
+      "active_items_on_deleted_orders": 10
+    }
+  }
+}

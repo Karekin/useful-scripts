@@ -1,17 +1,188 @@
 services:
   # 部署nacos，参考：https://www.cnblogs.com/studyjobs/p/18014237
   yudao-nacos:
-    image: nacos/nacos-server:latest
+    image: nacos/nacos-server:v2.5.3
     container_name: yudao-nacos
+    restart: unless-stopped
     ports:
       # web 界面访问端口
       - 8848:8848
       # 程序使用 grpc 连接的端口
       - 9848:9848
+      - 9849:9849
     environment:
       - MODE=standalone
+      - NACOS_AUTH_ENABLE=false
+      - JVM_XMS=512m
+      - JVM_XMX=512m
+      - JVM_XMN=256m
     volumes:
       - ./data/nacos-single1/logs:/home/nacos/logs
+    networks:
+      - yudao_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8848/nacos/v1/console/health/liveness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "2"
+
+  # Dubbo Admin is the HSF-console equivalent: a control plane for discovery,
+  # metadata, governance and generic service testing. It is not a business provider.
+  yudao-dubbo-admin:
+    build:
+      context: https://github.com/apache/dubbo-admin.git#b4c6cbfcc546d19fd19acda72c52a830941e2c6d
+      # The upstream Dockerfile currently points at an amd64-only mirror. Keep
+      # the upstream source pinned, but use official multi-arch build images.
+      dockerfile_inline: |
+        FROM node:18-alpine AS frontend-builder
+        WORKDIR /ui-vue3
+        COPY ui-vue3/package.json ui-vue3/yarn.lock ./
+        RUN yarn install --frozen-lockfile
+        COPY ui-vue3/ ./
+        RUN yarn build
+
+        FROM golang:1.24 AS builder
+        ARG TARGETOS
+        ARG TARGETARCH
+        WORKDIR /app
+        COPY go.mod go.sum ./
+        RUN go mod download
+        COPY . .
+        COPY --from=frontend-builder /ui-vue3/dist app/dubbo-ui/dist
+        RUN CGO_ENABLED=0 GOOS=$${TARGETOS:-linux} GOARCH=$${TARGETARCH:-amd64} \
+            go build -a -o dubbo-admin ./app/dubbo-admin/main.go
+
+        FROM alpine:3.20
+        RUN addgroup -g 65532 app && adduser -D -u 65532 -G app app
+        WORKDIR /app
+        COPY --from=builder /app/dubbo-admin /app/dubbo-admin
+        USER 65532:65532
+        ENTRYPOINT ["./dubbo-admin"]
+    image: cloudmold/dubbo-admin:b4c6cbfcc546
+    container_name: yudao-dubbo-admin
+    restart: unless-stopped
+    depends_on:
+      yudao-nacos:
+        condition: service_healthy
+    command: [ "run", "-c", "/etc/dubbo-admin/dubbo-admin.yaml" ]
+    ports:
+      - "127.0.0.1:38080:8888"
+    volumes:
+      - ./dubbo-admin.yaml:/etc/dubbo-admin/dubbo-admin.yaml:ro
+      - ./data/dubbo-admin/logs:/app/logs
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q -O - http://127.0.0.1:8888/health >/dev/null || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 20s
+    networks:
+      - yudao_network
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  # Provider data plane. It retains yudao as an upstream implementation and
+  # exports only allowlisted CloudMold capability contracts over Dubbo.
+  yudao-provider:
+    build:
+      context: ../../../yudao-cloud/yudao-server
+    image: cloudmold/yudao-provider:local
+    container_name: yudao-provider
+    restart: unless-stopped
+    depends_on:
+      yudao-nacos:
+        condition: service_healthy
+      yudao-mysql:
+        condition: service_healthy
+      yudao-redis:
+        condition: service_started
+    command:
+      - /bin/bash
+      - -c
+      - >-
+        export CLOUDMOLD_RPC_SHARED_SECRET="$$(</run/secrets/cloudmold_rpc_shared_secret)";
+        exec java $${JAVA_OPTS} -jar app.jar --spring.profiles.active=local
+    environment:
+      CLOUDMOLD_RPC_ENABLED: "true"
+      CLOUDMOLD_RPC_EXPORT_ENABLED: "true"
+      CLOUDMOLD_RPC_READINESS_MARKER: /tmp/cloudmold-rpc-ready
+      # Keep the governed Compose data plane isolated from developer-local
+      # providers that may register the same interfaces with another secret.
+      CLOUDMOLD_RPC_GROUP: cloudmold-compose-internal
+      CLOUDMOLD_DUBBO_REGISTRY: nacos://yudao-nacos:8848
+      CLOUDMOLD_DUBBO_REGISTRY_GROUP: CLOUDMOLD_DUBBO
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL: jdbc:mysql://yudao-mysql:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_USERNAME: root
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD: "123456"
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_SLAVE_URL: jdbc:mysql://yudao-mysql:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_SLAVE_USERNAME: root
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_SLAVE_PASSWORD: "123456"
+      SPRING_DATA_REDIS_HOST: yudao-redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      SPRING_BOOT_ADMIN_CLIENT_ENABLED: "false"
+      FLOWABLE_DATABASE_SCHEMA_UPDATE: "false"
+      JAVA_OPTS: -Xms512m -Xmx1536m -Dfile.encoding=UTF-8 -Djava.security.egd=file:/dev/./urandom -Ddubbo.application.serialize-check-status=STRICT -Ddubbo.application.check-serializable=false -Ddubbo.hessian.allowNonSerializable=true
+    secrets:
+      - cloudmold_rpc_shared_secret
+    ports:
+      - "127.0.0.1:48080:48080"
+      - "127.0.0.1:20880:20880"
+    healthcheck:
+      test: [ "CMD-SHELL", "test -s /tmp/cloudmold-rpc-ready && timeout 3 bash -c '</dev/tcp/127.0.0.1/20880'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    networks:
+      - yudao_network
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+  # One-shot governed consumer used by Skills. Run with:
+  # docker compose run --rm cloudmold-agent-executor --list-capabilities
+  cloudmold-agent-executor:
+    profiles: [ "agent" ]
+    build:
+      context: ../../../yudao-cloud/cloudmold-agent-executor
+    image: cloudmold/agent-executor:local
+    depends_on:
+      yudao-nacos:
+        condition: service_healthy
+      yudao-provider:
+        condition: service_healthy
+      yudao-redis:
+        condition: service_started
+    environment:
+      CLOUDMOLD_RPC_GROUP: cloudmold-compose-internal
+      CLOUDMOLD_DUBBO_REGISTRY: nacos://yudao-nacos:8848
+      CLOUDMOLD_DUBBO_REGISTRY_GROUP: CLOUDMOLD_DUBBO
+      SPRING_DATA_REDIS_HOST: yudao-redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      # The capability group is the governance boundary. Interface-first avoids
+      # loading metadata from unrelated developer-local applications that once
+      # exported the same interface names into the shared Nacos instance.
+      JAVA_OPTS: -Xms128m -Xmx384m -Dfile.encoding=UTF-8 -Ddubbo.application.migration.step=FORCE_INTERFACE -Ddubbo.application.serialize-check-status=STRICT -Ddubbo.application.check-serializable=false -Ddubbo.hessian.allowNonSerializable=true
+    secrets:
+      - cloudmold_rpc_shared_secret
+    networks:
+      - yudao_network
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "2"
 
   yudao-redis:
     image: redis:6.2
@@ -194,7 +365,10 @@ volumes:
   redis_data:
   postgres_data:
 
+secrets:
+  cloudmold_rpc_shared_secret:
+    file: ${CLOUDMOLD_RPC_SECRET_FILE:-./data/secrets/cloudmold-rpc-shared-secret}
+
 networks:
   yudao_network:
     driver: bridge
-

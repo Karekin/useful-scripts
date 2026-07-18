@@ -1,0 +1,274 @@
+#!/usr/bin/env python3
+"""Validate and expose CloudMold's tool-agnostic analytics contracts."""
+
+from __future__ import annotations
+
+import argparse
+import importlib.machinery
+import importlib.util
+import json
+import re
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any
+
+
+ROOT = Path(__file__).resolve().parents[1]
+ANALYTICS = ROOT / "analytics"
+METRIC_SCHEMA = ANALYTICS / "schemas" / "metric-catalog-v1.schema.json"
+REPORT_SCHEMA = ANALYTICS / "schemas" / "report-spec-v1.schema.json"
+METRIC_CATALOG = ANALYTICS / "metrics" / "catalog-v1.json"
+REPORTS = ANALYTICS / "reports"
+WREN = ANALYTICS / "wren"
+ALLOWED_SOURCE = re.compile(r"^yshopping_(ads|dws)\.[a-z][a-z0-9_]*$")
+FORBIDDEN_EXPRESSION = re.compile(r"(;|--|/\*|\b(select|from|join|union|insert|update|delete|drop|alter|create)\b)", re.I)
+SENSITIVE_COLUMNS = {"buyer_id", "waybill_no", "phone", "mobile", "email", "address", "reason", "error_message"}
+
+
+class ReportError(RuntimeError):
+    pass
+
+
+def _contractctl() -> Any:
+    path = ROOT / "scripts" / "contractctl"
+    loader = importlib.machinery.SourceFileLoader("cloudmold_contractctl", str(path))
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    if spec is None:
+        raise ReportError(f"cannot load schema validator from {path}")
+    module = importlib.util.module_from_spec(spec)
+    loader.exec_module(module)
+    return module
+
+
+def load_json(path: Path) -> Any:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ReportError(f"cannot load {path}: {exc}") from exc
+
+
+def metric_map(catalog: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    result: dict[str, dict[str, Any]] = {}
+    for metric in catalog["metrics"]:
+        metric_id = metric["id"]
+        if metric_id in result:
+            raise ReportError(f"duplicate metric id: {metric_id}")
+        if not ALLOWED_SOURCE.fullmatch(metric["source"]):
+            raise ReportError(f"{metric_id}: source is outside ADS/DWS allowlist")
+        if FORBIDDEN_EXPRESSION.search(metric["expression"]):
+            raise ReportError(f"{metric_id}: expression contains query or mutation syntax")
+        if metric["status"] == "governed" and (
+                metric["freshness_field"] is None or metric["freshness_slo_minutes"] is None):
+            raise ReportError(f"{metric_id}: governed metric requires a freshness field and SLO")
+        result[metric_id] = metric
+    return result
+
+
+def validate_report(report: dict[str, Any], metrics: dict[str, dict[str, Any]],
+                    evidence_scope: str) -> list[str]:
+    errors: list[str] = []
+    report_id = report.get("report_id", "<unknown>")
+    tenant_filters = [item for item in report.get("filters", [])
+                      if item.get("field") == "tenant_id" and item.get("required") is True]
+    if not tenant_filters:
+        errors.append(f"{report_id}: required tenant_id filter is missing")
+    report_metrics = report.get("metrics", [])
+    unknown = sorted(set(report_metrics) - metrics.keys())
+    if unknown:
+        errors.append(f"{report_id}: unknown metrics: {unknown}")
+    datasets = set(report.get("datasets", []))
+    for dataset in datasets:
+        if not ALLOWED_SOURCE.fullmatch(dataset):
+            errors.append(f"{report_id}: dataset is outside ADS/DWS allowlist: {dataset}")
+    for metric_id in set(report_metrics) & metrics.keys():
+        if metrics[metric_id]["source"] not in datasets:
+            errors.append(f"{report_id}: metric {metric_id} source is not declared in datasets")
+    if report.get("publication_scope") == "production" and evidence_scope != "production":
+        errors.append(f"{report_id}: production publication requires production metric evidence")
+    if report.get("publication_scope") == "production" and report.get("evidence", {}).get("kind") != "production_runtime":
+        errors.append(f"{report_id}: production publication requires production runtime evidence")
+    chart_ids: set[str] = set()
+    report_dimensions = {dimension for metric_id in report_metrics if metric_id in metrics
+                         for dimension in metrics[metric_id]["dimensions"]}
+    unsupported_filters = sorted({item["field"] for item in report.get("filters", [])} - report_dimensions)
+    if unsupported_filters:
+        errors.append(f"{report_id}: unsupported filters: {unsupported_filters}")
+    for section in report.get("sections", []):
+        for chart in section.get("charts", []):
+            chart_id = chart.get("id", "<unknown>")
+            if chart_id in chart_ids:
+                errors.append(f"{report_id}: duplicate chart id: {chart_id}")
+            chart_ids.add(chart_id)
+            chart_metrics = set(chart.get("metrics", []))
+            if not chart_metrics <= set(report_metrics):
+                errors.append(f"{report_id}.{chart_id}: chart uses undeclared metrics")
+            chart_dimensions = {dimension for metric_id in chart_metrics if metric_id in metrics
+                                for dimension in metrics[metric_id]["dimensions"]}
+            bad_dimensions = sorted(set(chart.get("group_by", [])) - chart_dimensions)
+            if bad_dimensions:
+                errors.append(f"{report_id}.{chart_id}: unsupported dimensions: {bad_dimensions}")
+    return errors
+
+
+def validate_wren(root: Path = WREN) -> list[str]:
+    errors: list[str] = []
+    required = [root / "wren_project.yml", root / "relationships.yml",
+                root / "knowledge" / "knowledge.yml"]
+    for path in required:
+        if not path.is_file():
+            errors.append(f"missing Wren project file: {path}")
+    project = (root / "wren_project.yml").read_text(encoding="utf-8") if required[0].is_file() else ""
+    if not re.search(r"(?m)^schema_version:\s*5\s*$", project):
+        errors.append("Wren project must use schema_version 5")
+    if not re.search(r"(?m)^data_source:\s*mysql\s*$", project):
+        errors.append("Wren StarRocks POC must declare the mysql connector explicitly")
+    model_files = sorted((root / "models").glob("*/metadata.yml"))
+    cube_files = sorted((root / "cubes").glob("*/metadata.yml"))
+    if not model_files or not cube_files:
+        errors.append("Wren project must contain models and cubes")
+    modeled_sources: set[str] = set()
+    for path in model_files:
+        text = path.read_text(encoding="utf-8")
+        schema = re.search(r"(?m)^\s+schema:\s*([a-z][a-z0-9_]*)\s*$", text)
+        table = re.search(r"(?m)^\s+table:\s*([a-z][a-z0-9_]*)\s*$", text)
+        if not schema or not table:
+            errors.append(f"{path}: missing physical table reference")
+            continue
+        source = f"{schema.group(1)}.{table.group(1)}"
+        modeled_sources.add(source)
+        if not ALLOWED_SOURCE.fullmatch(source):
+            errors.append(f"{path}: Wren model is outside ADS/DWS allowlist: {source}")
+        exposed = set(re.findall(r"name:\s*([a-z][a-z0-9_]*)", text))
+        leaked = sorted(exposed & SENSITIVE_COLUMNS)
+        if leaked:
+            errors.append(f"{path}: sensitive columns exposed: {leaked}")
+    catalog = load_json(METRIC_CATALOG)
+    missing_sources = sorted({item["source"] for item in catalog["metrics"]} - modeled_sources)
+    if missing_sources:
+        errors.append(f"Wren models missing metric sources: {missing_sources}")
+    return errors
+
+
+def validate_all() -> tuple[int, int]:
+    validator = _contractctl()
+    metric_schema = load_json(METRIC_SCHEMA)
+    report_schema = load_json(REPORT_SCHEMA)
+    catalog = load_json(METRIC_CATALOG)
+    errors = validator.validate_schema_shape(metric_schema, METRIC_SCHEMA)
+    errors += validator.validate_schema_shape(report_schema, REPORT_SCHEMA)
+    errors += validator.validate_instance(catalog, metric_schema, str(METRIC_CATALOG))
+    metrics: dict[str, dict[str, Any]] = {}
+    if not errors:
+        try:
+            metrics = metric_map(catalog)
+        except ReportError as exc:
+            errors.append(str(exc))
+    report_count = 0
+    report_ids: set[str] = set()
+    for path in sorted(REPORTS.glob("*.json")):
+        report = load_json(path)
+        errors += validator.validate_instance(report, report_schema, str(path))
+        report_id = report.get("report_id")
+        if report_id in report_ids:
+            errors.append(f"duplicate report id: {report_id}")
+        report_ids.add(report_id)
+        errors += validate_report(report, metrics, catalog.get("evidence_scope", "local_test"))
+        report_count += 1
+    errors += validate_wren()
+    if errors:
+        raise ReportError("\n".join(errors))
+    return len(metrics), report_count
+
+
+def find_report(report_id: str) -> dict[str, Any]:
+    for path in REPORTS.glob("*.json"):
+        report = load_json(path)
+        if report["report_id"] == report_id:
+            return report
+    raise ReportError(f"unknown report: {report_id}")
+
+
+def print_catalog() -> None:
+    catalog = load_json(METRIC_CATALOG)
+    reports = sorted((load_json(path) for path in REPORTS.glob("*.json")), key=lambda item: item["report_id"])
+    print(f"metric catalog: {catalog['catalog_id']} ({catalog['evidence_scope']})")
+    print(f"metrics: {len(catalog['metrics'])}")
+    for report in reports:
+        print(f"- {report['report_id']}: {report['title']} [{report['lifecycle']}/{report['publication_scope']}]")
+
+
+def print_prompt(report_id: str) -> None:
+    report = find_report(report_id)
+    metric_ids = report["metrics"]
+    metrics = metric_map(load_json(METRIC_CATALOG))
+    payload = {
+        "task": "Generate or update a dashboard from this governed specification. Preview only; do not publish.",
+        "report": report,
+        "metric_contracts": [metrics[metric_id] for metric_id in metric_ids],
+        "mandatory_checks": [
+            "Use only declared datasets, metrics, dimensions and filters.",
+            "Require tenant_id before executing any query.",
+            "Run read-only SQL validation and freshness checks before rendering.",
+            "Label the output as local_test evidence and request human approval before publication."
+        ]
+    }
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+
+
+def metric_sql(metric_id: str, tenant_id: int) -> str:
+    if tenant_id <= 0:
+        raise ReportError("tenant_id must be a positive integer")
+    metrics = metric_map(load_json(METRIC_CATALOG))
+    if metric_id not in metrics:
+        raise ReportError(f"unknown metric: {metric_id}")
+    metric = metrics[metric_id]
+    safe_id = metric_id.replace("'", "''")
+    return (f"SELECT '{safe_id}' AS metric_id, {metric['expression']} AS metric_value "
+            f"FROM {metric['source']} WHERE tenant_id = {tenant_id};")
+
+
+def native_wren_check() -> None:
+    errors = validate_wren()
+    if errors:
+        raise ReportError("\n".join(errors))
+    executable = shutil.which("wren")
+    if executable is None:
+        print("Wren structure valid; native CLI not installed, native validation skipped")
+        return
+    subprocess.run([executable, "context", "validate", "--path", str(WREN)], check=True)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("validate")
+    sub.add_parser("catalog")
+    prompt = sub.add_parser("prompt")
+    prompt.add_argument("report_id")
+    sql = sub.add_parser("metric-sql")
+    sql.add_argument("metric_id")
+    sql.add_argument("--tenant", type=int, required=True)
+    sub.add_parser("wren-check")
+    args = parser.parse_args()
+    try:
+        if args.command == "validate":
+            metric_count, report_count = validate_all()
+            print(f"analytics contracts valid: {metric_count} metrics, {report_count} reports")
+        elif args.command == "catalog":
+            print_catalog()
+        elif args.command == "prompt":
+            print_prompt(args.report_id)
+        elif args.command == "metric-sql":
+            print(metric_sql(args.metric_id, args.tenant))
+        elif args.command == "wren-check":
+            native_wren_check()
+        return 0
+    except (ReportError, subprocess.CalledProcessError) as exc:
+        print(exc, file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

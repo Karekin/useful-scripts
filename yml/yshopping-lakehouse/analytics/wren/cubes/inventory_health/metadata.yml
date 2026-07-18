@@ -1,0 +1,15 @@
+name: inventory_health_cube
+base_object: inventory_health
+measures:
+  - {name: balance_count, expression: "COUNT(*)", type: BIGINT}
+  - {name: available_quantity, expression: "SUM(inventory_health.available_quantity)", type: DECIMAL}
+  - {name: low_stock_balance_count, expression: "SUM(CASE WHEN health_status = 'LOW_STOCK' THEN 1 ELSE 0 END)", type: BIGINT}
+  - {name: out_of_stock_balance_count, expression: "SUM(CASE WHEN health_status = 'OUT_OF_STOCK' THEN 1 ELSE 0 END)", type: BIGINT}
+  - {name: canonical_v3_rate, expression: "100.0 * SUM(CASE WHEN dimension_resolution_status = 'CANONICAL_V3' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0)", type: DOUBLE}
+dimensions:
+  - {name: tenant_id, expression: tenant_id, type: BIGINT}
+  - {name: warehouse_id, expression: warehouse_id, type: VARCHAR}
+  - {name: health_status, expression: health_status, type: VARCHAR}
+  - {name: dimension_resolution_status, expression: dimension_resolution_status, type: VARCHAR}
+time_dimensions:
+  - {name: data_freshness_at, expression: data_freshness_at, type: TIMESTAMP}

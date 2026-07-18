@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/schemas/metric-catalog-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "catalog_id", "owner", "evidence_scope", "metrics"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "catalog_id": {"type": "string", "pattern": "[a-z][a-z0-9-]{2,63}"},
+    "owner": {"type": "string", "minLength": 2},
+    "evidence_scope": {"enum": ["local_test", "pilot", "production"]},
+    "metrics": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "display_name", "description", "source", "grain", "expression", "aggregation", "unit", "dimensions", "freshness_field", "freshness_slo_minutes", "null_policy", "status"],
+        "properties": {
+          "id": {"type": "string", "pattern": "[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+"},
+          "display_name": {"type": "string", "minLength": 2},
+          "description": {"type": "string", "minLength": 8},
+          "source": {"type": "string", "pattern": "yshopping_(ads|dws)\\.[a-z][a-z0-9_]*"},
+          "grain": {"type": "string", "minLength": 3},
+          "expression": {"type": "string", "minLength": 3},
+          "aggregation": {"enum": ["count", "count_distinct", "sum", "ratio", "max", "min"]},
+          "unit": {"enum": ["count", "quantity", "percent", "yuan", "status"]},
+          "dimensions": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "[a-z][a-z0-9_]*"}},
+          "freshness_field": {"type": ["string", "null"], "pattern": "[a-z][a-z0-9_]*"},
+          "freshness_slo_minutes": {"type": ["integer", "null"], "minimum": 1},
+          "null_policy": {"enum": ["zero", "exclude", "fail_closed"]},
+          "status": {"enum": ["governed", "candidate"]}
+        }
+      }
+    }
+  }
+}

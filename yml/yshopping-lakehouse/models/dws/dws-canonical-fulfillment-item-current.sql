@@ -11,6 +11,7 @@ SELECT
     item.canonical_sku_id,
     item.quantity,
     item.reservation_id,
+    item.variable_fulfillment_cost_minor,
     fulfillment.current_status AS fulfillment_status,
     fulfillment.shipment_id,
     fulfillment.warehouse_id,

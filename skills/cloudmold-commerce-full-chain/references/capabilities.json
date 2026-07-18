@@ -1,0 +1,20 @@
+{
+  "schema_version": "cloudmold.skill-capabilities/v1",
+  "workflow_id": "workflow.cloudmold.commerce.aftersales-lakehouse.v2",
+  "capabilities": [
+    "capability.cloudmold.catalog.catalog-command.define-sku.v1",
+    "capability.cloudmold.catalog.catalog-command.change-status.v1",
+    "capability.cloudmold.integration.yudao-catalog-projection.plan.v1",
+    "capability.cloudmold.integration.yudao-legacy-master-data-query.get-erp-warehouse.v1",
+    "capability.cloudmold.identity.identity-query.resolve-active-source.v1",
+    "capability.cloudmold.merchant.merchant-command.execute.v1",
+    "capability.cloudmold.listing.listing-command.execute.v1",
+    "capability.cloudmold.warehouse.warehouse-source-mapping-query.resolve-ready-network.v1",
+    "capability.cloudmold.inventory.inventory-command.execute.v1",
+    "capability.cloudmold.order.order-command.execute.v1",
+    "capability.cloudmold.payment.payment-command.execute.v1",
+    "capability.cloudmold.fulfillment.fulfillment-command.execute.v1",
+    "capability.cloudmold.aftersale.after-sale-command.execute.v1",
+    "capability.cloudmold.aftersale.after-sale-query.get.v1"
+  ]
+}

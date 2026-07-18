@@ -1,0 +1,33 @@
+{
+  "event_id": "76100000-0000-4000-8000-000000000001",
+  "event_type": "promotion.experiment_result.upserted",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "promotion_experiment_result",
+  "aggregate_id": "76100000-0000-4000-8000-000000000002",
+  "aggregate_version": 1,
+  "event_sequence": 1,
+  "idempotency_key": "promotion-experiment-example-1:event",
+  "correlation_id": "76100000-0000-4000-8000-000000000003",
+  "causation_id": null,
+  "occurred_at": "2026-07-18T04:00:00.000Z",
+  "recorded_at": "2026-07-18T04:00:00.100Z",
+  "source_system": "cloudmold-promotion",
+  "payload": {
+    "experiment_id": "76100000-0000-4000-8000-000000000002",
+    "experiment_code": "exp-merchant-001",
+    "campaign_id": "71000000-0000-4000-8000-000000000002",
+    "merchant_id": "merchant-001",
+    "measured_from": "2026-07-10T00:00:00.000Z",
+    "measured_to": "2026-07-17T00:00:00.000Z",
+    "baseline_contribution_profit_minor": 120000,
+    "treatment_contribution_profit_minor": 156000,
+    "incremental_contribution_profit_minor": 36000,
+    "promotion_cost_minor": 24000,
+    "eligible_population_count": 2000,
+    "treatment_population_count": 1000,
+    "control_population_count": 1000,
+    "currency_code": "CNY",
+    "methodology_ref": "holdout-v1"
+  }
+}

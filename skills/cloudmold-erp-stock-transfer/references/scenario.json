@@ -1,0 +1,12 @@
+{
+  "flowId": "workflow.cloudmold.erp.stock-transfer-approve.v1",
+  "requiredInputs": ["authority", "targetWarehouse", "command"],
+  "steps": [
+    {"id": "validate-merchant-shop", "capabilityId": "capability.cloudmold.merchant.merchant-reference-validation.require-active-reference.v1", "write": false, "arguments": ["$input.authority.reference"], "expect": {"result.merchantStatus": "ACTIVE", "result.shopStatus": "ACTIVE"}},
+    {"id": "authorize-owner", "capabilityId": "capability.cloudmold.merchant.merchant-operator-authorization.require-authorized-operator.v1", "write": false, "arguments": ["$input.authority.operator"], "expect": {"result.roleCode": "OWNER", "result.assignmentStatus": "ACTIVE"}},
+    {"id": "create-target-warehouse", "capabilityId": "capability.cloudmold.integration.yudao-erp-command.create-warehouse.v1", "write": true, "arguments": ["$input.targetWarehouse"]},
+    {"id": "create", "capabilityId": "capability.cloudmold.integration.yudao-erp-command.create-stock-move.v1", "write": true, "arguments": ["$input.command"]},
+    {"id": "approve", "capabilityId": "capability.cloudmold.integration.yudao-erp-command.set-stock-move-status.v1", "write": true, "arguments": [{"idempotencyKey": "$idempotency.key", "documentId": "$steps.create.result", "targetStatus": 20}]},
+    {"id": "assert", "capabilityId": "capability.cloudmold.integration.yudao-legacy-operations-query.get-stock-move.v1", "write": false, "arguments": ["$steps.create.result"], "expect": {"result.sourceSystem": "ERP", "result.documentType": "STOCK_MOVE", "result.status": 20}}
+  ]
+}

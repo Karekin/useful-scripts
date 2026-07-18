@@ -41,7 +41,8 @@
           "order_item_id": {"type": "string", "format": "uuid"},
           "canonical_sku_id": {"type": "string", "format": "uuid"},
           "quantity": {"type": "string", "pattern": "^[1-9][0-9]*(\\.0{1,6})?$"},
-          "reservation_id": {"type": "string", "format": "uuid"}
+          "reservation_id": {"type": "string", "format": "uuid"},
+          "variable_fulfillment_cost_minor": {"type": ["integer", "null"], "minimum": 0}
         }
       }
     }

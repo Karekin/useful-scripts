@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/commerce-session-payment-attributed-v1.schema.json",
+  "title": "commerce.session.payment_attributed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "attribution_id",
+    "session_id",
+    "session_version",
+    "principal_id",
+    "checkout_token",
+    "order_id",
+    "order_version",
+    "payment_id",
+    "merchant_id",
+    "shop_id",
+    "channel_code",
+    "order_status",
+    "attributed_at",
+    "source_system",
+    "source_type",
+    "source_id"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "format": "uuid"},
+    "attribution_id": {"type": "string", "format": "uuid"},
+    "session_id": {"type": "string", "format": "uuid"},
+    "session_version": {"type": "integer", "minimum": 1},
+    "principal_id": {"type": "string", "format": "uuid"},
+    "checkout_token": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{1,128}$"},
+    "order_id": {"type": "string", "format": "uuid"},
+    "order_version": {"type": "integer", "minimum": 1},
+    "payment_id": {"type": "string", "format": "uuid"},
+    "merchant_id": {"type": ["string", "null"], "maxLength": 128},
+    "shop_id": {"type": ["string", "null"], "format": "uuid"},
+    "channel_code": {"type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]{0,31}$"},
+    "order_status": {
+      "type": "string",
+      "enum": ["PAYMENT_CONFIRMED", "SHIPPED", "DELIVERED", "COMPLETED", "RETURNED"]
+    },
+    "attributed_at": {"type": "string", "format": "date-time"},
+    "source_system": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,31}$"},
+    "source_type": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,31}$"},
+    "source_id": {"type": "string", "minLength": 1, "maxLength": 128}
+  }
+}

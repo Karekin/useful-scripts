@@ -1,7 +1,8 @@
 CREATE OR REPLACE VIEW yshopping_dim.dim_canonical_customer_service_ticket_current AS
 SELECT event_id, tenant_id, ticket_id, aggregate_version, occurred_at, recorded_at, correlation_id,
        causation_id, idempotency_key, run_id, ticket_no, customer_principal_id, channel_code,
-       priority, category_code, previous_status, current_status, assigned_agent_principal_id,
+       priority, category_code, sla_policy_code, sla_policy_version, resolution_deadline_at,
+       fcr_window_hours, previous_status, current_status, assigned_agent_principal_id,
        primary_order_ref, primary_after_sale_ref, operation, ticket_event_count
 FROM (
     SELECT event.*, COUNT(*) OVER (PARTITION BY tenant_id, ticket_id) AS ticket_event_count,

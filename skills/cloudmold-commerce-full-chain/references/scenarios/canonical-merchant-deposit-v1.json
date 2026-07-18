@@ -1,0 +1,34 @@
+{
+  "scenario_id": "canonical-merchant-deposit-v1",
+  "version": 1,
+  "purpose": "Prove the Y-Shopping Merchant deposit thresholds with exact minor-unit conservation, controlled enforcement, causal Merchant suspension, and durable physical Listing unpublish.",
+  "environment_scope": ["local", "demo", "test"],
+  "prerequisite": "A SUCCEEDED canonical-merchant-sales-eligibility-v1 ledger that leaves the controlled Merchant ACTIVE and Listing PUBLISHED.",
+  "money_contract": "All amounts are signed 64-bit integer minor units plus ISO-4217 currency; this scenario uses CNY.",
+  "writes": [
+    "assess required deposit in SHADOW",
+    "pay and explicitly activate enforcement",
+    "freeze and unfreeze available deposit",
+    "deduct to 55 percent BID_RESTRICTED without Merchant suspension",
+    "deduct to 19 percent SALES_BLOCKED with causal Merchant suspension and Listing unpublish",
+    "top up without automatic Merchant resume or Listing republish",
+    "explicitly resume Merchant and explicitly republish Listing after review"
+  ],
+  "invariants": [
+    "held_amount_minor equals paid_amount_minor minus deducted_amount_minor",
+    "available_amount_minor equals held_amount_minor minus frozen_amount_minor",
+    "coverage at or above 60 percent is SUFFICIENT, 20 to below 60 percent is BID_RESTRICTED, and below 20 percent is SALES_BLOCKED",
+    "only an ENFORCED account crossing into SALES_BLOCKED can suspend an ACTIVE Merchant",
+    "the deposit ledger event is the causation of exactly one Merchant SUSPENDED event and one Listing unpublish Saga",
+    "top-up never automatically resumes Merchant and resume never automatically republishes Listing",
+    "all eight deposit writes, one Merchant resume, and one Listing publish replay as immutable duplicates"
+  ],
+  "forbidden_shortcuts": [
+    "floating-point money",
+    "fabricated canonical identifiers",
+    "direct table writes",
+    "raw bank, identity, phone, or voucher data in events or ledgers",
+    "automatic Merchant resume or Listing republish"
+  ],
+  "cleanup": "No destructive cleanup. The account remains ENFORCED and SUFFICIENT; Merchant and Listing are restored only through explicit reviewed commands, while ledger, Saga, Outbox, and lakehouse evidence remain immutable."
+}

@@ -1,0 +1,54 @@
+{
+  "scenario": "canonical-order-benefit-first-slice-v1",
+  "purpose": "Prove one nonzero canonical Order Benefit from immutable application and line allocation through exact economic funding, net-payment transport, Outbox CDC, and lakehouse reconciliation; benefit reversal is intentionally a separate gate.",
+  "environment_policy": "local, demo, or disposable test tenant only",
+  "runner": "scripts/canonical_order_payment_runner.py --benefit-mode governed-split",
+  "inputs": {
+    "canonical_sku": "ACTIVE in the same-tenant canonical Catalog",
+    "quantity": "2.000000 PCS",
+    "gross_amount_minor": 39800,
+    "discount_amount_minor": 3800,
+    "payable_amount_minor": 36000,
+    "currency": "CNY",
+    "benefit": "one PROMOTION application allocated to line-1",
+    "funding": "PLATFORM 2000 + MERCHANT 1800",
+    "payment_provider": "INTERNAL_TEST"
+  },
+  "flow": [
+    "receive 10 run-scoped fixture units",
+    "place one order with an explicit line key and a nonzero governed benefit application",
+    "persist immutable application, allocation, and two funding shares in the order transaction",
+    "reserve 2 and capture/refund the exact net payable amount of 36000 minor units",
+    "ship and complete, then retain the legacy direct refund/return tail only as net-payment and inventory transport regression evidence",
+    "replay every command and require immutable duplicate results",
+    "wait for Outbox CDC and reconcile the exact run with reconcile-canonical-order-benefit"
+  ],
+  "expected": {
+    "order_status": "RETURNED",
+    "order_version": 7,
+    "payment_status": "REFUNDED",
+    "payment_version": 2,
+    "benefit_application_events": 1,
+    "benefit_applications": 1,
+    "benefit_allocations": 1,
+    "benefit_funding_shares": 2,
+    "gross_minor": 39800,
+    "header_discount_minor": 3800,
+    "application_minor": 3800,
+    "allocation_minor": 3800,
+    "funding_minor": 3800,
+    "item_discount_minor": 3800,
+    "net_minor": 36000,
+    "readiness": "RECONCILED"
+  },
+  "invariants": [
+    "header discount equals application, allocation, funding, and item discount totals",
+    "gross amount equals item discount plus net amount",
+    "the calculation digest is deterministic SHA-256 over governed economic input",
+    "the two funding shares retain explicit funder type and identity",
+    "zero event or readiness rows fail the reconciliation gate",
+    "every write replays as an immutable duplicate",
+    "this scenario does not claim benefit, funding, or AfterSale reversal"
+  ],
+  "cleanup": "none; retain the run-scoped order, benefits, payment, inventory, Outbox, CDC, and lakehouse evidence"
+}

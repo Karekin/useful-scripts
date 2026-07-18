@@ -1,0 +1,28 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.quality.full-chain-qa.v1",
+  "workflow_id": "workflow.cloudmold.quality.route-api-skill-lakehouse-coverage.v1",
+  "name": "cloudmold-full-chain-qa",
+  "version": "1.0.0",
+  "owner": "cloudmold-platform",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R1",
+  "ui_dependency": "optional",
+  "allowed_environments": ["local", "test"],
+  "entrypoints": {
+    "plan": "scripts/full_chain_qa_runner.py plan",
+    "inspect": "scripts/flow_coverage_audit.py",
+    "execute": "scripts/full_chain_qa_runner.py execute"
+  },
+  "evidence": [
+    "run.json",
+    "commands.jsonl",
+    "runtime.json",
+    "static/coverage.json",
+    "static/coverage.md",
+    "static/hsf-coverage.json",
+    "static/hsf-coverage.md",
+    "test-results.json",
+    "evidence-manifest.sha256"
+  ]
+}

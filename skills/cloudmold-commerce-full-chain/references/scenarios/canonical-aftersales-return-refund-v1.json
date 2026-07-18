@@ -1,0 +1,90 @@
+{
+  "scenario": "canonical-aftersales-return-refund-v1",
+  "version": 1,
+  "purpose": "在已签收并完成的 Listing 订单上，验证独立售后权威、部分/多次逆向履约、累计退款与优惠冲回，以及仅在全单退完后关闭订单。",
+  "allowed_environments": ["local", "demo", "test"],
+  "endpoint_manifest": "aftersales-endpoints-v1.json",
+  "execution_modes": {
+    "full": "create a new forward scenario and execute 19 single-line or 22 multi-line forward writes plus 6 AfterSale writes per case",
+    "existing-order": "load canonical-aftersales-completed-order-evidence-v1 and execute only 6 AfterSale writes per case"
+  },
+  "return_plans": {
+    "full": "one case returns the complete remaining quantity",
+    "partial-then-full": "two sequential cases return 1 + 1 units on one line; the first keeps Order COMPLETED and the second terminalizes it",
+    "multi-line-full": "one order has two distinct one-unit SKU lines; returning the first complete line remains PARTIAL and returning the second line terminalizes the order"
+  },
+  "benefit_modes": {
+    "none": "zero-benefit baseline with 25 one-case, 31 same-line cumulative, or 34 cross-line full-flow client writes",
+    "governed-split": "immutable Order application/allocation/funding and exact AfterSale reversal with 25 full-flow writes",
+    "entitlement-backed": "eight Promotion lifecycle writes before the forward flow; USED/v4 is retained after a partial reversal and becomes RETURNED/v5 only after full reversal; 33 one-case or 39 partial-then-full writes",
+    "stacked-entitlements": "one campaign, two exact templates and two entitlements; both USED/v4 to RETURNED/v5; 39 full-flow writes"
+  },
+  "money": {
+    "currency": "CNY",
+    "unit_price_minor": 19900,
+    "quantity": "2.000000",
+    "approved_refund_minor": 39800,
+    "partial_case_refund_minor": 19900,
+    "provider": "INTERNAL_TEST"
+  },
+  "forward_flow": {
+    "reuse": "canonical-listing-fulfillment-first-slice-v1 steps 1-19",
+    "multi_line_extension": "steps 1-22 create two offers, two one-unit order lines, exact per-line reservations and shipments, and one two-line fulfillment",
+    "terminal": {
+      "listing": "PUBLISHED/v6",
+      "order": "COMPLETED/v5",
+      "payment": "CAPTURED/v1",
+      "fulfillment": "DELIVERED/v4",
+      "inventory": "8/0/8/v3"
+    }
+  },
+  "aftersales_flow": [
+    {"step": 20, "operation": "REQUEST", "expected": "RETURN_AND_REFUND + SIZE_NOT_FIT + BUYER → REQUESTED/v1"},
+    {"step": 21, "operation": "APPROVE", "expected": "APPROVED/v2 + ReturnFulfillment CREATED/v1"},
+    {"step": 22, "operation": "HAND_OVER_RETURN", "expected": "ReturnFulfillment HANDED_OVER/v2"},
+    {"step": 23, "operation": "MARK_RETURN_IN_TRANSIT", "expected": "ReturnFulfillment IN_TRANSIT/v3"},
+    {"step": 24, "operation": "RECEIVE_RETURN", "expected": "ReturnFulfillment RECEIVED/v4"},
+    {"step": 25, "operation": "ACCEPT_INSPECTION", "expected": "INSPECTION_ACCEPTED/v5 + ResolutionSaga started"},
+    {"step": 26, "operation": "POLL", "expected": "AfterSale COMPLETED/v4 + ResolutionSaga COMPLETED/v10"}
+  ],
+  "worker_effect_order": [
+    "Inventory AFTER_SALE_RETURN by case quantity",
+    "optional cumulative benefit/funding reversal with entitlement retained until fully reversed",
+    "Payment refund case delta and accumulate CAPTURED → PARTIALLY_REFUNDED → REFUNDED",
+    "Order cumulative settlement records item/order quantities and money",
+    "Order CONFIRM_REFUND and RETURN only when cumulative full_return=true",
+    "AfterSale COMPLETED"
+  ],
+  "partial_terminal_invariants": {
+    "resolution_saga": "COMPLETED/v8 without benefit or v10 with benefit, plus two per durable retry",
+    "order_return_full": false,
+    "order": "COMPLETED and not terminalized",
+    "payment": "PARTIALLY_REFUNDED with positive remaining refundable money",
+    "order_operations": "refund and return operation IDs remain null",
+    "entitlement": "RETAINED_PARTIAL until its complete application amount has been reversed"
+  },
+  "terminal_invariants": {
+    "listing": "PUBLISHED/v6",
+    "forward_fulfillment": "DELIVERED/v4",
+    "return_fulfillment": "INSPECTION_ACCEPTED/v5",
+    "aftersales": "COMPLETED/v4",
+    "resolution_saga": "COMPLETED/v12 without benefit or v14 with benefit, plus two per durable retry",
+    "refund_status": "SUCCEEDED",
+    "order": "RETURNED/v7",
+    "payment": "REFUNDED/v2 for one case or v3 for partial-then-full/multi-line-full",
+    "inventory": "10/0/10/v4 for one case, v5 for same-line partial-then-full, or one v4 balance per SKU for multi-line-full",
+    "payable_captured_refunded_minor": "39800 without benefits or 36000 with the governed 3800 benefit",
+    "after_sale_item_identity": "one exact afterSaleItemId linked to the original orderItemId",
+    "client_commands": "25/31/34 without benefits for full/partial-then-full/multi-line-full; multi-line-full intentionally forbids benefits so it isolates cross-line settlement",
+    "all_replay_duplicate": true
+  },
+  "safety": {
+    "ledger": "must be atomically created before the first write and checkpointed before/after every request",
+    "timeout": "query current state by afterSaleId; never retry a write blindly",
+    "request_timeout": "before afterSaleId exists, query get-by-order-item with exact orderId and orderItemId",
+    "manual_review": "automatic execution stops; RETRY_RESOLUTION requires human evidence review and explicit authorization",
+    "cleanup": "refund is irreversible; retain all records and use compensation/manual review, never delete",
+    "cdc_timeout": "run read-only reconciliation only; never mutate business state to force readiness",
+    "credentials": "environment variables only"
+  }
+}

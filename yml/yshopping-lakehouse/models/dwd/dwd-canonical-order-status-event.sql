@@ -24,6 +24,8 @@ SELECT
     get_json_string(payload, '$.cancellation_saga_id') AS cancellation_saga_id,
     get_json_string(payload, '$.pre_cancellation_status') AS pre_cancellation_status,
     get_json_string(payload, '$.cancellation_mode') AS cancellation_mode,
+    get_json_string(payload, '$.responsibility_party') AS responsibility_party,
+    get_json_string(payload, '$.responsibility_code') AS responsibility_code,
     CAST(get_json_string(payload, '$.step_ordinal') AS INT) AS step_ordinal,
     get_json_string(payload, '$.fulfillment_id') AS fulfillment_id,
     get_json_string(payload, '$.shipment_id') AS shipment_id,

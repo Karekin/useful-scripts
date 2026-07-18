@@ -1,0 +1,3 @@
+target/
+.wren/memory/
+.env

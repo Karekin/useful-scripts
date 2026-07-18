@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/commerce-session-identity-linked-v1.schema.json",
+  "title": "commerce.session.identity_linked payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "session_id",
+    "previous_principal_id",
+    "current_principal_id",
+    "link_version",
+    "session_status",
+    "linked_at",
+    "source_system",
+    "source_type",
+    "source_id"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "format": "uuid"},
+    "session_id": {"type": "string", "format": "uuid"},
+    "previous_principal_id": {"type": ["string", "null"], "format": "uuid"},
+    "current_principal_id": {"type": "string", "format": "uuid"},
+    "link_version": {"type": "integer", "minimum": 1},
+    "session_status": {"type": "string", "enum": ["ACTIVE", "CHECKOUT_IN_PROGRESS", "ABANDONED", "EXPIRED"]},
+    "linked_at": {"type": "string", "format": "date-time"},
+    "source_system": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,31}$"},
+    "source_type": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,31}$"},
+    "source_id": {"type": "string", "minLength": 1, "maxLength": 128}
+  }
+}

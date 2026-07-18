@@ -1,0 +1,40 @@
+{
+  "authority": {
+    "reference": {
+      "merchantId": "620f333a-9623-45cc-ae57-01dc3eab8df8",
+      "shopId": "363da101-298e-4da2-9e0a-4d5a7d015153"
+    },
+    "operator": {
+      "merchantId": "620f333a-9623-45cc-ae57-01dc3eab8df8",
+      "shopId": "363da101-298e-4da2-9e0a-4d5a7d015153",
+      "principalId": "b63f7129-f912-4207-b689-b5af681d2902",
+      "roleCode": "OWNER"
+    }
+  },
+  "targetWarehouse": {
+    "idempotencyKey": "$idempotency.key",
+    "name": "CM-HSF-TARGET-0718",
+    "address": "Shanghai test network",
+    "sort": 1,
+    "remark": "Created only through governed Dubbo capability",
+    "principal": "HSF owner",
+    "warehousePrice": 0,
+    "truckagePrice": 0,
+    "status": 0
+  },
+  "command": {
+    "customerId": 3,
+    "moveTime": "2026-07-18T14:20:00",
+    "remark": "CloudMold HSF full-chain stock transfer",
+    "items": [
+      {
+        "fromWarehouseId": 3,
+        "toWarehouseId": "$steps.create-target-warehouse.result",
+        "productId": 3,
+        "productPrice": 39.8,
+        "count": 1,
+        "remark": "move one compatibility-projected product"
+      }
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+name: metadata_readiness
+table_reference:
+  schema: yshopping_ads
+  table: ads_canonical_metadata_readiness
+primary_key: tenant_id
+columns:
+  - {name: tenant_id, type: BIGINT, is_primary_key: true, not_null: true}
+  - {name: data_source_count, type: BIGINT}
+  - {name: dataset_count, type: BIGINT}
+  - {name: task_count, type: BIGINT}
+  - {name: lineage_count, type: BIGINT}
+  - {name: dqc_rule_count, type: BIGINT}
+  - {name: metric_count, type: BIGINT}
+  - {name: dqc_result_count, type: BIGINT}
+  - {name: failed_dqc_result_count, type: BIGINT}
+  - {name: unresolved_lineage_endpoint_count, type: BIGINT}
+  - {name: invalid_task_run_count, type: BIGINT}
+  - {name: invalid_dqc_reference_count, type: BIGINT}
+  - {name: readiness_status, type: VARCHAR}
+properties:
+  description: Metadata definition and runtime governance readiness; currently FIRST_SLICE_PARTIAL.

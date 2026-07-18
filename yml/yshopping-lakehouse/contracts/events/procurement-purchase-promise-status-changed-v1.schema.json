@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/procurement-purchase-promise-status-changed-v1.schema.json",
+  "title": "procurement.purchase_promise.status_changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "promise_id",
+    "promise_key",
+    "purchase_order_id",
+    "purchase_order_no",
+    "purchase_order_line_id",
+    "supplier_id",
+    "product_id",
+    "product_unit_id",
+    "ordered_quantity",
+    "promised_receipt_at",
+    "promise_timezone",
+    "grace_minutes",
+    "pause_minutes",
+    "promise_frozen_at",
+    "current_status"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "promise_id": {"type": "string", "format": "uuid"},
+    "promise_key": {"type": "string", "pattern": "^ERP_PO_LINE:[1-9][0-9]*:[1-9][0-9]*$"},
+    "purchase_order_id": {"type": "integer", "minimum": 1},
+    "purchase_order_no": {"type": "string", "minLength": 1, "maxLength": 64},
+    "purchase_order_line_id": {"type": "integer", "minimum": 1},
+    "supplier_id": {"type": "integer", "minimum": 1},
+    "product_id": {"type": "integer", "minimum": 1},
+    "product_unit_id": {"type": "integer", "minimum": 1},
+    "ordered_quantity": {"type": "string", "pattern": "^-?[0-9]+(\\.[0-9]{1,6})?$"},
+    "promised_receipt_at": {"type": "string", "format": "date-time"},
+    "promise_timezone": {"type": "string", "minLength": 1, "maxLength": 64},
+    "grace_minutes": {"type": "integer", "minimum": 0},
+    "pause_minutes": {"type": "integer", "minimum": 0},
+    "promise_frozen_at": {"type": "string", "format": "date-time"},
+    "previous_status": {
+      "type": ["string", "null"],
+      "enum": [null, "ACTIVE", "CANCELLED"]
+    },
+    "current_status": {
+      "type": "string",
+      "enum": ["ACTIVE", "CANCELLED"]
+    },
+    "reason": {"type": ["string", "null"], "maxLength": 255}
+  }
+}

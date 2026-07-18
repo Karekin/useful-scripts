@@ -39,6 +39,7 @@ SELECT
     item.quantity,
     item.unit_price_minor,
     item.line_amount_minor AS gross_amount_minor,
+    item.merchandise_cost_minor,
     COALESCE(benefit.discount_amount_minor, 0) AS discount_amount_minor,
     item.line_amount_minor - COALESCE(benefit.discount_amount_minor, 0) AS net_amount_minor,
     COALESCE(benefit.funding_amount_minor, 0) AS funding_amount_minor,

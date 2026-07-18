@@ -62,10 +62,33 @@ class ModelCtlTest(unittest.TestCase):
             positions["models/dws/dws-canonical-paid-order-cancellation-saga-current.sql"],
         )
 
-    def test_models_extend_manifest_to_two_hundred_six_in_dependency_order(self):
+    def test_models_extend_manifest_to_two_hundred_fifty_eight_in_dependency_order(self):
         order = MODEL.load_order()
-        self.assertEqual(len(order), 206)
+        self.assertEqual(len(order), 258)
         positions = {entry: index for index, entry in enumerate(order)}
+        for dwd in (
+            "models/dwd/dwd-legacy-pay-order-current.sql",
+            "models/dwd/dwd-legacy-pay-refund-current.sql",
+            "models/dwd/dwd-legacy-member-user-current.sql",
+            "models/dwd/dwd-legacy-product-browse-history-current.sql",
+            "models/dwd/dwd-legacy-trade-cart-current.sql",
+        ):
+            self.assertLess(
+                positions["models/dwd/dwd-legacy-collect-current.sql"],
+                positions[dwd],
+            )
+            self.assertLess(
+                positions[dwd],
+                positions["models/dws/dws-legacy-payment-current.sql"],
+            )
+        self.assertLess(
+            positions["models/dws/dws-legacy-payment-current.sql"],
+            positions["models/dws/dws-legacy-user-behavior-current.sql"],
+        )
+        self.assertLess(
+            positions["models/dws/dws-legacy-user-behavior-current.sql"],
+            positions["models/ads/ads-legacy-commerce-source-metrics.sql"],
+        )
         paid_dws = "models/dws/dws-canonical-paid-order-cancellation-saga-current.sql"
         paid_ads = "models/ads/ads-canonical-paid-order-cancellation-saga-readiness.sql"
         self.assertLess(
@@ -73,13 +96,24 @@ class ModelCtlTest(unittest.TestCase):
             positions[paid_dws],
         )
         self.assertLess(positions[paid_dws], positions[paid_ads])
+        merchant_cancel_dws = "models/dws/dws-canonical-merchant-cancellation-current.sql"
+        merchant_cancel_ads = "models/ads/ads-canonical-merchant-cancellation-metrics.sql"
+        self.assertLess(positions["models/dim/dim-canonical-order-cancellation-saga-current.sql"],
+                        positions[merchant_cancel_dws])
+        self.assertLess(positions["models/dim/dim-canonical-order-current.sql"],
+                        positions[merchant_cancel_dws])
+        self.assertLess(positions[merchant_cancel_dws], positions[merchant_cancel_ads])
+        self.assertLess(positions[merchant_cancel_ads], positions["models/ads/ads-ecommerce-role-metrics.sql"])
         after_sale_dwd = "models/dwd/dwd-canonical-after-sale-status-event.sql"
         after_sale_dim = "models/dim/dim-canonical-after-sale-current.sql"
         after_sale_dws = "models/dws/dws-canonical-after-sale-resolution-current.sql"
         after_sale_ads = "models/ads/ads-canonical-after-sale-readiness.sql"
+        refund_cycle_dws = "models/dws/dws-canonical-after-sale-refund-cycle.sql"
         self.assertLess(positions["models/dwd/dwd-domain-event.sql"], positions[after_sale_dwd])
         self.assertLess(positions[after_sale_dwd], positions[after_sale_dim])
         self.assertLess(positions[after_sale_dim], positions[after_sale_dws])
+        self.assertLess(positions["models/dim/dim-canonical-after-sale-refund-current.sql"], positions[refund_cycle_dws])
+        self.assertLess(positions[refund_cycle_dws], positions["models/ads/ads-ecommerce-role-metrics.sql"])
         self.assertLess(positions[after_sale_dws], positions[after_sale_ads])
         benefit_reversal_dwd = "models/dwd/dwd-canonical-after-sale-benefit-reversal-event.sql"
         benefit_funding_dwd = "models/dwd/dwd-canonical-after-sale-benefit-funding-reversal-event.sql"
@@ -116,6 +150,7 @@ class ModelCtlTest(unittest.TestCase):
         warehouse_dim = "models/dim/dim-canonical-warehouse-current.sql"
         warehouse_dws = "models/dws/dws-canonical-warehouse-network-current.sql"
         warehouse_ads = "models/ads/ads-canonical-warehouse-network-readiness.sql"
+        inventory_sell_through_dws = "models/dws/dws-canonical-inventory-sell-through-30d.sql"
         self.assertLess(positions["models/dwd/dwd-domain-event.sql"], positions[identity_dwd])
         self.assertLess(positions[identity_dwd], positions[principal_dim])
         self.assertLess(positions["models/dwd/dwd-domain-event.sql"], positions[merchant_source_dwd])
@@ -126,6 +161,15 @@ class ModelCtlTest(unittest.TestCase):
         self.assertLess(positions[warehouse_dwd], positions[warehouse_dim])
         self.assertLess(positions[warehouse_dim], positions[warehouse_dws])
         self.assertLess(positions[warehouse_dws], positions[warehouse_ads])
+        self.assertLess(positions["models/dwd/dwd-canonical-inventory-movement.sql"], positions[inventory_sell_through_dws])
+        self.assertLess(positions[inventory_sell_through_dws], positions["models/ads/ads-ecommerce-role-metrics.sql"])
+
+        promise_dws = "models/dws/dws-canonical-fulfillment-promise-current.sql"
+        promise_ads = "models/ads/ads-canonical-fulfillment-promise-readiness.sql"
+        promise_metrics_ads = "models/ads/ads-canonical-fulfillment-promise-metrics.sql"
+        self.assertLess(positions["models/dim/dim-canonical-fulfillment-current.sql"], positions[promise_dws])
+        self.assertLess(positions[promise_dws], positions[promise_ads])
+        self.assertLess(positions[promise_ads], positions[promise_metrics_ads])
 
         listing_saga_dwd = "models/dwd/dwd-canonical-listing-unpublish-saga-event.sql"
         listing_saga_dim = "models/dim/dim-canonical-listing-unpublish-saga-current.sql"
@@ -192,10 +236,13 @@ class ModelCtlTest(unittest.TestCase):
         metadata_dim = "models/dim/dim-canonical-metadata-current.sql"
         metadata_dws = "models/dws/dws-canonical-metadata-current.sql"
         metadata_ads = "models/ads/ads-canonical-metadata-readiness.sql"
+        service_dws = "models/dws/dws-canonical-customer-service-current.sql"
         self.assertLess(positions["models/dwd/dwd-domain-event.sql"], positions[metadata_dwd])
         self.assertLess(positions[metadata_dwd], positions[metadata_dim])
         self.assertLess(positions[metadata_dim], positions[metadata_dws])
         self.assertLess(positions[metadata_dws], positions[metadata_ads])
+        self.assertLess(positions["models/dwd/dwd-canonical-customer-service-event.sql"], positions[service_dws])
+        self.assertLess(positions[service_dws], positions["models/ads/ads-ecommerce-role-metrics.sql"])
 
         benefit_application_dwd = "models/dwd/dwd-canonical-order-benefit-application-event.sql"
         benefit_allocation_dwd = "models/dwd/dwd-canonical-order-benefit-allocation-event.sql"

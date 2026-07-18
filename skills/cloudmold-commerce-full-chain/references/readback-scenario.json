@@ -1,0 +1,24 @@
+{
+  "flowId": "workflow.cloudmold.commerce.terminal-readback.v1",
+  "requiredInputs": ["authority", "product", "listing", "order", "payment", "fulfillment", "aftersale", "warehouse"],
+  "steps": [
+    {"id":"merchant-reference","capabilityId":"capability.cloudmold.merchant.merchant-reference-validation.require-active-reference.v1","arguments":["$input.authority.reference"],"expect":{"result.merchantStatus":"ACTIVE","result.shopStatus":"ACTIVE"}},
+    {"id":"merchant-owner","capabilityId":"capability.cloudmold.merchant.merchant-owner-validation.require-active-merchant.v1","arguments":["$input.authority.reference.merchantId"]},
+    {"id":"principal","capabilityId":"capability.cloudmold.identity.principal-validation.require-active-principal.v1","arguments":["$input.authority.operator.principalId"]},
+    {"id":"catalog-sku","capabilityId":"capability.cloudmold.catalog.catalog-sku-projection.get-active-sku.v1","arguments":["$input.product.skuId"]},
+    {"id":"catalog-sku-valid","capabilityId":"capability.cloudmold.catalog.catalog-sku-validation.require-active-sku.v1","arguments":["$input.product.skuId"]},
+    {"id":"catalog-spu-valid","capabilityId":"capability.cloudmold.catalog.catalog-spu-validation.require-active-spu.v1","arguments":["$input.product.spuId"]},
+    {"id":"listing-offer","capabilityId":"capability.cloudmold.listing.listing-query.require-published-offer.v1","arguments":["$input.listing.validation"]},
+    {"id":"forward-delivered","capabilityId":"capability.cloudmold.fulfillment.forward-fulfillment-after-sale-query.require-delivered.v1","arguments":["$input.order.orderId","$input.fulfillment.fulfillmentId","$input.fulfillment.shipmentId","$input.order.orderItemId"],"expect":{"result.status":"DELIVERED"}},
+    {"id":"shipment-delivered","capabilityId":"capability.cloudmold.fulfillment.fulfillment-shipment-validation.require-delivered.v1","arguments":["$input.order.orderId","$input.fulfillment.fulfillmentId"],"expect":{"result.currentStatus":"DELIVERED"}},
+    {"id":"return-get","capabilityId":"capability.cloudmold.fulfillment.return-fulfillment-query.get-for-after-sale.v1","arguments":["$input.aftersale.afterSaleId","$input.aftersale.returnFulfillmentId"],"expect":{"result.currentStatus":"INSPECTION_ACCEPTED"}},
+    {"id":"return-accepted","capabilityId":"capability.cloudmold.fulfillment.return-fulfillment-query.require-inspection-accepted.v1","arguments":["$input.aftersale.afterSaleId","$input.aftersale.returnFulfillmentId"],"expect":{"result.currentStatus":"INSPECTION_ACCEPTED"}},
+    {"id":"aftersale-by-item","capabilityId":"capability.cloudmold.aftersale.after-sale-query.get-by-order-item.v1","arguments":["$input.order.orderId","$input.order.orderItemId"],"expect":{"result.caseStatus":"COMPLETED","result.refundStatus":"SUCCEEDED"}},
+    {"id":"order-attribution","capabilityId":"capability.cloudmold.order.order-query.require-attributed-order.v1","arguments":["$input.order.orderId"]},
+    {"id":"payment-cancellation-refunded","capabilityId":"capability.cloudmold.payment.payment-cancellation-query.require-refunded.v1","arguments":["$input.order.orderId","$input.payment.paymentId"]},
+    {"id":"payment-refund-refunded","capabilityId":"capability.cloudmold.payment.payment-refund-query.require-refunded.v1","arguments":["$input.order.orderId","$input.payment.paymentId","$input.payment.amountMinor","$input.payment.currencyCode"],"expect":{"result.status":"REFUNDED"}},
+    {"id":"warehouse","capabilityId":"capability.cloudmold.warehouse.warehouse-reference-validation.require-active-warehouse.v1","arguments":["$input.warehouse.warehouseId"]},
+    {"id":"location","capabilityId":"capability.cloudmold.warehouse.warehouse-reference-validation.require-active-location.v1","arguments":["$input.warehouse.warehouseId","$input.warehouse.locationId"]},
+    {"id":"warehouse-source","capabilityId":"capability.cloudmold.warehouse.warehouse-source-mapping-query.resolve-active.v1","arguments":["$input.warehouse.source","$input.warehouse.eligibilityAt"]}
+  ]
+}

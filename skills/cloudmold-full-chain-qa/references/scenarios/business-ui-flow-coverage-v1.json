@@ -1,0 +1,64 @@
+{
+  "schema_version": "cloudmold.qa-scenario/v1",
+  "scenario_id": "business-ui-flow-coverage-v1",
+  "workflow_id": "workflow.cloudmold.quality.route-api-skill-lakehouse-coverage.v1",
+  "skill_id": "skill.cloudmold.quality.full-chain-qa.v1",
+  "maturity": "partial",
+  "read_only": true,
+  "route_wait_ms": 1200,
+  "route_ready_timeout_ms": 15000,
+  "discover_live_routes": {
+    "enabled": true,
+    "domains": ["erp", "wms", "mall"],
+    "visible_only": true,
+    "maximum": 100
+  },
+  "critical_routes": [
+    {"id": "legacy.erp.procurement.order", "path": "/erp/purchase/order", "goal": "采购下单与审核"},
+    {"id": "legacy.erp.procurement.receipt", "path": "/erp/purchase/in", "goal": "采购入库与库存增加"},
+    {"id": "legacy.erp.procurement.payment", "path": "/erp/finance/payment", "goal": "采购应付与付款"},
+    {"id": "legacy.erp.sales.order", "path": "/erp/sale/order", "goal": "销售下单与审核"},
+    {"id": "legacy.erp.sales.receipt", "path": "/erp/finance/receipt", "goal": "销售应收与收款"},
+    {"id": "legacy.erp.inventory.move", "path": "/erp/stock/move", "goal": "库存调拨"},
+    {"id": "legacy.erp.inventory.count", "path": "/erp/stock/check", "goal": "库存盘点"},
+    {"id": "legacy.wms.receipt", "path": "/wms/receipt", "goal": "WMS 物理收货"},
+    {"id": "legacy.wms.shipment", "path": "/wms/shipment", "goal": "WMS 物理出库"},
+    {"id": "legacy.mall.catalog", "path": "/mall/product/spu", "goal": "Mall 商品管理"},
+    {"id": "legacy.mall.trade.order", "path": "/mall/trade/order", "goal": "Mall 订单管理"},
+    {"id": "legacy.mall.trade.aftersale", "path": "/mall/trade/after-sale", "goal": "Mall 售后退款"}
+  ],
+  "flow_families": [
+    {
+      "id": "workflow.legacy-yudao.erp.procure-stock-pay.v1",
+      "lineage": "YUDDAO_LEGACY",
+      "ui_routes": ["/erp/purchase/order", "/erp/purchase/in", "/erp/finance/payment"],
+      "current_evidence": "purchase-to-stock-v1 only",
+      "classification": "FLOW_GAP",
+      "gap": "付款尾段、反审核约束与湖仓三账未纳入同一 Skill"
+    },
+    {
+      "id": "workflow.legacy-yudao.erp.order-stock-cash.v1",
+      "lineage": "YUDDAO_LEGACY",
+      "ui_routes": ["/erp/sale/order", "/erp/sale/out", "/erp/finance/receipt"],
+      "current_evidence": "controller/service behavior only",
+      "classification": "FLOW_GAP",
+      "gap": "无统一 runner、重放、异常与湖仓对账"
+    },
+    {
+      "id": "workflow.legacy-yudao.erp.move-count-quality.v1",
+      "lineage": "YUDDAO_LEGACY",
+      "ui_routes": ["/erp/stock/move", "/erp/stock/check", "/wms/movement", "/wms/check"],
+      "current_evidence": "UI and atomic endpoints",
+      "classification": "FLOW_GAP",
+      "gap": "无 WMS 物理作业、规范 Inventory 映射与完整 Skill"
+    },
+    {
+      "id": "workflow.cloudmold.commerce.aftersales-e2e.v1",
+      "lineage": "CLOUDMOLD_CANONICAL",
+      "ui_routes": [],
+      "current_evidence": "canonical Skill and lakehouse reconciliation",
+      "classification": "TEST_GAP",
+      "gap": "管理前端未调用 canonical atomic APIs；端面只能观察 legacy Mall"
+    }
+  ]
+}

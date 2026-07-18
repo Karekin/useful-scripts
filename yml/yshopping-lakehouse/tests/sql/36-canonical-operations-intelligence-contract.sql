@@ -37,7 +37,7 @@ SELECT 'operations_intelligence_sensitive_raw_content_leak' AS check_name, COUNT
 FROM yshopping_dwd.dwd_domain_event
 WHERE source_system = 'cloudmold-operations-intelligence'
   AND (LOWER(payload) REGEXP '"(title|description|content|prompt|response|phone|email|address|ip|device)"[[:space:]]*:'
-       OR LOWER(headers) NOT LIKE '%"raw_content_stored":false%');
+       OR LOWER(headers) NOT REGEXP '"raw_content_stored"[[:space:]]*:[[:space:]]*false');
 
 SELECT 'operations_intelligence_alert_version_sequence_gap' AS check_name, COUNT(*) AS violations
 FROM (

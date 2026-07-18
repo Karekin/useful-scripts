@@ -1,0 +1,51 @@
+{
+  "authority": {
+    "reference": {
+      "merchantId": "620f333a-9623-45cc-ae57-01dc3eab8df8",
+      "shopId": "363da101-298e-4da2-9e0a-4d5a7d015153"
+    },
+    "operator": {
+      "merchantId": "620f333a-9623-45cc-ae57-01dc3eab8df8",
+      "shopId": "363da101-298e-4da2-9e0a-4d5a7d015153",
+      "principalId": "b63f7129-f912-4207-b689-b5af681d2902",
+      "roleCode": "OWNER"
+    }
+  },
+  "customer": {
+    "idempotencyKey": "$idempotency.key",
+    "name": "CloudMold HSF buyer hsf0718e2e01",
+    "contact": "HSF owner",
+    "mobile": "13800000001",
+    "remark": "Created only through governed Dubbo capability",
+    "status": 0,
+    "sort": 1
+  },
+  "command": {
+    "customerId": "$steps.create-customer.result",
+    "saleUserId": 1,
+    "accountId": 2,
+    "orderTime": "2026-07-18T14:15:00",
+    "discountPercent": 0,
+    "depositPrice": 0,
+    "remark": "CloudMold HSF full-chain product sale",
+    "items": [
+      {
+        "productId": 3,
+        "productUnitId": 900000004,
+        "productPrice": 39.8,
+        "count": 2,
+        "taxPercent": 0,
+        "remark": "canonical product compatibility projection"
+      }
+    ]
+  },
+  "saleOut": {
+    "idempotencyKey": "$idempotency.key",
+    "orderId": "$steps.create.result",
+    "warehouseId": 3,
+    "accountId": 2,
+    "saleUserId": 1,
+    "outTime": "2026-07-18T14:17:00",
+    "remark": "CloudMold HSF sale physical shipment"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/promotion-advertising-ledger-recorded-v1.schema.json",
+  "title": "promotion.advertising_ledger.recorded payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ledger_entry_id", "ledger_entry_code", "campaign_id", "merchant_id",
+    "entry_type", "charge_model", "amount_minor", "currency_code", "occurred_at"
+  ],
+  "properties": {
+    "ledger_entry_id": {"type": "string", "format": "uuid"},
+    "ledger_entry_code": {"type": "string", "minLength": 8, "maxLength": 128},
+    "campaign_id": {"type": "string", "format": "uuid"},
+    "placement_id": {"type": ["string", "null"], "format": "uuid"},
+    "merchant_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "entry_type": {"type": "string", "enum": ["SPEND", "REVENUE"]},
+    "charge_model": {"type": "string", "enum": ["CPC", "CPM", "CPA", "FIXED", "REV_SHARE", "SETTLEMENT"]},
+    "revenue_type": {
+      "type": ["string", "null"],
+      "enum": [null, "ADVERTISING", "COMMISSION", "FULFILLMENT_SERVICE", "PAYMENT_SERVICE", "OTHER_PLATFORM_REVENUE"]
+    },
+    "source_interaction_id": {"type": ["string", "null"], "format": "uuid"},
+    "order_ref": {"type": ["string", "null"], "maxLength": 128},
+    "amount_minor": {"type": "integer", "minimum": 1},
+    "currency_code": {"type": "string", "const": "CNY"},
+    "occurred_at": {"type": "string", "format": "date-time"}
+  }
+}

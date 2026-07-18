@@ -1,0 +1,19 @@
+{
+  "name": "purchase-to-stock-v1",
+  "version": 1,
+  "quantity": "10.00",
+  "currency": "CNY",
+  "statuses": {"draft": 10, "approved": 20},
+  "stock_business_types": {"purchase_in": 70, "purchase_in_cancel": 71},
+  "fixtures": ["product_unit", "product_category", "product", "supplier", "warehouse", "account"],
+  "invariants": [
+    "all resources are read back in the selected tenant",
+    "purchase order item is server-generated and belongs to the selected product",
+    "receipt item references the server-generated order item and selected warehouse",
+    "receipt draft changes order inCount but does not change stock",
+    "receipt approval increases stock by exactly the receipt quantity",
+    "exactly one biz_type=70 stock movement matches receipt id, item id, quantity and after quantity",
+    "cleanup creates the compensating biz_type=71 movement and restores baseline stock"
+  ],
+  "cleanup_residuals": ["immutable stock audit records", "zero-balance stock row"]
+}

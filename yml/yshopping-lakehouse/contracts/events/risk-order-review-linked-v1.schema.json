@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/risk-order-review-linked-v1.schema.json",
+  "title": "risk.order_review.linked payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["order_risk_case_id", "case_id", "order_id", "payment_id", "risk_type", "reason_code", "review_status", "occurred_at"],
+  "properties": {
+    "order_risk_case_id": {"type": "string", "format": "uuid"},
+    "case_id": {"type": "string", "format": "uuid"},
+    "order_id": {"type": "string", "format": "uuid"},
+    "payment_id": {"type": ["string", "null"], "format": "uuid"},
+    "risk_type": {"type": "string", "enum": ["FRAUD", "ABUSE", "PAYMENT_RISK", "POLICY_VIOLATION"]},
+    "reason_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_-]{1,63}$"},
+    "review_status": {"type": "string", "enum": ["OPEN", "IN_REVIEW", "DECIDED", "CLOSED"]},
+    "occurred_at": {"type": "string", "format": "date-time"}
+  }
+}

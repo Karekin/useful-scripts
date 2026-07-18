@@ -7,7 +7,7 @@ STARROCKS_CONTAINER=${STARROCKS_CONTAINER:-yshopping-starrocks}
 YSHOPPING_REFERENCE_ROOT=${YSHOPPING_REFERENCE_ROOT:-/Users/karekin/Library/Mobile Documents/iCloud~md~obsidian/Documents/project/语兴好物（y shopping）-电商数仓搭建}
 
 usage() {
-  echo "usage: lakehousectl {config-check|contract-test|source-assets|source-disposition-status|source-evidence-policy|semantic-status|start|submit-cdc|submit-catalog-cdc|submit-legacy-mall-cdc|submit-event-cdc|apply-models|health|test|reconcile|reconcile-legacy-trade-benefit-assessment|reconcile-canonical-legacy-trade-benefit-assessment|reconcile-canonical-inventory|reconcile-canonical-inventory-lot|reconcile-canonical-inventory-migration|reconcile-canonical-catalog|reconcile-canonical-commerce|reconcile-canonical-commerce-v2|reconcile-canonical-order-benefit|reconcile-canonical-cancellation-saga|reconcile-canonical-paid-cancellation-saga|reconcile-canonical-aftersales|reconcile-canonical-listing-unpublish-saga|reconcile-canonical-merchant|reconcile-canonical-merchant-deposit|reconcile-canonical-warehouse-network} [--tenant ID] [--run-id ID] [--after-sale-id UUID] [--saga-id UUID] [--merchant-id UUID] [--warehouse-id UUID] [--source-system CODE] [--source-type CODE] [--source-id ID]"
+  echo "usage: lakehousectl {config-check|contract-test|report-contract-test|report-status|source-assets|source-disposition-status|source-evidence-policy|semantic-status|start|submit-cdc|submit-catalog-cdc|submit-legacy-mall-cdc|submit-legacy-commerce-observability-cdc|submit-event-cdc|apply-models|health|test|reconcile|reconcile-legacy-commerce-observability|reconcile-legacy-trade-benefit-assessment|reconcile-canonical-legacy-trade-benefit-assessment|reconcile-canonical-inventory|reconcile-canonical-inventory-lot|reconcile-canonical-inventory-migration|reconcile-canonical-catalog|reconcile-canonical-commerce|reconcile-canonical-commerce-v2|reconcile-canonical-order-benefit|reconcile-canonical-cancellation-saga|reconcile-canonical-paid-cancellation-saga|reconcile-canonical-aftersales|reconcile-canonical-listing-unpublish-saga|reconcile-canonical-merchant|reconcile-canonical-merchant-deposit|reconcile-canonical-warehouse-network} [--tenant ID] [--run-id ID] [--after-sale-id UUID] [--saga-id UUID] [--merchant-id UUID] [--warehouse-id UUID] [--source-system CODE] [--source-type CODE] [--source-id ID]"
 }
 
 sql() {
@@ -125,6 +125,7 @@ case "$COMMAND" in
   config-check)
     docker compose -f "$COMPOSE_FILE" config --quiet
     test -f "$ROOT_DIR/pipelines/legacy-mall-alignment-mysql-to-starrocks.yaml"
+    test -f "$ROOT_DIR/pipelines/legacy-commerce-observability-mysql-to-starrocks.yaml"
     test -f "$ROOT_DIR/contracts/erp-procurement-inventory-v1.yaml"
     test -f "$ROOT_DIR/contracts/canonical-listing-fulfillment-commerce-v2.yaml"
     test -f "$ROOT_DIR/contracts/canonical-order-cancellation-saga-v1.yaml"
@@ -156,6 +157,7 @@ case "$COMMAND" in
     "$ROOT_DIR/scripts/alignmentctl" validate
     "$ROOT_DIR/scripts/sourceassetctl" validate
     "$ROOT_DIR/scripts/attachmentctl" validate --reference-root "$YSHOPPING_REFERENCE_ROOT"
+    "$ROOT_DIR/scripts/reportctl" validate
     python3 "$ROOT_DIR/scripts/modelctl" validate
     echo "configuration valid"
     ;;
@@ -164,6 +166,16 @@ case "$COMMAND" in
     "$ROOT_DIR/scripts/alignmentctl" validate
     "$ROOT_DIR/scripts/sourceassetctl" validate
     "$ROOT_DIR/scripts/attachmentctl" validate --reference-root "$YSHOPPING_REFERENCE_ROOT"
+    "$ROOT_DIR/scripts/reportctl" validate
+    ;;
+  report-contract-test)
+    "$ROOT_DIR/scripts/reportctl" validate
+    "$ROOT_DIR/scripts/reportctl" wren-check
+    ;;
+  report-status)
+    "$ROOT_DIR/scripts/reportctl" catalog
+    require_running
+    sql --skip-column-names < "$ROOT_DIR/analytics/source-health.sql"
     ;;
   source-assets)
     "$ROOT_DIR/scripts/sourceassetctl" summary
@@ -194,6 +206,10 @@ case "$COMMAND" in
   submit-legacy-mall-cdc)
     test -f "$ROOT_DIR/.env" || { echo "missing $ROOT_DIR/.env" >&2; exit 1; }
     docker compose -f "$COMPOSE_FILE" --profile tools run --rm legacy-mall-cdc-cli
+    ;;
+  submit-legacy-commerce-observability-cdc)
+    test -f "$ROOT_DIR/.env" || { echo "missing $ROOT_DIR/.env" >&2; exit 1; }
+    docker compose -f "$COMPOSE_FILE" --profile tools run --rm legacy-commerce-observability-cdc-cli
     ;;
   submit-event-cdc)
     test -f "$ROOT_DIR/.env" || { echo "missing $ROOT_DIR/.env" >&2; exit 1; }
@@ -228,6 +244,68 @@ case "$COMMAND" in
           ON r.tenant_id=m.tenant_id AND r.receipt_id=m.biz_id AND r.receipt_line_id=m.biz_item_id
        WHERE r.tenant_id=$TENANT_ID AND r.run_id='$safe_run_id';"
     run_tests
+    ;;
+  reconcile-legacy-commerce-observability)
+    require_running
+    echo -e "table\tsource_rows\tods_rows\tsource_active\tods_active"
+    for source_table in pay_order pay_refund member_user product_browse_history trade_cart; do
+      source_filter="deleted = b'0'"
+      ods_filter="deleted = FALSE"
+      if [[ "$source_table" == "product_browse_history" ]]; then
+        source_filter="$source_filter AND user_deleted = b'0'"
+        ods_filter="$ods_filter AND user_deleted = FALSE"
+      fi
+      source_rows=$(docker exec yudao-mysql sh -lc \
+        "mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" --batch --raw --skip-column-names \
+         -D 'ruoyi-vue-pro' -e \"SELECT COUNT(*) FROM $source_table\"")
+      source_active=$(docker exec yudao-mysql sh -lc \
+        "mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" --batch --raw --skip-column-names \
+         -D 'ruoyi-vue-pro' -e \"SELECT COUNT(*) FROM $source_table WHERE $source_filter\"")
+      ods_rows=$(sql --skip-column-names -e \
+        "SELECT COUNT(*) FROM yshopping_ods.$source_table;")
+      ods_active=$(sql --skip-column-names -e \
+        "SELECT COUNT(*) FROM yshopping_ods.$source_table WHERE $ods_filter;")
+      echo -e "$source_table\t$source_rows\t$ods_rows\t$source_active\t$ods_active"
+      [[ "$source_rows" == "$ods_rows" && "$source_active" == "$ods_active" ]] || {
+        echo "$source_table source/ODS reconciliation failed" >&2
+        exit 1
+      }
+    done
+    pii_columns=$(sql --skip-column-names -e "
+      SELECT COUNT(*)
+      FROM information_schema.columns
+      WHERE table_schema = 'yshopping_ods'
+        AND table_name IN ('pay_order','pay_refund','member_user')
+        AND column_name IN ('notify_url','user_ip','channel_user_id','channel_notify_data',
+                            'channel_error_msg','password','mobile','email','nickname','avatar',
+                            'birthday','mark','tag_ids');")
+    [[ "$pii_columns" == "0" ]] || {
+      echo "sensitive columns reached legacy commerce ODS" >&2
+      exit 1
+    }
+    sql -e "
+      SELECT 'refund_to_pay_order_matched' AS quality_metric, COUNT(*) AS value
+      FROM yshopping_ods.pay_refund refund
+      JOIN yshopping_ods.pay_order payment
+        ON payment.tenant_id=refund.tenant_id AND payment.id=refund.order_id
+      UNION ALL
+      SELECT 'pay_order_to_trade_order_matched', COUNT(*)
+      FROM yshopping_ods.pay_order payment
+      JOIN yshopping_ods.trade_order orders
+        ON orders.tenant_id=payment.tenant_id
+       AND CAST(orders.id AS VARCHAR)=payment.merchant_order_id
+      UNION ALL
+      SELECT 'browse_active_unresolved_member', COUNT(*)
+      FROM yshopping_ods.product_browse_history browse
+      LEFT JOIN yshopping_ods.member_user member
+        ON member.tenant_id=browse.tenant_id AND member.id=browse.user_id AND member.deleted=FALSE
+      WHERE browse.deleted=FALSE AND browse.user_deleted=FALSE AND member.id IS NULL
+      UNION ALL
+      SELECT 'cart_active_unresolved_member', COUNT(*)
+      FROM yshopping_ods.trade_cart cart
+      LEFT JOIN yshopping_ods.member_user member
+        ON member.tenant_id=cart.tenant_id AND member.id=cart.user_id AND member.deleted=FALSE
+      WHERE cart.deleted=FALSE AND member.id IS NULL;"
     ;;
   reconcile-legacy-trade-benefit-assessment)
     test -n "$TENANT_ID" || { echo "--tenant is required" >&2; exit 2; }
@@ -878,7 +956,7 @@ case "$COMMAND" in
       active_operators warehouse_events exact_source_mappings readiness <<< "$result"
     [[ "$warehouse_status" == "ACTIVE" && "$zones" == "1" && "$active_zones" == "1" \
        && "$locations" == "1" && "$active_locations" == "1" \
-       && "$active_mappings" == "1" && "$active_operators" == "1" \
+       && "$active_mappings" =~ ^[1-9][0-9]*$ && "$active_operators" == "1" \
        && "$warehouse_events" == "2" && "$exact_source_mappings" == "1" \
        && "$readiness" == "WAREHOUSE_NETWORK_READY" ]] || {
       echo "canonical warehouse network reconciliation failed" >&2

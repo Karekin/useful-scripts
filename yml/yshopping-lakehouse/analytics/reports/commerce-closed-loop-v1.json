@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "report_id": "commerce-closed-loop",
+  "version": "1.0",
+  "title": "交易与售后闭环驾驶舱",
+  "owner": "CloudMold Commerce",
+  "lifecycle": "pilot",
+  "publication_scope": "local_test",
+  "datasets": ["yshopping_ads.ads_canonical_commerce_v2_readiness", "yshopping_ads.ads_canonical_after_sale_readiness"],
+  "filters": [
+    {"field":"tenant_id","type":"tenant","required":true},
+    {"field":"run_id","type":"identifier","required":false},
+    {"field":"readiness_status","type":"status","required":false}
+  ],
+  "metrics": ["commerce.order_count", "commerce.reconciled_rate", "commerce.captured_amount_yuan", "aftersales.case_count", "aftersales.reconciled_rate", "aftersales.recovery_required_count", "aftersales.refunded_amount_yuan"],
+  "sections": [
+    {"id":"overview","title":"闭环概览","charts":[
+      {"id":"commerce-kpis","type":"kpi","title":"交易闭合与实收","metrics":["commerce.order_count","commerce.reconciled_rate","commerce.captured_amount_yuan"],"group_by":[]},
+      {"id":"aftersales-kpis","type":"kpi","title":"售后闭合与退款","metrics":["aftersales.case_count","aftersales.reconciled_rate","aftersales.refunded_amount_yuan"],"group_by":[]}
+    ]},
+    {"id":"exceptions","title":"异常与恢复","charts":[
+      {"id":"readiness-breakdown","type":"stacked_bar","title":"交易与售后就绪状态","metrics":["commerce.order_count","aftersales.case_count"],"group_by":["readiness_status"]},
+      {"id":"recovery-queue","type":"table","title":"待人工恢复售后","metrics":["aftersales.recovery_required_count"],"group_by":["recovery_status","responsibility"],"limit":100}
+    ]}
+  ],
+  "guardrails": ["金额统一由 minor unit 除以 100 换算为元，不从展示值反推。", "RECONCILED 只表示当前本地证据链闭合，不代表生产来源完成。", "不得暴露 buyer_id、waybill_no、reason、error_message 等个人或非必要明细。"],
+  "evidence": {"status":"available","kind":"local_runtime","notes":"本地 StarRocks 已有交易与售后非空样本；生产历史与附件审计后的最终 719 项来源仍未闭合。"}
+}

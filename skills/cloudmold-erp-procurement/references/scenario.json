@@ -1,0 +1,17 @@
+{
+  "flowId": "workflow.cloudmold.erp.procurement-promise-receipt.v2",
+  "requiredInputs": ["authority", "command", "promise", "purchaseIn"],
+  "steps": [
+    {"id": "validate-merchant-shop", "capabilityId": "capability.cloudmold.merchant.merchant-reference-validation.require-active-reference.v1", "write": false, "arguments": ["$input.authority.reference"], "expect": {"result.merchantStatus": "ACTIVE", "result.shopStatus": "ACTIVE"}},
+    {"id": "authorize-owner", "capabilityId": "capability.cloudmold.merchant.merchant-operator-authorization.require-authorized-operator.v1", "write": false, "arguments": ["$input.authority.operator"], "expect": {"result.roleCode": "OWNER", "result.assignmentStatus": "ACTIVE"}},
+    {"id": "create", "capabilityId": "capability.cloudmold.integration.yudao-erp-command.create-purchase-order.v1", "write": true, "arguments": ["$input.command"]},
+    {"id": "approve", "capabilityId": "capability.cloudmold.integration.yudao-erp-command.set-purchase-order-status.v1", "write": true, "arguments": [{"idempotencyKey": "$idempotency.key", "documentId": "$steps.create.result", "targetStatus": 20}]},
+    {"id": "list-lines", "capabilityId": "capability.cloudmold.integration.yudao-procurement-promise.list-purchase-order-lines.v1", "write": false, "arguments": ["$steps.create.result"]},
+    {"id": "save-promise", "capabilityId": "capability.cloudmold.integration.yudao-procurement-promise.save-purchase-promise.v1", "write": true, "arguments": [{"idempotencyKey": "$idempotency.key", "runId": "$idempotency.key", "purchaseOrderId": "$steps.create.result", "purchaseOrderLineId": "$steps.list-lines.result.0.purchaseOrderLineId", "promisedReceiptAt": "$input.promise.promisedReceiptAt", "promiseTimezone": "$input.promise.promiseTimezone", "graceMinutes": "$input.promise.graceMinutes", "pauseMinutes": "$input.promise.pauseMinutes", "status": "ACTIVE", "reason": "$input.promise.reason"}], "expect": {"result.status": "ACTIVE", "result.version": 1}},
+    {"id": "get-promise", "capabilityId": "capability.cloudmold.integration.yudao-procurement-promise.get-purchase-promise.v1", "write": false, "arguments": ["$steps.list-lines.result.0.purchaseOrderLineId"], "expect": {"result.status": "ACTIVE", "result.version": 1}},
+    {"id": "create-purchase-in", "capabilityId": "capability.cloudmold.integration.yudao-erp-command.create-purchase-in-from-order.v1", "write": true, "arguments": ["$input.purchaseIn"]},
+    {"id": "approve-purchase-in", "capabilityId": "capability.cloudmold.integration.yudao-erp-command.set-purchase-in-status.v1", "write": true, "arguments": [{"idempotencyKey": "$idempotency.key", "documentId": "$steps.create-purchase-in.result", "targetStatus": 20}]},
+    {"id": "assert", "capabilityId": "capability.cloudmold.integration.yudao-legacy-operations-query.get-purchase-order.v1", "write": false, "arguments": ["$steps.create.result"], "expect": {"result.sourceSystem": "ERP", "result.documentType": "PURCHASE_ORDER", "result.status": 20}},
+    {"id": "assert-purchase-in", "capabilityId": "capability.cloudmold.integration.yudao-legacy-operations-query.get-purchase-in.v1", "write": false, "arguments": ["$steps.create-purchase-in.result"], "expect": {"result.sourceSystem": "ERP", "result.documentType": "PURCHASE_IN", "result.status": 20}}
+  ]
+}

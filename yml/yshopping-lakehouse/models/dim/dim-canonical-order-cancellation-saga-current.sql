@@ -7,6 +7,16 @@ WITH history AS (
         SUM(IF(current_status = 'RETRY_SCHEDULED', 1, 0)) AS retry_event_count,
         SUM(IF(current_status = 'MANUAL_REVIEW', 1, 0)) AS manual_review_event_count,
         MAX(attempt) AS max_attempt,
+        MAX(order_status_at_request) AS order_status_at_request,
+        MAX(responsibility_party) AS responsibility_party,
+        MAX(responsibility_code) AS responsibility_code,
+        MAX(
+            CASE
+                WHEN counts_toward_paid_cancellation_rate = TRUE THEN 1
+                WHEN counts_toward_paid_cancellation_rate = FALSE THEN 0
+                ELSE NULL
+            END
+        ) AS counts_toward_paid_cancellation_rate,
         MIN(IF(current_status IN ('RETRY_SCHEDULED', 'MANUAL_REVIEW'), occurred_at, NULL))
           AS first_recovery_at
     FROM yshopping_dwd.dwd_canonical_order_cancellation_saga_event
@@ -22,10 +32,18 @@ WITH history AS (
 SELECT
     latest.event_id, latest.schema_version, latest.tenant_id, latest.saga_id, latest.payload_saga_id,
     latest.run_id, latest.order_id, latest.order_no, latest.aggregate_version,
-    latest.cancellation_mode, latest.payment_id, latest.payment_refund_transaction_id,
+    latest.cancellation_mode,
+    COALESCE(latest.order_status_at_request, history.order_status_at_request) AS order_status_at_request,
+    latest.payment_id, latest.payment_refund_transaction_id,
     latest.payment_status, latest.expected_fulfillment_count, latest.cancelled_fulfillment_count,
     latest.fulfillments, latest.previous_status, latest.current_status, latest.active_step,
     latest.step_ordinal, latest.attempt, latest.reason,
+    COALESCE(latest.responsibility_party, history.responsibility_party) AS responsibility_party,
+    COALESCE(latest.responsibility_code, history.responsibility_code) AS responsibility_code,
+    COALESCE(
+        latest.counts_toward_paid_cancellation_rate,
+        history.counts_toward_paid_cancellation_rate = 1
+    ) AS counts_toward_paid_cancellation_rate,
     latest.expected_reservation_count, latest.released_reservation_count, latest.reservations,
     latest.error_code, latest.error_message, latest.next_retry_at,
     latest.correlation_id, latest.causation_id, latest.occurred_at, latest.recorded_at,

@@ -16,6 +16,9 @@ SELECT
     get_json_string(payload, '$.order_no') AS order_no,
     get_json_string(payload, '$.seller_id') AS seller_id,
     get_json_string(payload, '$.warehouse_id') AS warehouse_id,
+    get_json_string(payload, '$.delivery_promise_version_ref') AS delivery_promise_version_ref,
+    get_json_string(payload, '$.promised_delivery_at') AS promised_delivery_at,
+    get_json_string(payload, '$.promise_frozen_at') AS promise_frozen_at,
     get_json_string(payload, '$.previous_status') AS previous_status,
     get_json_string(payload, '$.current_status') AS current_status,
     get_json_string(payload, '$.shipment_id') AS shipment_id,
@@ -30,5 +33,5 @@ SELECT
     json_query(payload, '$.items') AS items
 FROM yshopping_dwd.dwd_domain_event
 WHERE event_type = 'fulfillment.status.changed'
-  AND schema_version IN (1, 2)
+  AND schema_version IN (1, 2, 3)
   AND source_system = 'cloudmold-fulfillment';

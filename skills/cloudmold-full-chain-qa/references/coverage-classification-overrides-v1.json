@@ -1,0 +1,26 @@
+{
+  "schema_version": "cloudmold.coverage-classification-overrides/v1",
+  "overrides": [
+    {
+      "paths": [
+        "/crm/statistics-rank/get-contract-price-rank",
+        "/crm/statistics-rank/get-receivable-price-rank",
+        "/crm/statistics-rank/get-contract-count-rank",
+        "/crm/statistics-rank/get-product-sales-rank",
+        "/crm/statistics-rank/get-customer-count-rank",
+        "/crm/statistics-rank/get-contacts-count-rank",
+        "/crm/statistics-rank/get-follow-count-rank",
+        "/crm/statistics-rank/get-follow-customer-count-rank"
+      ],
+      "classification": "FLOW_GAP",
+      "development_purpose": "CRM 排行榜业务接口。排行榜页面存在，但当前错误导入 statistics/customer.getDatas，传入 rank tab key 后落入默认空数组，因此 rank API 从未被调用。应修正页面接线并补排行榜场景，不应删除。",
+      "evidence": "apps/web-antd/src/views/crm/statistics/rank/index.vue imports #/api/crm/statistics/customer while apps/web-antd/src/api/crm/statistics/rank.ts and CrmStatisticsRankController both exist"
+    },
+    {
+      "path_prefix": "/mes/pro/task-issue/",
+      "classification": "ADAPTER_OR_MIGRATION_PENDING",
+      "development_purpose": "MES 生产任务投料的预建 CRUD/查询能力，目标是把物料投放关联到生产任务、工单、工作站和批次；尚未接入生产任务页面。",
+      "evidence": "MesProTaskIssueController source TODO states that the frontend has no caller and the backend was implemented first"
+    }
+  ]
+}

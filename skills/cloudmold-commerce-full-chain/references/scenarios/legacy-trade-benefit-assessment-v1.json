@@ -1,0 +1,41 @@
+{
+  "scenario_id": "legacy-trade-benefit-assessment-v1",
+  "version": 1,
+  "purpose": "Persist and publish an immutable assessment of every local legacy Trade order and every nonzero benefit component without importing canonical benefit history.",
+  "environment_scope": ["local", "demo", "test"],
+  "stages": ["ASSESS"],
+  "future_gates": ["MAP_ORDER_ITEMS", "RESOLVE_BENEFIT_VERSIONS", "NAME_FUNDERS"],
+  "expected_reference": {
+    "run_id": "cmtrade17assess3",
+    "source_order_count": 238,
+    "non_deleted_order_count": 230,
+    "deleted_excluded_count": 8,
+    "no_benefit_order_count": 104,
+    "benefit_evidence_pending_order_count": 115,
+    "quarantined_order_count": 11,
+    "benefit_component_count": 128,
+    "source_benefit_amount_minor": 16845818,
+    "unresolved_identity_count": 128,
+    "unresolved_funding_count": 128,
+    "import_allowed_component_count": 0,
+    "production_migration_enabled": false,
+    "status": "BLOCKED_REQUIRES_GOVERNED_EVIDENCE"
+  },
+  "invariants": [
+    "one immutable candidate per local legacy Trade order in the tenant snapshot",
+    "one component per nonzero generic discount, coupon, point, or VIP amount",
+    "source benefit amount equals component amount exactly, including quarantined encodings",
+    "identical command replay returns the first immutable result and emits no duplicate events",
+    "policy v2 event assessed_at equals the persisted candidate assessment time",
+    "candidate and component import authority always remains false",
+    "the local Yudao Trade snapshot is never labeled as the Y-Shopping discount fact source"
+  ],
+  "forbidden_shortcuts": [
+    "inventing a canonical Order or OrderItem mapping",
+    "treating activity or coupon IDs without a version as canonical benefit identity",
+    "inventing platform or merchant funding splits",
+    "normalizing negative or inconsistent historical money without quarantine",
+    "authorizing production import from assessment evidence"
+  ],
+  "cleanup": "No destructive cleanup. Operation, run, candidates, components, Outbox events, lakehouse projections, and the external ledger remain audit evidence."
+}

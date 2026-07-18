@@ -1,0 +1,9 @@
+name: ai_intelligence_readiness_cube
+base_object: ai_intelligence_readiness
+measures:
+  - {name: observation_count, expression: "SUM(ai_intelligence_readiness.observation_count)", type: BIGINT}
+  - {name: pending_clue_count, expression: "SUM(ai_intelligence_readiness.pending_clue_count)", type: BIGINT}
+  - {name: invalid_taxonomy_reference_count, expression: "SUM(ai_intelligence_readiness.invalid_taxonomy_reference_count)", type: BIGINT}
+dimensions:
+  - {name: tenant_id, expression: tenant_id, type: BIGINT}
+  - {name: readiness_status, expression: readiness_status, type: VARCHAR}

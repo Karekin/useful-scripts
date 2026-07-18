@@ -1,0 +1,22 @@
+{
+  "scenario_id": "canonical-merchant-sales-eligibility-v1",
+  "version": 1,
+  "purpose": "Prove that Merchant and Shop sales-eligibility changes durably unpublish the exact frozen Listing set, while resume never republishes without an explicit reviewed command.",
+  "environment_scope": ["local", "demo", "test"],
+  "prerequisite": "A SUCCEEDED canonical-merchant-warehouse-first-slice-v1 ledger with ACTIVE Merchant, ACTIVE Shop, and PUBLISHED Listing.",
+  "writes": ["Merchant ACTIVE -> SUSPENDED -> ACTIVE", "Listing PUBLISHED -> UNPUBLISHED -> PUBLISHED", "Shop ACTIVE -> PAUSED -> ACTIVE", "Listing PUBLISHED -> UNPUBLISHED -> PUBLISHED"],
+  "invariants": [
+    "each Merchant/Shop source event creates one durable Listing-owned Saga with an exact frozen PUBLISHED workset",
+    "every frozen Listing is UNPUBLISHED or explicitly SKIPPED before Saga COMPLETED",
+    "physical listing.status.changed UNPUBLISHED effects use the source Merchant event as causation_id",
+    "the exact offer remains rejected after resume until explicit manual PUBLISH",
+    "all four lifecycle and two manual PUBLISH commands replay as immutable duplicates",
+    "Merchant and Shop end ACTIVE and the controlled Listing ends PUBLISHED only after explicit republish"
+  ],
+  "forbidden_shortcuts": [
+    "fabricated canonical identifiers",
+    "direct table writes",
+    "credentials in the ledger"
+  ],
+  "cleanup": "No destructive cleanup. The scenario restores Merchant and Shop to ACTIVE, explicitly republishes the controlled Listing, and retains both Saga histories and Outbox evidence."
+}

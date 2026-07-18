@@ -1,0 +1,25 @@
+name: inventory_health
+table_reference:
+  schema: yshopping_ads
+  table: ads_canonical_inventory_health
+primary_key: [tenant_id, balance_id]
+columns:
+  - {name: tenant_id, type: BIGINT, not_null: true}
+  - {name: balance_id, type: VARCHAR, not_null: true}
+  - {name: canonical_sku_id, type: VARCHAR}
+  - {name: warehouse_id, type: VARCHAR}
+  - {name: location_id, type: VARCHAR}
+  - {name: lot_id, type: VARCHAR}
+  - {name: owner_type, type: VARCHAR}
+  - {name: stock_status, type: VARCHAR}
+  - {name: quality_status, type: VARCHAR}
+  - {name: base_uom_code, type: VARCHAR}
+  - {name: on_hand_quantity, type: DECIMAL}
+  - {name: reserved_quantity, type: DECIMAL}
+  - {name: in_transit_quantity, type: DECIMAL}
+  - {name: available_quantity, type: DECIMAL}
+  - {name: health_status, type: VARCHAR}
+  - {name: dimension_resolution_status, type: VARCHAR}
+  - {name: data_freshness_at, type: TIMESTAMP}
+properties:
+  description: Canonical inventory balance health; account authority is Inventory, not WMS.

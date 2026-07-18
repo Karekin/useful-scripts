@@ -1,0 +1,17 @@
+{
+  "scenario_id": "canonical-inventory-location-v3-first-slice",
+  "version": 1,
+  "purpose": "Prove the Inventory v3 shadow ledger at an exact canonical Merchant, SKU, Warehouse, and Location without fabricating a lot.",
+  "environment_scope": ["local", "demo", "test"],
+  "prerequisite": "A SUCCEEDED canonical-merchant-warehouse-first-slice-v1 ledger.",
+  "steps": ["RECEIVE", "RESERVE", "SHIP", "RETURN", "RESERVE", "RELEASE"],
+  "invariants": [
+    "all balance events use the exact canonical Merchant owner, SKU, Warehouse, and Location",
+    "lot_id remains null rather than becoming a default or NO_LOT value",
+    "on-hand, reserved, in-transit, and available quantities remain conserved",
+    "all six public writes replay as immutable duplicates",
+    "v1 and v2 balances are not mutated"
+  ],
+  "forbidden_shortcuts": ["default location", "fabricated lot", "direct table writes", "legacy ID coercion"],
+  "cleanup": "No destructive cleanup. The run-scoped v3 balance and ledger remain immutable evidence."
+}

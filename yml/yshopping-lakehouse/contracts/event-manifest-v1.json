@@ -51,6 +51,9 @@
     "risk.review.status_changed": {"schema_version": 1, "aggregate_type": "risk_review_case", "payload_schema": "events/risk-review-status-changed-v1.schema.json", "example": "examples/risk-review-status-changed-v1.json"},
     "risk.decision.recorded": {"schema_version": 1, "aggregate_type": "risk_decision", "payload_schema": "events/risk-decision-recorded-v1.schema.json", "example": "examples/risk-decision-recorded-v1.json"},
     "risk.feedback.recorded": {"schema_version": 1, "aggregate_type": "risk_feedback", "payload_schema": "events/risk-feedback-recorded-v1.schema.json", "example": "examples/risk-feedback-recorded-v1.json"},
+    "risk.order_review.linked": {"schema_version": 1, "aggregate_type": "risk_order_case", "payload_schema": "events/risk-order-review-linked-v1.schema.json", "example": "examples/risk-order-review-linked-v1.json"},
+    "risk.payment_dispute.status_changed": {"schema_version": 1, "aggregate_type": "risk_payment_dispute", "payload_schema": "events/risk-payment-dispute-status-changed-v1.schema.json", "example": "examples/risk-payment-dispute-status-changed-v1.json"},
+    "risk.loss_entry.posted": {"schema_version": 1, "aggregate_type": "risk_loss_entry", "payload_schema": "events/risk-loss-entry-posted-v1.schema.json", "example": "examples/risk-loss-entry-posted-v1.json"},
     "operations_intelligence.observation.recorded": {
       "aggregate_type": "intelligence_observation",
       "versions": [
@@ -91,6 +94,18 @@
       "aggregate_type": "promotion_advertising_interaction",
       "payload_schema": "events/promotion-advertising-interaction-recorded-v1.schema.json",
       "example": "examples/promotion-advertising-interaction-recorded-v1.json"
+    },
+    "promotion.advertising_ledger.recorded": {
+      "schema_version": 1,
+      "aggregate_type": "promotion_advertising_ledger_entry",
+      "payload_schema": "events/promotion-advertising-ledger-recorded-v1.schema.json",
+      "example": "examples/promotion-advertising-ledger-recorded-v1.json"
+    },
+    "promotion.experiment_result.upserted": {
+      "schema_version": 1,
+      "aggregate_type": "promotion_experiment_result",
+      "payload_schema": "events/promotion-experiment-result-upserted-v1.schema.json",
+      "example": "examples/promotion-experiment-result-upserted-v1.json"
     },
     "engagement.favorite.status_changed": {
       "schema_version": 1,
@@ -164,6 +179,12 @@
       "payload_schema": "events/customer-service-attachment-recorded-v1.schema.json",
       "example": "examples/customer-service-attachment-recorded-v1.json"
     },
+    "customer_service.buyer_feedback.recorded": {
+      "schema_version": 1,
+      "aggregate_type": "customer_service_buyer_feedback",
+      "payload_schema": "events/customer-service-buyer-feedback-recorded-v1.schema.json",
+      "example": "examples/customer-service-buyer-feedback-recorded-v1.json"
+    },
     "customer_service.quality_review.recorded": {
       "schema_version": 1,
       "aggregate_type": "customer_service_quality_review",
@@ -175,6 +196,36 @@
       "aggregate_type": "customer_service_claim",
       "payload_schema": "events/customer-service-claim-status-changed-v1.schema.json",
       "example": "examples/customer-service-claim-status-changed-v1.json"
+    },
+    "commerce.session.status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "commerce_session",
+      "payload_schema": "events/commerce-session-status-changed-v1.schema.json",
+      "example": "examples/commerce-session-status-changed-v1.json"
+    },
+    "commerce.session.identity_linked": {
+      "schema_version": 1,
+      "aggregate_type": "commerce_session",
+      "payload_schema": "events/commerce-session-identity-linked-v1.schema.json",
+      "example": "examples/commerce-session-identity-linked-v1.json"
+    },
+    "commerce.behavior.recorded": {
+      "schema_version": 1,
+      "aggregate_type": "commerce_session",
+      "payload_schema": "events/commerce-behavior-recorded-v1.schema.json",
+      "example": "examples/commerce-behavior-recorded-v1.json"
+    },
+    "commerce.session.payment_attributed": {
+      "schema_version": 1,
+      "aggregate_type": "commerce_session",
+      "payload_schema": "events/commerce-session-payment-attributed-v1.schema.json",
+      "example": "examples/commerce-session-payment-attributed-v1.json"
+    },
+    "procurement.purchase_promise.status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "procurement_purchase_promise",
+      "payload_schema": "events/procurement-purchase-promise-status-changed-v1.schema.json",
+      "example": "examples/procurement-purchase-promise-status-changed-v1.json"
     },
     "identity.source.linked": {
       "schema_version": 1,
@@ -281,6 +332,12 @@
           "aggregate_type": "inventory_balance_v3",
           "payload_schema": "events/inventory-stock-changed-v4.schema.json",
           "example": "examples/inventory-stock-changed-v4.json"
+        },
+        {
+          "schema_version": 5,
+          "aggregate_type": "inventory_balance_v3",
+          "payload_schema": "events/inventory-stock-changed-v5.schema.json",
+          "example": "examples/inventory-stock-changed-v5.json"
         }
       ]
     },
@@ -540,6 +597,11 @@
           "schema_version": 2,
           "payload_schema": "events/fulfillment-status-changed-v2.schema.json",
           "example": "examples/fulfillment-status-changed-v2.json"
+        },
+        {
+          "schema_version": 3,
+          "payload_schema": "events/fulfillment-status-changed-v3.schema.json",
+          "example": "examples/fulfillment-status-changed-v3.json"
         }
       ]
     },

@@ -20,6 +20,8 @@ class NewDomainModelsTest(unittest.TestCase):
             "promotion.coupon_entitlement.state_changed",
             "promotion.advertising_placement.state_changed",
             "promotion.advertising_interaction.recorded",
+            "promotion.advertising_ledger.recorded",
+            "promotion.experiment_result.upserted",
             "engagement.favorite.status_changed",
             "engagement.favorite.behavior_recorded",
             "engagement.notification.campaign_status_changed",
@@ -32,6 +34,7 @@ class NewDomainModelsTest(unittest.TestCase):
             "customer_service.ticket.status_changed",
             "customer_service.message.recorded",
             "customer_service.attachment.recorded",
+            "customer_service.buyer_feedback.recorded",
             "customer_service.quality_review.recorded",
             "customer_service.claim.status_changed",
         }
@@ -67,6 +70,14 @@ class NewDomainModelsTest(unittest.TestCase):
             self.assertLess(positions[dwd], positions[dim])
             self.assertLess(positions[dim], positions[dws])
             self.assertLess(positions[dws], positions[ads])
+        self.assertLess(
+            positions["models/dws/dws-canonical-promotion-current.sql"],
+            positions["models/dws/dws-canonical-marketing-economics-current.sql"],
+        )
+        self.assertLess(
+            positions["models/dws/dws-canonical-marketing-economics-current.sql"],
+            positions["models/ads/ads-canonical-marketing-economics.sql"],
+        )
 
     def test_alignment_surfaces_keep_explicit_first_slice_gaps(self):
         alignment = json.loads(
@@ -81,16 +92,30 @@ class NewDomainModelsTest(unittest.TestCase):
             self.assertTrue(unit["lakehouse"]["gaps"])
 
     def test_dqc_covers_money_lineage_references_and_pii(self):
-        dqc = (ROOT / "tests/sql/23-canonical-promotion-engagement-customer-service-contract.sql").read_text(
-            encoding="utf-8"
+        dqc = (
+            (ROOT / "tests/sql/23-canonical-promotion-engagement-customer-service-contract.sql").read_text(
+                encoding="utf-8"
+            )
+            + "\n"
+            + (ROOT / "tests/sql/42-canonical-marketing-economics-contract.sql").read_text(
+                encoding="utf-8"
+            )
+            + "\n"
+            + (ROOT / "tests/sql/42-canonical-customer-service-buyer-csat-contract.sql").read_text(
+                encoding="utf-8"
+            )
         )
         for check in (
             "coupon_entitlement_missing_ledger_entry",
             "advertising_attribution_without_click",
+            "advertising_revenue_without_attribution_link",
             "notification_progressed_without_attempt",
             "customer_service_attachment_orphan_message",
             "customer_service_claim_amount_invalid",
             "customer_service_raw_locator_leak",
+            "promotion_roi_exposed_without_baseline",
+            "customer_service_buyer_feedback_identity_mismatch",
+            "customer_service_service_metrics_fcr_invalid",
         ):
             self.assertIn(check, dqc)
 

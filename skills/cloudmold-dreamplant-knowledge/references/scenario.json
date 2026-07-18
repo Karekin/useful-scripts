@@ -1,0 +1,35 @@
+{
+  "flowId": "workflow.cloudmold.dreamplant.product-learning-loop.v1",
+  "requiredInputs": ["authority", "graph", "product", "capability", "relation", "evidence", "metric", "sync", "drift", "exploration"],
+  "steps": [
+    {"id":"upsert-product","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-command.upsert-asset.v1","write":true,"arguments":["$input.product.command"]},
+    {"id":"upsert-capability","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-command.upsert-asset.v1","write":true,"arguments":["$input.capability.command"]},
+    {"id":"link-assets","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-command.link-assets.v1","write":true,"arguments":["$input.relation.command"],"expect":{"result.status":"LINKED"}},
+    {"id":"record-evidence","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-command.record-evidence.v1","write":true,"arguments":["$input.evidence.command"],"expect":{"result.status":"RECORDED"}},
+    {"id":"record-metric","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-command.record-metric.v1","write":true,"arguments":["$input.metric.command"],"expect":{"result.status":"RECORDED"}},
+    {"id":"record-sync","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-command.upsert-sync-checkpoint.v1","write":true,"arguments":["$input.sync.command"],"expect":{"result.status":"CHECKPOINTED"}},
+    {"id":"record-drift","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-command.record-drift.v1","write":true,"arguments":["$input.drift.command"],"expect":{"result.status":"RECORDED"}},
+
+    {"id":"get-asset","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-query.get-asset.v1","arguments":["$input.graph.mapKey","$input.product.assetId"],"expect":{"result.assetId":"$input.product.assetId"}},
+    {"id":"list-assets","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-query.list-assets.v1","arguments":["$input.graph.mapKey","PRODUCT","ACTIVE",50]},
+    {"id":"get-relation","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-query.get-relation.v1","arguments":["$input.graph.mapKey","$input.relation.relationId"],"expect":{"result.relationId":"$input.relation.relationId"}},
+    {"id":"list-relations","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-query.list-relations.v1","arguments":["$input.graph.mapKey","$input.product.assetId","IMPLEMENTS",50]},
+    {"id":"get-evidence","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-query.get-evidence.v1","arguments":["$input.graph.mapKey","$input.evidence.evidenceId"],"expect":{"result.evidenceId":"$input.evidence.evidenceId"}},
+    {"id":"list-evidence","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-query.list-evidence.v1","arguments":["$input.graph.mapKey","PRODUCT","$input.product.assetId",50]},
+    {"id":"get-metric","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-query.get-metric.v1","arguments":["$input.graph.mapKey","$input.metric.metricId"],"expect":{"result.metricId":"$input.metric.metricId"}},
+    {"id":"list-metrics","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-query.list-metrics.v1","arguments":["$input.graph.mapKey","PRODUCT","$input.product.assetId","HSF_CHAIN_SUCCESS",50]},
+    {"id":"get-sync","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-query.get-sync-checkpoint.v1","arguments":["$input.graph.mapKey","$input.sync.syncKey"],"expect":{"result.syncKey":"$input.sync.syncKey"}},
+    {"id":"list-sync","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-query.list-sync-checkpoints.v1","arguments":["$input.graph.mapKey","CLOUDMOLD_CDC",50]},
+    {"id":"get-drift","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-query.get-drift.v1","arguments":["$input.graph.mapKey","$input.drift.driftId"],"expect":{"result.driftId":"$input.drift.driftId"}},
+    {"id":"list-drift","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-query.list-drift.v1","arguments":["$input.graph.mapKey","PRODUCT","$input.product.assetId","LOW",50]},
+
+    {"id":"rebuild-projection","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-command.rebuild-projection.v1","write":true,"arguments":["$input.graph.mapKey","frontend","$input.graph.projectionIdempotencyKey","$input.graph.runTraceId","$input.graph.occurredAt"],"expect":{"result.status":"PUBLISHED"}},
+    {"id":"get-published-map","capabilityId":"capability.cloudmold.dreamplant.dream-plant-query.get-published-world-map.v1","arguments":["$input.graph.mapKey"]},
+    {"id":"get-public-map","capabilityId":"capability.cloudmold.dreamplant.dream-plant-query.get-public-world-map.v1","arguments":["$input.graph.mapKey"]},
+    {"id":"submit-exploration","capabilityId":"capability.cloudmold.dreamplant.dream-plant-command.execute.v1","write":true,"arguments":["$input.exploration.command"],"expect":{"result.status":"QUEUED"}},
+    {"id":"get-exploration-after-submit","capabilityId":"capability.cloudmold.dreamplant.dream-plant-query.get-exploration.v1","arguments":["$input.exploration.explorationRunId"]},
+    {"id":"list-explorations","capabilityId":"capability.cloudmold.dreamplant.dream-plant-query.list-explorations.v1","arguments":["QUEUED",100]},
+    {"id":"run-exploration","capabilityId":"capability.cloudmold.dreamplant.dream-plant-knowledge-command.run-exploration-now.v1","write":true,"arguments":["$input.graph.mapKey","$input.exploration.explorationRunId","$input.exploration.dispatchIdempotencyKey","$input.graph.runTraceId","$input.exploration.dispatchAt"]},
+    {"id":"get-exploration-terminal","capabilityId":"capability.cloudmold.dreamplant.dream-plant-query.get-exploration.v1","arguments":["$input.exploration.explorationRunId"],"expect":{"result.status":"SUCCEEDED"}}
+  ]
+}

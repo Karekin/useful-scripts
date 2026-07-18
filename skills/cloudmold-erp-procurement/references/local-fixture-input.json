@@ -1,0 +1,32 @@
+{
+  "authority": {
+    "reference": {
+      "merchantId": "334521e1-37ae-4d08-9db6-45b965168f8b",
+      "shopId": "7296d0cd-fe14-4afb-b091-af33a3fef8ff"
+    },
+    "operator": {
+      "merchantId": "334521e1-37ae-4d08-9db6-45b965168f8b",
+      "shopId": "7296d0cd-fe14-4afb-b091-af33a3fef8ff",
+      "principalId": "b63f7129-f912-4207-b689-b5af681d2902",
+      "roleCode": "OWNER"
+    }
+  },
+  "command": {
+    "supplierId": 2,
+    "accountId": 2,
+    "orderTime": "2026-07-18T11:35:00",
+    "discountPercent": 0,
+    "depositPrice": 0,
+    "remark": "CloudMold Dubbo Skill idempotency verification",
+    "items": [
+      {
+        "productId": 3,
+        "productUnitId": 900000004,
+        "productPrice": 39.8,
+        "count": 1,
+        "taxPercent": 0,
+        "remark": "one-product RPC verification"
+      }
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/commerce-session-status-changed-v1.schema.json",
+  "title": "commerce.session.status_changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "session_id",
+    "principal_id",
+    "previous_status",
+    "current_status",
+    "channel_code",
+    "entrypoint_code",
+    "last_activity_at",
+    "source_system",
+    "source_type",
+    "source_id"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "format": "uuid"},
+    "session_id": {"type": "string", "format": "uuid"},
+    "principal_id": {"type": ["string", "null"], "format": "uuid"},
+    "previous_status": {
+      "type": ["string", "null"],
+      "enum": [null, "ACTIVE", "CHECKOUT_IN_PROGRESS", "ABANDONED", "EXPIRED"]
+    },
+    "current_status": {
+      "type": "string",
+      "enum": ["ACTIVE", "CHECKOUT_IN_PROGRESS", "ABANDONED", "EXPIRED"]
+    },
+    "channel_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,31}$"},
+    "entrypoint_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,31}$"},
+    "started_at": {"type": ["string", "null"], "format": "date-time"},
+    "last_activity_at": {"type": "string", "format": "date-time"},
+    "source_system": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,31}$"},
+    "source_type": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,31}$"},
+    "source_id": {"type": "string", "minLength": 1, "maxLength": 128}
+  }
+}

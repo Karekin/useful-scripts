@@ -1,0 +1,4 @@
+interface:
+  display_name: "CloudMold Dubbo Operator"
+  short_description: "Deploy and verify governed CloudMold Dubbo capabilities"
+  default_prompt: "Deploy or inspect the CloudMold Dubbo capability plane, generate the allowlisted capability catalog, and run authenticated read-only RPC smoke verification."

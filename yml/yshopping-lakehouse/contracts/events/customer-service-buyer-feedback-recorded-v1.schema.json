@@ -1,0 +1,25 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://cloudmold.local/contracts/customer-service-buyer-feedback-recorded-v1.schema.json",
+  "title":"customer_service.buyer_feedback.recorded payload v1",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["run_id","feedback_id","ticket_id","customer_principal_id","touchpoint_code","sentiment_code","score_basis_points","occurred_at"],
+  "properties":{
+    "run_id":{"type":"string","minLength":1,"maxLength":64},
+    "feedback_id":{"type":"string","format":"uuid"},
+    "ticket_id":{"type":"string","format":"uuid"},
+    "customer_principal_id":{"type":"string","format":"uuid"},
+    "touchpoint_code":{"type":"string","enum":["TICKET_RESOLUTION","CLAIM_COMPENSATION","AFTER_SALE_HANDLING"]},
+    "sentiment_code":{"type":"string","enum":["SATISFIED","NEUTRAL","DISSATISFIED"]},
+    "score_basis_points":{"type":"integer","enum":[0,5000,10000]},
+    "reason_code":{"type":["string","null"],"maxLength":64},
+    "comment_token":{"type":["string","null"],"pattern":"^(sha256:[0-9a-f]{64}|restricted:[A-Za-z0-9_-]{16,128})$"},
+    "occurred_at":{"type":"string","format":"date-time"}
+  },
+  "allOf":[
+    {"if":{"properties":{"sentiment_code":{"const":"SATISFIED"}}},"then":{"properties":{"score_basis_points":{"const":10000}}}},
+    {"if":{"properties":{"sentiment_code":{"const":"NEUTRAL"}}},"then":{"properties":{"score_basis_points":{"const":5000}}}},
+    {"if":{"properties":{"sentiment_code":{"const":"DISSATISFIED"}}},"then":{"properties":{"score_basis_points":{"const":0}}}}
+  ]
+}

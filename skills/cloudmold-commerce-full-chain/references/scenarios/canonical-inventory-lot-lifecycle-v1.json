@@ -1,0 +1,56 @@
+{
+  "scenario_id": "canonical-inventory-lot-lifecycle-v1",
+  "version": 1,
+  "purpose": "Prove nonempty canonical Lot identity, interval-qualified source mapping, exact-grain Inventory v3 availability, recall fencing, and immutable replay.",
+  "environment_scope": ["local", "demo", "test"],
+  "prerequisite": "An explicit SUCCEEDED canonical-merchant-warehouse-first-slice-v1 ledger with exactly 21 immutable duplicate replays.",
+  "source_authority": {
+    "system": "CLOUDMOLD_ERP_OPERATOR",
+    "type": "CONTROLLED_LOT",
+    "classification": "run-scoped controlled evidence; not historical WMS or ERP proof"
+  },
+  "successful_writes": [
+    "REGISTER",
+    "LINK_SOURCE_A",
+    "RECEIVE_10",
+    "RESERVE_2",
+    "RELEASE_2",
+    "RECALL",
+    "END_SOURCE_A",
+    "LINK_SOURCE_B_AT_EXACT_INTERVAL_BOUNDARY"
+  ],
+  "negative_gate": "RESERVE_AFTER_RECALL_MUST_FAIL",
+  "expected_events": {
+    "inventory.lot.lifecycle.changed": 2,
+    "inventory.lot.source_mapping.changed": 3,
+    "inventory.stock.changed_v3": 3
+  },
+  "expected_final": {
+    "lot_status": "RECALLED",
+    "lot_version": 2,
+    "on_hand_quantity": "10.000000",
+    "reserved_quantity": "0.000000",
+    "unreserved_quantity": "10.000000",
+    "allocatable_quantity": "0.000000",
+    "allocation_eligibility": "LOT_RECALLED",
+    "active_source_mapping_count": 1
+  },
+  "invariants": [
+    "Lot is a canonical entity and not a source batch string",
+    "qualified source identity resolves by half-open [valid_from, valid_to) intervals",
+    "the replacement mapping starts exactly when the prior mapping ends",
+    "availability stays at exact owner, SKU, Warehouse, Location, Lot, stock, quality, and UOM grain",
+    "unreserved quantity remains distinct from allocatable quantity",
+    "RECALLED Lot fences new RESERVE and SHIP while RELEASE remains available for remediation",
+    "all eight successful public writes replay as immutable duplicates"
+  ],
+  "forbidden_shortcuts": [
+    "NO_LOT or default Lot",
+    "fabricated WMS or ERP history",
+    "unqualified source ID",
+    "default Location",
+    "direct business-table writes",
+    "using this controlled run as evidence for an unrelated legacy balance"
+  ],
+  "cleanup": "No destructive cleanup. Run-scoped Lot, mapping history, inventory ledger, Outbox, and evidence ledger remain immutable."
+}

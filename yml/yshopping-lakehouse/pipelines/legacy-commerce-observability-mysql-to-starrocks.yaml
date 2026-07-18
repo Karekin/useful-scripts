@@ -1,0 +1,46 @@
+source:
+  type: mysql
+  hostname: yudao-mysql
+  port: 3306
+  username: "${CDC_MYSQL_USER}"
+  password: "${CDC_MYSQL_PASSWORD}"
+  tables: ruoyi-vue-pro.(pay_order|pay_refund|member_user|product_browse_history|trade_cart)
+  server-id: 5800-5804
+  server-time-zone: Asia/Shanghai
+
+transform:
+  - source-table: ruoyi-vue-pro.pay_order
+    projection: id, app_id, channel_id, channel_code, user_id, user_type, merchant_order_id, price, channel_fee_rate, channel_fee_price, status, expire_time, success_time, extension_id, `no`, refund_price, channel_order_no, create_time, update_time, deleted, tenant_id
+    description: Keep reconciliation and payment-state fields while excluding notification payloads, network identifiers and free text
+  - source-table: ruoyi-vue-pro.pay_refund
+    projection: id, `no`, app_id, channel_id, channel_code, order_id, order_no, user_id, user_type, merchant_order_id, merchant_refund_id, status, pay_price, refund_price, channel_order_no, channel_refund_no, success_time, create_time, update_time, deleted, tenant_id
+    description: Keep refund lifecycle and money fields while excluding notification payloads, network identifiers, errors and free text
+  - source-table: ruoyi-vue-pro.member_user
+    projection: id, status, register_terminal, level_id, group_id, create_time, update_time, deleted, tenant_id
+    description: Retain a masked member projection without credentials, contact data, profile data or network identifiers
+  - source-table: ruoyi-vue-pro.product_browse_history
+    projection: id, user_id, spu_id, user_deleted, create_time, update_time, deleted, tenant_id
+    description: Current-state browse evidence only; this projection is not a historical visit event stream
+  - source-table: ruoyi-vue-pro.trade_cart
+    projection: id, user_id, spu_id, sku_id, `count`, selected, create_time, update_time, deleted, tenant_id
+    description: Current cart state only; this projection is not an append-only cart behavior stream
+
+sink:
+  type: starrocks
+  name: Y Shopping Legacy Commerce Observability ODS
+  jdbc-url: jdbc:mysql://starrocks:9030
+  load-url: starrocks:8030
+  username: "${STARROCKS_USER}"
+  password: "${STARROCKS_PASSWORD}"
+  table.create.properties.replication_num: 1
+
+route:
+  - source-table: ruoyi-vue-pro.(pay_order|pay_refund|member_user|product_browse_history|trade_cart)
+    sink-table: yshopping_ods.<>
+    replace-symbol: <>
+    description: Mirror bounded local prototype rows for source reconciliation; current-state behavior and legacy money remain non-canonical evidence
+
+pipeline:
+  name: Y Shopping Legacy Commerce Observability MySQL to StarRocks ODS
+  parallelism: ${FLINK_PARALLELISM}
+  schema.change.behavior: EVOLVE

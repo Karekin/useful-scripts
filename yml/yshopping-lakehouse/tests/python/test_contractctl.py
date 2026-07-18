@@ -96,10 +96,10 @@ class ContractCtlTest(unittest.TestCase):
     def test_paid_cancellation_contracts_are_versioned_and_exact(self):
         manifest = CONTRACT.load(CONTRACT.CONTRACTS / "event-manifest-v1.json")
         expected_versions = {
-            "inventory.stock.changed": [1, 2, 3, 4],
+            "inventory.stock.changed": [1, 2, 3, 4, 5],
             "order.status.changed": [1, 2, 3],
             "order.cancellation_saga.status_changed": [1, 2],
-            "fulfillment.status.changed": [1, 2],
+            "fulfillment.status.changed": [1, 2, 3],
             "payment.status.changed": [1, 2, 3],
         }
         for event_type, versions in expected_versions.items():

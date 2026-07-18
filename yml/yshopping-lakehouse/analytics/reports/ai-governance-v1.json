@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "report_id": "ai-governance",
+  "version": "1.0",
+  "title": "AI 托管治理看板",
+  "owner": "CloudMold AI Governance",
+  "lifecycle": "draft",
+  "publication_scope": "local_test",
+  "datasets": ["yshopping_ads.ads_canonical_ai_intelligence_readiness"],
+  "filters": [{"field":"tenant_id","type":"tenant","required":true}],
+  "metrics": ["ai.observation_count", "ai.pending_clue_count", "ai.invalid_taxonomy_reference_count"],
+  "sections": [
+    {"id":"ai-governance-overview","title":"AI 治理概览","charts":[
+      {"id":"ai-kpis","type":"kpi","title":"观测、待复核与分类异常","metrics":["ai.observation_count","ai.pending_clue_count","ai.invalid_taxonomy_reference_count"],"group_by":[]},
+      {"id":"ai-readiness","type":"gate","title":"AI 人工复核门禁","metrics":["ai.pending_clue_count","ai.invalid_taxonomy_reference_count"],"group_by":["tenant_id","readiness_status"]}
+    ]}
+  ],
+  "guardrails": ["AI 只生成建议、查询与报表草稿，automatic_enforcement_enabled 必须保持 false。", "模型原始内容不得进入报表层，默认只展示治理后的计数与状态。", "任何写操作、权限变更或正式发布都需要独立服务账号和人工审批。"],
+  "evidence": {"status":"partial","kind":"local_runtime","notes":"本地 AI 治理聚合面已存在；生产 Agent 自动化、评测和审批运行证据尚未建立。"}
+}

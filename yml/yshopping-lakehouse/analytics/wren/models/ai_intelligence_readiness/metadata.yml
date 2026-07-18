@@ -1,0 +1,21 @@
+name: ai_intelligence_readiness
+table_reference:
+  schema: yshopping_ads
+  table: ads_canonical_ai_intelligence_readiness
+primary_key: tenant_id
+columns:
+  - {name: tenant_id, type: BIGINT, is_primary_key: true, not_null: true}
+  - {name: observation_count, type: BIGINT}
+  - {name: classified_observation_count, type: BIGINT}
+  - {name: invalid_taxonomy_reference_count, type: BIGINT}
+  - {name: model_result_count, type: BIGINT}
+  - {name: succeeded_model_result_count, type: BIGINT}
+  - {name: clue_count, type: BIGINT}
+  - {name: accepted_clue_count, type: BIGINT}
+  - {name: rejected_clue_count, type: BIGINT}
+  - {name: pending_clue_count, type: BIGINT}
+  - {name: readiness_status, type: VARCHAR}
+  - {name: raw_content_stored, type: BOOLEAN}
+  - {name: automatic_enforcement_enabled, type: BOOLEAN}
+properties:
+  description: Aggregated AI observation and human-review governance without raw content.

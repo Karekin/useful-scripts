@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "report_id": "data-governance",
+  "version": "1.0",
+  "title": "数据资产与质量治理看板",
+  "owner": "CloudMold Data Platform",
+  "lifecycle": "draft",
+  "publication_scope": "local_test",
+  "datasets": ["yshopping_ads.ads_canonical_metadata_readiness"],
+  "filters": [{"field":"tenant_id","type":"tenant","required":true}],
+  "metrics": ["governance.dataset_count", "governance.failed_dqc_result_count", "governance.invalid_reference_count"],
+  "sections": [
+    {"id":"governance-overview","title":"治理概览","charts":[
+      {"id":"governance-kpis","type":"kpi","title":"资产、质量与引用","metrics":["governance.dataset_count","governance.failed_dqc_result_count","governance.invalid_reference_count"],"group_by":[]},
+      {"id":"tenant-readiness","type":"gate","title":"租户数据治理门禁","metrics":["governance.invalid_reference_count","governance.failed_dqc_result_count"],"group_by":["tenant_id","readiness_status"]}
+    ]}
+  ],
+  "guardrails": ["FIRST_SLICE_PARTIAL 必须原样展示，不得解释为生产可用。", "空表或零结果只表示缺少运行证据，不能自动判定质量通过。", "严格最终来源完成度以附件审计后的 0/719 为准。"],
+  "evidence": {"status":"partial","kind":"local_runtime","notes":"定义历史和本地运行链已建立；非空运行对账与生产来源覆盖仍未完成。"}
+}

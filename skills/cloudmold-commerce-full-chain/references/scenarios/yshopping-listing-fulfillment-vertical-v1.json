@@ -1,0 +1,37 @@
+{
+  "scenario": "yshopping-listing-fulfillment-vertical-v1",
+  "purpose": "Compose the canonical apparel Catalog, 18 ownership-safe compatibility projections, exact channel Listing, Order/Payment/Fulfillment/Inventory flow, immediate replay proof, and canonical commerce-v2 lakehouse reconciliation.",
+  "environment_policy": "local, demo, or disposable test tenant only",
+  "runner": "scripts/yshopping_listing_fulfillment_vertical_runner.py",
+  "flow": [
+    "fail closed unless lakehousectl exposes all required v2 commands",
+    "run Catalog to ACTIVE for one Style/SPU and six apparel SKU",
+    "create or replay 18 PENDING Mall/ERP/WMS identity projection snapshots",
+    "run canonical-listing-fulfillment-first-slice-v1 with one selected SKU",
+    "require all 23 commerce-v2 business commands to replay as immutable duplicates",
+    "run config-check, contract-test, apply-models, and all lakehouse tests",
+    "reconcile canonical Catalog by catalog child run_id",
+    "reconcile canonical commerce-v2 by commerce child run_id"
+  ],
+  "required_lakehouse_commands": [
+    "config-check",
+    "contract-test",
+    "apply-models",
+    "test",
+    "reconcile-canonical-catalog",
+    "reconcile-canonical-commerce-v2"
+  ],
+  "expected": {
+    "catalog": "ACTIVE with six SKU",
+    "legacy_identity_projections": 18,
+    "listing": "PUBLISHED/v6",
+    "order": "RETURNED/v7",
+    "payment": "REFUNDED/v2",
+    "fulfillment": "DELIVERED/v4",
+    "inventory": "10/0/10/v4",
+    "all_replay_duplicate": true,
+    "lakehouse_reconciled": true
+  },
+  "replay_contract": "same parent run_id reuses Catalog operation results, makes projection changed_count zero, and retains duplicate immutable results for all commerce-v2 commands",
+  "cleanup": "none; retain every child ledger and the parent evidence ledger outside the Skill"
+}

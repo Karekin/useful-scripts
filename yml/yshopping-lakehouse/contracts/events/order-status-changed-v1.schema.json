@@ -24,6 +24,8 @@
     "payment_id": {"type": ["string", "null"]},
     "cancellation_saga_id": {"type": ["string", "null"], "format": "uuid"},
     "pre_cancellation_status": {"type": ["string", "null"], "enum": [null, "INVENTORY_RESERVED"]},
+    "responsibility_party": {"type": ["string", "null"], "enum": [null, "MERCHANT", "BUYER", "PLATFORM", "CARRIER"]},
+    "responsibility_code": {"type": ["string", "null"], "enum": [null, "MERCHANT_STOCKOUT", "MERCHANT_SELLER_REJECTED", "MERCHANT_MANUAL_CANCEL", "BUYER_CHANGED_MIND", "BUYER_ADDRESS_ERROR", "BUYER_PAYMENT_ABANDONED", "PLATFORM_RISK_BLOCK", "PLATFORM_COMPLIANCE_BLOCK", "PLATFORM_PRICE_ERROR", "CARRIER_UNSERVICEABLE", "CARRIER_CAPACITY_BLOCK", "CARRIER_DAMAGE_RISK"]},
     "refund_id": {"type": ["string", "null"]},
     "reason": {"type": ["string", "null"], "maxLength": 255},
     "items": {

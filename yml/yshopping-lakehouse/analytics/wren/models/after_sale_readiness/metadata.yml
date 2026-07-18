@@ -1,0 +1,21 @@
+name: after_sale_readiness
+table_reference:
+  schema: yshopping_ads
+  table: ads_canonical_after_sale_readiness
+primary_key: [tenant_id, run_id, after_sale_id]
+columns:
+  - {name: tenant_id, type: BIGINT, not_null: true}
+  - {name: run_id, type: VARCHAR, not_null: true}
+  - {name: after_sale_id, type: VARCHAR, not_null: true}
+  - {name: after_sale_type, type: VARCHAR}
+  - {name: responsibility, type: VARCHAR}
+  - {name: warehouse_id, type: VARCHAR}
+  - {name: requested_quantity, type: DECIMAL}
+  - {name: approved_amount_minor, type: BIGINT}
+  - {name: refunded_amount_minor, type: BIGINT}
+  - {name: currency_code, type: VARCHAR}
+  - {name: readiness_status, type: VARCHAR}
+  - {name: recovery_status, type: VARCHAR}
+  - {name: data_freshness_at, type: TIMESTAMP}
+properties:
+  description: Privacy-minimized after-sale reconciliation and recovery surface.

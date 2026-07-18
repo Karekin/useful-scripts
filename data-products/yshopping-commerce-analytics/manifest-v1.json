@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "data_product_id": "yshopping-commerce-analytics",
+  "title": "Y-Shopping 电商经营数据产品",
+  "owner": "CloudMold Data Platform",
+  "updated_at": "2026-07-18T23:15:00+08:00",
+  "privacy_class": "aggregated_non_pii",
+  "canonical_paths": {
+    "kpi_catalog": "kpis/ecommerce-kpi-catalog-v1.json",
+    "report_portfolio": "reports/report-portfolio-v1.json",
+    "latest_snapshot": "snapshots/local-test/tenant-1/latest.json",
+    "coverage_audit": "coverage/kpi-source-readiness-v1.json",
+    "gap_backlog": "coverage/kpi-data-gap-backlog-v1.json",
+    "source_graduation_plan": "coverage/source-graduation-plan-v1.json"
+  },
+  "source_system": {
+    "name": "Y-Shopping",
+    "governed_source_candidates": 719,
+    "production_admission_ready_sources": 5,
+    "strict_production_final_sources": 0,
+    "sql_models": 258,
+    "model_layers": {
+      "ads": 59,
+      "dws": 59,
+      "dwd": 74,
+      "dim": 65,
+      "bootstrap": 1
+    },
+    "model_repository": "yml/yshopping-lakehouse/models",
+    "governance_repository": "yml/yshopping-lakehouse/contracts"
+  },
+  "runtime_path": {
+    "semantic_engine": "Wren CLI 0.13.0",
+    "connector": "mysql with sslMode=DISABLED for local TEST only",
+    "query_engine": "StarRocks",
+    "database": "yshopping_ads",
+    "tenant_scope": "tenant_id = 1",
+    "publication_scope": "local_test_snapshot"
+  },
+  "evidence_levels": [
+    {
+      "id": "runtime_local_test",
+      "meaning": "本地 StarRocks 非空查询已完成，可显示带 LOCAL_TEST 标识的真实聚合值"
+    },
+    {
+      "id": "repository_verified",
+      "meaning": "值来自可重复扫描的版本库事实，不依赖业务运行时产数"
+    },
+    {
+      "id": "model_ready_no_runtime",
+      "meaning": "模型或契约已存在，但没有可用于当前报表的生产/本地非空运行证据"
+    },
+    {
+      "id": "governed_source_only",
+      "meaning": "来源已纳入治理或路由，但尚未形成可消费的受控指标模型"
+    }
+  ],
+  "forbidden_fields": [
+    "buyer_id",
+    "phone",
+    "mobile",
+    "email",
+    "address",
+    "waybill_no",
+    "raw_order_detail",
+    "database_password"
+  ]
+}

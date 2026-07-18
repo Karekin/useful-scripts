@@ -10,6 +10,7 @@ SELECT
     item.quantity,
     item.unit_price_minor,
     item.line_amount_minor,
+    item.merchandise_cost_minor,
     item.reservation_id,
     item.listing_id,
     item.listing_offer_id,

@@ -1,0 +1,30 @@
+{
+  "event_id": "76000000-0000-4000-8000-000000000001",
+  "event_type": "promotion.advertising_ledger.recorded",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "promotion_advertising_ledger_entry",
+  "aggregate_id": "76000000-0000-4000-8000-000000000002",
+  "aggregate_version": 1,
+  "event_sequence": 1,
+  "idempotency_key": "promotion-ad-ledger-example-1:event",
+  "correlation_id": "76000000-0000-4000-8000-000000000003",
+  "causation_id": null,
+  "occurred_at": "2026-07-18T03:00:00.000Z",
+  "recorded_at": "2026-07-18T03:00:00.100Z",
+  "source_system": "cloudmold-promotion",
+  "payload": {
+    "ledger_entry_id": "76000000-0000-4000-8000-000000000002",
+    "ledger_entry_code": "ad-ledger-merchant-001",
+    "campaign_id": "71000000-0000-4000-8000-000000000002",
+    "placement_id": "74000000-0000-4000-8000-000000000002",
+    "merchant_id": "merchant-001",
+    "entry_type": "SPEND",
+    "charge_model": "CPC",
+    "revenue_type": null,
+    "source_interaction_id": "75000000-0000-4000-8000-000000000002",
+    "amount_minor": 9900,
+    "currency_code": "CNY",
+    "occurred_at": "2026-07-18T03:00:00.000Z"
+  }
+}

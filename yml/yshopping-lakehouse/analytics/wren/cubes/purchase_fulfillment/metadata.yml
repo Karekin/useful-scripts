@@ -1,0 +1,13 @@
+name: purchase_fulfillment_cube
+base_object: purchase_fulfillment
+measures:
+  - {name: purchase_order_count, expression: "COUNT(DISTINCT purchase_order_id)", type: BIGINT}
+  - {name: receipt_fulfillment_rate, expression: "100.0 * SUM(received_quantity) / NULLIF(SUM(ordered_quantity), 0)", type: DOUBLE}
+  - {name: open_order_count, expression: "SUM(CASE WHEN fulfillment_status IN ('OPEN','PARTIAL') THEN 1 ELSE 0 END)", type: BIGINT}
+dimensions:
+  - {name: tenant_id, expression: tenant_id, type: BIGINT}
+  - {name: supplier_id, expression: supplier_id, type: BIGINT}
+  - {name: fulfillment_status, expression: fulfillment_status, type: VARCHAR}
+time_dimensions:
+  - {name: ordered_at, expression: ordered_at, type: TIMESTAMP}
+  - {name: updated_at, expression: updated_at, type: TIMESTAMP}

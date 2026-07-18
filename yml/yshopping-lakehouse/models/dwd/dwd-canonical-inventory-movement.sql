@@ -13,8 +13,8 @@ SELECT
     get_json_string(payload, '$.canonical_sku_id') AS canonical_sku_id,
     get_json_string(payload, '$.warehouse_id') AS warehouse_id,
     get_json_string(payload, '$.location_id') AS location_id,
-    CASE WHEN schema_version IN (3, 4) THEN get_json_string(payload, '$.lot_id') END AS lot_id,
-    CASE WHEN schema_version IN (3, 4) THEN get_json_string(payload, '$.lot_code') END AS lot_code,
+    CASE WHEN schema_version IN (3, 4, 5) THEN get_json_string(payload, '$.lot_id') END AS lot_id,
+    CASE WHEN schema_version IN (3, 4, 5) THEN get_json_string(payload, '$.lot_code') END AS lot_code,
     CASE WHEN schema_version IN (1, 2) THEN get_json_string(payload, '$.lot_no') END AS legacy_lot_no,
     get_json_string(payload, '$.owner_type') AS owner_type,
     get_json_string(payload, '$.owner_id') AS owner_id,
@@ -43,9 +43,15 @@ SELECT
     get_json_string(payload, '$.business_no') AS business_no,
     get_json_string(payload, '$.reservation_id') AS reservation_id,
     get_json_string(payload, '$.allocation_id') AS allocation_id,
+    CAST(get_json_string(payload, '$.unit_cost_amount_minor') AS BIGINT) AS unit_cost_amount_minor,
+    CAST(get_json_string(payload, '$.movement_cost_amount_minor') AS BIGINT) AS movement_cost_amount_minor,
+    get_json_string(payload, '$.currency_code') AS currency_code,
+    get_json_string(payload, '$.cost_source_system') AS cost_source_system,
+    get_json_string(payload, '$.cost_source_ref') AS cost_source_ref,
+    get_json_string(payload, '$.cost_policy_version') AS cost_policy_version,
     get_json_string(payload, '$.cancellation_saga_id') AS cancellation_saga_id,
     CAST(get_json_string(payload, '$.step_ordinal') AS INT) AS step_ordinal
 FROM yshopping_dwd.dwd_domain_event
 WHERE event_type = 'inventory.stock.changed'
-  AND schema_version IN (1, 2, 3, 4)
+  AND schema_version IN (1, 2, 3, 4, 5)
   AND source_system = 'cloudmold-inventory';

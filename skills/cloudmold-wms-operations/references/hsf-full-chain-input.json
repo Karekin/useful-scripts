@@ -1,0 +1,18 @@
+{
+  "authority": {
+    "reference": {"merchantId": "620f333a-9623-45cc-ae57-01dc3eab8df8", "shopId": "363da101-298e-4da2-9e0a-4d5a7d015153"},
+    "operator": {"merchantId": "620f333a-9623-45cc-ae57-01dc3eab8df8", "shopId": "363da101-298e-4da2-9e0a-4d5a7d015153", "principalId": "b63f7129-f912-4207-b689-b5af681d2902", "roleCode": "OWNER"}
+  },
+  "merchant": {"code": "CMMER0718A", "name": "CloudMold HSF Trading", "type": 3, "level": "A", "address": "Shanghai", "mobile": "13800000001", "contact": "HSF Owner", "email": "hsf@cloudmold.test", "remark": "canonical merchant WMS mapping"},
+  "sourceWarehouse": {"code": "CMWHS0718A", "name": "CloudMold HSF Source", "sort": 1, "remark": "canonical source warehouse mapping"},
+  "targetWarehouse": {"code": "CMWHT0718A", "name": "CloudMold HSF Target", "sort": 2, "remark": "canonical target warehouse mapping"},
+  "category": {"parentId": 0, "code": "CMCAT0718A", "name": "CloudMold HSF Goods", "sort": 1, "status": 0},
+  "item": {
+    "code": "CMITEM0718A", "name": "CloudMold 全链路商品", "unit": "件", "remark": "same product perspective WMS projection",
+    "skus": [{"name": "标准款", "barCode": "697071800001", "code": "CMSKU0718A", "length": 10, "width": 8, "height": 2, "grossWeight": 0.5, "netWeight": 0.45, "costPrice": 39.8, "sellingPrice": 199}]
+  },
+  "receipt": {"no": "CMRK0718A", "orderTime": "2026-07-18T14:40:00", "bizOrderNo": "CGRK20260718000001", "remark": "HSF WMS purchase receipt"},
+  "movement": {"no": "CMDB0718A", "orderTime": "2026-07-18T14:45:00", "remark": "HSF WMS warehouse movement"},
+  "shipment": {"no": "CMCK0718A", "orderTime": "2026-07-18T14:50:00", "bizOrderNo": "XSCK20260718000001", "remark": "HSF WMS sale shipment"},
+  "check": {"no": "CMPD0718A", "orderTime": "2026-07-18T14:55:00", "receiptTime": "2026-07-18T14:40:00", "remark": "HSF WMS zero-variance check"}
+}

@@ -15,6 +15,7 @@ SELECT
     CAST(get_json_string(item.`value`, '$.quantity') AS DECIMAL(24,6)) AS quantity,
     CAST(get_json_string(item.`value`, '$.unit_price_minor') AS BIGINT) AS unit_price_minor,
     CAST(get_json_string(item.`value`, '$.line_amount_minor') AS BIGINT) AS line_amount_minor,
+    CAST(get_json_string(item.`value`, '$.merchandise_cost_minor') AS BIGINT) AS merchandise_cost_minor,
     get_json_string(item.`value`, '$.reservation_id') AS reservation_id,
     get_json_string(item.`value`, '$.listing_id') AS listing_id,
     get_json_string(item.`value`, '$.listing_offer_id') AS listing_offer_id,

@@ -1,0 +1,15 @@
+{
+  "flowId": "workflow.cloudmold.erp.sale-order-approve.v1",
+  "requiredInputs": ["authority", "customer", "command", "saleOut"],
+  "steps": [
+    {"id": "validate-merchant-shop", "capabilityId": "capability.cloudmold.merchant.merchant-reference-validation.require-active-reference.v1", "write": false, "arguments": ["$input.authority.reference"], "expect": {"result.merchantStatus": "ACTIVE", "result.shopStatus": "ACTIVE"}},
+    {"id": "authorize-owner", "capabilityId": "capability.cloudmold.merchant.merchant-operator-authorization.require-authorized-operator.v1", "write": false, "arguments": ["$input.authority.operator"], "expect": {"result.roleCode": "OWNER", "result.assignmentStatus": "ACTIVE"}},
+    {"id": "create-customer", "capabilityId": "capability.cloudmold.integration.yudao-erp-command.create-customer.v1", "write": true, "arguments": ["$input.customer"]},
+    {"id": "create", "capabilityId": "capability.cloudmold.integration.yudao-erp-command.create-sale-order.v1", "write": true, "arguments": ["$input.command"]},
+    {"id": "approve", "capabilityId": "capability.cloudmold.integration.yudao-erp-command.set-sale-order-status.v1", "write": true, "arguments": [{"idempotencyKey": "$idempotency.key", "documentId": "$steps.create.result", "targetStatus": 20}]},
+    {"id": "create-sale-out", "capabilityId": "capability.cloudmold.integration.yudao-erp-command.create-sale-out-from-order.v1", "write": true, "arguments": ["$input.saleOut"]},
+    {"id": "approve-sale-out", "capabilityId": "capability.cloudmold.integration.yudao-erp-command.set-sale-out-status.v1", "write": true, "arguments": [{"idempotencyKey": "$idempotency.key", "documentId": "$steps.create-sale-out.result", "targetStatus": 20}]},
+    {"id": "assert", "capabilityId": "capability.cloudmold.integration.yudao-legacy-operations-query.get-sale-order.v1", "write": false, "arguments": ["$steps.create.result"], "expect": {"result.sourceSystem": "ERP", "result.documentType": "SALE_ORDER", "result.status": 20}}
+    ,{"id": "assert-sale-out", "capabilityId": "capability.cloudmold.integration.yudao-legacy-operations-query.get-sale-out.v1", "write": false, "arguments": ["$steps.create-sale-out.result"], "expect": {"result.sourceSystem": "ERP", "result.documentType": "SALE_OUT", "result.status": 20}}
+  ]
+}

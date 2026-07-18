@@ -1,0 +1,13 @@
+name: commerce_readiness_cube
+base_object: commerce_readiness
+measures:
+  - {name: order_count, expression: "COUNT(DISTINCT order_id)", type: BIGINT}
+  - {name: reconciled_rate, expression: "100.0 * SUM(CASE WHEN readiness_status = 'RECONCILED' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0)", type: DOUBLE}
+  - {name: captured_amount_yuan, expression: "SUM(captured_amount_minor) / 100.0", type: DOUBLE}
+dimensions:
+  - {name: tenant_id, expression: tenant_id, type: BIGINT}
+  - {name: run_id, expression: run_id, type: VARCHAR}
+  - {name: readiness_status, expression: readiness_status, type: VARCHAR}
+  - {name: currency_code, expression: currency_code, type: VARCHAR}
+time_dimensions:
+  - {name: data_freshness_at, expression: data_freshness_at, type: TIMESTAMP}

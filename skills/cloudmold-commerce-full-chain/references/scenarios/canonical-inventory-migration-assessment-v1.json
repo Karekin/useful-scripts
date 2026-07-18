@@ -1,0 +1,40 @@
+{
+  "scenario_id": "canonical-inventory-migration-assessment-v1",
+  "version": 1,
+  "purpose": "Persist an immutable evidence assessment of every Inventory v1 balance without opening or mutating canonical v3 stock.",
+  "environment_scope": ["local", "demo", "test"],
+  "stages": ["ASSESS"],
+  "future_gates": ["QUALIFY", "MIGRATE"],
+  "expected_reference": {
+    "run_id": "cmig15assess",
+    "candidate_count": 18,
+    "eligible_count": 0,
+    "blocked_count": 18,
+    "rejected_count": 0,
+    "source_on_hand_quantity": "170.000000",
+    "source_reserved_quantity": "3.000000",
+    "source_in_transit_quantity": "0.000000",
+    "active_reservation_count": 1,
+    "active_reservation_quantity": "3.000000",
+    "opening_event_count": 0,
+    "readiness_status": "BLOCKED"
+  },
+  "invariants": [
+    "one immutable candidate per migration run and qualified v1 balance source identity",
+    "source version, update time, snapshot hash, quantities, active reservations, policy and evidence reference are retained",
+    "v1 active reservation facts remain distinct from canonical reservation allocations",
+    "ASSESS never inserts or updates a v3 balance, ledger entry, or migration bridge row",
+    "identical command replay returns the immutable first result",
+    "blocked and rejected candidates always carry structured blocker codes",
+    "ASSESSED_ONLY lakehouse readiness rejects any MIGRATION_OPENING event"
+  ],
+  "forbidden_shortcuts": [
+    "default Owner, Warehouse, Location, Lot, or UOM",
+    "treating controlled fixtures as production history",
+    "presenting v1 reservations as canonical allocations",
+    "opening stock during ASSESS",
+    "writing migration bridge rows before qualification",
+    "using inventory.stock.changed v3 PURCHASE_RECEIPT as a migration opening"
+  ],
+  "cleanup": "No destructive cleanup. Operation, run, candidates, Outbox events, lakehouse projections, and the external ledger remain audit evidence."
+}

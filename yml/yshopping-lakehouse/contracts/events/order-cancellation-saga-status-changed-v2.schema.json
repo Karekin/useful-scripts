@@ -17,6 +17,7 @@
     "order_id": {"type": "string", "format": "uuid"},
     "order_no": {"type": "string", "minLength": 1, "maxLength": 32},
     "cancellation_mode": {"type": "string", "const": "PAID_UNSHIPPED"},
+    "order_status_at_request": {"type": "string", "const": "PAYMENT_CONFIRMED"},
     "payment_id": {"type": "string", "format": "uuid"},
     "payment_refund_transaction_id": {"type": ["integer", "null"], "minimum": 1},
     "payment_status": {"type": "string", "enum": ["CAPTURED", "REFUNDED"]},
@@ -54,6 +55,9 @@
     "step_ordinal": {"type": "integer", "minimum": 0},
     "attempt": {"type": "integer", "minimum": 0},
     "reason": {"type": "string", "minLength": 1, "maxLength": 256},
+    "responsibility_party": {"type": ["string", "null"], "enum": [null, "MERCHANT", "BUYER", "PLATFORM", "CARRIER"]},
+    "responsibility_code": {"type": ["string", "null"], "enum": [null, "MERCHANT_STOCKOUT", "MERCHANT_SELLER_REJECTED", "MERCHANT_MANUAL_CANCEL", "BUYER_CHANGED_MIND", "BUYER_ADDRESS_ERROR", "BUYER_PAYMENT_ABANDONED", "PLATFORM_RISK_BLOCK", "PLATFORM_COMPLIANCE_BLOCK", "PLATFORM_PRICE_ERROR", "CARRIER_UNSERVICEABLE", "CARRIER_CAPACITY_BLOCK", "CARRIER_DAMAGE_RISK"]},
+    "counts_toward_paid_cancellation_rate": {"type": ["boolean", "null"]},
     "expected_reservation_count": {"type": "integer", "minimum": 1},
     "released_reservation_count": {"type": "integer", "minimum": 0},
     "reservations": {

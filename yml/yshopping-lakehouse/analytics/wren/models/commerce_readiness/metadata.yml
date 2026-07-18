@@ -1,0 +1,21 @@
+name: commerce_readiness
+table_reference:
+  schema: yshopping_ads
+  table: ads_canonical_commerce_v2_readiness
+primary_key: [tenant_id, run_id, order_id]
+columns:
+  - {name: tenant_id, type: BIGINT, not_null: true}
+  - {name: run_id, type: VARCHAR, not_null: true}
+  - {name: order_id, type: VARCHAR, not_null: true}
+  - {name: order_status, type: VARCHAR}
+  - {name: payment_status, type: VARCHAR}
+  - {name: fulfillment_status, type: VARCHAR}
+  - {name: payable_amount_minor, type: BIGINT}
+  - {name: captured_amount_minor, type: BIGINT}
+  - {name: refunded_amount_minor, type: BIGINT}
+  - {name: currency_code, type: VARCHAR}
+  - {name: item_count, type: BIGINT}
+  - {name: readiness_status, type: VARCHAR}
+  - {name: data_freshness_at, type: TIMESTAMP}
+properties:
+  description: Canonical order, payment, listing, fulfillment and inventory reconciliation surface.

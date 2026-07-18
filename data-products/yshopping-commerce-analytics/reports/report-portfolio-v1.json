@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "portfolio_id": "yshopping-multi-sided-commerce",
+  "north_star_system": {
+    "platform": "净 GMV 与贡献利润率共同衡量可持续经营，复购、供给与履约质量作为护栏",
+    "merchant": "商家净销售额与贡献利润，辅以新客、转化、复购、在售供给和履约质量",
+    "operations": "有效流量到支付的转化效率，辅以搜索、加购、结算和优惠核销质量",
+    "buyer": "成功完成且体验达标的订单价值，辅以首单时长、购买深度、配送承诺和退款体验",
+    "merchandise": "可售供给与库存周转共同衡量供给健康，采购履约和缺货风险作为护栏",
+    "finance": "净收入与毛利润共同衡量经济质量，资金对账、拒付和风险损失作为护栏",
+    "service": "一次解决和售后闭合共同衡量服务质量，响应、SLA 和恢复任务作为护栏",
+    "data_ai": "来源、模型、质量与 AI 决策必须可追溯、可验证、有人负责并按证据晋级"
+  },
+  "journey_stages": [
+    {"id":"supply","label":"供给入场","question":"商品、商家、库存是否可售？","domain_assets":["Catalog","Merchant","Listing","Inventory","Procurement"]},
+    {"id":"acquisition","label":"流量获取","question":"哪些渠道与活动带来有效新客？","domain_assets":["Promotion","Coupon","Advertising","Engagement"]},
+    {"id":"discovery","label":"发现搜索","question":"买家能否快速发现合适商品？","domain_assets":["Product","Search","Engagement","Community"]},
+    {"id":"consideration","label":"决策加购","question":"商品、价格与内容是否促成意向？","domain_assets":["Listing","Promotion","Engagement","Review"]},
+    {"id":"transaction","label":"下单支付","question":"结算与支付是否顺畅且安全？","domain_assets":["Order","Payment","Risk","Benefit"]},
+    {"id":"fulfillment","label":"履约交付","question":"仓配是否按承诺完整交付？","domain_assets":["Warehouse","Inventory","Fulfillment","Logistics"]},
+    {"id":"service","label":"售后服务","question":"问题是否快速、低成本地闭环？","domain_assets":["AfterSales","Refund","CustomerService","Compensation"]},
+    {"id":"retention","label":"留存复购","question":"买家和商家是否持续获得价值？","domain_assets":["Member","CRM","Community","Gamification"]}
+  ],
+  "views": [
+    {"id":"executive","label":"经营驾驶舱","audience":"管理层","owner":"Business + Finance","question":"增长是否健康、可持续、可对账？","scope_note":"唯一一级总览：只放跨域经营结果与核心护栏，专业过程指标下沉到对应视图。","primary_metrics":["commerce.net_gmv_yuan","finance.contribution_margin_rate","commerce.paid_buyer_count","merchant.active_merchant_count"],"supporting_metrics":["commerce.order_count","commerce.average_order_value_yuan","buyer.repeat_purchase_rate_90d","fulfillment.on_time_delivery_rate","buyer.csat"]},
+    {"id":"merchant","label":"商家经营中心","audience":"商家与商家运营","owner":"Merchant","question":"商家的获客、转化与可售经营是否健康？","scope_note":"仅保留商家可直接行动的获客、店铺转化、投放、在售和取消指标。","primary_metrics":["merchant.net_sales_yuan","merchant.new_buyer_count","merchant.store_conversion_rate","marketing.ad_roas"],"supporting_metrics":["marketing.promotion_roi","listing.active_offer_count","merchant.cancellation_rate"]},
+    {"id":"operations","label":"运营作战室","audience":"平台运营","owner":"Growth + Commerce","question":"用户从流量到支付在哪一步流失？","scope_note":"仅关注流量、搜索、详情、加购、结算、支付转化与优惠核销过程。","primary_metrics":["funnel.visit_to_pay_rate","commerce.gmv_yuan","buyer.new_paid_buyer_count","traffic.visitor_count"],"supporting_metrics":["search.success_rate","funnel.product_detail_view_count","funnel.add_to_cart_rate","funnel.checkout_start_rate","funnel.cart_abandonment_rate","promotion.coupon_redemption_rate"]},
+    {"id":"buyer","label":"买家旅程","audience":"产品、用户增长与体验团队","owner":"Buyer Experience","question":"买家的首单、复购深度与履约体验是否连贯？","scope_note":"仅关注买家生命周期与体验，不重复展示平台规模和商家经营结果。","primary_metrics":["buyer.time_to_first_order_hours","buyer.order_frequency_90d","buyer.category_breadth_90d","buyer.delivery_promise_hit_rate"],"supporting_metrics":["buyer.return_rate","buyer.refund_cycle_hours"]},
+    {"id":"merchandise","label":"商品与供应链","audience":"商品、采购、库存与履约团队","owner":"Supply Chain","question":"供给是否丰富、健康、周转高效？","scope_note":"覆盖商品准入、可售库存、周转、库龄、采购和库存治理的完整专业指标。","primary_metrics":["catalog.selection_breadth","inventory.in_stock_rate","inventory.turnover_days","procurement.otif_rate"],"supporting_metrics":["catalog.active_sku_count","listing.approval_rate","inventory.available_quantity","inventory.stockout_rate","inventory.sell_through_rate_30d","inventory.aged_stock_value_yuan","procurement.receipt_fulfillment_rate","inventory.balance_count","inventory.canonical_v3_rate","inventory.low_stock_balance_count","inventory.out_of_stock_balance_count","procurement.purchase_order_count","procurement.open_order_count"]},
+    {"id":"finance","label":"财务与风控","audience":"财务、支付与风险团队","owner":"Finance + Risk","question":"交易是否盈利、资金是否守恒、风险是否可控？","scope_note":"仅关注收入、毛利、资金、对账、支付和风险损失，不重复经营规模卡片。","primary_metrics":["finance.net_revenue_yuan","finance.gross_profit_yuan","platform.take_rate","risk.loss_amount_yuan"],"supporting_metrics":["commerce.captured_amount_yuan","aftersales.refunded_amount_yuan","finance.discount_funding_yuan","payment.success_rate","risk.flagged_order_rate","risk.chargeback_rate","commerce.reconciled_rate"]},
+    {"id":"service","label":"客服与售后体验","audience":"客服、售后与服务质量团队","owner":"Customer Service + After Sales","question":"问题是否一次解决并快速完成售后闭环？","scope_note":"仅关注工单响应、一次解决、SLA、售后闭合、缺陷与人工恢复任务。","primary_metrics":["service.first_contact_resolution_rate","service.resolution_sla_rate","aftersales.reconciled_rate","service.order_defect_rate"],"supporting_metrics":["aftersales.case_count","service.first_response_minutes","aftersales.recovery_required_count"]},
+    {"id":"data_ai","label":"数据与 AI 治理","audience":"数据平台与 AI 治理团队","owner":"Data Platform + AI Governance","question":"指标能否追溯、运行、验证并安全托管？","scope_note":"只展示数据来源、模型、质量与 AI 决策治理；经营一级指标留在经营驾驶舱。","primary_metrics":["governance.strict_final_source_count","governance.governed_source_candidates","governance.failed_dqc_result_count","ai.pending_clue_count"],"supporting_metrics":["governance.sql_model_count","governance.dataset_count","governance.invalid_reference_count","ai.observation_count","ai.invalid_taxonomy_reference_count"]}
+  ]
+}

@@ -22,6 +22,8 @@ class LakehouseCtlContractTest(unittest.TestCase):
         self.assertIn("reconcile-legacy-trade-benefit-assessment", result.stdout)
         self.assertIn("reconcile-canonical-legacy-trade-benefit-assessment", result.stdout)
         self.assertIn("submit-legacy-mall-cdc", result.stdout)
+        self.assertIn("submit-legacy-commerce-observability-cdc", result.stdout)
+        self.assertIn("reconcile-legacy-commerce-observability", result.stdout)
         self.assertIn("source-evidence-policy", result.stdout)
 
     def test_trade_source_evidence_policy_is_executable(self):
@@ -119,6 +121,11 @@ class LakehouseCtlContractTest(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 2)
         self.assertIn("--source-id contains unsupported characters", result.stderr)
+
+    def test_warehouse_reconciliation_allows_multiple_governed_source_mappings(self):
+        script = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn('"$active_mappings" =~ ^[1-9][0-9]*$', script)
+        self.assertIn('"$exact_source_mappings" == "1"', script)
 
     def test_listing_unpublish_reconciliation_rejects_non_uuid_saga(self):
         result = self.run_ctl(

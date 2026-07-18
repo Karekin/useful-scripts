@@ -1,0 +1,26 @@
+{
+  "scenario": "yshopping-commerce-vertical-v1",
+  "purpose": "Run the first AI-operated Y-Shopping vertical from apparel Catalog through compatibility planning, canonical Inventory, Order, test Payment, refund/return, and lakehouse reconciliation.",
+  "environment_policy": "local, demo, or disposable test tenant only",
+  "runner": "scripts/yshopping_commerce_vertical_runner.py",
+  "flow": [
+    "define and activate one Style/SPU with six canonical apparel SKU",
+    "create 18 ownership-safe PENDING Mall/ERP/WMS identity projection snapshots",
+    "select one ACTIVE SKU and receive 10 run-scoped fixture units",
+    "place order, reserve inventory, capture exact test payment, ship, and complete",
+    "fully refund, separately return inventory, and close order as RETURNED",
+    "replay every business command with immutable duplicate results",
+    "reconcile Catalog and commerce events through DWD, DIM, DWS, ADS, and all DQC"
+  ],
+  "expected": {
+    "catalog_readiness": "CATALOG_ACTIVE",
+    "catalog_skus": 6,
+    "legacy_identity_projections": 18,
+    "order": "RETURNED/v7",
+    "payment": "REFUNDED/v2",
+    "inventory": "10/0/10/v4",
+    "commerce_readiness": "RECONCILED",
+    "all_replay_duplicate": true
+  },
+  "cleanup": "none; retain run-scoped immutable evidence"
+}

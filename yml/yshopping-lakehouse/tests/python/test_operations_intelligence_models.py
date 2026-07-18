@@ -78,6 +78,10 @@ class OperationsIntelligenceModelsTest(unittest.TestCase):
             "operations_intelligence_automatic_enforcement_enabled",
         ):
             self.assertIn(check, dqc)
+        self.assertIn(
+            '"raw_content_stored"[[:space:]]*:[[:space:]]*false',
+            dqc,
+        )
 
     def test_intelligence_taxonomy_is_versioned_source_backed_and_never_coerced_to_severity(self):
         dwd = (ROOT / "models/dwd/dwd-canonical-risk-event.sql").read_text(encoding="utf-8")

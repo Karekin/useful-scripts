@@ -1,0 +1,25 @@
+{
+  "scenario_id": "canonical-inventory-migration-canary-v1",
+  "version": 1,
+  "purpose": "Prove one controlled Inventory v1 canary can qualify against exact canonical dimensions and create exactly one v3 opening through the qualification driver.",
+  "environment_scope": ["local", "demo", "test"],
+  "stages": ["MAP_SOURCE", "CREATE_CANARY", "ASSESS", "QUALIFY", "MIGRATE", "VERIFY_SOURCE_FENCE"],
+  "invariants": [
+    "only a MIGRATION_CANARY v1 source classified CONTROLLED_CANARY may qualify",
+    "the assessment command selects exactly one source balance",
+    "Merchant, SKU, Warehouse source mapping, Location and Lot policy are revalidated at qualification and migration time",
+    "qualification source quantities are positive on-hand with zero reserved, in-transit and active reservations",
+    "one qualification creates one new zero v3 balance, one ledger transaction, one ledger entry, one resolved bridge and one stock event v4",
+    "the qualification is the sole opening driver and identical writes replay immutably",
+    "after the resolved migration bridge exists, every new v1 command for the migrated source is rejected while historical replays remain immutable",
+    "existing CONTROLLED_FIXTURE, CONTROLLED_SCENARIO and CONCURRENCY_PROBE rows remain blocked"
+  ],
+  "forbidden_shortcuts": [
+    "qualifying an existing fixture or probe",
+    "fabricating Merchant, Warehouse, Location or Lot",
+    "using source batch text as canonical Lot",
+    "posting a PURCHASE_RECEIPT as migration opening",
+    "opening an existing v3 balance or opening the same source twice",
+    "accepting a new v1 source mutation after the resolved migration bridge exists"
+  ]
+}

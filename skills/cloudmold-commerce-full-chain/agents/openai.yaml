@@ -1,0 +1,4 @@
+interface:
+  display_name: "CloudMold Commerce HSF Full Chain"
+  short_description: "Run the canonical commerce lifecycle through governed Dubbo RPC"
+  default_prompt: "Use $cloudmold-commerce-full-chain to execute and reconcile one product through the complete HSF commerce lifecycle."

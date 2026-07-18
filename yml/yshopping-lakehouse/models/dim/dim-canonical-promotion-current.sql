@@ -45,3 +45,18 @@ SELECT event_id, tenant_id, placement_id, aggregate_version, occurred_at, record
                               ORDER BY aggregate_version DESC, recorded_at DESC, event_id DESC) AS row_num
     FROM yshopping_dwd.dwd_canonical_advertising_placement_event event
 ) ranked WHERE row_num = 1;
+
+CREATE OR REPLACE VIEW yshopping_dim.dim_canonical_promotion_experiment_result_current AS
+SELECT event_id, tenant_id, experiment_id, aggregate_version, event_occurred_at, recorded_at,
+       correlation_id, causation_id, idempotency_key, experiment_code, campaign_id, merchant_id,
+       measured_from, measured_to, baseline_contribution_profit_minor,
+       treatment_contribution_profit_minor, incremental_contribution_profit_minor,
+       promotion_cost_minor, eligible_population_count, treatment_population_count,
+       control_population_count, currency_code, methodology_ref, experiment_event_count
+FROM (
+    SELECT event.*,
+           COUNT(*) OVER (PARTITION BY tenant_id, experiment_id) AS experiment_event_count,
+           ROW_NUMBER() OVER (PARTITION BY tenant_id, experiment_id
+                              ORDER BY aggregate_version DESC, recorded_at DESC, event_id DESC) AS row_num
+    FROM yshopping_dwd.dwd_canonical_promotion_experiment_result_event event
+) ranked WHERE row_num = 1;

@@ -1,0 +1,19 @@
+name: purchase_fulfillment
+table_reference:
+  schema: yshopping_ads
+  table: ads_purchase_fulfillment
+primary_key: [tenant_id, purchase_order_id]
+columns:
+  - {name: tenant_id, type: BIGINT, not_null: true}
+  - {name: purchase_order_id, type: BIGINT, not_null: true}
+  - {name: purchase_order_no, type: VARCHAR}
+  - {name: supplier_id, type: BIGINT}
+  - {name: ordered_at, type: TIMESTAMP}
+  - {name: ordered_quantity, type: DECIMAL}
+  - {name: received_quantity, type: DECIMAL}
+  - {name: returned_quantity, type: DECIMAL}
+  - {name: receipt_fulfillment_rate, type: DECIMAL}
+  - {name: fulfillment_status, type: VARCHAR}
+  - {name: updated_at, type: TIMESTAMP}
+properties:
+  description: Purchase order receipt fulfillment at tenant and purchase-order grain.

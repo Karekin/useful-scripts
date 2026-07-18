@@ -1,0 +1,30 @@
+log:
+  level: info
+  outputPath: /app/logs/dubbo-admin.log
+  maxSize: 50
+  maxBackups: 3
+  maxAge: 3
+
+console:
+  port: 8888
+  ginMode: release
+  auth:
+    # Local-only control-plane credential. The port is bound to 127.0.0.1.
+    user: cloudmold
+    password: cloudmold-local-admin
+    expirationTime: 3600
+
+store:
+  type: memory
+
+discovery:
+  - type: nacos2
+    name: cloudmold-local-nacos
+    id: cloudmold-local-nacos
+    address:
+      registry: nacos://yudao-nacos:8848
+      configCenter: nacos://yudao-nacos:8848
+      metadataReport: nacos://yudao-nacos:8848
+    properties:
+      configWatchPeriod: 10
+      serviceWatchPeriod: 10

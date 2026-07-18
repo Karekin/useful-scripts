@@ -16,6 +16,7 @@ SELECT
     get_json_string(item.`value`, '$.order_item_id') AS order_item_id,
     get_json_string(item.`value`, '$.canonical_sku_id') AS canonical_sku_id,
     CAST(get_json_string(item.`value`, '$.quantity') AS DECIMAL(24,6)) AS quantity,
+    CAST(get_json_string(item.`value`, '$.variable_fulfillment_cost_minor') AS BIGINT) AS variable_fulfillment_cost_minor,
     get_json_string(item.`value`, '$.reservation_id') AS reservation_id
 FROM yshopping_dwd.dwd_canonical_fulfillment_status_event event,
      LATERAL json_each(event.items) item;

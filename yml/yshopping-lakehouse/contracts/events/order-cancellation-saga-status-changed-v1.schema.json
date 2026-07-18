@@ -14,6 +14,7 @@
     "saga_id": {"type": "string", "format": "uuid"},
     "order_id": {"type": "string", "format": "uuid"},
     "order_no": {"type": "string", "minLength": 1, "maxLength": 32},
+    "order_status_at_request": {"type": "string", "const": "INVENTORY_RESERVED"},
     "previous_status": {
       "type": ["string", "null"],
       "enum": [null, "REQUESTED", "RELEASING_RESERVATIONS", "RESERVATIONS_RELEASED", "CANCELLING_ORDER", "RETRY_SCHEDULED", "MANUAL_REVIEW", "COMPLETED"]
@@ -28,6 +29,9 @@
     },
     "attempt": {"type": "integer", "minimum": 0},
     "reason": {"type": "string", "minLength": 1, "maxLength": 256},
+    "responsibility_party": {"type": ["string", "null"], "enum": [null, "MERCHANT", "BUYER", "PLATFORM", "CARRIER"]},
+    "responsibility_code": {"type": ["string", "null"], "enum": [null, "MERCHANT_STOCKOUT", "MERCHANT_SELLER_REJECTED", "MERCHANT_MANUAL_CANCEL", "BUYER_CHANGED_MIND", "BUYER_ADDRESS_ERROR", "BUYER_PAYMENT_ABANDONED", "PLATFORM_RISK_BLOCK", "PLATFORM_COMPLIANCE_BLOCK", "PLATFORM_PRICE_ERROR", "CARRIER_UNSERVICEABLE", "CARRIER_CAPACITY_BLOCK", "CARRIER_DAMAGE_RISK"]},
+    "counts_toward_paid_cancellation_rate": {"type": ["boolean", "null"]},
     "expected_reservation_count": {"type": "integer", "minimum": 1},
     "released_reservation_count": {"type": "integer", "minimum": 0},
     "reservations": {
