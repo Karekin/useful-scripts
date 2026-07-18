@@ -1,0 +1,17 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.catalog.inspect-active-sku.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R1",
+  "max_attempts": 5,
+  "steps": [
+    {
+      "step_code": "get-active-sku",
+      "step_order": 10,
+      "capability_id": "capability.cloudmold.catalog.catalog-sku-projection.get-active-sku.v1",
+      "operation_type": "READ",
+      "approval_required": false,
+      "arguments": ["$input.skuId"]
+    }
+  ]
+}

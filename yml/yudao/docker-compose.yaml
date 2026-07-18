@@ -150,6 +150,65 @@ services:
         max-size: "100m"
         max-file: "3"
 
+  # Idempotent schema gate for the durable Skill Task control plane. The
+  # executor cannot start until the versioned CloudMold migration succeeds.
+  cloudmold-skill-task-migrator:
+    profiles: [ "agent" ]
+    image: mysql:8.0
+    depends_on:
+      yudao-mysql:
+        condition: service_healthy
+    environment:
+      MYSQL_PWD: "123456"
+    command:
+      - /bin/sh
+      - -ec
+      - mysql -hyudao-mysql -uroot ruoyi-vue-pro < /migration.sql
+    volumes:
+      - ../../../yudao-cloud/sql/cloudmold/V20260718_67__durable_skill_task_executor.sql:/migration.sql:ro
+    networks:
+      - yudao_network
+
+  # Persistent business workflow executor. DeerFlow/MCP submit governed work
+  # here; steps, leases, checkpoints, retries and results remain in MySQL.
+  cloudmold-skill-task-executor:
+    profiles: [ "agent" ]
+    build:
+      context: ../../../yudao-cloud/cloudmold-module-skill-task/cloudmold-module-skill-task-server
+    image: cloudmold/skill-task-executor:local
+    container_name: cloudmold-skill-task-executor
+    restart: unless-stopped
+    depends_on:
+      yudao-nacos:
+        condition: service_healthy
+      yudao-provider:
+        condition: service_healthy
+      cloudmold-skill-task-migrator:
+        condition: service_completed_successfully
+    environment:
+      CLOUDMOLD_DB_URL: jdbc:mysql://yudao-mysql:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true
+      CLOUDMOLD_DB_USERNAME: root
+      CLOUDMOLD_DB_PASSWORD: "123456"
+      CLOUDMOLD_SKILL_REGISTRY_ROOT: /app/skills
+      CLOUDMOLD_SKILL_WORKER_ENABLED: ${CLOUDMOLD_SKILL_WORKER_ENABLED:-true}
+      CLOUDMOLD_RPC_GROUP: cloudmold-compose-internal
+      CLOUDMOLD_DUBBO_REGISTRY: nacos://yudao-nacos:8848
+      CLOUDMOLD_DUBBO_REGISTRY_GROUP: CLOUDMOLD_DUBBO
+      JAVA_OPTS: -Xms192m -Xmx512m -Dfile.encoding=UTF-8 -Ddubbo.application.migration.step=FORCE_INTERFACE -Ddubbo.application.serialize-check-status=STRICT -Ddubbo.application.check-serializable=false -Ddubbo.hessian.allowNonSerializable=true
+    secrets:
+      - cloudmold_rpc_shared_secret
+    volumes:
+      - ../../skills:/app/skills:ro
+    ports:
+      - "127.0.0.1:20882:20882"
+    networks:
+      - yudao_network
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+
   # One-shot governed consumer used by Skills. Run with:
   # docker compose run --rm cloudmold-agent-executor --list-capabilities
   cloudmold-agent-executor:
@@ -161,6 +220,8 @@ services:
       yudao-nacos:
         condition: service_healthy
       yudao-provider:
+        condition: service_healthy
+      cloudmold-skill-task-executor:
         condition: service_healthy
       yudao-redis:
         condition: service_started

@@ -5,7 +5,7 @@
       "skill_id": "skill.cloudmold.platform.dubbo-operator.v1",
       "path": "cloudmold-dubbo-operator",
       "manifest": "cloudmold-dubbo-operator/skill.json",
-      "status": "partial",
+      "status": "active",
       "owner": "cloudmold-platform"
     },
     {
@@ -14,6 +14,14 @@
       "manifest": "cloudmold-hsf-mcp-operator/skill.json",
       "status": "active",
       "owner": "cloudmold-platform"
+    },
+    {
+      "skill_id": "skill.cloudmold.catalog.inspect-active-sku.v1",
+      "path": "cloudmold-catalog-inspection",
+      "manifest": "cloudmold-catalog-inspection/skill.json",
+      "task_definition": "cloudmold-catalog-inspection/skill-task.json",
+      "status": "active",
+      "owner": "cloudmold-catalog"
     },
     {
       "skill_id": "skill.cloudmold.quality.full-chain-qa.v1",

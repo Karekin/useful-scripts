@@ -22,7 +22,8 @@ WORKSPACE = SKILL_DIR.parents[2]
 BACKEND = WORKSPACE / "yudao-cloud"
 COMPOSE_DIR = WORKSPACE / "useful-scripts" / "yml" / "yudao"
 DEFAULT_NACOS = "http://127.0.0.1:8848"
-GOVERNED_SERVICE_COUNT = 77
+GOVERNED_SERVICE_COUNT = 85
+YUDAO_PROVIDER_SERVICE_COUNT = 83
 HESSIAN_COMPATIBILITY_ARGS = [
     "-Ddubbo.application.serialize-check-status=STRICT",
     "-Ddubbo.application.check-serializable=false",
@@ -113,18 +114,19 @@ def deploy_registry(args: argparse.Namespace, evidence: Evidence) -> dict:
 
 def build(evidence: Evidence) -> None:
     run_checked(evidence, "install-thin-runtime-dependencies",
-                ["mvn", "-pl", "yudao-server,cloudmold-agent-executor", "-am", "-DskipTests",
+                ["mvn", "-pl", "yudao-server,cloudmold-agent-executor,cloudmold-module-skill-task/cloudmold-module-skill-task-server", "-am", "-DskipTests",
                  "-Dspring-boot.repackage.skip=true", "clean", "install"],
                 BACKEND)
     run_checked(evidence, "package-provider-and-executor-entrypoints",
-                ["mvn", "-pl", "yudao-server,cloudmold-agent-executor", "-DskipTests", "package"], BACKEND)
+                ["mvn", "-pl", "yudao-server,cloudmold-agent-executor,cloudmold-module-skill-task/cloudmold-module-skill-task-server", "-DskipTests", "package"], BACKEND)
     run_checked(evidence, "test-rpc-contracts",
-                ["mvn", "-pl", "cloudmold-rpc,cloudmold-agent-executor", "-am",
+                ["mvn", "-pl", "cloudmold-rpc,cloudmold-agent-executor,cloudmold-module-skill-task/cloudmold-module-skill-task-server", "-am",
                  "-Dspring-boot.repackage.skip=true", "test"], BACKEND)
     require_secret_file()
     run_checked(evidence, "build-compose-capability-plane",
                 ["docker", "compose", "--profile", "agent", "build",
-                 "yudao-dubbo-admin", "yudao-provider", "cloudmold-agent-executor"], COMPOSE_DIR)
+                 "yudao-dubbo-admin", "yudao-provider", "cloudmold-skill-task-executor",
+                 "cloudmold-agent-executor"], COMPOSE_DIR)
 
 
 def port_open(port: int) -> bool:
@@ -141,7 +143,8 @@ def start_provider(args: argparse.Namespace, evidence: Evidence) -> dict:
     compose_provider_running = provider_inspect.returncode == 0 and provider_inspect.stdout.strip() == "running"
     if (port_open(20880) or port_open(48080)) and not compose_provider_running:
         raise RuntimeError("Provider port 20880 or 48080 is already in use; stop the exact legacy host process first")
-    command = ["docker", "compose", "up", "-d", "yudao-dubbo-admin", "yudao-provider"]
+    command = ["docker", "compose", "--profile", "agent", "up", "-d",
+               "yudao-dubbo-admin", "yudao-provider", "cloudmold-skill-task-executor"]
     run_checked(evidence, "start-control-and-data-plane", command, COMPOSE_DIR)
     deadline = time.monotonic() + args.timeout
     while time.monotonic() < deadline:
@@ -149,15 +152,25 @@ def start_provider(args: argparse.Namespace, evidence: Evidence) -> dict:
                                   "yudao-provider"], text=True, capture_output=True, check=False)
         admin = subprocess.run(["docker", "inspect", "--format", "{{.State.Health.Status}}",
                                 "yudao-dubbo-admin"], text=True, capture_output=True, check=False)
+        task = subprocess.run(["docker", "inspect", "--format", "{{.State.Health.Status}}",
+                               "cloudmold-skill-task-executor"], text=True, capture_output=True, check=False)
         logs = subprocess.run(["docker", "logs", "--tail", "400", "yudao-provider"],
                               text=True, capture_output=True, check=False)
-        expected = f"Exported {GOVERNED_SERVICE_COUNT} governed CloudMold Dubbo services"
-        if inspect.stdout.strip() == "healthy" and admin.stdout.strip() == "healthy" and expected in logs.stdout + logs.stderr:
+        task_logs = subprocess.run(["docker", "logs", "--tail", "200", "cloudmold-skill-task-executor"],
+                                   text=True, capture_output=True, check=False)
+        expected = f"Exported {YUDAO_PROVIDER_SERVICE_COUNT} governed CloudMold Dubbo services"
+        task_expected = "Exported 2 governed CloudMold Dubbo services"
+        if (inspect.stdout.strip() == "healthy" and admin.stdout.strip() == "healthy"
+                and task.stdout.strip() == "healthy" and expected in logs.stdout + logs.stderr
+                and task_expected in task_logs.stdout + task_logs.stderr):
             return {"providerContainer": "yudao-provider", "adminContainer": "yudao-dubbo-admin",
+                    "taskExecutorContainer": "cloudmold-skill-task-executor",
                     "adminUrl": "http://127.0.0.1:38080/admin/",
+                    "providerServices": YUDAO_PROVIDER_SERVICE_COUNT, "taskServices": 2,
                     "exportedServices": GOVERNED_SERVICE_COUNT}
         time.sleep(2)
-    raise RuntimeError(f"Compose capability plane did not become healthy with {GOVERNED_SERVICE_COUNT} services")
+    raise RuntimeError(f"Compose capability plane did not become healthy with {YUDAO_PROVIDER_SERVICE_COUNT} "
+                       "Yudao Provider services")
 
 
 def verify(args: argparse.Namespace, evidence: Evidence) -> dict:
