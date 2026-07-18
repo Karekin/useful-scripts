@@ -1,0 +1,86 @@
+# DeerFlow v2.0.0 control-plane configuration for CloudMold.
+# Secrets are resolved from container environment variables at runtime.
+config_version: 14
+log_level: info
+
+token_usage:
+  enabled: true
+
+models:
+  - name: kimi-k2-5
+    display_name: Kimi K2.5 (CloudMold control plane)
+    use: deerflow.models.patched_deepseek:PatchedChatDeepSeek
+    model: kimi-k2.5
+    api_base: $OPENAI_BASE_URL
+    api_key: $OPENAI_API_KEY
+    timeout: 600.0
+    max_retries: 2
+    max_tokens: 32768
+    supports_thinking: true
+    supports_vision: true
+    when_thinking_enabled:
+      extra_body:
+        thinking:
+          type: enabled
+    when_thinking_disabled:
+      extra_body:
+        thinking:
+          type: disabled
+
+tools:
+  - name: ls
+    group: file:read
+    use: deerflow.sandbox.tools:ls_tool
+  - name: read_file
+    group: file:read
+    use: deerflow.sandbox.tools:read_file_tool
+  - name: glob
+    group: file:read
+    use: deerflow.sandbox.tools:glob_tool
+    max_results: 200
+  - name: grep
+    group: file:read
+    use: deerflow.sandbox.tools:grep_tool
+    max_results: 100
+
+tool_search:
+  enabled: true
+
+sandbox:
+  use: deerflow.sandbox.local:LocalSandboxProvider
+  allow_host_bash: false
+  bash_output_max_chars: 20000
+  read_file_output_max_chars: 50000
+  ls_output_max_chars: 20000
+
+skills:
+  container_path: /app/skills
+
+title:
+  enabled: true
+  max_words: 6
+  max_chars: 60
+  model_name: null
+
+summarization:
+  enabled: true
+  model_name: null
+  trigger:
+    - type: tokens
+      value: 32000
+
+agents_api:
+  enabled: false
+
+skill_evolution:
+  enabled: false
+  moderation_model_name: null
+
+database:
+  backend: sqlite
+  sqlite_dir: .deer-flow/data
+
+run_events:
+  backend: db
+  max_trace_content: 10240
+  track_token_usage: true

@@ -1,0 +1,22 @@
+services:
+  nginx:
+    mem_limit: 128m
+    cpus: 0.25
+
+  frontend:
+    mem_limit: 1g
+    cpus: 1.0
+
+  gateway:
+    volumes:
+      - type: bind
+        source: ${CLOUDMOLD_SKILLS_PATH:?CLOUDMOLD_SKILLS_PATH is required}
+        target: /app/skills
+        read_only: true
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.moonshot.cn/v1}
+      DEER_FLOW_SKILLS_PATH: /app/skills
+      GATEWAY_ENABLE_DOCS: "false"
+    mem_limit: 3g
+    cpus: 2.0
