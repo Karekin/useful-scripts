@@ -1050,7 +1050,8 @@ def deerflow_full_chain_r3_e2e(
         "cloudmold_skill_task_submit_commerce_full_chain_r3，参数必须严格等于 "
         f"{json.dumps(submit_arguments, ensure_ascii=False, separators=(',', ':'))}。"
         "从提交结果读取 taskId，再调用 cloudmold_skill_task_get 查询一次持久化状态。"
-        "不要直接调用任何领域 WRITE capability，不要调用 shell、文件或浏览器工具。"
+        "不要直接调用任何领域 WRITE capability，不要调用 ask_clarification、shell、文件或浏览器工具。"
+        "这是程序化验收，参数已经由审批门禁验证，不需要也不允许再次询问。"
         "持久化执行器会异步完成任务；查询一次后只报告 taskId 和当前状态。"
     )
     body = with_internal_test_metadata({
