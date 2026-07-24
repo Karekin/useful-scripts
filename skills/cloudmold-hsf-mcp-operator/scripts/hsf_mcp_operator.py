@@ -1316,10 +1316,15 @@ def print_plan() -> None:
             "direct WRITE rejection",
             "optional signed tenant-aware business READ",
             "optional durable R1 Skill Task submit/query/checkpoint proof",
+            "fixed R3 commerce full-chain submit/query/child completion proof",
             "DeerFlow model tool discovery and MCP call",
             "DeerFlow model durable Skill Task submit/query proof",
+            "persisted DeerFlow R3 timeout recovery proof",
         ],
-        "writeBoundary": "direct domain write forbidden; MCP may submit/retry governed R1 durable tasks",
+        "writeBoundary": (
+            "direct domain write forbidden; MCP may submit/retry governed R1 tasks "
+            "and the fixed approved R3 commerce full-chain task"
+        ),
     }, ensure_ascii=False, indent=2))
 
 
