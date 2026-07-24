@@ -1,4 +1,5 @@
 import importlib.util
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -40,6 +41,42 @@ class InternalTestVisibilityTest(unittest.TestCase):
                 "visibility": "internal_test",
             },
         )
+
+
+    def test_approval_reference_requires_private_file_permissions(self):
+        reference = "cma1:approval-0725:1785000000:" + "a" * 64
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "approval-ref"
+            path.write_text(reference, encoding="utf-8")
+            path.chmod(0o600)
+            self.assertEqual(MODULE.load_approval_ref(path), reference)
+            path.chmod(0o644)
+            with self.assertRaisesRegex(MODULE.GateError, "group/world"):
+                MODULE.load_approval_ref(path)
+
+    def test_r3_terminal_proof_binds_identity_input_and_all_hashes(self):
+        task_input = {"z": 2, "a": {"value": "测试"}}
+        input_sha256 = MODULE.canonical_object_sha256(task_input)
+        task = {
+            "skillId": MODULE.R3_SKILL_ID,
+            "skillVersion": MODULE.R3_SKILL_VERSION,
+            "riskLevel": "R3",
+            "inputSha256": input_sha256,
+            "definitionSha256": "a" * 64,
+            "definitionClosureSha256": "b" * 64,
+            "terminalResultSha256": "c" * 64,
+        }
+        self.assertEqual(
+            MODULE.require_r3_terminal_proof(task, task_input),
+            {
+                "definitionSha256": "a" * 64,
+                "definitionClosureSha256": "b" * 64,
+                "terminalResultSha256": "c" * 64,
+            },
+        )
+        task["inputSha256"] = "0" * 64
+        with self.assertRaisesRegex(MODULE.GateError, "inputSha256"):
+            MODULE.require_r3_terminal_proof(task, task_input)
 
 
 if __name__ == "__main__":

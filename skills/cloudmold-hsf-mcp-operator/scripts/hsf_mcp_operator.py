@@ -51,6 +51,9 @@ DEERFLOW_TASK_GET_TOOL = "cloudmold-hsf_cloudmold_skill_task_get"
 DEERFLOW_R3_SUBMIT_TOOL = (
     "cloudmold-hsf_cloudmold_skill_task_submit_commerce_full_chain_r3"
 )
+R3_SKILL_ID = "skill.cloudmold.commerce.full-chain-hsf.v1"
+R3_SKILL_VERSION = "1.2.0"
+SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
 
 
 class GateError(RuntimeError):
@@ -466,6 +469,38 @@ def load_object_file(path: Path) -> dict[str, Any]:
         raise GateError(f"cannot read input file: {path}") from error
 
 
+def canonical_object_sha256(value: dict[str, Any]) -> str:
+    payload = json.dumps(
+        value, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def require_r3_terminal_proof(
+    task: dict[str, Any], task_input: dict[str, Any],
+) -> dict[str, str]:
+    expected = {
+        "skillId": R3_SKILL_ID,
+        "skillVersion": R3_SKILL_VERSION,
+        "riskLevel": "R3",
+        "inputSha256": canonical_object_sha256(task_input),
+    }
+    for field, expected_value in expected.items():
+        if task.get(field) != expected_value:
+            raise GateError(
+                f"R3 full-chain terminal proof has unexpected {field}: {task.get(field)!r}"
+            )
+    hashes: dict[str, str] = {}
+    for field in (
+        "definitionSha256", "definitionClosureSha256", "terminalResultSha256",
+    ):
+        value = task.get(field)
+        if not isinstance(value, str) or SHA256_PATTERN.fullmatch(value) is None:
+            raise GateError(f"R3 full-chain terminal proof has no valid {field}")
+        hashes[field] = value
+    return hashes
+
+
 def invoke_skill_task_r1(
     mcp_url: str,
     token: str,
@@ -653,6 +688,7 @@ def invoke_skill_task_r3(
         raise GateError("R3 full-chain submit returned no taskId")
     task, steps = await_skill_task(
         mcp_url, token, session_id, context, task_id, timeout, label="R3 full-chain Skill Task")
+    terminal_proof = require_r3_terminal_proof(task, task_input)
     return {
         "status": "SUCCEEDED",
         "checkedAt": utc_now(),
@@ -664,6 +700,7 @@ def invoke_skill_task_r3(
         "version": task.get("version"),
         "inputSha256": task.get("inputSha256"),
         "approvalRefSha256": hashlib.sha256(approval_ref.encode("utf-8")).hexdigest(),
+        "terminalProof": terminal_proof,
         "steps": [
             {
                 "stepCode": step.get("stepCode"),
@@ -1087,6 +1124,7 @@ def deerflow_full_chain_r3_e2e(
     task, steps = await_skill_task(
         mcp_url, token, session_id, context, task_id, task_timeout,
         label="DeerFlow-submitted R3 full-chain Skill Task")
+    terminal_proof = require_r3_terminal_proof(task, task_input)
     return {
         "status": "SUCCEEDED",
         "checkedAt": utc_now(),
@@ -1101,6 +1139,7 @@ def deerflow_full_chain_r3_e2e(
         "attemptCount": task.get("attemptCount"),
         "inputSha256": task.get("inputSha256"),
         "approvalRefSha256": hashlib.sha256(approval_ref.encode("utf-8")).hexdigest(),
+        "terminalProof": terminal_proof,
         "deerflowQueryCount": len(get_calls),
         "parentStepCount": len(steps),
         "finalAnswer": final_answer,
@@ -1179,6 +1218,7 @@ def recover_deerflow_full_chain_r3(
     task, steps = await_skill_task(
         mcp_url, token, session_id, context, task_id, task_timeout,
         label="Recovered DeerFlow-submitted R3 full-chain Skill Task")
+    terminal_proof = require_r3_terminal_proof(task, task_input)
     return {
         "status": "SUCCEEDED",
         "checkedAt": utc_now(),
@@ -1193,6 +1233,7 @@ def recover_deerflow_full_chain_r3(
         "attemptCount": task.get("attemptCount"),
         "inputSha256": task.get("inputSha256"),
         "approvalRefSha256": hashlib.sha256(approval_ref.encode("utf-8")).hexdigest(),
+        "terminalProof": terminal_proof,
         "deerflowQueryCount": len(get_calls),
         "parentStepCount": len(steps),
     }
