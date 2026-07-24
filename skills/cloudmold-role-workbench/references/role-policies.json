@@ -1,0 +1,192 @@
+{
+  "schema_version": "cloudmold.role-agent-policy/v1",
+  "policies": [
+    {
+      "policy_id": "policy.cloudmold.role.planning.v1",
+      "authority_id": "cloudmold-agent-control-plane",
+      "role_name": "cloudmold-planning-agent",
+      "policy_skill": "cloudmold-role-policy-planning",
+      "mcp_alias": "cloudmold-planning",
+      "allowed_tools": [
+        "ask_clarification",
+        "cloudmold-planning_cloudmold_analytics_dashboard_snapshot"
+      ],
+      "allowed_raw_mcp_tools": ["cloudmold_analytics_dashboard_snapshot"],
+      "allowed_metric_ids": [
+        "commerce.gmv_yuan",
+        "commerce.net_gmv_yuan",
+        "commerce.order_count",
+        "catalog.active_sku_count",
+        "catalog.selection_breadth",
+        "listing.active_offer_count",
+        "listing.approval_rate",
+        "inventory.in_stock_rate",
+        "inventory.available_quantity",
+        "inventory.stockout_rate",
+        "inventory.sell_through_rate_30d",
+        "inventory.low_stock_balance_count",
+        "inventory.out_of_stock_balance_count"
+      ],
+      "skill_task": {"submit": [], "read": [], "retry": []}
+    },
+    {
+      "policy_id": "policy.cloudmold.role.buyer.v1",
+      "authority_id": "cloudmold-agent-control-plane",
+      "role_name": "cloudmold-buyer-agent",
+      "policy_skill": "cloudmold-role-policy-buyer",
+      "mcp_alias": "cloudmold-buyer",
+      "allowed_tools": [
+        "ask_clarification",
+        "cloudmold-buyer_cloudmold_analytics_dashboard_snapshot"
+      ],
+      "allowed_raw_mcp_tools": ["cloudmold_analytics_dashboard_snapshot"],
+      "allowed_metric_ids": [
+        "procurement.purchase_order_count",
+        "procurement.receipt_fulfillment_rate",
+        "procurement.open_order_count",
+        "procurement.otif_rate",
+        "catalog.active_sku_count",
+        "catalog.selection_breadth",
+        "inventory.available_quantity",
+        "inventory.in_stock_rate",
+        "inventory.stockout_rate",
+        "inventory.low_stock_balance_count",
+        "inventory.out_of_stock_balance_count",
+        "inventory.sell_through_rate_30d",
+        "inventory.turnover_days",
+        "buyer.return_rate"
+      ],
+      "skill_task": {"submit": [], "read": [], "retry": []}
+    },
+    {
+      "policy_id": "policy.cloudmold.role.merchant.v1",
+      "authority_id": "cloudmold-agent-control-plane",
+      "role_name": "cloudmold-merchant-agent",
+      "policy_skill": "cloudmold-role-policy-merchant",
+      "mcp_alias": "cloudmold-merchant",
+      "allowed_tools": [
+        "ask_clarification",
+        "cloudmold-merchant_cloudmold_analytics_dashboard_snapshot"
+      ],
+      "allowed_raw_mcp_tools": ["cloudmold_analytics_dashboard_snapshot"],
+      "allowed_metric_ids": [
+        "merchant.active_merchant_count",
+        "merchant.net_sales_yuan",
+        "merchant.new_buyer_count",
+        "merchant.store_conversion_rate",
+        "merchant.cancellation_rate",
+        "commerce.gmv_yuan",
+        "commerce.net_gmv_yuan",
+        "commerce.order_count",
+        "commerce.paid_buyer_count",
+        "commerce.average_order_value_yuan",
+        "listing.active_offer_count",
+        "listing.approval_rate",
+        "inventory.in_stock_rate",
+        "inventory.available_quantity",
+        "inventory.stockout_rate",
+        "marketing.ad_roas",
+        "marketing.promotion_roi",
+        "promotion.coupon_redemption_rate",
+        "buyer.repeat_purchase_rate_90d",
+        "buyer.return_rate",
+        "finance.discount_funding_yuan"
+      ],
+      "skill_task": {"submit": [], "read": [], "retry": []}
+    },
+    {
+      "policy_id": "policy.cloudmold.role.inventory-control.v1",
+      "authority_id": "cloudmold-agent-control-plane",
+      "role_name": "cloudmold-inventory-control-agent",
+      "policy_skill": "cloudmold-role-policy-inventory-control",
+      "mcp_alias": "cloudmold-inventory-control",
+      "allowed_tools": [
+        "ask_clarification",
+        "cloudmold-inventory-control_cloudmold_analytics_dashboard_snapshot"
+      ],
+      "allowed_raw_mcp_tools": ["cloudmold_analytics_dashboard_snapshot"],
+      "allowed_metric_ids": [
+        "inventory.aged_stock_value_yuan",
+        "inventory.available_quantity",
+        "inventory.balance_count",
+        "inventory.canonical_v3_rate",
+        "inventory.in_stock_rate",
+        "inventory.low_stock_balance_count",
+        "inventory.out_of_stock_balance_count",
+        "inventory.sell_through_rate_30d",
+        "inventory.stockout_rate",
+        "inventory.turnover_days",
+        "procurement.purchase_order_count",
+        "procurement.receipt_fulfillment_rate",
+        "procurement.open_order_count",
+        "procurement.otif_rate"
+      ],
+      "skill_task": {"submit": [], "read": [], "retry": []}
+    },
+    {
+      "policy_id": "policy.cloudmold.role.customer-service.v1",
+      "authority_id": "cloudmold-agent-control-plane",
+      "role_name": "cloudmold-customer-service-agent",
+      "policy_skill": "cloudmold-role-policy-customer-service",
+      "mcp_alias": "cloudmold-customer-service",
+      "allowed_tools": [
+        "ask_clarification",
+        "cloudmold-customer-service_cloudmold_analytics_dashboard_snapshot"
+      ],
+      "allowed_raw_mcp_tools": ["cloudmold_analytics_dashboard_snapshot"],
+      "allowed_metric_ids": [
+        "aftersales.case_count",
+        "aftersales.reconciled_rate",
+        "aftersales.recovery_required_count",
+        "aftersales.refunded_amount_yuan",
+        "buyer.refund_cycle_hours",
+        "buyer.return_rate",
+        "service.first_contact_resolution_rate",
+        "service.first_response_minutes",
+        "service.order_defect_rate",
+        "service.resolution_sla_rate"
+      ],
+      "skill_task": {"submit": [], "read": [], "retry": []}
+    },
+    {
+      "policy_id": "policy.cloudmold.role.customer-experience.v1",
+      "authority_id": "cloudmold-agent-control-plane",
+      "role_name": "cloudmold-customer-experience-agent",
+      "policy_skill": "cloudmold-role-policy-customer-experience",
+      "mcp_alias": "cloudmold-customer-experience",
+      "allowed_tools": [
+        "ask_clarification",
+        "cloudmold-customer-experience_cloudmold_analytics_dashboard_snapshot"
+      ],
+      "allowed_raw_mcp_tools": ["cloudmold_analytics_dashboard_snapshot"],
+      "allowed_metric_ids": [
+        "buyer.category_breadth_90d",
+        "buyer.csat",
+        "buyer.delivery_promise_hit_rate",
+        "buyer.new_paid_buyer_count",
+        "buyer.order_frequency_90d",
+        "buyer.refund_cycle_hours",
+        "buyer.repeat_purchase_rate_90d",
+        "buyer.return_rate",
+        "buyer.time_to_first_order_hours",
+        "funnel.add_to_cart_rate",
+        "funnel.cart_abandonment_rate",
+        "funnel.checkout_start_rate",
+        "funnel.product_detail_view_count",
+        "funnel.visit_to_pay_rate",
+        "search.success_rate",
+        "traffic.visitor_count",
+        "payment.success_rate",
+        "service.first_contact_resolution_rate",
+        "service.first_response_minutes",
+        "service.order_defect_rate",
+        "service.resolution_sla_rate",
+        "aftersales.case_count",
+        "aftersales.reconciled_rate",
+        "aftersales.refunded_amount_yuan",
+        "fulfillment.on_time_delivery_rate"
+      ],
+      "skill_task": {"submit": [], "read": [], "retry": []}
+    }
+  ]
+}

@@ -24,6 +24,14 @@
       "owner": "cloudmold-catalog"
     },
     {
+      "skill_id": "skill.cloudmold.inventory.stockout-diagnosis.v1",
+      "path": "cloudmold-inventory-stockout-diagnosis",
+      "manifest": "cloudmold-inventory-stockout-diagnosis/skill.json",
+      "task_definition": "cloudmold-inventory-stockout-diagnosis/skill-task.json",
+      "status": "active",
+      "owner": "cloudmold-inventory"
+    },
+    {
       "skill_id": "skill.cloudmold.quality.full-chain-qa.v1",
       "path": "cloudmold-full-chain-qa",
       "manifest": "cloudmold-full-chain-qa/skill.json",

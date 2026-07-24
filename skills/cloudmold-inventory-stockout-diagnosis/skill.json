@@ -1,0 +1,21 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.inventory.stockout-diagnosis.v1",
+  "workflow_id": "workflow.cloudmold.inventory.stockout-diagnosis.v1",
+  "name": "cloudmold-inventory-stockout-diagnosis",
+  "version": "1.0.0",
+  "owner": "cloudmold-inventory",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R1",
+  "ui_dependency": "cloudmold-agent-control",
+  "allowed_environments": ["local", "test"],
+  "entrypoints": {
+    "task": "skill-task.json"
+  },
+  "evidence": [
+    "cloudmold_skill_task_instance",
+    "cloudmold_skill_task_step",
+    "cloudmold_skill_task_history",
+    "cloudmold_agent_execution_binding"
+  ]
+}
