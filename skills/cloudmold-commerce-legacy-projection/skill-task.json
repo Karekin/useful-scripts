@@ -1,0 +1,15 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.commerce.legacy-projection-plan.v1",
+  "skill_version": "1.2.0",
+  "risk_level": "R1",
+  "max_attempts": 3,
+  "steps": [
+    {"step_code":"plan_1","step_order":1,"capability_id":"capability.cloudmold.integration.yudao-catalog-projection.plan.v1","operation_type":"READ","arguments":["$input.plans.0"]},
+    {"step_code":"plan_2","step_order":2,"capability_id":"capability.cloudmold.integration.yudao-catalog-projection.plan.v1","operation_type":"READ","arguments":["$input.plans.1"]},
+    {"step_code":"plan_3","step_order":3,"capability_id":"capability.cloudmold.integration.yudao-catalog-projection.plan.v1","operation_type":"READ","arguments":["$input.plans.2"]},
+    {"step_code":"plan_4","step_order":4,"capability_id":"capability.cloudmold.integration.yudao-catalog-projection.plan.v1","operation_type":"READ","arguments":["$input.plans.3"]},
+    {"step_code":"plan_5","step_order":5,"capability_id":"capability.cloudmold.integration.yudao-catalog-projection.plan.v1","operation_type":"READ","arguments":["$input.plans.4"]},
+    {"step_code":"plan_6","step_order":6,"capability_id":"capability.cloudmold.integration.yudao-catalog-projection.plan.v1","operation_type":"READ","arguments":["$input.plans.5"]}
+  ]
+}

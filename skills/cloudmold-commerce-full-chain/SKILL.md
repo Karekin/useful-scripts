@@ -35,8 +35,22 @@ python3 scripts/run_hsf_full_chain.py \
 
 The parent runner is `scripts/yshopping_aftersales_vertical_runner.py`. It composes the child runners and writes an atomic parent ledger before business mutation. Read `references/scenarios/yshopping-aftersales-vertical-v1.json` when changing the flow.
 
+For the durable R3 path, generate the exact approved task input from compact source identities:
+
+```bash
+python3 scripts/build_skill_task_input.py \
+  --run-id <6-20-char-id> \
+  --system-admin-source-id <active-system-user-id> \
+  --erp-warehouse-source-id <active-erp-warehouse-id> \
+  --output <full-chain-input.json>
+```
+
+Submit that file only through the fixed MCP tool for `skill.cloudmold.commerce.full-chain-hsf.v1@1.2.0`. The durable parent composes five registered child definitions in dependency order: Catalog matrix, legacy projection plan, governed master data, AfterSale Saga, and terminal readback. The parent and child ledgers, not the DeerFlow session, own resumption and idempotency.
+
 ## Accept evidence
 
 Accept a run only when the parent ledger is `SUCCEEDED`, the HSF trace contains no HTTP transport, all intended commands replay as duplicates, the same canonical SKU is present from Catalog through AfterSale, and post-write reconciliation is read-only. Use `cloudmold-full-chain-qa` afterward to refresh live HSF coverage; a successful vertical does not by itself clear unrelated capability gaps.
 
 After a successful parent run, execute `scripts/run_hsf_readback.py` with the successful Catalog, Merchant/Warehouse, and AfterSale child ledgers. The readback flow calls the terminal Query/Validation ports for the same exact product and identities; it must not synthesize IDs or perform writes.
+
+For a durable R3 run, also execute `lakehousectl reconcile-canonical-aftersales --tenant <tenant> --run-id <run-id>-aftersale`. Accept only a non-empty `RECONCILED` row with exact quantity and money conservation, after the Outbox CDC job has a successful checkpoint. This lakehouse check is currently an external read-only acceptance gate; it is not yet a sixth persisted SkillTask child.

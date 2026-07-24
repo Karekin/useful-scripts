@@ -1,0 +1,27 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.commerce.terminal-readback.v1",
+  "skill_version": "1.2.0",
+  "risk_level": "R1",
+  "max_attempts": 3,
+  "steps": [
+    {"step_code":"merchant_reference","step_order":1,"capability_id":"capability.cloudmold.merchant.merchant-reference-validation.require-active-reference.v1","operation_type":"READ","arguments":["$input.authority.reference"]},
+    {"step_code":"merchant_owner","step_order":2,"capability_id":"capability.cloudmold.merchant.merchant-owner-validation.require-active-merchant.v1","operation_type":"READ","arguments":["$input.authority.reference.merchantId"]},
+    {"step_code":"principal","step_order":3,"capability_id":"capability.cloudmold.identity.principal-validation.require-active-principal.v1","operation_type":"READ","arguments":["$input.authority.operator.principalId"]},
+    {"step_code":"catalog_sku","step_order":4,"capability_id":"capability.cloudmold.catalog.catalog-sku-projection.get-active-sku.v1","operation_type":"READ","arguments":["$input.product.skuId"]},
+    {"step_code":"catalog_sku_valid","step_order":5,"capability_id":"capability.cloudmold.catalog.catalog-sku-validation.require-active-sku.v1","operation_type":"READ","arguments":["$input.product.skuId"]},
+    {"step_code":"catalog_spu_valid","step_order":6,"capability_id":"capability.cloudmold.catalog.catalog-spu-validation.require-active-spu.v1","operation_type":"READ","arguments":["$input.product.spuId"]},
+    {"step_code":"listing_offer","step_order":7,"capability_id":"capability.cloudmold.listing.listing-query.require-published-offer.v1","operation_type":"READ","arguments":["$input.listing.validation"]},
+    {"step_code":"forward_delivered","step_order":8,"capability_id":"capability.cloudmold.fulfillment.forward-fulfillment-after-sale-query.require-delivered.v1","operation_type":"READ","arguments":["$input.order.orderId","$input.fulfillment.fulfillmentId","$input.fulfillment.shipmentId","$input.order.orderItemId"]},
+    {"step_code":"shipment_delivered","step_order":9,"capability_id":"capability.cloudmold.fulfillment.fulfillment-shipment-validation.require-delivered.v1","operation_type":"READ","arguments":["$input.order.orderId","$input.fulfillment.fulfillmentId"]},
+    {"step_code":"return_get","step_order":10,"capability_id":"capability.cloudmold.fulfillment.return-fulfillment-query.get-for-after-sale.v1","operation_type":"READ","arguments":["$input.aftersale.afterSaleId","$input.aftersale.returnFulfillmentId"]},
+    {"step_code":"return_accepted","step_order":11,"capability_id":"capability.cloudmold.fulfillment.return-fulfillment-query.require-inspection-accepted.v1","operation_type":"READ","arguments":["$input.aftersale.afterSaleId","$input.aftersale.returnFulfillmentId"]},
+    {"step_code":"aftersale_by_item","step_order":12,"capability_id":"capability.cloudmold.aftersale.after-sale-query.get-by-order-item.v1","operation_type":"READ","arguments":["$input.order.orderId","$input.order.orderItemId"]},
+    {"step_code":"order_attribution","step_order":13,"capability_id":"capability.cloudmold.order.order-query.require-attributed-order.v1","operation_type":"READ","arguments":["$input.order.orderId"]},
+    {"step_code":"payment_cancellation_refunded","step_order":14,"capability_id":"capability.cloudmold.payment.payment-cancellation-query.require-refunded.v1","operation_type":"READ","arguments":["$input.order.orderId","$input.payment.paymentId"]},
+    {"step_code":"payment_refund_refunded","step_order":15,"capability_id":"capability.cloudmold.payment.payment-refund-query.require-refunded.v1","operation_type":"READ","arguments":["$input.order.orderId","$input.payment.paymentId","$input.payment.amountMinor","$input.payment.currencyCode"]},
+    {"step_code":"warehouse","step_order":16,"capability_id":"capability.cloudmold.warehouse.warehouse-reference-validation.require-active-warehouse.v1","operation_type":"READ","arguments":["$input.warehouse.warehouseId"]},
+    {"step_code":"location","step_order":17,"capability_id":"capability.cloudmold.warehouse.warehouse-reference-validation.require-active-location.v1","operation_type":"READ","arguments":["$input.warehouse.warehouseId","$input.warehouse.locationId"]},
+    {"step_code":"warehouse_source","step_order":18,"capability_id":"capability.cloudmold.warehouse.warehouse-source-mapping-query.resolve-active.v1","operation_type":"READ","arguments":["$input.warehouse.source","$input.warehouse.eligibilityAt"]}
+  ]
+}

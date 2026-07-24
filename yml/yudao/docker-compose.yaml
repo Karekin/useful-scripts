@@ -111,10 +111,20 @@ services:
       - >-
         export CLOUDMOLD_RPC_SHARED_SECRET="$$(</run/secrets/cloudmold_rpc_shared_secret)";
         exec java $${JAVA_OPTS} -jar app.jar --spring.profiles.active=local
+        --cloudmold.agent-control.enabled=$${CLOUDMOLD_AGENT_CONTROL_ENABLED}
+        --cloudmold.agent-control.action-submission-enabled=$${CLOUDMOLD_AGENT_CONTROL_ACTION_SUBMISSION_ENABLED}
+        --cloudmold.agent-control.runtime.enabled=$${CLOUDMOLD_AGENT_CONTROL_RUNTIME_ENABLED}
+        --cloudmold.agent-control.runtime.legacy-erp-bridge-enabled=$${CLOUDMOLD_AGENT_CONTROL_RUNTIME_LEGACY_ERP_BRIDGE_ENABLED}
     environment:
       CLOUDMOLD_RPC_ENABLED: "true"
       CLOUDMOLD_RPC_EXPORT_ENABLED: "true"
       CLOUDMOLD_RPC_READINESS_MARKER: /tmp/cloudmold-rpc-ready
+      # Agent Control is fail-closed. Local/test operators must opt in to the
+      # business-card API and each autonomous runtime separately.
+      CLOUDMOLD_AGENT_CONTROL_ENABLED: ${CLOUDMOLD_AGENT_CONTROL_ENABLED:-false}
+      CLOUDMOLD_AGENT_CONTROL_ACTION_SUBMISSION_ENABLED: ${CLOUDMOLD_AGENT_CONTROL_ACTION_SUBMISSION_ENABLED:-false}
+      CLOUDMOLD_AGENT_CONTROL_RUNTIME_ENABLED: ${CLOUDMOLD_AGENT_CONTROL_RUNTIME_ENABLED:-false}
+      CLOUDMOLD_AGENT_CONTROL_RUNTIME_LEGACY_ERP_BRIDGE_ENABLED: ${CLOUDMOLD_AGENT_CONTROL_RUNTIME_LEGACY_ERP_BRIDGE_ENABLED:-false}
       # Keep the governed Compose data plane isolated from developer-local
       # providers that may register the same interfaces with another secret.
       CLOUDMOLD_RPC_GROUP: cloudmold-compose-internal
@@ -163,9 +173,18 @@ services:
     command:
       - /bin/sh
       - -ec
-      - mysql -hyudao-mysql -uroot ruoyi-vue-pro < /migration.sql
+      - |
+        mysql -hyudao-mysql -uroot ruoyi-vue-pro < /migration-67.sql
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_skill_task_step' AND column_name='step_kind'")" = "0" ]; then
+          mysql -hyudao-mysql -uroot ruoyi-vue-pro < /migration-68.sql
+        fi
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_skill_task_instance' AND column_name='definition_sha256'")" = "0" ]; then
+          mysql -hyudao-mysql -uroot ruoyi-vue-pro < /migration-69.sql
+        fi
     volumes:
-      - ../../../yudao-cloud/sql/cloudmold/V20260718_67__durable_skill_task_executor.sql:/migration.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260718_67__durable_skill_task_executor.sql:/migration-67.sql:ro
+      - ../../../yudao-cloud/cloudmold-module-skill-task/cloudmold-module-skill-task-server/src/main/resources/db/migration/V20260719_68__durable_skill_task_composition.sql:/migration-68.sql:ro
+      - ../../../yudao-cloud/cloudmold-module-skill-task/cloudmold-module-skill-task-server/src/main/resources/db/migration/V20260719_69__skill_task_terminal_proof.sql:/migration-69.sql:ro
     networks:
       - yudao_network
 
@@ -191,6 +210,7 @@ services:
       CLOUDMOLD_DB_PASSWORD: "123456"
       CLOUDMOLD_SKILL_REGISTRY_ROOT: /app/skills
       CLOUDMOLD_SKILL_WORKER_ENABLED: ${CLOUDMOLD_SKILL_WORKER_ENABLED:-true}
+      CLOUDMOLD_SKILL_TASK_APPROVAL_HMAC_SECRET: ${CLOUDMOLD_SKILL_TASK_APPROVAL_HMAC_SECRET:-}
       CLOUDMOLD_RPC_GROUP: cloudmold-compose-internal
       CLOUDMOLD_DUBBO_REGISTRY: nacos://yudao-nacos:8848
       CLOUDMOLD_DUBBO_REGISTRY_GROUP: CLOUDMOLD_DUBBO
@@ -270,6 +290,9 @@ services:
     secrets:
       - cloudmold_rpc_shared_secret
       - cloudmold_mcp_bearer_token
+    volumes:
+      # Read-only governed analytics data product; no source code or credentials.
+      - ../../../cloudmold-commerce-analytics:/app/cloudmold-commerce-analytics:ro
     ports:
       - "127.0.0.1:49090:49090"
     healthcheck:

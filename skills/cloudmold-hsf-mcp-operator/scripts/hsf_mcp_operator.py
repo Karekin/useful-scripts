@@ -37,11 +37,20 @@ SKILL_TASK_TOOLS = {
     "cloudmold_skill_task_get_by_request_key": {"readOnlyHint": True, "idempotentHint": True},
     "cloudmold_skill_task_list_steps": {"readOnlyHint": True, "idempotentHint": True},
     "cloudmold_skill_task_retry_r1": {"readOnlyHint": False, "idempotentHint": False},
+    "cloudmold_skill_task_submit_commerce_full_chain_r3": {
+        "readOnlyHint": False, "idempotentHint": True,
+    },
+    "cloudmold_skill_task_retry_commerce_full_chain_r3": {
+        "readOnlyHint": False, "idempotentHint": False,
+    },
 }
 REQUIRED_TOOLS = CORE_TOOLS | set(SKILL_TASK_TOOLS)
 DEERFLOW_LIST_TOOL = "cloudmold-hsf_cloudmold_capability_list"
 DEERFLOW_TASK_SUBMIT_TOOL = "cloudmold-hsf_cloudmold_skill_task_submit_r1"
 DEERFLOW_TASK_GET_TOOL = "cloudmold-hsf_cloudmold_skill_task_get"
+DEERFLOW_R3_SUBMIT_TOOL = (
+    "cloudmold-hsf_cloudmold_skill_task_submit_commerce_full_chain_r3"
+)
 
 
 class GateError(RuntimeError):
@@ -126,6 +135,19 @@ def load_bearer_token(path: Path) -> str:
     if len(token) < 32:
         raise GateError("MCP bearer token must contain at least 32 characters")
     return token
+
+
+def load_approval_ref(path: Path) -> str:
+    try:
+        mode = path.stat().st_mode & 0o777
+        reference = path.read_text(encoding="utf-8").strip()
+    except OSError as error:
+        raise GateError(f"cannot read approval reference file: {path}") from error
+    if mode & 0o077:
+        raise GateError(f"approval reference file must not be group/world accessible: {path}")
+    if not re.fullmatch(r"cma1:[A-Za-z0-9._-]{8,64}:[0-9]+:[0-9a-fA-F]{64}", reference):
+        raise GateError("approval reference has an unsupported format")
+    return reference
 
 
 def mcp_headers(token: str, session_id: str | None = None) -> dict[str, str]:
@@ -437,6 +459,13 @@ def parse_object_json(value: str) -> dict[str, Any]:
     return parsed
 
 
+def load_object_file(path: Path) -> dict[str, Any]:
+    try:
+        return parse_object_json(path.read_text(encoding="utf-8"))
+    except OSError as error:
+        raise GateError(f"cannot read input file: {path}") from error
+
+
 def invoke_skill_task_r1(
     mcp_url: str,
     token: str,
@@ -543,6 +572,111 @@ def invoke_skill_task_r1(
     }
 
 
+def await_skill_task(
+    mcp_url: str,
+    token: str,
+    session_id: str,
+    context: dict[str, Any],
+    task_id: str,
+    timeout: int,
+    *,
+    label: str,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    deadline = time.monotonic() + timeout
+    request_id = 60
+    while True:
+        queried = mcp_tool_call(
+            mcp_url, token, session_id, request_id,
+            "cloudmold_skill_task_get", context | {"taskId": task_id})
+        queried_details = require_structured(queried, f"{label} query")
+        task = queried_details.get("result")
+        if queried.get("isError") is True or not isinstance(task, dict):
+            raise GateError(f"{label} query failed: {queried_details.get('message', 'unknown error')}")
+        status = task.get("status")
+        if status == "SUCCEEDED":
+            break
+        if status == "NEEDS_REVIEW":
+            raise GateError(f"{label} needs review: {task.get('lastErrorMessage', 'unknown error')}")
+        if time.monotonic() >= deadline:
+            raise GateError(f"{label} did not complete within {timeout}s; last status={status}")
+        request_id += 1
+        time.sleep(2)
+
+    steps_response = mcp_tool_call(
+        mcp_url, token, session_id, request_id + 1,
+        "cloudmold_skill_task_list_steps", context | {"taskId": task_id})
+    steps_details = require_structured(steps_response, f"{label} steps")
+    steps = steps_details.get("result")
+    if steps_response.get("isError") is True or not isinstance(steps, list) or not steps:
+        raise GateError(f"{label} returned no persisted step evidence")
+    if any(not isinstance(step, dict) or step.get("status") != "SUCCEEDED" for step in steps):
+        raise GateError(f"{label} has a non-succeeded persisted step")
+    return task, steps
+
+
+def invoke_skill_task_r3(
+    mcp_url: str,
+    token: str,
+    *,
+    client_run_id: str,
+    client_request_key: str,
+    task_input: dict[str, Any],
+    approval_ref: str,
+    tenant_id: int,
+    operator_id: int,
+    operator_type: int,
+    run_id: str,
+    timeout: int,
+) -> dict[str, Any]:
+    session_id, _ = initialize_mcp(mcp_url, token)
+    context = {
+        "tenantId": tenant_id,
+        "operatorId": operator_id,
+        "operatorType": operator_type,
+        "controlRunId": run_id,
+    }
+    submitted = mcp_tool_call(
+        mcp_url, token, session_id, 50,
+        "cloudmold_skill_task_submit_commerce_full_chain_r3",
+        context | {
+            "clientRunId": client_run_id,
+            "clientRequestKey": client_request_key,
+            "input": task_input,
+            "approvalRef": approval_ref,
+        })
+    submitted_details = require_structured(submitted, "R3 full-chain submit")
+    task = submitted_details.get("result")
+    if submitted.get("isError") is True or not isinstance(task, dict):
+        raise GateError(f"R3 full-chain submit failed: {submitted_details.get('message', 'unknown error')}")
+    task_id = task.get("taskId")
+    if not isinstance(task_id, str) or not task_id:
+        raise GateError("R3 full-chain submit returned no taskId")
+    task, steps = await_skill_task(
+        mcp_url, token, session_id, context, task_id, timeout, label="R3 full-chain Skill Task")
+    return {
+        "status": "SUCCEEDED",
+        "checkedAt": utc_now(),
+        "taskId": task_id,
+        "clientRunId": client_run_id,
+        "clientRequestKey": client_request_key,
+        "taskStatus": task.get("status"),
+        "attemptCount": task.get("attemptCount"),
+        "version": task.get("version"),
+        "inputSha256": task.get("inputSha256"),
+        "approvalRefSha256": hashlib.sha256(approval_ref.encode("utf-8")).hexdigest(),
+        "steps": [
+            {
+                "stepCode": step.get("stepCode"),
+                "status": step.get("status"),
+                "attemptCount": step.get("attemptCount"),
+                "requestSha256": step.get("requestSha256"),
+                "resultSha256": step.get("resultSha256"),
+            }
+            for step in steps
+        ],
+    }
+
+
 def load_cookie_header(cookie_path: Path) -> tuple[str, str]:
     try:
         lines = cookie_path.read_text(encoding="utf-8").splitlines()
@@ -562,6 +696,36 @@ def load_cookie_header(cookie_path: Path) -> tuple[str, str]:
     if not csrf or "access_token" not in cookies:
         raise GateError("DeerFlow administrator cookie jar is incomplete; run deerflowctl bootstrap")
     return "; ".join(f"{name}={value}" for name, value in cookies.items()), csrf
+
+
+def internal_test_thread_metadata(purpose: str, *, agent_name: str | None = None) -> dict[str, str]:
+    """Mark machine-oriented acceptance threads as internal observability data."""
+    metadata = {"purpose": purpose, "visibility": "internal_test"}
+    if agent_name:
+        metadata["agent_name"] = agent_name
+    return metadata
+
+
+def with_internal_test_metadata(
+    body: dict[str, Any],
+    purpose: str,
+    *,
+    agent_name: str | None = None,
+) -> dict[str, Any]:
+    """Repeat test classification on the run request as defense in depth."""
+    return {
+        **body,
+        "metadata": internal_test_thread_metadata(purpose, agent_name=agent_name),
+    }
+
+
+def hidden_control_message(content: str) -> dict[str, Any]:
+    """Keep exact tool-control prompts available to the model but out of business chat UI."""
+    return {
+        "role": "user",
+        "content": content,
+        "additional_kwargs": {"hide_from_ui": True},
+    }
 
 
 def tool_message_text(message: dict[str, Any]) -> str | None:
@@ -595,7 +759,8 @@ def deerflow_e2e(
         "POST",
         f"{deerflow_url.rstrip('/')}/api/threads",
         headers=headers,
-        body={"thread_id": thread_id, "metadata": {"purpose": "cloudmold-hsf-mcp-e2e"}},
+        body={"thread_id": thread_id,
+              "metadata": internal_test_thread_metadata("cloudmold-hsf-mcp-e2e")},
         timeout=15,
     )
     if create_status not in {200, 201}:
@@ -605,9 +770,9 @@ def deerflow_e2e(
         "这是一次只读验收。你必须调用 MCP 工具 cloudmold_capability_list，并将 operationType 设置为 READ。"
         "不要调用 shell、文件或浏览器工具。最后只报告 MCP 调用是否成功、READ 能力总数和第一个 capabilityId。"
     )
-    body = {
+    body = with_internal_test_metadata({
         "assistant_id": "lead_agent",
-        "input": {"messages": [{"role": "user", "content": prompt}]},
+        "input": {"messages": [hidden_control_message(prompt)]},
         "config": {"recursion_limit": 30},
         "context": {
             "model_name": model_name,
@@ -617,7 +782,7 @@ def deerflow_e2e(
             "subagent_enabled": False,
         },
         "stream_mode": ["values"],
-    }
+    }, "cloudmold-hsf-mcp-e2e")
     wait_status, _, state = request_json(
         "POST",
         f"{deerflow_url.rstrip('/')}/api/threads/{thread_id}/runs/wait",
@@ -695,7 +860,8 @@ def deerflow_task_e2e(
         "POST",
         f"{deerflow_url.rstrip('/')}/api/threads",
         headers=headers,
-        body={"thread_id": thread_id, "metadata": {"purpose": "cloudmold-skill-task-e2e"}},
+        body={"thread_id": thread_id,
+              "metadata": internal_test_thread_metadata("cloudmold-skill-task-e2e")},
         timeout=15,
     )
     if create_status not in {200, 201}:
@@ -718,9 +884,9 @@ def deerflow_task_e2e(
         "直到 SUCCEEDED 或 NEEDS_REVIEW。不要调用 shell、文件、浏览器或任何领域 WRITE capability。"
         "最后只报告 taskId、最终状态和 attemptCount。"
     )
-    body = {
+    body = with_internal_test_metadata({
         "assistant_id": "lead_agent",
-        "input": {"messages": [{"role": "user", "content": prompt}]},
+        "input": {"messages": [hidden_control_message(prompt)]},
         "config": {"recursion_limit": 40},
         "context": {
             "model_name": model_name,
@@ -730,7 +896,7 @@ def deerflow_task_e2e(
             "subagent_enabled": False,
         },
         "stream_mode": ["values"],
-    }
+    }, "cloudmold-skill-task-e2e")
     wait_status, _, state = request_json(
         "POST",
         f"{deerflow_url.rstrip('/')}/api/threads/{thread_id}/runs/wait",
@@ -799,6 +965,239 @@ def deerflow_task_e2e(
     }
 
 
+def deerflow_full_chain_r3_e2e(
+    deerflow_url: str,
+    cookie_path: Path,
+    model_name: str,
+    deerflow_timeout: int,
+    *,
+    mcp_url: str,
+    token: str,
+    run_id: str,
+    client_run_id: str,
+    client_request_key: str,
+    task_input: dict[str, Any],
+    approval_ref: str,
+    tenant_id: int,
+    operator_id: int,
+    operator_type: int,
+    task_timeout: int,
+) -> dict[str, Any]:
+    cookie_header, csrf = load_cookie_header(cookie_path)
+    headers = {
+        "Cookie": cookie_header,
+        "X-CSRF-Token": csrf,
+        "Content-Type": "application/json",
+    }
+    thread_id = f"cloudmold-r3-full-chain-{run_id}-{uuid.uuid4().hex[:8]}"
+    create_status, _, _ = request_json(
+        "POST", f"{deerflow_url.rstrip('/')}/api/threads", headers=headers,
+        body={"thread_id": thread_id,
+              "metadata": internal_test_thread_metadata("cloudmold-r3-full-chain-e2e")},
+        timeout=15)
+    if create_status not in {200, 201}:
+        raise GateError(f"DeerFlow R3 thread creation returned HTTP {create_status}")
+
+    submit_arguments = {
+        "tenantId": tenant_id,
+        "operatorId": operator_id,
+        "operatorType": operator_type,
+        "controlRunId": run_id,
+        "clientRunId": client_run_id,
+        "clientRequestKey": client_request_key,
+        "input": task_input,
+        "approvalRef": approval_ref,
+    }
+    prompt = (
+        "这是一次已审批的 CloudMold R3 全链路验收。你必须且只能先调用 MCP 工具 "
+        "cloudmold_skill_task_submit_commerce_full_chain_r3，参数必须严格等于 "
+        f"{json.dumps(submit_arguments, ensure_ascii=False, separators=(',', ':'))}。"
+        "从提交结果读取 taskId，再调用 cloudmold_skill_task_get 查询一次持久化状态。"
+        "不要直接调用任何领域 WRITE capability，不要调用 shell、文件或浏览器工具。"
+        "持久化执行器会异步完成任务；查询一次后只报告 taskId 和当前状态。"
+    )
+    body = with_internal_test_metadata({
+        "assistant_id": "lead_agent",
+        "input": {"messages": [hidden_control_message(prompt)]},
+        "config": {"recursion_limit": 30},
+        "context": {
+            "model_name": model_name,
+            "mode": "flash",
+            "thinking_enabled": False,
+            "is_plan_mode": False,
+            "subagent_enabled": False,
+        },
+        "stream_mode": ["values"],
+    }, "cloudmold-r3-full-chain-e2e")
+    wait_status, _, state = request_json(
+        "POST", f"{deerflow_url.rstrip('/')}/api/threads/{thread_id}/runs/wait",
+        headers=headers, body=body, timeout=deerflow_timeout)
+    if wait_status == 504:
+        state_status, _, persisted = request_json(
+            "GET", f"{deerflow_url.rstrip('/')}/api/threads/{thread_id}/state",
+            headers=headers, timeout=15)
+        if state_status == 200 and isinstance(persisted, dict):
+            state = persisted.get("values", persisted)
+            wait_status = 200
+    if wait_status != 200 or not isinstance(state, dict):
+        raise GateError(f"DeerFlow R3 wait run returned HTTP {wait_status}")
+    messages = state.get("messages")
+    if not isinstance(messages, list):
+        raise GateError("DeerFlow R3 final state contains no messages")
+
+    submit_call: dict[str, Any] | None = None
+    submit_content: str | None = None
+    get_calls: list[dict[str, Any]] = []
+    final_answer = ""
+    for message in messages:
+        if not isinstance(message, dict):
+            continue
+        if message.get("type") == "ai" and isinstance(message.get("content"), str):
+            final_answer = message["content"]
+        tool_calls = message.get("tool_calls")
+        if isinstance(tool_calls, list):
+            for tool_call in tool_calls:
+                if not isinstance(tool_call, dict):
+                    continue
+                if tool_call.get("name") == DEERFLOW_R3_SUBMIT_TOOL:
+                    submit_call = tool_call
+                elif tool_call.get("name") == DEERFLOW_TASK_GET_TOOL:
+                    get_calls.append(tool_call)
+        if message.get("type") == "tool" and message.get("name") == DEERFLOW_R3_SUBMIT_TOOL:
+            submit_content = tool_message_text(message)
+
+    if submit_call is None or submit_call.get("args") != submit_arguments:
+        raise GateError("DeerFlow did not submit the exact fixed R3 full-chain Skill Task")
+    if submit_content is None:
+        raise GateError("DeerFlow produced no R3 full-chain submit result")
+    task_match = re.search(r'"taskId"\s*:\s*"([^"]+)"', submit_content)
+    if not task_match:
+        raise GateError("DeerFlow R3 full-chain submit result has no taskId")
+    task_id = task_match.group(1)
+    if get_calls and not any(call.get("args", {}).get("taskId") == task_id for call in get_calls):
+        raise GateError("DeerFlow queried a different R3 Skill Task")
+
+    session_id, _ = initialize_mcp(mcp_url, token)
+    context = {
+        "tenantId": tenant_id,
+        "operatorId": operator_id,
+        "operatorType": operator_type,
+        "controlRunId": f"{run_id}-await",
+    }
+    task, steps = await_skill_task(
+        mcp_url, token, session_id, context, task_id, task_timeout,
+        label="DeerFlow-submitted R3 full-chain Skill Task")
+    return {
+        "status": "SUCCEEDED",
+        "checkedAt": utc_now(),
+        "threadId": thread_id,
+        "modelName": model_name,
+        "submitToolName": DEERFLOW_R3_SUBMIT_TOOL,
+        "queryToolName": DEERFLOW_TASK_GET_TOOL,
+        "taskId": task_id,
+        "clientRunId": client_run_id,
+        "clientRequestKey": client_request_key,
+        "taskStatus": task.get("status"),
+        "attemptCount": task.get("attemptCount"),
+        "inputSha256": task.get("inputSha256"),
+        "approvalRefSha256": hashlib.sha256(approval_ref.encode("utf-8")).hexdigest(),
+        "deerflowQueryCount": len(get_calls),
+        "parentStepCount": len(steps),
+        "finalAnswer": final_answer,
+    }
+
+
+def recover_deerflow_full_chain_r3(
+    deerflow_url: str,
+    cookie_path: Path,
+    *,
+    thread_id: str,
+    mcp_url: str,
+    token: str,
+    run_id: str,
+    client_run_id: str,
+    client_request_key: str,
+    task_input: dict[str, Any],
+    approval_ref: str,
+    tenant_id: int,
+    operator_id: int,
+    operator_type: int,
+    task_timeout: int,
+) -> dict[str, Any]:
+    cookie_header, csrf = load_cookie_header(cookie_path)
+    status, _, persisted = request_json(
+        "GET", f"{deerflow_url.rstrip('/')}/api/threads/{thread_id}/state",
+        headers={"Cookie": cookie_header, "X-CSRF-Token": csrf}, timeout=15)
+    if status != 200 or not isinstance(persisted, dict):
+        raise GateError(f"cannot recover DeerFlow R3 thread state: HTTP {status}")
+    state = persisted.get("values", persisted)
+    messages = state.get("messages") if isinstance(state, dict) else None
+    if not isinstance(messages, list):
+        raise GateError("recovered DeerFlow R3 thread contains no messages")
+
+    expected_arguments = {
+        "tenantId": tenant_id,
+        "operatorId": operator_id,
+        "operatorType": operator_type,
+        "controlRunId": run_id,
+        "clientRunId": client_run_id,
+        "clientRequestKey": client_request_key,
+        "input": task_input,
+        "approvalRef": approval_ref,
+    }
+    submit_call: dict[str, Any] | None = None
+    submit_content: str | None = None
+    get_calls: list[dict[str, Any]] = []
+    for message in messages:
+        if not isinstance(message, dict):
+            continue
+        for tool_call in message.get("tool_calls") or []:
+            if not isinstance(tool_call, dict):
+                continue
+            if tool_call.get("name") == DEERFLOW_R3_SUBMIT_TOOL:
+                submit_call = tool_call
+            elif tool_call.get("name") == DEERFLOW_TASK_GET_TOOL:
+                get_calls.append(tool_call)
+        if message.get("type") == "tool" and message.get("name") == DEERFLOW_R3_SUBMIT_TOOL:
+            submit_content = tool_message_text(message)
+    if submit_call is None or submit_call.get("args") != expected_arguments:
+        raise GateError("recovered DeerFlow thread did not submit the exact fixed R3 task")
+    task_match = re.search(r'"taskId"\s*:\s*"([^"]+)"', submit_content or "")
+    if not task_match:
+        raise GateError("recovered DeerFlow R3 submit result has no taskId")
+    task_id = task_match.group(1)
+    if get_calls and not any(call.get("args", {}).get("taskId") == task_id for call in get_calls):
+        raise GateError("recovered DeerFlow thread queried a different R3 task")
+
+    session_id, _ = initialize_mcp(mcp_url, token)
+    context = {
+        "tenantId": tenant_id,
+        "operatorId": operator_id,
+        "operatorType": operator_type,
+        "controlRunId": f"{run_id}-recovery",
+    }
+    task, steps = await_skill_task(
+        mcp_url, token, session_id, context, task_id, task_timeout,
+        label="Recovered DeerFlow-submitted R3 full-chain Skill Task")
+    return {
+        "status": "SUCCEEDED",
+        "checkedAt": utc_now(),
+        "threadId": thread_id,
+        "recoveredFromGatewayTimeout": True,
+        "submitToolName": DEERFLOW_R3_SUBMIT_TOOL,
+        "queryToolName": DEERFLOW_TASK_GET_TOOL,
+        "taskId": task_id,
+        "clientRunId": client_run_id,
+        "clientRequestKey": client_request_key,
+        "taskStatus": task.get("status"),
+        "attemptCount": task.get("attemptCount"),
+        "inputSha256": task.get("inputSha256"),
+        "approvalRefSha256": hashlib.sha256(approval_ref.encode("utf-8")).hexdigest(),
+        "deerflowQueryCount": len(get_calls),
+        "parentStepCount": len(steps),
+    }
+
+
 def common_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--run-id", default=None)
     parser.add_argument("--evidence-root", type=Path, default=DEFAULT_EVIDENCE_ROOT)
@@ -832,6 +1231,16 @@ def task_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--operator-type", type=int, default=1)
 
 
+def r3_task_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--client-run-id", default=None)
+    parser.add_argument("--client-request-key", default=None)
+    parser.add_argument("--input-file", type=Path, required=True)
+    parser.add_argument("--approval-ref-file", type=Path, required=True)
+    parser.add_argument("--tenant-id", type=int, default=1)
+    parser.add_argument("--operator-id", type=int, default=1)
+    parser.add_argument("--operator-type", type=int, default=1)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -849,6 +1258,12 @@ def build_parser() -> argparse.ArgumentParser:
     task_options(task)
     task.add_argument("--timeout", type=int, default=60)
 
+    r3_task = commands.add_parser(
+        "invoke-task-r3", help="submit and await the fixed durable R3 commerce full-chain Skill Task")
+    common_options(r3_task)
+    r3_task_options(r3_task)
+    r3_task.add_argument("--timeout", type=int, default=1800)
+
     agent = commands.add_parser("deerflow-e2e", help="prove DeerFlow/model discovery and MCP invocation")
     common_options(agent)
     deerflow_options(agent)
@@ -859,6 +1274,24 @@ def build_parser() -> argparse.ArgumentParser:
     common_options(agent_task)
     task_options(agent_task)
     deerflow_options(agent_task)
+
+    agent_r3 = commands.add_parser(
+        "deerflow-task-r3-e2e",
+        help="prove DeerFlow submits the fixed R3 full-chain task and await its durable completion")
+    common_options(agent_r3)
+    r3_task_options(agent_r3)
+    deerflow_options(agent_r3)
+    agent_r3.add_argument("--task-timeout", type=int, default=1800)
+
+    recover_r3 = commands.add_parser(
+        "recover-deerflow-task-r3",
+        help="recover and verify a persisted DeerFlow R3 submission after gateway timeout")
+    common_options(recover_r3)
+    r3_task_options(recover_r3)
+    recover_r3.add_argument("--deerflow-url", default=os.getenv("DEERFLOW_URL", DEFAULT_DEERFLOW_URL))
+    recover_r3.add_argument("--cookie-jar", type=Path, default=DEFAULT_COOKIE_JAR)
+    recover_r3.add_argument("--thread-id", required=True)
+    recover_r3.add_argument("--task-timeout", type=int, default=1800)
 
     full = commands.add_parser("full", help="run all applicable gates in dependency order")
     common_options(full)
@@ -928,6 +1361,23 @@ def execute(args: argparse.Namespace, run_id: str, run_dir: Path) -> dict[str, A
         )
         write_json(run_dir / "skill-task-e2e.json", result)
         return result
+    if args.command == "invoke-task-r3":
+        require_positive_context(args)
+        result = invoke_skill_task_r3(
+            args.mcp_url,
+            token,
+            client_run_id=args.client_run_id or f"{run_id}-task",
+            client_request_key=args.client_request_key or f"{run_id}-task",
+            task_input=load_object_file(args.input_file.expanduser()),
+            approval_ref=load_approval_ref(args.approval_ref_file.expanduser()),
+            tenant_id=args.tenant_id,
+            operator_id=args.operator_id,
+            operator_type=args.operator_type,
+            run_id=run_id,
+            timeout=args.timeout,
+        )
+        write_json(run_dir / "skill-task-r3-e2e.json", result)
+        return result
     if args.command == "deerflow-e2e":
         result = deerflow_e2e(
             args.deerflow_url,
@@ -955,6 +1405,47 @@ def execute(args: argparse.Namespace, run_id: str, run_dir: Path) -> dict[str, A
             operator_type=args.operator_type,
         )
         write_json(run_dir / "deerflow-skill-task-e2e.json", result)
+        return result
+    if args.command == "deerflow-task-r3-e2e":
+        require_positive_context(args)
+        result = deerflow_full_chain_r3_e2e(
+            args.deerflow_url,
+            args.cookie_jar.expanduser(),
+            args.model_name,
+            args.timeout,
+            mcp_url=args.mcp_url,
+            token=token,
+            run_id=run_id,
+            client_run_id=args.client_run_id or f"{run_id}-task",
+            client_request_key=args.client_request_key or f"{run_id}-task",
+            task_input=load_object_file(args.input_file.expanduser()),
+            approval_ref=load_approval_ref(args.approval_ref_file.expanduser()),
+            tenant_id=args.tenant_id,
+            operator_id=args.operator_id,
+            operator_type=args.operator_type,
+            task_timeout=args.task_timeout,
+        )
+        write_json(run_dir / "deerflow-skill-task-r3-e2e.json", result)
+        return result
+    if args.command == "recover-deerflow-task-r3":
+        require_positive_context(args)
+        result = recover_deerflow_full_chain_r3(
+            args.deerflow_url,
+            args.cookie_jar.expanduser(),
+            thread_id=args.thread_id,
+            mcp_url=args.mcp_url,
+            token=token,
+            run_id=run_id,
+            client_run_id=args.client_run_id or f"{run_id}-task",
+            client_request_key=args.client_request_key or f"{run_id}-task",
+            task_input=load_object_file(args.input_file.expanduser()),
+            approval_ref=load_approval_ref(args.approval_ref_file.expanduser()),
+            tenant_id=args.tenant_id,
+            operator_id=args.operator_id,
+            operator_type=args.operator_type,
+            task_timeout=args.task_timeout,
+        )
+        write_json(run_dir / "deerflow-skill-task-r3-recovered.json", result)
         return result
     if args.command == "full":
         verification = protocol_verification(args.mcp_url, token, run_id)
