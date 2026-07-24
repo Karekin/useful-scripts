@@ -301,7 +301,12 @@ def validate_stock(result: dict, expected: tuple[str, str, str, int], operation:
 
 
 def validate_api_rejection(error: ScenarioError, operation: str) -> None:
-    require("API rejected POST" in str(error),
+    message = str(error)
+    explicit_rejection = (
+        "API rejected POST" in message
+        or ("Dubbo capability " in message and " rejected POST " in message)
+    )
+    require(explicit_rejection,
             f"{operation} failed without an explicit public API rejection: {error}")
 
 

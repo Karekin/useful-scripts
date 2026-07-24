@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import time
 from typing import Any
@@ -21,6 +22,7 @@ WORKSPACE = Path(os.getenv(
 COMPOSE_DIR = WORKSPACE / "useful-scripts/yml/yudao"
 DEFAULT_REGISTRY = WORKSPACE / "useful-scripts/skills/registries/internal-transport-capabilities.json"
 PROVIDER_CONTAINER = "yudao-provider"
+PATH_PARAMETER = re.compile(r"\{([A-Za-z][A-Za-z0-9_]*)\}")
 
 
 class DubboTransportError(RuntimeError):
@@ -79,12 +81,12 @@ class DubboClient:
 
     def request(self, method: str, path: str, payload: dict | None = None) -> Any:
         parsed = urllib.parse.urlsplit(path)
-        key = f"{method.upper()} {parsed.path}"
-        contract = self.routes.get(key)
-        if contract is None:
-            raise DubboTransportError(f"no governed Dubbo capability mapped for {key}")
+        key, contract, path_parameters = self._resolve_route(method, parsed.path)
         query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
-        arguments = [self._argument(spec, payload, query) for spec in contract.get("arguments", [])]
+        arguments = [
+            self._argument(spec, payload, query, path_parameters)
+            for spec in contract.get("arguments", [])
+        ]
         invocation_id = "rpc-" + uuid.uuid4().hex[:16]
         run_id = os.getenv("CLOUDMOLD_HSF_RUN_ID", invocation_id)
         self._require_provider_ready()
@@ -138,6 +140,35 @@ class DubboClient:
                     value[alias_name] = value[source_name]
         return value
 
+    def _resolve_route(
+        self, method: str, path: str
+    ) -> tuple[str, dict[str, Any], dict[str, str]]:
+        exact_key = f"{method.upper()} {path}"
+        exact = self.routes.get(exact_key)
+        if exact is not None:
+            return exact_key, exact, {}
+        for route_key, contract in self.routes.items():
+            route_method, template = route_key.split(" ", 1)
+            if route_method != method.upper() or "{" not in template:
+                continue
+            fragments: list[str] = []
+            offset = 0
+            for parameter in PATH_PARAMETER.finditer(template):
+                fragments.append(re.escape(template[offset : parameter.start()]))
+                fragments.append(f"(?P<{parameter.group(1)}>[^/]+)")
+                offset = parameter.end()
+            fragments.append(re.escape(template[offset:]))
+            matched = re.fullmatch("".join(fragments), path)
+            if matched:
+                parameters = {
+                    name: urllib.parse.unquote(value)
+                    for name, value in matched.groupdict().items()
+                }
+                return route_key, contract, parameters
+        raise DubboTransportError(
+            f"no governed Dubbo capability mapped for {method.upper()} {path}"
+        )
+
     @staticmethod
     def _require_provider_ready() -> None:
         completed = subprocess.run(
@@ -163,8 +194,12 @@ class DubboClient:
             handle.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
 
     @staticmethod
-    def _argument(spec: str, payload: dict | None,
-                  query: dict[str, list[str]]) -> Any:
+    def _argument(
+        spec: str,
+        payload: dict | None,
+        query: dict[str, list[str]],
+        path_parameters: dict[str, str],
+    ) -> Any:
         if spec == "payload":
             if payload is None:
                 raise DubboTransportError("mapped capability requires a payload")
@@ -177,4 +212,10 @@ class DubboClient:
             if not values or values[0] == "":
                 raise DubboTransportError(f"mapped capability requires query parameter {name}")
             return values[0]
+        if spec.startswith("path:"):
+            name = spec.split(":", 1)[1]
+            value = path_parameters.get(name)
+            if value is None or value == "":
+                raise DubboTransportError(f"mapped capability requires path parameter {name}")
+            return value
         raise DubboTransportError(f"unsupported Dubbo argument binding: {spec}")

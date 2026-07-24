@@ -58,10 +58,40 @@
       "arguments": ["payload"],
       "write": true
     },
+    "POST /admin-api/cloudmold/inventory/v3/lots/command": {
+      "capability_id": "capability.cloudmold.inventory.inventory-lot-command.execute.v1",
+      "arguments": ["payload"],
+      "write": true
+    },
+    "POST /admin-api/cloudmold/inventory/v3/command": {
+      "capability_id": "capability.cloudmold.inventory.inventory-v3-command.execute.v1",
+      "arguments": ["payload"],
+      "write": true
+    },
+    "GET /admin-api/cloudmold/inventory/v3/lots/{lotId}": {
+      "capability_id": "capability.cloudmold.inventory.inventory-lot-query.require-current.v1",
+      "arguments": ["path:lotId", "query:eligibilityAt"],
+      "write": false
+    },
+    "GET /admin-api/cloudmold/inventory/v3/lots/{lotId}/availability": {
+      "capability_id": "capability.cloudmold.inventory.inventory-v3-availability-query.list-by-lot.v1",
+      "arguments": ["path:lotId", "query:eligibilityAt"],
+      "write": false
+    },
     "POST /admin-api/cloudmold/order/command": {
       "capability_id": "capability.cloudmold.order.order-command.execute.v1",
       "arguments": ["payload"],
       "write": true
+    },
+    "POST /admin-api/cloudmold/order-cancellation-saga/command": {
+      "capability_id": "capability.cloudmold.order.order-cancellation-saga-command.execute.v1",
+      "arguments": ["payload"],
+      "write": true
+    },
+    "GET /admin-api/cloudmold/order-cancellation-saga/get": {
+      "capability_id": "capability.cloudmold.order.order-cancellation-saga-query.get.v1",
+      "arguments": ["query:sagaId"],
+      "write": false
     },
     "POST /admin-api/cloudmold/payment/command": {
       "capability_id": "capability.cloudmold.payment.payment-command.execute.v1",

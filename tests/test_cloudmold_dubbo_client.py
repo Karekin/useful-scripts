@@ -31,6 +31,30 @@ class DubboClientTest(unittest.TestCase):
             CLIENT.DubboClient(tenant=1, timeout=5).request(
                 "GET", "/admin-api/erp/warehouse/get")
 
+    def test_template_route_binds_path_and_query_parameters(self):
+        completed = subprocess.CompletedProcess(
+            args=[], returncode=0,
+            stdout='{"status":"SUCCEEDED","result":[]}\n',
+        )
+        with mock.patch.object(CLIENT.DubboClient, "_require_provider_ready"), \
+                mock.patch.object(CLIENT.subprocess, "run", return_value=completed) as run:
+            result = CLIENT.DubboClient(tenant=1, timeout=5).request(
+                "GET",
+                "/admin-api/cloudmold/inventory/v3/lots/lot%2D001/availability"
+                "?eligibilityAt=2026-07-24T00%3A00%3A00Z",
+            )
+
+        self.assertEqual([], result)
+        command = run.call_args.args[0]
+        self.assertIn(
+            "--capability-id=capability.cloudmold.inventory.inventory-v3-availability-query.list-by-lot.v1",
+            command,
+        )
+        self.assertIn(
+            '--arguments-json=["lot-001","2026-07-24T00:00:00Z"]',
+            command,
+        )
+
     def test_request_invokes_executor_and_writes_zero_http_trace(self):
         with tempfile.TemporaryDirectory() as directory:
             trace = Path(directory) / "trace.jsonl"

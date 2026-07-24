@@ -66,6 +66,13 @@ class InventoryLotRunnerTest(unittest.TestCase):
         RUNNER.validate_api_rejection(
             RUNNER.ScenarioError("API rejected POST /inventory: 500 系统异常"),
             "post-recall RESERVE")
+        RUNNER.validate_api_rejection(
+            RUNNER.ScenarioError(
+                "Dubbo capability capability.cloudmold.inventory.inventory-v3-command.execute.v1 "
+                "rejected POST /admin-api/cloudmold/inventory/v3/command: inventory lot is not ACTIVE"
+            ),
+            "post-recall RESERVE",
+        )
         with self.assertRaisesRegex(RUNNER.ScenarioError, "explicit public API rejection"):
             RUNNER.validate_api_rejection(RUNNER.ScenarioError("connection reset"),
                                           "post-recall RESERVE")
