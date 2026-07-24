@@ -15,7 +15,9 @@ Verify the control path `DeerFlow/AI -> MCP -> governed Executor -> Dubbo -> Pro
 - Require positive tenant/operator context and stable Skill/run IDs for a business read.
 - Verify a WRITE capability is rejected by the MCP boundary; never alter its arguments to make the write succeed.
 - Submit and retry arbitrary Skill IDs only through the R1 tools. The R3 tools are fixed to `skill.cloudmold.commerce.full-chain-hsf.v1@1.2.0` and require cryptographically verified approval evidence.
+- Run the R3 DeerFlow acceptance through the hidden `cloudmold-r3-acceptance-agent`. Its policy exposes only the fixed R3 submit and task query tools; business-role agents retain their normal clarification and approval behavior.
 - Read the R3 input and approval reference from files. The approval file must be mode `0600`; evidence may retain only its SHA-256 digest.
+- Validate the approval reference freshness locally before submission, and after a gateway `504` poll the persisted thread state for at most the configured DeerFlow timeout (capped at 180 seconds) until the fixed submit and matching task query results are visible or the thread reaches a terminal state.
 - Never call a domain WRITE capability from MCP; Skill steps own business idempotency and recovery.
 
 ## Workflow
@@ -76,7 +78,7 @@ Do not declare the control plane ready unless all are true:
 7. DeerFlow using the configured model discovers and calls `cloudmold-hsf_cloudmold_capability_list` with `operationType=READ`.
 8. An R1 task submitted through MCP persists a task ID and step checkpoints, then reaches `SUCCEEDED` through typed Dubbo.
 9. DeerFlow using the configured model can submit the exact R1 task and query the returned task ID to `SUCCEEDED`.
-10. DeerFlow can submit the fixed R3 commerce task with the exact approved input, and the durable root plus all five child tasks reach `SUCCEEDED`.
+10. DeerFlow's hidden fixed-policy acceptance agent can submit the fixed R3 commerce task with the exact approved input, and the durable root plus all five child tasks reach `SUCCEEDED`.
 11. If the DeerFlow gateway times out, the persisted thread contains the exact submit arguments and task ID, and `recover-deerflow-task-r3` verifies them before resuming observation of the durable task.
 
 Read `references/contract.md` before changing tool names, trust boundaries, evidence fields, or the durable-write migration path.

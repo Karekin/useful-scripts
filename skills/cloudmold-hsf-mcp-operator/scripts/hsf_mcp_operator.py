@@ -51,8 +51,13 @@ DEERFLOW_TASK_GET_TOOL = "cloudmold-hsf_cloudmold_skill_task_get"
 DEERFLOW_R3_SUBMIT_TOOL = (
     "cloudmold-hsf_cloudmold_skill_task_submit_commerce_full_chain_r3"
 )
+DEERFLOW_R3_ACCEPTANCE_AGENT = "cloudmold-r3-acceptance-agent"
+DEERFLOW_R3_ACCEPTANCE_POLICY_SKILL = "cloudmold-r3-acceptance-policy"
 R3_SKILL_ID = "skill.cloudmold.commerce.full-chain-hsf.v1"
 R3_SKILL_VERSION = "1.2.0"
+R3_APPROVAL_CLOCK_SKEW_SECONDS = 120
+R3_THREAD_STATE_POLL_INTERVAL_SECONDS = 2
+R3_THREAD_STATE_POLL_TIMEOUT_SECONDS = 180
 SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
 
 
@@ -150,7 +155,98 @@ def load_approval_ref(path: Path) -> str:
         raise GateError(f"approval reference file must not be group/world accessible: {path}")
     if not re.fullmatch(r"cma1:[A-Za-z0-9._-]{8,64}:[0-9]+:[0-9a-fA-F]{64}", reference):
         raise GateError("approval reference has an unsupported format")
+    if not approval_ref_is_fresh(reference):
+        raise GateError("approval reference has expired")
     return reference
+
+
+def approval_ref_expiry_epoch(reference: str) -> int:
+    parts = reference.split(":", 3)
+    if len(parts) != 4:
+        raise GateError("approval reference has an unsupported format")
+    try:
+        return int(parts[2])
+    except ValueError as error:
+        raise GateError("approval reference has an unsupported format") from error
+
+
+def approval_ref_is_fresh(
+    reference: str,
+    *,
+    now: datetime | None = None,
+    clock_skew_seconds: int = R3_APPROVAL_CLOCK_SKEW_SECONDS,
+) -> bool:
+    current = now or datetime.now(timezone.utc)
+    return int(current.timestamp()) < approval_ref_expiry_epoch(reference) + clock_skew_seconds
+
+
+def r3_acceptance_agent_request() -> dict[str, Any]:
+    return {
+        "name": DEERFLOW_R3_ACCEPTANCE_AGENT,
+        "display_name": "CloudMold R3 Acceptance",
+        "description": "Hidden internal acceptance agent for the fixed approved R3 commerce task.",
+        "tool_groups": [],
+        "skills": [DEERFLOW_R3_ACCEPTANCE_POLICY_SKILL],
+        "soul": (
+            "You are a deterministic internal acceptance worker. The caller supplies one exact, "
+            "already-approved fixed R3 submission. Call only the permitted fixed R3 submit tool "
+            "with the supplied arguments, then query the returned task identifier once. Do not "
+            "reinterpret the request, ask business questions, use any other tool, or expose the "
+            "approval reference. Tool rejection is a failed acceptance run, never a reason to "
+            "broaden scope."
+        ),
+    }
+
+
+def comparable_r3_acceptance_agent(agent: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "name": agent.get("name"),
+        "display_name": agent.get("display_name"),
+        "description": agent.get("description") or "",
+        "tool_groups": agent.get("tool_groups"),
+        "skills": agent.get("skills"),
+        "soul": (agent.get("soul") or "").strip(),
+    }
+
+
+def ensure_deerflow_r3_acceptance_agent(
+    deerflow_url: str,
+    headers: dict[str, str],
+) -> str:
+    desired = r3_acceptance_agent_request()
+    desired_comparable = comparable_r3_acceptance_agent(desired)
+    agent_url = f"{deerflow_url.rstrip('/')}/api/agents/{DEERFLOW_R3_ACCEPTANCE_AGENT}"
+    status, _, current = request_json("GET", agent_url, headers=headers, timeout=15)
+    if status == 404:
+        status, _, created = request_json(
+            "POST",
+            f"{deerflow_url.rstrip('/')}/api/agents",
+            headers=headers,
+            body=desired,
+            timeout=15,
+        )
+        if status != 201 or not isinstance(created, dict):
+            raise GateError(f"cannot create DeerFlow R3 acceptance agent: HTTP {status}")
+        current = created
+    elif status != 200 or not isinstance(current, dict):
+        raise GateError(f"cannot inspect DeerFlow R3 acceptance agent: HTTP {status}")
+
+    if comparable_r3_acceptance_agent(current) != desired_comparable:
+        update = {key: value for key, value in desired.items() if key != "name"}
+        status, _, updated = request_json(
+            "PUT",
+            agent_url,
+            headers=headers,
+            body=update,
+            timeout=15,
+        )
+        if status != 200 or not isinstance(updated, dict):
+            raise GateError(f"cannot update DeerFlow R3 acceptance agent: HTTP {status}")
+        current = updated
+
+    if comparable_r3_acceptance_agent(current) != desired_comparable:
+        raise GateError("DeerFlow R3 acceptance agent does not match the fixed policy")
+    return DEERFLOW_R3_ACCEPTANCE_AGENT
 
 
 def mcp_headers(token: str, session_id: str | None = None) -> dict[str, str]:
@@ -778,6 +874,80 @@ def tool_message_text(message: dict[str, Any]) -> str | None:
     return "\n".join(text_blocks) if text_blocks else None
 
 
+def r3_thread_has_submit_result(messages: list[dict[str, Any]]) -> bool:
+    for message in messages:
+        if not isinstance(message, dict):
+            continue
+        if message.get("type") == "tool" and message.get("name") == DEERFLOW_R3_SUBMIT_TOOL:
+            return True
+    return False
+
+
+def r3_thread_has_get_call(messages: list[dict[str, Any]]) -> bool:
+    for message in messages:
+        if not isinstance(message, dict):
+            continue
+        for tool_call in message.get("tool_calls") or []:
+            if isinstance(tool_call, dict) and tool_call.get("name") == DEERFLOW_TASK_GET_TOOL:
+                return True
+    return False
+
+
+def r3_thread_has_get_result(messages: list[dict[str, Any]]) -> bool:
+    for message in messages:
+        if not isinstance(message, dict):
+            continue
+        if message.get("type") == "tool" and message.get("name") == DEERFLOW_TASK_GET_TOOL:
+            return True
+    return False
+
+
+def r3_thread_is_terminal(messages: list[dict[str, Any]]) -> bool:
+    for message in reversed(messages):
+        if not isinstance(message, dict):
+            continue
+        if message.get("type") in {"ai", "assistant"}:
+            return not bool(message.get("tool_calls"))
+        if message.get("type") == "tool":
+            return False
+    return False
+
+
+def wait_for_deerflow_r3_thread_state(
+    deerflow_url: str,
+    headers: dict[str, str],
+    thread_id: str,
+    *,
+    initial_state: dict[str, Any] | None,
+    timeout_seconds: int,
+) -> dict[str, Any]:
+    deadline = time.monotonic() + min(timeout_seconds, R3_THREAD_STATE_POLL_TIMEOUT_SECONDS)
+    state: dict[str, Any] | None = initial_state if isinstance(initial_state, dict) else None
+    state_url = f"{deerflow_url.rstrip('/')}/api/threads/{thread_id}/state"
+
+    while True:
+        messages = state.get("messages") if isinstance(state, dict) else None
+        if isinstance(messages, list) and (
+            (r3_thread_has_submit_result(messages)
+             and r3_thread_has_get_call(messages)
+             and r3_thread_has_get_result(messages))
+            or r3_thread_is_terminal(messages)
+        ):
+            return state
+        if time.monotonic() >= deadline:
+            raise GateError(
+                "DeerFlow R3 thread state did not persist the fixed submit result within "
+                f"{min(timeout_seconds, R3_THREAD_STATE_POLL_TIMEOUT_SECONDS)}s"
+            )
+
+        status, _, persisted = request_json("GET", state_url, headers=headers, timeout=15)
+        if status in {401, 403}:
+            raise GateError(f"cannot poll DeerFlow R3 thread state: HTTP {status}")
+        if status == 200 and isinstance(persisted, dict):
+            state = persisted.get("values", persisted)
+        time.sleep(R3_THREAD_STATE_POLL_INTERVAL_SECONDS)
+
+
 def deerflow_e2e(
     deerflow_url: str,
     cookie_path: Path,
@@ -1026,6 +1196,7 @@ def deerflow_full_chain_r3_e2e(
         "X-CSRF-Token": csrf,
         "Content-Type": "application/json",
     }
+    assistant_id = ensure_deerflow_r3_acceptance_agent(deerflow_url, headers)
     thread_id = f"cloudmold-r3-full-chain-{run_id}-{uuid.uuid4().hex[:8]}"
     create_status, _, _ = request_json(
         "POST", f"{deerflow_url.rstrip('/')}/api/threads", headers=headers,
@@ -1054,7 +1225,7 @@ def deerflow_full_chain_r3_e2e(
         "持久化执行器会异步完成任务；查询一次后只报告 taskId 和当前状态。"
     )
     body = with_internal_test_metadata({
-        "assistant_id": "lead_agent",
+        "assistant_id": assistant_id,
         "input": {"messages": [hidden_control_message(prompt)]},
         "config": {"recursion_limit": 30},
         "context": {
@@ -1070,17 +1241,21 @@ def deerflow_full_chain_r3_e2e(
         "POST", f"{deerflow_url.rstrip('/')}/api/threads/{thread_id}/runs/wait",
         headers=headers, body=body, timeout=deerflow_timeout)
     if wait_status == 504:
-        state_status, _, persisted = request_json(
-            "GET", f"{deerflow_url.rstrip('/')}/api/threads/{thread_id}/state",
-            headers=headers, timeout=15)
-        if state_status == 200 and isinstance(persisted, dict):
-            state = persisted.get("values", persisted)
-            wait_status = 200
+        state = wait_for_deerflow_r3_thread_state(
+            deerflow_url,
+            headers,
+            thread_id,
+            initial_state=state,
+            timeout_seconds=deerflow_timeout,
+        )
+        wait_status = 200
     if wait_status != 200 or not isinstance(state, dict):
         raise GateError(f"DeerFlow R3 wait run returned HTTP {wait_status}")
     messages = state.get("messages")
     if not isinstance(messages, list):
         raise GateError("DeerFlow R3 final state contains no messages")
+    if not r3_thread_has_get_call(messages) or not r3_thread_has_get_result(messages):
+        raise GateError("DeerFlow did not persist the fixed R3 task_get query")
 
     submit_call: dict[str, Any] | None = None
     submit_content: str | None = None
@@ -1129,6 +1304,7 @@ def deerflow_full_chain_r3_e2e(
         "status": "SUCCEEDED",
         "checkedAt": utc_now(),
         "threadId": thread_id,
+        "assistantId": assistant_id,
         "modelName": model_name,
         "submitToolName": DEERFLOW_R3_SUBMIT_TOOL,
         "queryToolName": DEERFLOW_TASK_GET_TOOL,
@@ -1173,6 +1349,19 @@ def recover_deerflow_full_chain_r3(
     messages = state.get("messages") if isinstance(state, dict) else None
     if not isinstance(messages, list):
         raise GateError("recovered DeerFlow R3 thread contains no messages")
+    if not (r3_thread_has_submit_result(messages) or r3_thread_is_terminal(messages)):
+        state = wait_for_deerflow_r3_thread_state(
+            deerflow_url,
+            {"Cookie": cookie_header, "X-CSRF-Token": csrf},
+            thread_id,
+            initial_state=state,
+            timeout_seconds=task_timeout,
+        )
+        messages = state.get("messages") if isinstance(state, dict) else None
+        if not isinstance(messages, list):
+            raise GateError("recovered DeerFlow R3 thread contains no messages")
+    if not r3_thread_has_get_call(messages) or not r3_thread_has_get_result(messages):
+        raise GateError("recovered DeerFlow did not persist the fixed R3 task_get query")
 
     expected_arguments = {
         "tenantId": tenant_id,

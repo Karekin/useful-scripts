@@ -125,6 +125,9 @@ services:
       CLOUDMOLD_AGENT_CONTROL_ACTION_SUBMISSION_ENABLED: ${CLOUDMOLD_AGENT_CONTROL_ACTION_SUBMISSION_ENABLED:-false}
       CLOUDMOLD_AGENT_CONTROL_RUNTIME_ENABLED: ${CLOUDMOLD_AGENT_CONTROL_RUNTIME_ENABLED:-false}
       CLOUDMOLD_AGENT_CONTROL_RUNTIME_LEGACY_ERP_BRIDGE_ENABLED: ${CLOUDMOLD_AGENT_CONTROL_RUNTIME_LEGACY_ERP_BRIDGE_ENABLED:-false}
+      # The issuer and durable executor must share the same externally supplied
+      # approval authority secret. Empty configuration keeps issuance fail-closed.
+      CLOUDMOLD_SKILL_TASK_APPROVAL_HMAC_SECRET: ${CLOUDMOLD_SKILL_TASK_APPROVAL_HMAC_SECRET:-}
       # Keep the governed Compose data plane isolated from developer-local
       # providers that may register the same interfaces with another secret.
       CLOUDMOLD_RPC_GROUP: cloudmold-compose-internal
