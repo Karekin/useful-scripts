@@ -1,0 +1,51 @@
+{
+  "schema_version": 2,
+  "stageId": "operator.fulfillment.complete",
+  "executor": "external_evidence",
+  "operation": "WRITE",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:0cd38e6a0c3e0e15438ab1cd",
+  "requestEnvelope": {
+    "stageId": "operator.fulfillment.complete",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "operator.fulfillment.complete",
+    "kind": "response"
+  },
+  "effectEnvelope": {
+    "stageId": "operator.fulfillment.complete",
+    "kind": "effect",
+    "eventIds": [
+      "event:operator.fulfillment.complete"
+    ]
+  },
+  "evidence": {
+    "fulfillmentId": "fulfillment-1",
+    "shipmentId": "shipment-1",
+    "status": "DELIVERED",
+    "aggregateVersion": 4,
+    "orderId": "order-1",
+    "outboxEventIds": [
+      "fulfillment-event-1"
+    ]
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "operator.fulfillment.complete",
+    "bindingDefinitionSha256": "3c4ace4d81a73f9b0508faa932f069c2c23626a40e8fc4238c6e186cefc6492d"
+  }
+}

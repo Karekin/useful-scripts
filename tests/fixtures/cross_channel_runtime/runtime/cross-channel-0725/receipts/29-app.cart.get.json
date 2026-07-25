@@ -1,0 +1,50 @@
+{
+  "schema_version": 2,
+  "stageId": "app.cart.get",
+  "executor": "http",
+  "operation": "READ",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:6e3f7874222d346c1372bc72",
+  "requestEnvelope": {
+    "stageId": "app.cart.get",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.cart.get",
+    "kind": "response"
+  },
+  "effectEnvelope": {},
+  "evidence": {
+    "cartId": "cart-1",
+    "principalId": "principal-1",
+    "aggregateVersion": 0,
+    "lineCount": 0,
+    "selectedLineCount": 0,
+    "duplicate": false,
+    "lines": []
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1",
+    "sessionId": "00000000-0000-4000-8000-000000000001",
+    "addressRef": "11111111-1111-4111-8111-111111111111"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.cart.get",
+    "bindingDefinitionSha256": "ad784551edb38a43d8bd4dfb81cf9ad69cf12179f1ca82b317aef5aed45b9234"
+  },
+  "requestSha256": "d0264070e54c3618a4b9ba6d5e5ac52ee700dfc841b02ceaa28f9cc1d83a7532",
+  "responseSha256": "bc779824cc8a8819cfeae2a95315ffbfbc6e8505aa5c33d1e4f9e20ea5308072",
+  "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "receiptSha256": "20a10d1ce4e05106a62dd7794e3d7e7bf2c5a447ac2170366fbe9741a14ff18f"
+}

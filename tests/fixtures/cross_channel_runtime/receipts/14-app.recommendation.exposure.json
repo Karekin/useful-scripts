@@ -1,0 +1,51 @@
+{
+  "schema_version": 2,
+  "stageId": "app.recommendation.exposure",
+  "executor": "http",
+  "operation": "WRITE",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:dc780d0896d002d228c2eb2f",
+  "requestEnvelope": {
+    "stageId": "app.recommendation.exposure",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.recommendation.exposure",
+    "kind": "response"
+  },
+  "effectEnvelope": {
+    "stageId": "app.recommendation.exposure",
+    "kind": "effect",
+    "eventIds": [
+      "event:app.recommendation.exposure"
+    ]
+  },
+  "evidence": {
+    "sessionId": "00000000-0000-4000-8000-000000000001",
+    "decisionToken": "recommend:1234567890abcdef123456",
+    "listingId": "listing-1",
+    "rank": 1,
+    "aggregateId": "recommendation-exposure-1",
+    "aggregateVersion": 1,
+    "eventId": "recommendation-event-1"
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1",
+    "sessionId": "00000000-0000-4000-8000-000000000001"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.recommendation.exposure",
+    "bindingDefinitionSha256": "84f894cb63faf8986bcde14df238da15578bcfd93a1748ac24cedbb22c9a4b6c"
+  }
+}

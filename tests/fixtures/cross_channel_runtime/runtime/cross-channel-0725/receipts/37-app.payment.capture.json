@@ -1,0 +1,57 @@
+{
+  "schema_version": 2,
+  "stageId": "app.payment.capture",
+  "executor": "http",
+  "operation": "WRITE",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:34e732fa9372931efafc9187",
+  "requestEnvelope": {
+    "stageId": "app.payment.capture",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.payment.capture",
+    "kind": "response"
+  },
+  "effectEnvelope": {
+    "stageId": "app.payment.capture",
+    "kind": "effect",
+    "eventIds": [
+      "event:app.payment.capture"
+    ]
+  },
+  "evidence": {
+    "paymentId": "payment-1",
+    "currentStatus": "REFUNDED",
+    "capturedAmountMinor": 39800,
+    "currencyCode": "CNY",
+    "behaviorVersion": 3,
+    "outboxEventIds": [
+      "payment-event-1"
+    ]
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1",
+    "sessionId": "00000000-0000-4000-8000-000000000001",
+    "orderId": "order-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.payment.capture",
+    "bindingDefinitionSha256": "d3a9cf01ca7ee0093951319eed1820e89676bcf67fecba35ff894daf639c8021"
+  },
+  "requestSha256": "e0d872e5f73056f5dad40cc23e710dfafe0c649738c1f6967d111d4b2cd2c808",
+  "responseSha256": "0a4301b5b65552201d7c05f99b8d76f02c01df86567813d2b30c4f0fb9b3f80e",
+  "effectSha256": "f6920ba7d2fd08a2176d89e7ea5adacfca6cb6bd2ca3a33a398ec4f8e820bc5e",
+  "receiptSha256": "af6147c5e65abb98e5b3144f07039a282f01be267d8bd7594143f801262f4e4c"
+}

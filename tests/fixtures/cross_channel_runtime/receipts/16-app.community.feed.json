@@ -1,0 +1,47 @@
+{
+  "schema_version": 2,
+  "stageId": "app.community.feed",
+  "executor": "http",
+  "operation": "READ",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:9d760a68e4a8670b3a715081",
+  "requestEnvelope": {
+    "stageId": "app.community.feed",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.community.feed",
+    "kind": "response"
+  },
+  "effectEnvelope": {},
+  "evidence": {
+    "list": [
+      {
+        "contentId": "content-1"
+      }
+    ],
+    "total": 1,
+    "pageNo": 1,
+    "pageSize": 20
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1",
+    "sessionId": "00000000-0000-4000-8000-000000000001",
+    "contentId": "content-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.community.feed",
+    "bindingDefinitionSha256": "b0c416f62dcec6a2319d0a4f82ac850f10c54af5783a7e5b79abc7be42d2c48f"
+  }
+}

@@ -1,0 +1,3836 @@
+{
+  "schema_version": 2,
+  "scenarioId": "scenario.cloudmold.cross-channel.local-demo.v1",
+  "scenarioVersion": "1.2.0",
+  "mode": "EXECUTE",
+  "status": "SUCCEEDED",
+  "simulated": false,
+  "evidenceScope": "TEST",
+  "runId": "cross-channel-0725",
+  "environment": "test",
+  "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+  "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+  "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+  "approval": {
+    "schema_version": 1,
+    "approvalType": "LOCAL_TEST_HUMAN_APPROVAL",
+    "approvalId": "approval-cross-channel-0725",
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "approved": true,
+    "approvedBy": "test-reviewer",
+    "approvedAt": "2026-07-25T10:24:01Z",
+    "expiresAt": "2026-07-25T11:29:01Z",
+    "scopes": [
+      "cross-channel:execute"
+    ],
+    "approvalDigest": "e9d563533a735d87803f9323c96d13919b54ffd92dc4c3c3d837f4c06ab60e3a"
+  },
+  "steps": [
+    {
+      "stageId": "app.identity.me",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:0970a7261d993f34b1ad5583",
+      "responseSha256": "411017a552347c5ce48653cb7977892fff610e08ef72ccf2bc8ea75027e37395",
+      "evidence": {
+        "memberUserId": 247,
+        "principalId": "principal-1",
+        "principalStatus": "ACTIVE",
+        "sourceSystem": "member",
+        "sourceType": "MEMBER_USER"
+      }
+    },
+    {
+      "stageId": "operator.merchant.onboard",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:1c3f52773530af8bc27312bf",
+      "responseSha256": "c86a6d27d49ece1c34364bc3ee442455373d4157fc12b2cc4a038524339866f9",
+      "evidence": {
+        "merchantId": "merchant-1",
+        "shopId": "shop-1",
+        "principalId": "principal-1",
+        "merchantStatus": "ACTIVE",
+        "shopStatus": "ACTIVE",
+        "outboxEventIds": [
+          "merchant-event-1"
+        ]
+      },
+      "requestSha256": "4a9fc2427d6a3551f847c92fae7072d24d809702263255c70ae325eb1d4ffbe1",
+      "effectSha256": "0a826b39f5a5ebe7371eeaece3b277327f92477b0a09f69367f92476230bf32f",
+      "eventIds": [
+        "event:operator.merchant.onboard"
+      ]
+    },
+    {
+      "stageId": "operator.catalog.publish",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:1ab9fbf0577edb7a1a8e1af6",
+      "responseSha256": "bbc312bc9ef6417598fc948ea95d8146e414e2314dfa28abe0533d097770b51b",
+      "evidence": {
+        "canonicalSpuId": "spu-1",
+        "canonicalSkuId": "sku-1",
+        "skuCode": "YS-SKU-1",
+        "catalogStatus": "ACTIVE",
+        "outboxEventIds": [
+          "catalog-event-1"
+        ]
+      },
+      "requestSha256": "d1b71aa10b42dd3d8e49cd1579250bef910b2a38a79025aecb47ad45cb29c642",
+      "effectSha256": "2df8b14991e96f91a3dc436e8fea692ec039bc7b1b8b4de8decaa3c02a3476e8",
+      "eventIds": [
+        "event:operator.catalog.publish"
+      ]
+    },
+    {
+      "stageId": "operator.catalog.metadata_update",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:fe943471e3e9a9ba8d2c44f8",
+      "responseSha256": "9147868520f49a7ab281159b2e8a7eb8ec6542a611e7691f777cfc79c5110c14",
+      "evidence": {
+        "entityType": "SKU",
+        "entityId": "sku-1",
+        "businessCode": "YS-SKU-REV2",
+        "currentStatus": "ACTIVE",
+        "aggregateVersion": 2,
+        "outboxEventIds": [
+          "catalog-metadata-event-1"
+        ]
+      },
+      "requestSha256": "193a39cb1706f42a800b3d9f5fa08692dd6b6d7b6d45b27e23ff2dec1453489b",
+      "effectSha256": "a482062302a6016dcb146e6bf706bbae0339c7d49c1dfdd3e993ec94afc97d49",
+      "eventIds": [
+        "event:operator.catalog.metadata_update"
+      ]
+    },
+    {
+      "stageId": "operator.catalog.barcode_rotate",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:d5ff35f7f17f6b605a454089",
+      "responseSha256": "3c6a8fa51ca2adb950a7eb912d28d3e37e3a86b9e5a9b029d06b29e0a8836a3a",
+      "evidence": {
+        "skuId": "sku-1",
+        "previousBarcode": "6901234567890",
+        "currentBarcode": "6901234567893",
+        "barcodeType": "EAN13",
+        "aggregateVersion": 3,
+        "outboxEventIds": [
+          "catalog-barcode-event-1"
+        ]
+      },
+      "requestSha256": "dc53302947a82089274fd0d6335bcf0091472632db7aa7955497a0bce186e566",
+      "effectSha256": "8cc119a90af584664849a350efa3278bd48ee3e19c33fa9c7ae6e00a6ec7cfa3",
+      "eventIds": [
+        "event:operator.catalog.barcode_rotate"
+      ]
+    },
+    {
+      "stageId": "operator.listing.publish",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:b92ddae3ebb866ee553c8012",
+      "responseSha256": "36898ca9260251789d5dcb9884cd95df92ff3ff26f9bbf1d9ce2d35a359e3be1",
+      "evidence": {
+        "listingId": "listing-1",
+        "listingOfferId": "offer-1",
+        "listingRevision": 1,
+        "listingVersion": 6,
+        "listingStatus": "PUBLISHED",
+        "priceMinor": 39800,
+        "currencyCode": "CNY",
+        "outboxEventIds": [
+          "listing-event-1"
+        ]
+      },
+      "requestSha256": "ee51c173a4148fbf3fd679f4f6ecf626808ebd3649645dbc28a4c89bc069b36b",
+      "effectSha256": "9a84f6fccfa46672e9997cc6bbef4d394afc51ca2eeac51261197afe1772fa01",
+      "eventIds": [
+        "event:operator.listing.publish"
+      ]
+    },
+    {
+      "stageId": "operator.supply.prepare",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:25607bc52008f5d251b74a91",
+      "responseSha256": "6e2105aba513a85b15ca09935bc923b71428ac06785e8ee7ce2a972a5b7276e7",
+      "evidence": {
+        "sourceSystem": "YUDAO_ERP",
+        "documentType": "PURCHASE_ORDER",
+        "documentId": "781",
+        "documentNo": "PO-20260725-01",
+        "status": "PREPARE"
+      },
+      "requestSha256": "2e141984593db302af9d93277612017ace24384c558a31c558628fcaa08fdf6e",
+      "effectSha256": "2185de4ebde05127f56b6b497feafa4da4ac8f13a87b35b8f646bf9f65aefad7",
+      "eventIds": [
+        "event:operator.supply.prepare"
+      ]
+    },
+    {
+      "stageId": "operator.warehouse.receive",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:68006bcf62408cdc2baa0bc4",
+      "responseSha256": "d4686d6183f32cf84498d670dd4b3b0cd06b17f5928a175cf0e72d386a61643b",
+      "evidence": {
+        "warehouseId": "warehouse-1",
+        "locationId": "location-1",
+        "inventoryLedgerTransactionId": "inventory-ledger-1",
+        "receivedQuantity": 10,
+        "outboxEventIds": [
+          "warehouse-event-1"
+        ]
+      },
+      "requestSha256": "a1087f1beeda9d4c45b6ad06b99e9850fbabc08f37ef271c5806d112a5276d77",
+      "effectSha256": "ce317d93b84fcd30132ecb08e62917aac2b7aca7ed3d608732d62ca824053590",
+      "eventIds": [
+        "event:operator.warehouse.receive"
+      ]
+    },
+    {
+      "stageId": "operator.quality.release",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:8ed0faf0742aca783b8cc445",
+      "responseSha256": "0a64280a611af2a289ebe1c3f386bd960545e5f74904b76f4524573402cef4bf",
+      "evidence": {
+        "inspectionTaskId": "inspection-task-1",
+        "qualityStandardVersion": 1,
+        "qualityStatus": "QUALIFIED",
+        "inspectionDecision": "PASS",
+        "outboxEventIds": [
+          "quality-event-1"
+        ]
+      },
+      "requestSha256": "062173d4a594543ae6faf2b63f816411970a184964318d7fce733c7cf1ef38f9",
+      "effectSha256": "204e8781d558d43f76f08d1b3fc7de4d3514fd4a181cdcaf05f502d1b6e4c698",
+      "eventIds": [
+        "event:operator.quality.release"
+      ]
+    },
+    {
+      "stageId": "operator.inventory.sellable",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:0656d4fdfeab7468bf8cf262",
+      "responseSha256": "9af12ec9e71ab89dad8b00ce3490c1304dedee42138f5d53695d8b83b87a7627",
+      "evidence": {
+        "inventoryBalanceId": "balance-1",
+        "inventoryVersion": 9,
+        "availableQuantity": 10,
+        "stockStatus": "SELLABLE",
+        "qualityStatus": "QUALIFIED"
+      }
+    },
+    {
+      "stageId": "app.session.start",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:4c08e8c3273c454aa1f75829",
+      "responseSha256": "52abff9bfcad817766db28b424361fccf2af9172de9d77f4006560712d23f276",
+      "evidence": {
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "aggregateVersion": 1,
+        "eventId": "session-event-1"
+      },
+      "requestSha256": "c37be5a9918f749a9472a098f4390ddbf96bfdd7016166134464928488f586f1",
+      "effectSha256": "9fee8ec08f445329789494268c244eae383b925411a591e576ae4bf16af153f9",
+      "eventIds": [
+        "event:app.session.start"
+      ]
+    },
+    {
+      "stageId": "app.session.link_identity",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:2135eeb4e9192ac03dee28ff",
+      "responseSha256": "a4d117bc8d079dd58bc2e323cf357b9cc7ae0dbc8c4a6f51c078f057214bc940",
+      "evidence": {
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "aggregateVersion": 2,
+        "status": "LINKED"
+      },
+      "requestSha256": "ae2aa9e2e32a728908644f4c6bb9f37d5e5ead93d5f78f16614dc422c916c67f",
+      "effectSha256": "168ce1cb8c38359c289234eb949b249712eb7c4f0971a0a9780a0c8632dd21f7",
+      "eventIds": [
+        "event:app.session.link_identity"
+      ]
+    },
+    {
+      "stageId": "app.recommendation.home",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:b2e37ecdbbcf30ddced07b29",
+      "responseSha256": "89459eeac8e243ad0cf12557f8ee6acf69020aca5753a162f8a936c779b802a9",
+      "evidence": {
+        "sceneCode": "HOME_FEED",
+        "policyVersion": "LOCAL_DETERMINISTIC_V1",
+        "decisionToken": "recommend:1234567890abcdef123456",
+        "resultSetToken": "recommend:1234567890abcdef123456",
+        "ttlSeconds": 900,
+        "expiresAt": "2026-07-25T12:30:00Z",
+        "items": [
+          {
+            "rank": 1,
+            "listingId": "listing-1",
+            "listingOfferId": "offer-1",
+            "canonicalSpuId": "spu-1",
+            "canonicalSkuId": "sku-1",
+            "qualityStatus": "QUALIFIED"
+          }
+        ]
+      }
+    },
+    {
+      "stageId": "app.recommendation.exposure",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:dc780d0896d002d228c2eb2f",
+      "responseSha256": "fe3d2864974d2d384a99e9a3cd8ed34b924e8f7eb0c5fa59dfa0a6d1f9d2b5f2",
+      "evidence": {
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "decisionToken": "recommend:1234567890abcdef123456",
+        "listingId": "listing-1",
+        "rank": 1,
+        "aggregateId": "recommendation-exposure-1",
+        "aggregateVersion": 1,
+        "eventId": "recommendation-event-1"
+      },
+      "requestSha256": "298232df69c3590920c1b79fc5e9c58785622ddb822cb2554ad2bd9aec05e5cb",
+      "effectSha256": "2a5d7361fd0f5537e2b7adbe87bfd2ec99516c27673f09e83eac79161ad5ae2a",
+      "eventIds": [
+        "event:app.recommendation.exposure"
+      ]
+    },
+    {
+      "stageId": "app.recommendation.click",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:a5e55ac35848405df720a712",
+      "responseSha256": "e8a02d83415540393205f8f267449c50949ce7d4ac45cb2ecfd9614073b13a2b",
+      "evidence": {
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "decisionToken": "recommend:1234567890abcdef123456",
+        "listingId": "listing-1",
+        "rank": 1,
+        "aggregateId": "recommendation-click-1",
+        "aggregateVersion": 2,
+        "eventId": "recommendation-event-2"
+      },
+      "requestSha256": "f8ab7abe10d79fd75f89709cb886958390e87a82c8ee48dbfbed26b18a5553d0",
+      "effectSha256": "1547511f01a67d1b007af1fd731a9edec644bf060dc552a8bdbe64048387d28f",
+      "eventIds": [
+        "event:app.recommendation.click"
+      ]
+    },
+    {
+      "stageId": "app.community.feed",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:9d760a68e4a8670b3a715081",
+      "responseSha256": "146ef489bdd47ae4dde48c38d8b4ec110e902a3325a00c707cfc233697cf5c62",
+      "evidence": {
+        "list": [
+          {
+            "contentId": "content-1"
+          }
+        ],
+        "total": 1,
+        "pageNo": 1,
+        "pageSize": 20
+      }
+    },
+    {
+      "stageId": "app.community.detail",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:7db83dca783ecbb461a9141b",
+      "responseSha256": "bff8fdd350c7c63aca6bf8c70cfa690945a4e3310ba655e730ff4192ec1b423a",
+      "evidence": {
+        "contentId": "content-1",
+        "authorPrincipalId": "principal-creator-1",
+        "body": "真实种草正文",
+        "likeCount": 1,
+        "commentCount": 1,
+        "likedByCurrentUser": false,
+        "createdAt": "2026-07-25T11:40:00Z",
+        "productLink": {
+          "listingId": "listing-1",
+          "listingOfferId": "offer-1",
+          "canonicalSpuId": "spu-1",
+          "canonicalSkuId": "sku-1"
+        }
+      }
+    },
+    {
+      "stageId": "app.community.like",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:b1b89294bd345d13a34323fe",
+      "responseSha256": "3445b0e9b2c78f3163dd7723bf348f6c588635896a3f088803513eefbed1a69c",
+      "evidence": {
+        "contentId": "content-1",
+        "authorPrincipalId": "principal-creator-1",
+        "body": "真实种草正文",
+        "likeCount": 2,
+        "commentCount": 1,
+        "likedByCurrentUser": true,
+        "createdAt": "2026-07-25T11:40:00Z",
+        "productLink": {
+          "listingId": "listing-1",
+          "listingOfferId": "offer-1",
+          "canonicalSpuId": "spu-1",
+          "canonicalSkuId": "sku-1"
+        }
+      },
+      "requestSha256": "5404b862a305574e8296078db2ad67303c7a0f8acc764de7bb510fb3dc899702",
+      "effectSha256": "252a48186956003c0848dc58d54bb30b190986973c3c6cf9c3c9569dc388c625",
+      "eventIds": [
+        "event:app.community.like"
+      ]
+    },
+    {
+      "stageId": "app.community.comment_create",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:3e30b78001543723a998065f",
+      "responseSha256": "a97e78f8b9da488c12321d664b9dca9e86ef5388a636abcc538b4ae0e0bf1900",
+      "evidence": {
+        "contentId": "content-1",
+        "authorPrincipalId": "principal-creator-1",
+        "body": "真实种草正文",
+        "likeCount": 2,
+        "commentCount": 2,
+        "likedByCurrentUser": true,
+        "createdAt": "2026-07-25T11:40:00Z",
+        "productLink": {
+          "listingId": "listing-1",
+          "listingOfferId": "offer-1",
+          "canonicalSpuId": "spu-1",
+          "canonicalSkuId": "sku-1"
+        }
+      },
+      "requestSha256": "1192557b38b92944938d75bcd3977d5de09cc8eaaeeb711ed0710eefa44715a5",
+      "effectSha256": "13ef6e309b0d2a37495bfe4fedaf906de1b8ef476bfb3d1d29b79c3d8b12d0a2",
+      "eventIds": [
+        "event:app.community.comment_create"
+      ]
+    },
+    {
+      "stageId": "app.address.snapshot_create",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:83fdc8def60cecd14f03bf07",
+      "responseSha256": "f765a0edb19ab0ff8e2cbad8cc1ba92958d025f23ff97f7778f218cb90330a34",
+      "evidence": {
+        "addressRef": "11111111-1111-4111-8111-111111111111",
+        "snapshotVersion": 1,
+        "destinationRegionCode": "310000",
+        "receiverSummary": "张*",
+        "mobileSummary": "138****0000",
+        "duplicate": false
+      },
+      "requestSha256": "e80d0824ba46c250b079ee87413817065d218e563e4f3cf2b065003c8e470bbc",
+      "effectSha256": "e259b5cb1b6cf281c01f1c39c4d06f8dd6a9cbf3d992b517ffe10672499781db",
+      "eventIds": [
+        "event:app.address.snapshot_create"
+      ]
+    },
+    {
+      "stageId": "app.address.snapshot_replay",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:e364f90441ae85eb06ecca34",
+      "responseSha256": "a6e994d8fa5da7d4bbb76699fb14bcf0e3cc7f4ae367608dbc4c980b01975aed",
+      "evidence": {
+        "addressRef": "11111111-1111-4111-8111-111111111111",
+        "snapshotVersion": 1,
+        "destinationRegionCode": "310000",
+        "receiverSummary": "张*",
+        "mobileSummary": "138****0000",
+        "duplicate": true
+      },
+      "requestSha256": "aea7ecd89d6368583e349e959ef4a6838ce803ab0db60e7b86c7a0a4d0f63b5c",
+      "effectSha256": "c37ac27fca4f7d1a6b281952e820c391b79b0165425aa237db43ab9b9b0422d7",
+      "eventIds": [
+        "event:app.address.snapshot_replay"
+      ]
+    },
+    {
+      "stageId": "app.address.snapshot_get",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:8cfc337d2b6de906c7e42cfe",
+      "responseSha256": "6d72c78ab5191d69dbceda7285861309fe6c8e22c0d9dbe140338a7ece0c2c48",
+      "evidence": {
+        "addressRef": "11111111-1111-4111-8111-111111111111",
+        "snapshotVersion": 1,
+        "destinationRegionCode": "310000",
+        "receiverSummary": "张*",
+        "mobileSummary": "138****0000"
+      }
+    },
+    {
+      "stageId": "app.products.list",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:fad49663b3d98c45386e2051",
+      "responseSha256": "bf07a7d178641d9660eca051932a8899cfa1c98518e2da8f0873f8fa6066bd97",
+      "evidence": {
+        "list": [
+          {
+            "listingId": "listing-1"
+          }
+        ],
+        "total": 1,
+        "pageNo": 1,
+        "pageSize": 10
+      }
+    },
+    {
+      "stageId": "app.behavior.search_requested",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:623c29cd18b5f743b8554c80",
+      "responseSha256": "34662ab7cb5d314c3cd9bd1fdcd93dc209b061a0bc903a6521e92970ebd66876",
+      "evidence": {
+        "behaviorId": "behavior-search-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "behaviorType": "SEARCH_REQUESTED",
+        "eventId": "behavior-event-1"
+      },
+      "requestSha256": "7fbd0f8669543b198d21b281dbe829c769c8d96e4f12bdd4546d60dbaf628953",
+      "effectSha256": "ba70d7dfd8fdecdd8acb0d65d4fde6ce03b66eadf40085047950e7c73d47444c",
+      "eventIds": [
+        "event:app.behavior.search_requested"
+      ]
+    },
+    {
+      "stageId": "app.behavior.search_exposed",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:6747b954360832ddd2090d05",
+      "responseSha256": "ed78deb0695c5b6493db8ea1930b7efe13edf73c0d73b2c50068686fab906f0b",
+      "evidence": {
+        "behaviorId": "behavior-search-2",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "behaviorType": "SEARCH_RESULT_EXPOSED",
+        "eventId": "behavior-event-2"
+      },
+      "requestSha256": "2aebb96e1c2474b180a4a48b872bf55f81d199417b79aaaf397aa47690a2d142",
+      "effectSha256": "fbd5b794e2ba8d8804e4c9e2ab28dd978a0943d9ac4efdb661d7ce8ec218d2fe",
+      "eventIds": [
+        "event:app.behavior.search_exposed"
+      ]
+    },
+    {
+      "stageId": "app.behavior.search_clicked",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:3b6418a0e2b9374e2d64acc1",
+      "responseSha256": "563459796f4d5e73f96e7aadec11d3687db53554e879f90a42cf421ef640af07",
+      "evidence": {
+        "behaviorId": "behavior-search-3",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "behaviorType": "SEARCH_RESULT_CLICKED",
+        "eventId": "behavior-event-3"
+      },
+      "requestSha256": "e16c1f887960bbb82f73745997a95bec70b2ba3fb35ed6cd515156d46258d95e",
+      "effectSha256": "d3de78e813021a5b432dbea4ef17998cb14e15095eace259cbf091f3b91034bf",
+      "eventIds": [
+        "event:app.behavior.search_clicked"
+      ]
+    },
+    {
+      "stageId": "app.product.detail",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:417213d98e206db63c4f450b",
+      "responseSha256": "5c84993276e580ed9c14d1dd32790d924e44d3a9a9600f1394c13cde58bc377d",
+      "evidence": {
+        "listingId": "listing-1",
+        "listingNo": "LIST-1",
+        "title": "CloudMold Sneaker",
+        "primaryImageUrl": "https://example.com/p.png",
+        "media": [
+          {
+            "type": "image"
+          }
+        ],
+        "merchantId": "merchant-1",
+        "shopId": "shop-1",
+        "canonicalSpuId": "spu-1",
+        "listingRevision": 1,
+        "listingVersion": 6,
+        "qualitySummary": {
+          "status": "QUALIFIED"
+        },
+        "skus": [
+          {
+            "canonicalSkuId": "sku-1",
+            "skuCode": "YS-SKU-REV2",
+            "barcode": "6901234567893",
+            "listingOfferId": "offer-1"
+          }
+        ]
+      }
+    },
+    {
+      "stageId": "app.behavior.pdp",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:dbf2b419d76ade538df0cbdc",
+      "responseSha256": "dd18f20c9a85209c7666e96b204accaa66a38aca0e3356483d304378b7a2759d",
+      "evidence": {
+        "behaviorId": "behavior-pdp-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "behaviorType": "PDP_VIEWED",
+        "eventId": "behavior-event-4"
+      },
+      "requestSha256": "6bb703f4f00c4f58c4c69864a75c55781e1bf2b57b9be9df5d97c3cdace948b1",
+      "effectSha256": "dc7a09a8c422bd2642ff0724f362212d3e49beebeb81f43bd9f782e7054ec0f1",
+      "eventIds": [
+        "event:app.behavior.pdp"
+      ]
+    },
+    {
+      "stageId": "app.cart.get",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:6e3f7874222d346c1372bc72",
+      "responseSha256": "bc779824cc8a8819cfeae2a95315ffbfbc6e8505aa5c33d1e4f9e20ea5308072",
+      "evidence": {
+        "cartId": "cart-1",
+        "principalId": "principal-1",
+        "aggregateVersion": 0,
+        "lineCount": 0,
+        "selectedLineCount": 0,
+        "duplicate": false,
+        "lines": []
+      }
+    },
+    {
+      "stageId": "app.behavior.cart_added",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:d9c033dcc47bd66b90b5005a",
+      "responseSha256": "78947c18883cc3a6a377a8e4391d72be9c73038ccafb7a8dd72d5cf9dd305b01",
+      "evidence": {
+        "behaviorId": "behavior-cart-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "behaviorType": "CART_ADDED",
+        "eventId": "behavior-event-5"
+      },
+      "requestSha256": "390a2d3ba2e1d516b7cf53b731d8c94dfe9c229841801d9496c17a9fd373a35c",
+      "effectSha256": "504a26625dfbac708d46452b4b8c29f33a47f04470b727d0165b043fac1a2073",
+      "eventIds": [
+        "event:app.behavior.cart_added"
+      ]
+    },
+    {
+      "stageId": "app.cart.add",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:38a344d4b80d142eefe635a9",
+      "responseSha256": "4897960c8059c92fbbfbbba6e156c0821b596addaf4d3d74e22e2a888c60542c",
+      "evidence": {
+        "cartId": "cart-1",
+        "principalId": "principal-1",
+        "aggregateVersion": 2,
+        "lineCount": 1,
+        "selectedLineCount": 1,
+        "duplicate": false,
+        "lines": [
+          {
+            "lineId": "line-1",
+            "listingId": "listing-1",
+            "listingOfferId": "offer-1",
+            "canonicalSkuId": "sku-1",
+            "selected": true
+          }
+        ]
+      },
+      "requestSha256": "69fbf27e3f3174b2c8d911a27adad682ee7e6cf4f765610364180a78bca2f26a",
+      "effectSha256": "6c8590cef81ae0e1f0a3ae67ad444a96f8fd57f17ca0c43888172f291acf1119",
+      "eventIds": [
+        "event:app.cart.add"
+      ]
+    },
+    {
+      "stageId": "app.cart.preview_selected",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:4095df18586e6aa2908580f2",
+      "responseSha256": "bd43a847d68df57f0400e7129af3acb7ae81298badeca13abedf0808447b861c",
+      "evidence": {
+        "checkoutToken": "checkout-1",
+        "principalId": "principal-1",
+        "addressRef": "11111111-1111-4111-8111-111111111111",
+        "addressSnapshotVersion": 1,
+        "listingId": "listing-1",
+        "listingOfferId": "offer-1",
+        "canonicalSkuId": "sku-1",
+        "quantity": 2,
+        "unitPriceMinor": 19900,
+        "productAmountMinor": 39800,
+        "shippingAmountMinor": 0,
+        "discountAmountMinor": 0,
+        "payableAmountMinor": 39800,
+        "currencyCode": "CNY",
+        "availableQuantity": 10,
+        "expiresAt": "2026-07-25T12:30:00Z"
+      },
+      "requestSha256": "ec1e347d74860169e480b2b36c3ee234df2dbcb214dceb3490b3e2a0dc9155ce",
+      "effectSha256": "9327bcec2ab35254b528c5bbd0f995b8eb43b58cfc84111ae4930a4a9ad8de36",
+      "eventIds": [
+        "event:app.cart.preview_selected"
+      ]
+    },
+    {
+      "stageId": "app.checkout.preview",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:e4164148fb146c2cadacf7e7",
+      "responseSha256": "bb150a90dfd446263fc28490a421369a5ea3388355614dd76749de4def5b567a",
+      "evidence": {
+        "checkoutToken": "checkout-1",
+        "principalId": "principal-1",
+        "addressRef": "11111111-1111-4111-8111-111111111111",
+        "addressSnapshotVersion": 1,
+        "listingId": "listing-1",
+        "listingOfferId": "offer-1",
+        "canonicalSkuId": "sku-1",
+        "quantity": 2,
+        "unitPriceMinor": 19900,
+        "productAmountMinor": 39800,
+        "shippingAmountMinor": 0,
+        "discountAmountMinor": 0,
+        "payableAmountMinor": 39800,
+        "currencyCode": "CNY",
+        "availableQuantity": 10,
+        "expiresAt": "2026-07-25T12:30:00Z"
+      },
+      "requestSha256": "cd48d57ae0167bfbf53ca4935d26d3e69671c6760cd003cfb07b166d1f10f5d5",
+      "effectSha256": "b7dd3745769c8ea32af52c25c812b1dd65d9b4f3cc296155ac2416b0ec5dda83",
+      "eventIds": [
+        "event:app.checkout.preview"
+      ]
+    },
+    {
+      "stageId": "app.behavior.checkout",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:efefcf622958a0e85643bfa1",
+      "responseSha256": "71b0e6478b36f09d4187af2a4a2c46c253276677c6aefacdeebe4e548e741590",
+      "evidence": {
+        "behaviorId": "behavior-checkout-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "behaviorType": "CHECKOUT_STARTED",
+        "eventId": "behavior-event-6"
+      },
+      "requestSha256": "4567410d5a1f2f9e811ac16687fcfe0cbc66524e7d30e1b0b0534e6f05155646",
+      "effectSha256": "fb28f6dfa797d7febbc2f927bbf1a3dd7b184dbe6e70da899cf53953da430683",
+      "eventIds": [
+        "event:app.behavior.checkout"
+      ]
+    },
+    {
+      "stageId": "app.order.create",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:5d5902c3176a3173a003975c",
+      "responseSha256": "9f4a4a3e41bd5b610ca41d96594d9fe079f4073e1c135c21fa036d5736c95275",
+      "evidence": {
+        "orderId": "order-1",
+        "orderNo": "ORDER-1",
+        "orderItemId": "order-item-1",
+        "buyerPrincipalId": "principal-1",
+        "listingId": "listing-1",
+        "listingOfferId": "offer-1",
+        "canonicalSkuId": "sku-1",
+        "quantity": 2,
+        "payableAmountMinor": 39800,
+        "currencyCode": "CNY",
+        "aggregateVersion": 1,
+        "status": "CREATED",
+        "outboxEventIds": [
+          "order-event-1"
+        ]
+      },
+      "requestSha256": "633d8f7bec990667d3f3895cfee5a14e6cb57964140044ac15ab2fd9a09b8567",
+      "effectSha256": "d814bdd1cfdff71f4684cd81736efa93571066992baf0148ffb3fa46d800a970",
+      "eventIds": [
+        "event:app.order.create"
+      ]
+    },
+    {
+      "stageId": "app.order.get",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:fbdbce2dfeb4ee1f6330af22",
+      "responseSha256": "62706be9d287998efc31f59d98081c3c882d35f0c1c3a6858f291c54279eecd1",
+      "evidence": {
+        "orderId": "order-1",
+        "aggregateVersion": 1,
+        "status": "RETURNED",
+        "items": [
+          {
+            "orderItemId": "order-item-1"
+          }
+        ]
+      }
+    },
+    {
+      "stageId": "app.payment.capture",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:34e732fa9372931efafc9187",
+      "responseSha256": "0a4301b5b65552201d7c05f99b8d76f02c01df86567813d2b30c4f0fb9b3f80e",
+      "evidence": {
+        "paymentId": "payment-1",
+        "currentStatus": "REFUNDED",
+        "capturedAmountMinor": 39800,
+        "currencyCode": "CNY",
+        "behaviorVersion": 3,
+        "outboxEventIds": [
+          "payment-event-1"
+        ]
+      },
+      "requestSha256": "e0d872e5f73056f5dad40cc23e710dfafe0c649738c1f6967d111d4b2cd2c808",
+      "effectSha256": "f6920ba7d2fd08a2176d89e7ea5adacfca6cb6bd2ca3a33a398ec4f8e820bc5e",
+      "eventIds": [
+        "event:app.payment.capture"
+      ]
+    },
+    {
+      "stageId": "operator.fulfillment.complete",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:0cd38e6a0c3e0e15438ab1cd",
+      "responseSha256": "ecff9d1905abfa4fcddaff243fc9bb18245eb67fc9c26c5af767d60559c414f1",
+      "evidence": {
+        "fulfillmentId": "fulfillment-1",
+        "shipmentId": "shipment-1",
+        "status": "DELIVERED",
+        "aggregateVersion": 4,
+        "orderId": "order-1",
+        "outboxEventIds": [
+          "fulfillment-event-1"
+        ]
+      },
+      "requestSha256": "2a776f22f4fe171befde22a12450b11e69578026dd94b3ec2e6523f46fc7e91a",
+      "effectSha256": "6d8f69ab788a22e38fd889927b6e13936bf866d1a0f502b3ad3bf7ba6f6572cc",
+      "eventIds": [
+        "event:operator.fulfillment.complete"
+      ]
+    },
+    {
+      "stageId": "app.fulfillment.by_order",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:0a1e225cb844e836622c0eb6",
+      "responseSha256": "9cc5336a9ca1f6f771ee1f81a06f168438f2d5c14cf4c0c08e7a9672a447414f",
+      "evidence": {
+        "orderId": "order-1",
+        "fulfillmentId": "fulfillment-1",
+        "shipmentId": "shipment-1",
+        "fulfillmentStatus": "DELIVERED",
+        "trackingEvents": [
+          {
+            "status": "SIGNED"
+          }
+        ]
+      }
+    },
+    {
+      "stageId": "app.product_review.eligibility",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:ee77fc900cf36b86400c9e1c",
+      "responseSha256": "ef752427d519f72233faac75ebfae75b2898963c7d859c44aad7fe7356783357",
+      "evidence": {
+        "eligible": true,
+        "reasonCode": "",
+        "existingReviewId": "",
+        "existingModerationStatus": "",
+        "orderId": "order-1",
+        "orderItemId": "order-item-1",
+        "listingId": "listing-1",
+        "listingOfferId": "offer-1",
+        "merchantId": "merchant-1",
+        "shopId": "shop-1",
+        "canonicalSpuId": "spu-1",
+        "canonicalSkuId": "sku-1"
+      }
+    },
+    {
+      "stageId": "app.product_review.create",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:86bb65283fe19e9fc29718e5",
+      "responseSha256": "e6da49de0b13fc94865c20d08925e95ad16cf91149ba40866a8b9f04d3d89bcd",
+      "evidence": {
+        "reviewId": "review-1",
+        "orderId": "order-1",
+        "orderItemId": "order-item-1",
+        "listingId": "listing-1",
+        "listingOfferId": "offer-1",
+        "merchantId": "merchant-1",
+        "shopId": "shop-1",
+        "canonicalSpuId": "spu-1",
+        "canonicalSkuId": "sku-1",
+        "overallScore": 4,
+        "moderationStatus": "APPROVED",
+        "duplicate": false
+      },
+      "requestSha256": "1f808021b0aa1f8257cf2abc33e88f0a5b4f74c867f8c34f79fcde2c17a0e724",
+      "effectSha256": "17b1d53f1bc3e1de88d7ea070778652c3ca32060f247e5122bd739bd384d5681",
+      "eventIds": [
+        "event:app.product_review.create"
+      ]
+    },
+    {
+      "stageId": "app.product_review.listing",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:e39607df86b88d809ac8804f",
+      "responseSha256": "a4da29dfc3252cb5160c95ed50781916c3f23dd3c2894d7b4290792110f0e09b",
+      "evidence": {
+        "total": 1,
+        "pageNo": 1,
+        "pageSize": 20,
+        "list": [
+          {
+            "reviewId": "review-1"
+          }
+        ]
+      }
+    },
+    {
+      "stageId": "app.after_sale.create",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:3640edb11de182a636220399",
+      "responseSha256": "eb5e949c911496069c38a1b5ef4f8aae4a5d74ec8912c1089766d3e8d05c3777",
+      "evidence": {
+        "afterSaleId": "after-sale-1",
+        "afterSaleNo": "AS-1",
+        "orderId": "order-1",
+        "orderItemId": "order-item-1",
+        "caseStatus": "REQUESTED",
+        "aggregateVersion": 1,
+        "outboxEventIds": [
+          "after-sale-event-1"
+        ]
+      },
+      "requestSha256": "a0529494f9657772f5067030f1cfba151eff502c18a851b342e0a12e6360c245",
+      "effectSha256": "4692e21f4a05f247470e6efe9f3192710adfdf32c9d8bcd523a15f10800154b2",
+      "eventIds": [
+        "event:app.after_sale.create"
+      ]
+    },
+    {
+      "stageId": "operator.after_sale.complete",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:d6ad6b4856b4fd049bc87bca",
+      "responseSha256": "545654076d01f8866d9eca58254bde1cc967532f35cdd64263bd58fc643cdc56",
+      "evidence": {
+        "afterSaleId": "after-sale-1",
+        "returnFulfillmentId": "return-fulfillment-1",
+        "inspectionId": "inspection-1",
+        "refundTransactionId": "refund-1",
+        "inventoryReturnLedgerTransactionId": "inventory-return-1",
+        "afterSaleStatus": "COMPLETED",
+        "paymentStatus": "REFUNDED",
+        "orderStatus": "RETURNED",
+        "returnedQuantity": 2,
+        "refundedAmountMinor": 39800,
+        "outboxEventIds": [
+          "after-sale-event-2"
+        ]
+      },
+      "requestSha256": "18b18cbb8954f39bf2cfdfa3b5cfbe1d755dda567bd49a04f95c1cacc1677cba",
+      "effectSha256": "12c620c5a0e04a63a4b853907330d4f58be63871ddfd612dbbdc0f8a63122915",
+      "eventIds": [
+        "event:operator.after_sale.complete"
+      ]
+    },
+    {
+      "stageId": "app.after_sale.get",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:717889ded8d5f85e709bcbe9",
+      "responseSha256": "54f8f325ef17d75157c225fbd3f6ebb204162c1d8aca9c8cfaf05ec86e563156",
+      "evidence": {
+        "afterSaleId": "after-sale-1",
+        "orderId": "order-1",
+        "caseStatus": "COMPLETED",
+        "refundStatus": "SUCCEEDED",
+        "returnFulfillmentStatus": "INSPECTION_ACCEPTED"
+      }
+    },
+    {
+      "stageId": "app.customer_service.ticket_create",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:5980ee3f0175cc55e4808dea",
+      "responseSha256": "4fca9d844ed766033809b52c206258c3df4c024d3841052a2970db9fd85ccf22",
+      "evidence": {
+        "ticketId": "ticket-1",
+        "ticketNo": "TICKET-1",
+        "ticketStatus": "OPEN",
+        "ticketVersion": 1,
+        "outboxEventIds": [
+          "ticket-event-1"
+        ]
+      },
+      "requestSha256": "9a24740b5c795ad2421b3079fece07c343094101d274a988f72ec742beec5955",
+      "effectSha256": "6e7e5900623397fcb082d33246a64cbf18beb41191b36e4e267bd3085f2acc89",
+      "eventIds": [
+        "event:app.customer_service.ticket_create"
+      ]
+    },
+    {
+      "stageId": "app.customer_service.ticket_get",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:c038da8e56c9d9c4cc1430b1",
+      "responseSha256": "dfb999b142c34ed27b89e9768817db72f2950967fe3c733e78eab6190ed80401",
+      "evidence": {
+        "ticketId": "ticket-1",
+        "ticketStatus": "OPEN",
+        "ticketVersion": 1
+      }
+    },
+    {
+      "stageId": "reconcile.lakehouse",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:8d305928e1580f97bcb5b436",
+      "responseSha256": "d693e1c2ed7ef9b0b5c38f8ae6104991199dd80c160efa9b06c5ff1462fb526c",
+      "evidence": {
+        "outboxCdcCheckpointSucceeded": true,
+        "fullDenominator": true,
+        "nonempty": true,
+        "sourceToFactMismatchCount": 0,
+        "factToProjectionMismatchCount": 0,
+        "crossTenantLinkCount": 0,
+        "identityLinkMismatchCount": 0,
+        "productLinkMismatchCount": 0,
+        "orderPaymentMoneyMismatchCount": 0,
+        "returnQuantityMismatchCount": 0,
+        "dqcViolationCount": 0,
+        "modelResults": {
+          "yshopping_ads.ads_canonical_commerce_v2_readiness": "RECONCILED",
+          "yshopping_ads.ads_canonical_after_sale_readiness": "RECONCILED",
+          "yshopping_ads.ads_canonical_customer_service_readiness": "READY",
+          "yshopping_ads.ads_canonical_commerce_acquisition_funnel": "NONEMPTY"
+        },
+        "dataFreshnessAt": "2026-07-25T11:59:00Z"
+      }
+    }
+  ],
+  "runtimeReceipts": [
+    {
+      "schema_version": 2,
+      "stageId": "app.identity.me",
+      "executor": "http",
+      "operation": "READ",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:0970a7261d993f34b1ad5583",
+      "requestEnvelope": {
+        "stageId": "app.identity.me",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.identity.me",
+        "kind": "response"
+      },
+      "effectEnvelope": {},
+      "evidence": {
+        "memberUserId": 247,
+        "principalId": "principal-1",
+        "principalStatus": "ACTIVE",
+        "sourceSystem": "member",
+        "sourceType": "MEMBER_USER"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.identity.me",
+        "bindingDefinitionSha256": "07571b9354d79d44c25168831208acf13425de5d03eb13a6c36dd0db62d73854"
+      },
+      "requestSha256": "8db53797a6c7b9ca1f5a0053606d2ea7a46ecd0a765392495eb14bcda7bc20e0",
+      "responseSha256": "411017a552347c5ce48653cb7977892fff610e08ef72ccf2bc8ea75027e37395",
+      "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "receiptSha256": "d6d67264824a05e01594cab66f36a94586572f7561d2ebfc678e9f6f7cfc4007"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "operator.merchant.onboard",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:1c3f52773530af8bc27312bf",
+      "requestEnvelope": {
+        "stageId": "operator.merchant.onboard",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "operator.merchant.onboard",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "operator.merchant.onboard",
+        "kind": "effect",
+        "eventIds": [
+          "event:operator.merchant.onboard"
+        ]
+      },
+      "evidence": {
+        "merchantId": "merchant-1",
+        "shopId": "shop-1",
+        "principalId": "principal-1",
+        "merchantStatus": "ACTIVE",
+        "shopStatus": "ACTIVE",
+        "outboxEventIds": [
+          "merchant-event-1"
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "operator.merchant.onboard",
+        "bindingDefinitionSha256": "7e580bae0917074670cbcfc9db507826452a34e455358b5b5cbb3ce06fa24993"
+      },
+      "requestSha256": "4a9fc2427d6a3551f847c92fae7072d24d809702263255c70ae325eb1d4ffbe1",
+      "responseSha256": "c86a6d27d49ece1c34364bc3ee442455373d4157fc12b2cc4a038524339866f9",
+      "effectSha256": "0a826b39f5a5ebe7371eeaece3b277327f92477b0a09f69367f92476230bf32f",
+      "receiptSha256": "b6522c6a3f627e331ec313604131671016a8ca3deb22e7eaa82f75573658f7f8"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "operator.catalog.publish",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:1ab9fbf0577edb7a1a8e1af6",
+      "requestEnvelope": {
+        "stageId": "operator.catalog.publish",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "operator.catalog.publish",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "operator.catalog.publish",
+        "kind": "effect",
+        "eventIds": [
+          "event:operator.catalog.publish"
+        ]
+      },
+      "evidence": {
+        "canonicalSpuId": "spu-1",
+        "canonicalSkuId": "sku-1",
+        "skuCode": "YS-SKU-1",
+        "catalogStatus": "ACTIVE",
+        "outboxEventIds": [
+          "catalog-event-1"
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "operator.catalog.publish",
+        "bindingDefinitionSha256": "2c1b5a037d92dfb9c1f934899323039b8b1ae49560d43d6759d08c264a282c03"
+      },
+      "requestSha256": "d1b71aa10b42dd3d8e49cd1579250bef910b2a38a79025aecb47ad45cb29c642",
+      "responseSha256": "bbc312bc9ef6417598fc948ea95d8146e414e2314dfa28abe0533d097770b51b",
+      "effectSha256": "2df8b14991e96f91a3dc436e8fea692ec039bc7b1b8b4de8decaa3c02a3476e8",
+      "receiptSha256": "9ab1d3faff9416a28ed53c578150201b0450918a1ff88f847c8fc73160403eb4"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "operator.catalog.metadata_update",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:fe943471e3e9a9ba8d2c44f8",
+      "requestEnvelope": {
+        "stageId": "operator.catalog.metadata_update",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "operator.catalog.metadata_update",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "operator.catalog.metadata_update",
+        "kind": "effect",
+        "eventIds": [
+          "event:operator.catalog.metadata_update"
+        ]
+      },
+      "evidence": {
+        "entityType": "SKU",
+        "entityId": "sku-1",
+        "businessCode": "YS-SKU-REV2",
+        "currentStatus": "ACTIVE",
+        "aggregateVersion": 2,
+        "outboxEventIds": [
+          "catalog-metadata-event-1"
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "operator.catalog.metadata_update",
+        "bindingDefinitionSha256": "f1be033f722f4ea2dfc63cdac8347eb9ee641afd3a05dd8eef0543a5f84d1abc"
+      },
+      "requestSha256": "193a39cb1706f42a800b3d9f5fa08692dd6b6d7b6d45b27e23ff2dec1453489b",
+      "responseSha256": "9147868520f49a7ab281159b2e8a7eb8ec6542a611e7691f777cfc79c5110c14",
+      "effectSha256": "a482062302a6016dcb146e6bf706bbae0339c7d49c1dfdd3e993ec94afc97d49",
+      "receiptSha256": "0baa07ecb47b9ac94f650a2b7d860afe4b959079613d444c211635a22159a6dd"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "operator.catalog.barcode_rotate",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:d5ff35f7f17f6b605a454089",
+      "requestEnvelope": {
+        "stageId": "operator.catalog.barcode_rotate",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "operator.catalog.barcode_rotate",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "operator.catalog.barcode_rotate",
+        "kind": "effect",
+        "eventIds": [
+          "event:operator.catalog.barcode_rotate"
+        ]
+      },
+      "evidence": {
+        "skuId": "sku-1",
+        "previousBarcode": "6901234567890",
+        "currentBarcode": "6901234567893",
+        "barcodeType": "EAN13",
+        "aggregateVersion": 3,
+        "outboxEventIds": [
+          "catalog-barcode-event-1"
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "operator.catalog.barcode_rotate",
+        "bindingDefinitionSha256": "88fb80df1e72020373704611a6a988913996e6c68586c4699d03115aa4b0dc8b"
+      },
+      "requestSha256": "dc53302947a82089274fd0d6335bcf0091472632db7aa7955497a0bce186e566",
+      "responseSha256": "3c6a8fa51ca2adb950a7eb912d28d3e37e3a86b9e5a9b029d06b29e0a8836a3a",
+      "effectSha256": "8cc119a90af584664849a350efa3278bd48ee3e19c33fa9c7ae6e00a6ec7cfa3",
+      "receiptSha256": "8af05a9c23590d47fb389f93fd0b6f8c68600276e9aa428d4d077e46370ecd5b"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "operator.listing.publish",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:b92ddae3ebb866ee553c8012",
+      "requestEnvelope": {
+        "stageId": "operator.listing.publish",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "operator.listing.publish",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "operator.listing.publish",
+        "kind": "effect",
+        "eventIds": [
+          "event:operator.listing.publish"
+        ]
+      },
+      "evidence": {
+        "listingId": "listing-1",
+        "listingOfferId": "offer-1",
+        "listingRevision": 1,
+        "listingVersion": 6,
+        "listingStatus": "PUBLISHED",
+        "priceMinor": 39800,
+        "currencyCode": "CNY",
+        "outboxEventIds": [
+          "listing-event-1"
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "operator.listing.publish",
+        "bindingDefinitionSha256": "3c4ace4d81a73f9b0508faa932f069c2c23626a40e8fc4238c6e186cefc6492d"
+      },
+      "requestSha256": "ee51c173a4148fbf3fd679f4f6ecf626808ebd3649645dbc28a4c89bc069b36b",
+      "responseSha256": "36898ca9260251789d5dcb9884cd95df92ff3ff26f9bbf1d9ce2d35a359e3be1",
+      "effectSha256": "9a84f6fccfa46672e9997cc6bbef4d394afc51ca2eeac51261197afe1772fa01",
+      "receiptSha256": "8e0725010852acf78f727decd4de7da56ea2e0e89cebd5b723e2ffd3235ce471"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "operator.supply.prepare",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:25607bc52008f5d251b74a91",
+      "requestEnvelope": {
+        "stageId": "operator.supply.prepare",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "operator.supply.prepare",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "operator.supply.prepare",
+        "kind": "effect",
+        "eventIds": [
+          "event:operator.supply.prepare"
+        ]
+      },
+      "evidence": {
+        "sourceSystem": "YUDAO_ERP",
+        "documentType": "PURCHASE_ORDER",
+        "documentId": "781",
+        "documentNo": "PO-20260725-01",
+        "status": "PREPARE"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "operator.supply.prepare",
+        "bindingDefinitionSha256": "c45579d687102419163b9f0337d9afb4062ef1906ece33c436319436f7d433b3"
+      },
+      "requestSha256": "2e141984593db302af9d93277612017ace24384c558a31c558628fcaa08fdf6e",
+      "responseSha256": "6e2105aba513a85b15ca09935bc923b71428ac06785e8ee7ce2a972a5b7276e7",
+      "effectSha256": "2185de4ebde05127f56b6b497feafa4da4ac8f13a87b35b8f646bf9f65aefad7",
+      "receiptSha256": "5eaf1bcc19fd95f6c29f53408effe6ab3db51a52d7ae40806abc1ea97ad97bf5"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "operator.warehouse.receive",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:68006bcf62408cdc2baa0bc4",
+      "requestEnvelope": {
+        "stageId": "operator.warehouse.receive",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "operator.warehouse.receive",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "operator.warehouse.receive",
+        "kind": "effect",
+        "eventIds": [
+          "event:operator.warehouse.receive"
+        ]
+      },
+      "evidence": {
+        "warehouseId": "warehouse-1",
+        "locationId": "location-1",
+        "inventoryLedgerTransactionId": "inventory-ledger-1",
+        "receivedQuantity": 10,
+        "outboxEventIds": [
+          "warehouse-event-1"
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "operator.warehouse.receive",
+        "bindingDefinitionSha256": "3c4ace4d81a73f9b0508faa932f069c2c23626a40e8fc4238c6e186cefc6492d"
+      },
+      "requestSha256": "a1087f1beeda9d4c45b6ad06b99e9850fbabc08f37ef271c5806d112a5276d77",
+      "responseSha256": "d4686d6183f32cf84498d670dd4b3b0cd06b17f5928a175cf0e72d386a61643b",
+      "effectSha256": "ce317d93b84fcd30132ecb08e62917aac2b7aca7ed3d608732d62ca824053590",
+      "receiptSha256": "dc562fbc3a435bc20e28455cd13d072624401da49d6b63e798ab2d9e2dc99584"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "operator.quality.release",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:8ed0faf0742aca783b8cc445",
+      "requestEnvelope": {
+        "stageId": "operator.quality.release",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "operator.quality.release",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "operator.quality.release",
+        "kind": "effect",
+        "eventIds": [
+          "event:operator.quality.release"
+        ]
+      },
+      "evidence": {
+        "inspectionTaskId": "inspection-task-1",
+        "qualityStandardVersion": 1,
+        "qualityStatus": "QUALIFIED",
+        "inspectionDecision": "PASS",
+        "outboxEventIds": [
+          "quality-event-1"
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "operator.quality.release",
+        "bindingDefinitionSha256": "0f627a10b7fa4597d1466b7cc2193cd5884a53348fbd6815e5503201153c307a"
+      },
+      "requestSha256": "062173d4a594543ae6faf2b63f816411970a184964318d7fce733c7cf1ef38f9",
+      "responseSha256": "0a64280a611af2a289ebe1c3f386bd960545e5f74904b76f4524573402cef4bf",
+      "effectSha256": "204e8781d558d43f76f08d1b3fc7de4d3514fd4a181cdcaf05f502d1b6e4c698",
+      "receiptSha256": "69ccde48bb245422909a80cca16c033b9e525932d11b1ac7b49e5f4a2fa75832"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "operator.inventory.sellable",
+      "executor": "external_evidence",
+      "operation": "ASSERT",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:0656d4fdfeab7468bf8cf262",
+      "requestEnvelope": {
+        "stageId": "operator.inventory.sellable",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "operator.inventory.sellable",
+        "kind": "response"
+      },
+      "effectEnvelope": {},
+      "evidence": {
+        "inventoryBalanceId": "balance-1",
+        "inventoryVersion": 9,
+        "availableQuantity": 10,
+        "stockStatus": "SELLABLE",
+        "qualityStatus": "QUALIFIED"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "operator.inventory.sellable",
+        "bindingDefinitionSha256": "e30a863b9875f3682d161d09459ca60dd650aa4f2737ca51ffa71192e6d3ee26"
+      },
+      "requestSha256": "9b55ba699ec4b5b24fef4e36e5bf6fbba5e00a5fa936cbe0733b1a31b8075a2d",
+      "responseSha256": "9af12ec9e71ab89dad8b00ce3490c1304dedee42138f5d53695d8b83b87a7627",
+      "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "receiptSha256": "4b0d41c278efd59ea5fa2f80cf76e5593bb64c2324eb030efbf5a46c8fe4744d"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.session.start",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:4c08e8c3273c454aa1f75829",
+      "requestEnvelope": {
+        "stageId": "app.session.start",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.session.start",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.session.start",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.session.start"
+        ]
+      },
+      "evidence": {
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "aggregateVersion": 1,
+        "eventId": "session-event-1"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.session.start",
+        "bindingDefinitionSha256": "07fadef23628edc259a80087d9b6698a41ebb64fd0d90a940f1b97f066ffa68c"
+      },
+      "requestSha256": "c37be5a9918f749a9472a098f4390ddbf96bfdd7016166134464928488f586f1",
+      "responseSha256": "52abff9bfcad817766db28b424361fccf2af9172de9d77f4006560712d23f276",
+      "effectSha256": "9fee8ec08f445329789494268c244eae383b925411a591e576ae4bf16af153f9",
+      "receiptSha256": "a1188280e72d29fb2fbfdb638318574501d3fdd90416d9648f187664f9c67a95"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.session.link_identity",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:2135eeb4e9192ac03dee28ff",
+      "requestEnvelope": {
+        "stageId": "app.session.link_identity",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.session.link_identity",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.session.link_identity",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.session.link_identity"
+        ]
+      },
+      "evidence": {
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "aggregateVersion": 2,
+        "status": "LINKED"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.session.link_identity",
+        "bindingDefinitionSha256": "025498b6d87c0821a153c7debd0bc0aa38a10ad0779810171dbc5ab725703fc2"
+      },
+      "requestSha256": "ae2aa9e2e32a728908644f4c6bb9f37d5e5ead93d5f78f16614dc422c916c67f",
+      "responseSha256": "a4d117bc8d079dd58bc2e323cf357b9cc7ae0dbc8c4a6f51c078f057214bc940",
+      "effectSha256": "168ce1cb8c38359c289234eb949b249712eb7c4f0971a0a9780a0c8632dd21f7",
+      "receiptSha256": "a091293abda43d3ca181e406f365fd11d8a93696a44e0a9a3777976b5bd63a4b"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.recommendation.home",
+      "executor": "http",
+      "operation": "READ",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:b2e37ecdbbcf30ddced07b29",
+      "requestEnvelope": {
+        "stageId": "app.recommendation.home",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.recommendation.home",
+        "kind": "response"
+      },
+      "effectEnvelope": {},
+      "evidence": {
+        "sceneCode": "HOME_FEED",
+        "policyVersion": "LOCAL_DETERMINISTIC_V1",
+        "decisionToken": "recommend:1234567890abcdef123456",
+        "resultSetToken": "recommend:1234567890abcdef123456",
+        "ttlSeconds": 900,
+        "expiresAt": "2026-07-25T12:30:00Z",
+        "items": [
+          {
+            "rank": 1,
+            "listingId": "listing-1",
+            "listingOfferId": "offer-1",
+            "canonicalSpuId": "spu-1",
+            "canonicalSkuId": "sku-1",
+            "qualityStatus": "QUALIFIED"
+          }
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.recommendation.home",
+        "bindingDefinitionSha256": "cc2cd28cd30fa1ee3afec14e403216f8a6466441abfa8948bddb07943c890364"
+      },
+      "requestSha256": "046b72f762c023233ccc1e92a1a470aec1d5d2f78d43c425d5a7877f86f71c25",
+      "responseSha256": "89459eeac8e243ad0cf12557f8ee6acf69020aca5753a162f8a936c779b802a9",
+      "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "receiptSha256": "3657b1054d85f5b693fc2f8478121472f343f61116780e6938a1fea63dfb9e77"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.recommendation.exposure",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:dc780d0896d002d228c2eb2f",
+      "requestEnvelope": {
+        "stageId": "app.recommendation.exposure",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.recommendation.exposure",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.recommendation.exposure",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.recommendation.exposure"
+        ]
+      },
+      "evidence": {
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "decisionToken": "recommend:1234567890abcdef123456",
+        "listingId": "listing-1",
+        "rank": 1,
+        "aggregateId": "recommendation-exposure-1",
+        "aggregateVersion": 1,
+        "eventId": "recommendation-event-1"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.recommendation.exposure",
+        "bindingDefinitionSha256": "84f894cb63faf8986bcde14df238da15578bcfd93a1748ac24cedbb22c9a4b6c"
+      },
+      "requestSha256": "298232df69c3590920c1b79fc5e9c58785622ddb822cb2554ad2bd9aec05e5cb",
+      "responseSha256": "fe3d2864974d2d384a99e9a3cd8ed34b924e8f7eb0c5fa59dfa0a6d1f9d2b5f2",
+      "effectSha256": "2a5d7361fd0f5537e2b7adbe87bfd2ec99516c27673f09e83eac79161ad5ae2a",
+      "receiptSha256": "6888e2c07e8c0f00c20a760ad261dcc96c7aa4883e971b6cb9e5c918059fe1c2"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.recommendation.click",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:a5e55ac35848405df720a712",
+      "requestEnvelope": {
+        "stageId": "app.recommendation.click",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.recommendation.click",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.recommendation.click",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.recommendation.click"
+        ]
+      },
+      "evidence": {
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "decisionToken": "recommend:1234567890abcdef123456",
+        "listingId": "listing-1",
+        "rank": 1,
+        "aggregateId": "recommendation-click-1",
+        "aggregateVersion": 2,
+        "eventId": "recommendation-event-2"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.recommendation.click",
+        "bindingDefinitionSha256": "8b71b6adb388682595765e7524826f921e632a968c4e06cc1f7d21108af82dba"
+      },
+      "requestSha256": "f8ab7abe10d79fd75f89709cb886958390e87a82c8ee48dbfbed26b18a5553d0",
+      "responseSha256": "e8a02d83415540393205f8f267449c50949ce7d4ac45cb2ecfd9614073b13a2b",
+      "effectSha256": "1547511f01a67d1b007af1fd731a9edec644bf060dc552a8bdbe64048387d28f",
+      "receiptSha256": "d83d32b9f5e4c836a6635ca44b8c28690c6ccaf3e565814c4f8adf9a126a5a0e"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.community.feed",
+      "executor": "http",
+      "operation": "READ",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:9d760a68e4a8670b3a715081",
+      "requestEnvelope": {
+        "stageId": "app.community.feed",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.community.feed",
+        "kind": "response"
+      },
+      "effectEnvelope": {},
+      "evidence": {
+        "list": [
+          {
+            "contentId": "content-1"
+          }
+        ],
+        "total": 1,
+        "pageNo": 1,
+        "pageSize": 20
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "contentId": "content-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.community.feed",
+        "bindingDefinitionSha256": "b0c416f62dcec6a2319d0a4f82ac850f10c54af5783a7e5b79abc7be42d2c48f"
+      },
+      "requestSha256": "2a328d1c3bf39b0e46c24800e4008c3f25835d81d82d314b30328296a0f5cbb9",
+      "responseSha256": "146ef489bdd47ae4dde48c38d8b4ec110e902a3325a00c707cfc233697cf5c62",
+      "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "receiptSha256": "1c612dc25e38582abd7a2046f018355e2bee9f9884b676a905a641e4684e0186"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.community.detail",
+      "executor": "http",
+      "operation": "READ",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:7db83dca783ecbb461a9141b",
+      "requestEnvelope": {
+        "stageId": "app.community.detail",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.community.detail",
+        "kind": "response"
+      },
+      "effectEnvelope": {},
+      "evidence": {
+        "contentId": "content-1",
+        "authorPrincipalId": "principal-creator-1",
+        "body": "真实种草正文",
+        "likeCount": 1,
+        "commentCount": 1,
+        "likedByCurrentUser": false,
+        "createdAt": "2026-07-25T11:40:00Z",
+        "productLink": {
+          "listingId": "listing-1",
+          "listingOfferId": "offer-1",
+          "canonicalSpuId": "spu-1",
+          "canonicalSkuId": "sku-1"
+        }
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "contentId": "content-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.community.detail",
+        "bindingDefinitionSha256": "00f39b55a585e8d6c1ca634577e3493a180f3a1b2f58a7f6a69b4540c1bff206"
+      },
+      "requestSha256": "6ba38531bb007f9949264eb38b546a7d36a656943c95d2a1f59de096c0eeb03c",
+      "responseSha256": "bff8fdd350c7c63aca6bf8c70cfa690945a4e3310ba655e730ff4192ec1b423a",
+      "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "receiptSha256": "afc1f24c4871664134012c25ca1d6604e63d4458830015f23c39f34b1ea49f27"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.community.like",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:b1b89294bd345d13a34323fe",
+      "requestEnvelope": {
+        "stageId": "app.community.like",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.community.like",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.community.like",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.community.like"
+        ]
+      },
+      "evidence": {
+        "contentId": "content-1",
+        "authorPrincipalId": "principal-creator-1",
+        "body": "真实种草正文",
+        "likeCount": 2,
+        "commentCount": 1,
+        "likedByCurrentUser": true,
+        "createdAt": "2026-07-25T11:40:00Z",
+        "productLink": {
+          "listingId": "listing-1",
+          "listingOfferId": "offer-1",
+          "canonicalSpuId": "spu-1",
+          "canonicalSkuId": "sku-1"
+        }
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "contentId": "content-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.community.like",
+        "bindingDefinitionSha256": "0185e1e8703e9fa2a16dac2ad7a5610b9919ce3f87f4b21f2b5f2a40f84b0b5a"
+      },
+      "requestSha256": "5404b862a305574e8296078db2ad67303c7a0f8acc764de7bb510fb3dc899702",
+      "responseSha256": "3445b0e9b2c78f3163dd7723bf348f6c588635896a3f088803513eefbed1a69c",
+      "effectSha256": "252a48186956003c0848dc58d54bb30b190986973c3c6cf9c3c9569dc388c625",
+      "receiptSha256": "3d3ebfd7d8b01573ce44861e685b3ec0ae1558f0eda305ab65e131d4327307e8"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.community.comment_create",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:3e30b78001543723a998065f",
+      "requestEnvelope": {
+        "stageId": "app.community.comment_create",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.community.comment_create",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.community.comment_create",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.community.comment_create"
+        ]
+      },
+      "evidence": {
+        "contentId": "content-1",
+        "authorPrincipalId": "principal-creator-1",
+        "body": "真实种草正文",
+        "likeCount": 2,
+        "commentCount": 2,
+        "likedByCurrentUser": true,
+        "createdAt": "2026-07-25T11:40:00Z",
+        "productLink": {
+          "listingId": "listing-1",
+          "listingOfferId": "offer-1",
+          "canonicalSpuId": "spu-1",
+          "canonicalSkuId": "sku-1"
+        }
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "contentId": "content-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.community.comment_create",
+        "bindingDefinitionSha256": "24ba0ed86bd5cb8f2661f35e2ddb3e089ab676992a0b3cbe73d7239e82c5ebd1"
+      },
+      "requestSha256": "1192557b38b92944938d75bcd3977d5de09cc8eaaeeb711ed0710eefa44715a5",
+      "responseSha256": "a97e78f8b9da488c12321d664b9dca9e86ef5388a636abcc538b4ae0e0bf1900",
+      "effectSha256": "13ef6e309b0d2a37495bfe4fedaf906de1b8ef476bfb3d1d29b79c3d8b12d0a2",
+      "receiptSha256": "501287f414aaaef5d63b8b7416d3dcfb2a8a489cff50d29a70b2ac72f384ea1e"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.address.snapshot_create",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:83fdc8def60cecd14f03bf07",
+      "requestEnvelope": {
+        "stageId": "app.address.snapshot_create",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.address.snapshot_create",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.address.snapshot_create",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.address.snapshot_create"
+        ]
+      },
+      "evidence": {
+        "addressRef": "11111111-1111-4111-8111-111111111111",
+        "snapshotVersion": 1,
+        "destinationRegionCode": "310000",
+        "receiverSummary": "张*",
+        "mobileSummary": "138****0000",
+        "duplicate": false
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "addressRef": "11111111-1111-4111-8111-111111111111"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.address.snapshot_create",
+        "bindingDefinitionSha256": "6497e3728b48067bcaed736b69648488c02e602dda320607122947713efa9ad1"
+      },
+      "requestSha256": "e80d0824ba46c250b079ee87413817065d218e563e4f3cf2b065003c8e470bbc",
+      "responseSha256": "f765a0edb19ab0ff8e2cbad8cc1ba92958d025f23ff97f7778f218cb90330a34",
+      "effectSha256": "e259b5cb1b6cf281c01f1c39c4d06f8dd6a9cbf3d992b517ffe10672499781db",
+      "receiptSha256": "f87e455df26bc74d8900d4b8352219be9463c39abd7be05a57577f53bbaaf95c"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.address.snapshot_replay",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:e364f90441ae85eb06ecca34",
+      "requestEnvelope": {
+        "stageId": "app.address.snapshot_replay",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.address.snapshot_replay",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.address.snapshot_replay",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.address.snapshot_replay"
+        ]
+      },
+      "evidence": {
+        "addressRef": "11111111-1111-4111-8111-111111111111",
+        "snapshotVersion": 1,
+        "destinationRegionCode": "310000",
+        "receiverSummary": "张*",
+        "mobileSummary": "138****0000",
+        "duplicate": true
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "addressRef": "11111111-1111-4111-8111-111111111111"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.address.snapshot_create",
+        "bindingDefinitionSha256": "6497e3728b48067bcaed736b69648488c02e602dda320607122947713efa9ad1"
+      },
+      "requestSha256": "aea7ecd89d6368583e349e959ef4a6838ce803ab0db60e7b86c7a0a4d0f63b5c",
+      "responseSha256": "a6e994d8fa5da7d4bbb76699fb14bcf0e3cc7f4ae367608dbc4c980b01975aed",
+      "effectSha256": "c37ac27fca4f7d1a6b281952e820c391b79b0165425aa237db43ab9b9b0422d7",
+      "receiptSha256": "7ac9cc06d047404b183fe9c52b373627defeab776877725940bca557666b2a1a"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.address.snapshot_get",
+      "executor": "http",
+      "operation": "READ",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:8cfc337d2b6de906c7e42cfe",
+      "requestEnvelope": {
+        "stageId": "app.address.snapshot_get",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.address.snapshot_get",
+        "kind": "response"
+      },
+      "effectEnvelope": {},
+      "evidence": {
+        "addressRef": "11111111-1111-4111-8111-111111111111",
+        "snapshotVersion": 1,
+        "destinationRegionCode": "310000",
+        "receiverSummary": "张*",
+        "mobileSummary": "138****0000"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "addressRef": "11111111-1111-4111-8111-111111111111"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.address.snapshot_get",
+        "bindingDefinitionSha256": "eba69c291b15ebf752120b767db5cb95a4b0f990c905ba4e50ed16a2edf5ae0b"
+      },
+      "requestSha256": "912774f3d0a780450853a1870e2339a7e09c178d7edbfbd7904a826d9dd4db89",
+      "responseSha256": "6d72c78ab5191d69dbceda7285861309fe6c8e22c0d9dbe140338a7ece0c2c48",
+      "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "receiptSha256": "0472888ee4648276464b50be41c2758ba3d1b205c97590d2533cdb6a7694cb6d"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.products.list",
+      "executor": "http",
+      "operation": "READ",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:fad49663b3d98c45386e2051",
+      "requestEnvelope": {
+        "stageId": "app.products.list",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.products.list",
+        "kind": "response"
+      },
+      "effectEnvelope": {},
+      "evidence": {
+        "list": [
+          {
+            "listingId": "listing-1"
+          }
+        ],
+        "total": 1,
+        "pageNo": 1,
+        "pageSize": 10
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.products.list",
+        "bindingDefinitionSha256": "1eb9adb2ea9ca2970f17945bbd61b27321d1bb0f0d32b1138a79070c80758c3b"
+      },
+      "requestSha256": "5f5c5858b2bbe797e07276b6b73a6542149ad09b59371ad3e1b6dfef414960ad",
+      "responseSha256": "bf07a7d178641d9660eca051932a8899cfa1c98518e2da8f0873f8fa6066bd97",
+      "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "receiptSha256": "a5dfb9a5d574489d8c4bc6e9d4ca02c6a72b2434b4cf40999ab70d30935e5d11"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.behavior.search_requested",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:623c29cd18b5f743b8554c80",
+      "requestEnvelope": {
+        "stageId": "app.behavior.search_requested",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.behavior.search_requested",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.behavior.search_requested",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.behavior.search_requested"
+        ]
+      },
+      "evidence": {
+        "behaviorId": "behavior-search-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "behaviorType": "SEARCH_REQUESTED",
+        "eventId": "behavior-event-1"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.behavior.search_requested",
+        "bindingDefinitionSha256": "07ffb7863bb88b90fc65c8ac33f3f338c9b8a976abec9c81cd6bc130a1d5603c"
+      },
+      "requestSha256": "7fbd0f8669543b198d21b281dbe829c769c8d96e4f12bdd4546d60dbaf628953",
+      "responseSha256": "34662ab7cb5d314c3cd9bd1fdcd93dc209b061a0bc903a6521e92970ebd66876",
+      "effectSha256": "ba70d7dfd8fdecdd8acb0d65d4fde6ce03b66eadf40085047950e7c73d47444c",
+      "receiptSha256": "2454120df3218eb7c3b2858a22381abf2198b8d6bff7b135a678b86505f11d7c"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.behavior.search_exposed",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:6747b954360832ddd2090d05",
+      "requestEnvelope": {
+        "stageId": "app.behavior.search_exposed",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.behavior.search_exposed",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.behavior.search_exposed",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.behavior.search_exposed"
+        ]
+      },
+      "evidence": {
+        "behaviorId": "behavior-search-2",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "behaviorType": "SEARCH_RESULT_EXPOSED",
+        "eventId": "behavior-event-2"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.behavior.search_exposed",
+        "bindingDefinitionSha256": "58d22f486cd413408fd72d68bc17c875ed75ae7d8be064be5de640d35c0e79da"
+      },
+      "requestSha256": "2aebb96e1c2474b180a4a48b872bf55f81d199417b79aaaf397aa47690a2d142",
+      "responseSha256": "ed78deb0695c5b6493db8ea1930b7efe13edf73c0d73b2c50068686fab906f0b",
+      "effectSha256": "fbd5b794e2ba8d8804e4c9e2ab28dd978a0943d9ac4efdb661d7ce8ec218d2fe",
+      "receiptSha256": "f31db40df05b758918670cb14a4aa89c6bcb4741c1af61c0a1f8c36ad746385d"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.behavior.search_clicked",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:3b6418a0e2b9374e2d64acc1",
+      "requestEnvelope": {
+        "stageId": "app.behavior.search_clicked",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.behavior.search_clicked",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.behavior.search_clicked",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.behavior.search_clicked"
+        ]
+      },
+      "evidence": {
+        "behaviorId": "behavior-search-3",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "behaviorType": "SEARCH_RESULT_CLICKED",
+        "eventId": "behavior-event-3"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.behavior.search_clicked",
+        "bindingDefinitionSha256": "58d22f486cd413408fd72d68bc17c875ed75ae7d8be064be5de640d35c0e79da"
+      },
+      "requestSha256": "e16c1f887960bbb82f73745997a95bec70b2ba3fb35ed6cd515156d46258d95e",
+      "responseSha256": "563459796f4d5e73f96e7aadec11d3687db53554e879f90a42cf421ef640af07",
+      "effectSha256": "d3de78e813021a5b432dbea4ef17998cb14e15095eace259cbf091f3b91034bf",
+      "receiptSha256": "934d53e102cdff2345fc5271fc7c0532a3799b36dfccbb946d4415bca036f06e"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.product.detail",
+      "executor": "http",
+      "operation": "READ",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:417213d98e206db63c4f450b",
+      "requestEnvelope": {
+        "stageId": "app.product.detail",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.product.detail",
+        "kind": "response"
+      },
+      "effectEnvelope": {},
+      "evidence": {
+        "listingId": "listing-1",
+        "listingNo": "LIST-1",
+        "title": "CloudMold Sneaker",
+        "primaryImageUrl": "https://example.com/p.png",
+        "media": [
+          {
+            "type": "image"
+          }
+        ],
+        "merchantId": "merchant-1",
+        "shopId": "shop-1",
+        "canonicalSpuId": "spu-1",
+        "listingRevision": 1,
+        "listingVersion": 6,
+        "qualitySummary": {
+          "status": "QUALIFIED"
+        },
+        "skus": [
+          {
+            "canonicalSkuId": "sku-1",
+            "skuCode": "YS-SKU-REV2",
+            "barcode": "6901234567893",
+            "listingOfferId": "offer-1"
+          }
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.product.detail",
+        "bindingDefinitionSha256": "2137cc525239a3cff8e1476d641d17161beaa4fbc478d9563526db35d1ba3336"
+      },
+      "requestSha256": "d162a2bb8d5e51a9026b3fd87fadcfff4c27729faa1f7a99e9cfad47d375a98d",
+      "responseSha256": "5c84993276e580ed9c14d1dd32790d924e44d3a9a9600f1394c13cde58bc377d",
+      "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "receiptSha256": "980b64c03ad3a45ac69fdc8a8e9adac197a2fed22e32417bedd11be115592936"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.behavior.pdp",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:dbf2b419d76ade538df0cbdc",
+      "requestEnvelope": {
+        "stageId": "app.behavior.pdp",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.behavior.pdp",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.behavior.pdp",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.behavior.pdp"
+        ]
+      },
+      "evidence": {
+        "behaviorId": "behavior-pdp-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "behaviorType": "PDP_VIEWED",
+        "eventId": "behavior-event-4"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.behavior.pdp",
+        "bindingDefinitionSha256": "8b433b5be53f8a6676e41995199430db614c2f033f676c4fa5076314cec3237e"
+      },
+      "requestSha256": "6bb703f4f00c4f58c4c69864a75c55781e1bf2b57b9be9df5d97c3cdace948b1",
+      "responseSha256": "dd18f20c9a85209c7666e96b204accaa66a38aca0e3356483d304378b7a2759d",
+      "effectSha256": "dc7a09a8c422bd2642ff0724f362212d3e49beebeb81f43bd9f782e7054ec0f1",
+      "receiptSha256": "f59aaf886dc44b9ebc387e65071eeb1df05b1abbf78cd2ba63f167b8ff29d362"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.cart.get",
+      "executor": "http",
+      "operation": "READ",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:6e3f7874222d346c1372bc72",
+      "requestEnvelope": {
+        "stageId": "app.cart.get",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.cart.get",
+        "kind": "response"
+      },
+      "effectEnvelope": {},
+      "evidence": {
+        "cartId": "cart-1",
+        "principalId": "principal-1",
+        "aggregateVersion": 0,
+        "lineCount": 0,
+        "selectedLineCount": 0,
+        "duplicate": false,
+        "lines": []
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "addressRef": "11111111-1111-4111-8111-111111111111"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.cart.get",
+        "bindingDefinitionSha256": "ad784551edb38a43d8bd4dfb81cf9ad69cf12179f1ca82b317aef5aed45b9234"
+      },
+      "requestSha256": "d0264070e54c3618a4b9ba6d5e5ac52ee700dfc841b02ceaa28f9cc1d83a7532",
+      "responseSha256": "bc779824cc8a8819cfeae2a95315ffbfbc6e8505aa5c33d1e4f9e20ea5308072",
+      "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "receiptSha256": "20a10d1ce4e05106a62dd7794e3d7e7bf2c5a447ac2170366fbe9741a14ff18f"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.behavior.cart_added",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:d9c033dcc47bd66b90b5005a",
+      "requestEnvelope": {
+        "stageId": "app.behavior.cart_added",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.behavior.cart_added",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.behavior.cart_added",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.behavior.cart_added"
+        ]
+      },
+      "evidence": {
+        "behaviorId": "behavior-cart-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "behaviorType": "CART_ADDED",
+        "eventId": "behavior-event-5"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.behavior.cart_added",
+        "bindingDefinitionSha256": "8f1222ac9b0fdef80066df526d48ce06aa181180c85d43f23ce3fbf7dcb6dff8"
+      },
+      "requestSha256": "390a2d3ba2e1d516b7cf53b731d8c94dfe9c229841801d9496c17a9fd373a35c",
+      "responseSha256": "78947c18883cc3a6a377a8e4391d72be9c73038ccafb7a8dd72d5cf9dd305b01",
+      "effectSha256": "504a26625dfbac708d46452b4b8c29f33a47f04470b727d0165b043fac1a2073",
+      "receiptSha256": "7d9acf693b27b1f79fae350794aa8ccda34f26b539d743bcc61c36a969f073f1"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.cart.add",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:38a344d4b80d142eefe635a9",
+      "requestEnvelope": {
+        "stageId": "app.cart.add",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.cart.add",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.cart.add",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.cart.add"
+        ]
+      },
+      "evidence": {
+        "cartId": "cart-1",
+        "principalId": "principal-1",
+        "aggregateVersion": 2,
+        "lineCount": 1,
+        "selectedLineCount": 1,
+        "duplicate": false,
+        "lines": [
+          {
+            "lineId": "line-1",
+            "listingId": "listing-1",
+            "listingOfferId": "offer-1",
+            "canonicalSkuId": "sku-1",
+            "selected": true
+          }
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "addressRef": "11111111-1111-4111-8111-111111111111"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.cart.add",
+        "bindingDefinitionSha256": "18a6f208aa05f15cbdc7d79e16dc9fd42c93004277d2dffd2635b1ffd413c307"
+      },
+      "requestSha256": "69fbf27e3f3174b2c8d911a27adad682ee7e6cf4f765610364180a78bca2f26a",
+      "responseSha256": "4897960c8059c92fbbfbbba6e156c0821b596addaf4d3d74e22e2a888c60542c",
+      "effectSha256": "6c8590cef81ae0e1f0a3ae67ad444a96f8fd57f17ca0c43888172f291acf1119",
+      "receiptSha256": "c80e5f3f13d87413bea53374317d4b7700b31bc6a95b84809393900bdb41146d"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.cart.preview_selected",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:4095df18586e6aa2908580f2",
+      "requestEnvelope": {
+        "stageId": "app.cart.preview_selected",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.cart.preview_selected",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.cart.preview_selected",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.cart.preview_selected"
+        ]
+      },
+      "evidence": {
+        "checkoutToken": "checkout-1",
+        "principalId": "principal-1",
+        "addressRef": "11111111-1111-4111-8111-111111111111",
+        "addressSnapshotVersion": 1,
+        "listingId": "listing-1",
+        "listingOfferId": "offer-1",
+        "canonicalSkuId": "sku-1",
+        "quantity": 2,
+        "unitPriceMinor": 19900,
+        "productAmountMinor": 39800,
+        "shippingAmountMinor": 0,
+        "discountAmountMinor": 0,
+        "payableAmountMinor": 39800,
+        "currencyCode": "CNY",
+        "availableQuantity": 10,
+        "expiresAt": "2026-07-25T12:30:00Z"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "addressRef": "11111111-1111-4111-8111-111111111111"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.cart.preview_selected",
+        "bindingDefinitionSha256": "64e98a0c2aa7906dbe7d49ad81b38520a6e02cf84aca18ef1d14414927f54ad7"
+      },
+      "requestSha256": "ec1e347d74860169e480b2b36c3ee234df2dbcb214dceb3490b3e2a0dc9155ce",
+      "responseSha256": "bd43a847d68df57f0400e7129af3acb7ae81298badeca13abedf0808447b861c",
+      "effectSha256": "9327bcec2ab35254b528c5bbd0f995b8eb43b58cfc84111ae4930a4a9ad8de36",
+      "receiptSha256": "277308858d4f056f98cd7a0f155b9d9e6b0ec94731431939904f5e5c0beb5606"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.checkout.preview",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:e4164148fb146c2cadacf7e7",
+      "requestEnvelope": {
+        "stageId": "app.checkout.preview",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.checkout.preview",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.checkout.preview",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.checkout.preview"
+        ]
+      },
+      "evidence": {
+        "checkoutToken": "checkout-1",
+        "principalId": "principal-1",
+        "addressRef": "11111111-1111-4111-8111-111111111111",
+        "addressSnapshotVersion": 1,
+        "listingId": "listing-1",
+        "listingOfferId": "offer-1",
+        "canonicalSkuId": "sku-1",
+        "quantity": 2,
+        "unitPriceMinor": 19900,
+        "productAmountMinor": 39800,
+        "shippingAmountMinor": 0,
+        "discountAmountMinor": 0,
+        "payableAmountMinor": 39800,
+        "currencyCode": "CNY",
+        "availableQuantity": 10,
+        "expiresAt": "2026-07-25T12:30:00Z"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "addressRef": "11111111-1111-4111-8111-111111111111"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.checkout.preview",
+        "bindingDefinitionSha256": "44effbf2b165198502972a96883171c535f2294041a47e817d960fe4b43e225e"
+      },
+      "requestSha256": "cd48d57ae0167bfbf53ca4935d26d3e69671c6760cd003cfb07b166d1f10f5d5",
+      "responseSha256": "bb150a90dfd446263fc28490a421369a5ea3388355614dd76749de4def5b567a",
+      "effectSha256": "b7dd3745769c8ea32af52c25c812b1dd65d9b4f3cc296155ac2416b0ec5dda83",
+      "receiptSha256": "54c0c7ba72dfb58b81dce0ca18adca7386f952bb84e9681b00dbf6fcc2933257"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.behavior.checkout",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:efefcf622958a0e85643bfa1",
+      "requestEnvelope": {
+        "stageId": "app.behavior.checkout",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.behavior.checkout",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.behavior.checkout",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.behavior.checkout"
+        ]
+      },
+      "evidence": {
+        "behaviorId": "behavior-checkout-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "behaviorType": "CHECKOUT_STARTED",
+        "eventId": "behavior-event-6"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.behavior.checkout",
+        "bindingDefinitionSha256": "84d0094b37b17d41ea86f80816e15b4bbbc633b9e16f046d3e32e946c22e791e"
+      },
+      "requestSha256": "4567410d5a1f2f9e811ac16687fcfe0cbc66524e7d30e1b0b0534e6f05155646",
+      "responseSha256": "71b0e6478b36f09d4187af2a4a2c46c253276677c6aefacdeebe4e548e741590",
+      "effectSha256": "fb28f6dfa797d7febbc2f927bbf1a3dd7b184dbe6e70da899cf53953da430683",
+      "receiptSha256": "8737bf790e613bb2a6729071fde9f87048b41aca000f46c49e6711a50e482d71"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.order.create",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:5d5902c3176a3173a003975c",
+      "requestEnvelope": {
+        "stageId": "app.order.create",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.order.create",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.order.create",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.order.create"
+        ]
+      },
+      "evidence": {
+        "orderId": "order-1",
+        "orderNo": "ORDER-1",
+        "orderItemId": "order-item-1",
+        "buyerPrincipalId": "principal-1",
+        "listingId": "listing-1",
+        "listingOfferId": "offer-1",
+        "canonicalSkuId": "sku-1",
+        "quantity": 2,
+        "payableAmountMinor": 39800,
+        "currencyCode": "CNY",
+        "aggregateVersion": 1,
+        "status": "CREATED",
+        "outboxEventIds": [
+          "order-event-1"
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "orderId": "order-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.order.create",
+        "bindingDefinitionSha256": "ea572f31292528276ee91539a76cd07f7ce50401dddd3c58926153b4ed36d895"
+      },
+      "requestSha256": "633d8f7bec990667d3f3895cfee5a14e6cb57964140044ac15ab2fd9a09b8567",
+      "responseSha256": "9f4a4a3e41bd5b610ca41d96594d9fe079f4073e1c135c21fa036d5736c95275",
+      "effectSha256": "d814bdd1cfdff71f4684cd81736efa93571066992baf0148ffb3fa46d800a970",
+      "receiptSha256": "dce9054ab051dc9f47b376776e4f9e8c94e5d759330182bbf14607b79be84dc9"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.order.get",
+      "executor": "http",
+      "operation": "READ",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:fbdbce2dfeb4ee1f6330af22",
+      "requestEnvelope": {
+        "stageId": "app.order.get",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.order.get",
+        "kind": "response"
+      },
+      "effectEnvelope": {},
+      "evidence": {
+        "orderId": "order-1",
+        "aggregateVersion": 1,
+        "status": "RETURNED",
+        "items": [
+          {
+            "orderItemId": "order-item-1"
+          }
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "orderId": "order-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.order.get",
+        "bindingDefinitionSha256": "9d33819cee1ba28b83385583bcd2385da3acf50dc582301d49b5a0c565457590"
+      },
+      "requestSha256": "344ce0f6a730a03f37f3efe5fb80d4c3c80dbe04131223ba6aa49cb8f43dcb10",
+      "responseSha256": "62706be9d287998efc31f59d98081c3c882d35f0c1c3a6858f291c54279eecd1",
+      "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "receiptSha256": "e6423cbbdd336424d268bc24a75b01eb4156d4d51f4442101b22bfdf3542d7bc"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.payment.capture",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:34e732fa9372931efafc9187",
+      "requestEnvelope": {
+        "stageId": "app.payment.capture",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.payment.capture",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.payment.capture",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.payment.capture"
+        ]
+      },
+      "evidence": {
+        "paymentId": "payment-1",
+        "currentStatus": "REFUNDED",
+        "capturedAmountMinor": 39800,
+        "currencyCode": "CNY",
+        "behaviorVersion": 3,
+        "outboxEventIds": [
+          "payment-event-1"
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "orderId": "order-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.payment.capture",
+        "bindingDefinitionSha256": "d3a9cf01ca7ee0093951319eed1820e89676bcf67fecba35ff894daf639c8021"
+      },
+      "requestSha256": "e0d872e5f73056f5dad40cc23e710dfafe0c649738c1f6967d111d4b2cd2c808",
+      "responseSha256": "0a4301b5b65552201d7c05f99b8d76f02c01df86567813d2b30c4f0fb9b3f80e",
+      "effectSha256": "f6920ba7d2fd08a2176d89e7ea5adacfca6cb6bd2ca3a33a398ec4f8e820bc5e",
+      "receiptSha256": "af6147c5e65abb98e5b3144f07039a282f01be267d8bd7594143f801262f4e4c"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "operator.fulfillment.complete",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:0cd38e6a0c3e0e15438ab1cd",
+      "requestEnvelope": {
+        "stageId": "operator.fulfillment.complete",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "operator.fulfillment.complete",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "operator.fulfillment.complete",
+        "kind": "effect",
+        "eventIds": [
+          "event:operator.fulfillment.complete"
+        ]
+      },
+      "evidence": {
+        "fulfillmentId": "fulfillment-1",
+        "shipmentId": "shipment-1",
+        "status": "DELIVERED",
+        "aggregateVersion": 4,
+        "orderId": "order-1",
+        "outboxEventIds": [
+          "fulfillment-event-1"
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "operator.fulfillment.complete",
+        "bindingDefinitionSha256": "3c4ace4d81a73f9b0508faa932f069c2c23626a40e8fc4238c6e186cefc6492d"
+      },
+      "requestSha256": "2a776f22f4fe171befde22a12450b11e69578026dd94b3ec2e6523f46fc7e91a",
+      "responseSha256": "ecff9d1905abfa4fcddaff243fc9bb18245eb67fc9c26c5af767d60559c414f1",
+      "effectSha256": "6d8f69ab788a22e38fd889927b6e13936bf866d1a0f502b3ad3bf7ba6f6572cc",
+      "receiptSha256": "bec32db9c2f29ca38c4a870277025eb7a668f86f5b53fa49bda07db5d2a60ecb"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.fulfillment.by_order",
+      "executor": "http",
+      "operation": "READ",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:0a1e225cb844e836622c0eb6",
+      "requestEnvelope": {
+        "stageId": "app.fulfillment.by_order",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.fulfillment.by_order",
+        "kind": "response"
+      },
+      "effectEnvelope": {},
+      "evidence": {
+        "orderId": "order-1",
+        "fulfillmentId": "fulfillment-1",
+        "shipmentId": "shipment-1",
+        "fulfillmentStatus": "DELIVERED",
+        "trackingEvents": [
+          {
+            "status": "SIGNED"
+          }
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.fulfillment.by_order",
+        "bindingDefinitionSha256": "080d07b8938dee4d7e98004daccbd3d89f9b6fc3a7ed8fb7a12bd55437fd253b"
+      },
+      "requestSha256": "1a527df85960d58ca6c667a9e31177957df0eb2198f1b7f7421aa5089f9e9dbd",
+      "responseSha256": "9cc5336a9ca1f6f771ee1f81a06f168438f2d5c14cf4c0c08e7a9672a447414f",
+      "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "receiptSha256": "e96fe0a240ec216158de2cca8cc33fc7039893342ba075475f54dd770a3e0bd1"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.product_review.eligibility",
+      "executor": "http",
+      "operation": "READ",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:ee77fc900cf36b86400c9e1c",
+      "requestEnvelope": {
+        "stageId": "app.product_review.eligibility",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.product_review.eligibility",
+        "kind": "response"
+      },
+      "effectEnvelope": {},
+      "evidence": {
+        "eligible": true,
+        "reasonCode": "",
+        "existingReviewId": "",
+        "existingModerationStatus": "",
+        "orderId": "order-1",
+        "orderItemId": "order-item-1",
+        "listingId": "listing-1",
+        "listingOfferId": "offer-1",
+        "merchantId": "merchant-1",
+        "shopId": "shop-1",
+        "canonicalSpuId": "spu-1",
+        "canonicalSkuId": "sku-1"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "orderId": "order-1",
+        "orderItemId": "order-item-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.product_review.eligibility",
+        "bindingDefinitionSha256": "4ddcce971055476c29357c01eb29d389ab04312dc9fdd6152d54646b21985d1f"
+      },
+      "requestSha256": "ecb08a78ba9897a42209d3aeedaf4426b00a4aaa06439d702b420f98aa7cc0fa",
+      "responseSha256": "ef752427d519f72233faac75ebfae75b2898963c7d859c44aad7fe7356783357",
+      "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "receiptSha256": "4dd0ad098a359f4c1c93b2f1107affcac604b9e2ccfe909bf175bbe5d8b5d087"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.product_review.create",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:86bb65283fe19e9fc29718e5",
+      "requestEnvelope": {
+        "stageId": "app.product_review.create",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.product_review.create",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.product_review.create",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.product_review.create"
+        ]
+      },
+      "evidence": {
+        "reviewId": "review-1",
+        "orderId": "order-1",
+        "orderItemId": "order-item-1",
+        "listingId": "listing-1",
+        "listingOfferId": "offer-1",
+        "merchantId": "merchant-1",
+        "shopId": "shop-1",
+        "canonicalSpuId": "spu-1",
+        "canonicalSkuId": "sku-1",
+        "overallScore": 4,
+        "moderationStatus": "APPROVED",
+        "duplicate": false
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "orderId": "order-1",
+        "orderItemId": "order-item-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.product_review.create",
+        "bindingDefinitionSha256": "6661f4fccffa48226436cf4264adf27e2eefc25dd58cb25c55cc591bb03de8a0"
+      },
+      "requestSha256": "1f808021b0aa1f8257cf2abc33e88f0a5b4f74c867f8c34f79fcde2c17a0e724",
+      "responseSha256": "e6da49de0b13fc94865c20d08925e95ad16cf91149ba40866a8b9f04d3d89bcd",
+      "effectSha256": "17b1d53f1bc3e1de88d7ea070778652c3ca32060f247e5122bd739bd384d5681",
+      "receiptSha256": "ad8c509d6ba15ef6cc5306a8cb2d0d162dad98e61e911cec5dee2b7295f5ec17"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.product_review.listing",
+      "executor": "http",
+      "operation": "READ",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:e39607df86b88d809ac8804f",
+      "requestEnvelope": {
+        "stageId": "app.product_review.listing",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.product_review.listing",
+        "kind": "response"
+      },
+      "effectEnvelope": {},
+      "evidence": {
+        "total": 1,
+        "pageNo": 1,
+        "pageSize": 20,
+        "list": [
+          {
+            "reviewId": "review-1"
+          }
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "orderId": "order-1",
+        "orderItemId": "order-item-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.product_review.listing",
+        "bindingDefinitionSha256": "9fca190e87609882618510667a4878ceeb0c88e90e22bbfc0953eceeaee386d5"
+      },
+      "requestSha256": "732401c2c899f02dd815230e7e59ea1ba71d6a0bc549398385965c0a1541e719",
+      "responseSha256": "a4da29dfc3252cb5160c95ed50781916c3f23dd3c2894d7b4290792110f0e09b",
+      "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "receiptSha256": "de9996de176b6bc91995bb339eab91069fc89a7a6a026958b592b3d04ce91757"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.after_sale.create",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:3640edb11de182a636220399",
+      "requestEnvelope": {
+        "stageId": "app.after_sale.create",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.after_sale.create",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.after_sale.create",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.after_sale.create"
+        ]
+      },
+      "evidence": {
+        "afterSaleId": "after-sale-1",
+        "afterSaleNo": "AS-1",
+        "orderId": "order-1",
+        "orderItemId": "order-item-1",
+        "caseStatus": "REQUESTED",
+        "aggregateVersion": 1,
+        "outboxEventIds": [
+          "after-sale-event-1"
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "orderId": "order-1",
+        "afterSaleId": "after-sale-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.after_sale.create",
+        "bindingDefinitionSha256": "a1a63f65dd6d31b8242c3369b2ca9b59eb9684b521b63fd673f7c71f0b99413c"
+      },
+      "requestSha256": "a0529494f9657772f5067030f1cfba151eff502c18a851b342e0a12e6360c245",
+      "responseSha256": "eb5e949c911496069c38a1b5ef4f8aae4a5d74ec8912c1089766d3e8d05c3777",
+      "effectSha256": "4692e21f4a05f247470e6efe9f3192710adfdf32c9d8bcd523a15f10800154b2",
+      "receiptSha256": "dfb92b841e6105c257641bbd36855afcbf39b16b7e93c0330f27234a93e9bb96"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "operator.after_sale.complete",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:d6ad6b4856b4fd049bc87bca",
+      "requestEnvelope": {
+        "stageId": "operator.after_sale.complete",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "operator.after_sale.complete",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "operator.after_sale.complete",
+        "kind": "effect",
+        "eventIds": [
+          "event:operator.after_sale.complete"
+        ]
+      },
+      "evidence": {
+        "afterSaleId": "after-sale-1",
+        "returnFulfillmentId": "return-fulfillment-1",
+        "inspectionId": "inspection-1",
+        "refundTransactionId": "refund-1",
+        "inventoryReturnLedgerTransactionId": "inventory-return-1",
+        "afterSaleStatus": "COMPLETED",
+        "paymentStatus": "REFUNDED",
+        "orderStatus": "RETURNED",
+        "returnedQuantity": 2,
+        "refundedAmountMinor": 39800,
+        "outboxEventIds": [
+          "after-sale-event-2"
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "orderId": "order-1",
+        "afterSaleId": "after-sale-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "operator.after_sale.complete",
+        "bindingDefinitionSha256": "3c4ace4d81a73f9b0508faa932f069c2c23626a40e8fc4238c6e186cefc6492d"
+      },
+      "requestSha256": "18b18cbb8954f39bf2cfdfa3b5cfbe1d755dda567bd49a04f95c1cacc1677cba",
+      "responseSha256": "545654076d01f8866d9eca58254bde1cc967532f35cdd64263bd58fc643cdc56",
+      "effectSha256": "12c620c5a0e04a63a4b853907330d4f58be63871ddfd612dbbdc0f8a63122915",
+      "receiptSha256": "422747b7f33c28a807f582dcaa5595e65595b60839c1b96ee4947cc876357cf4"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.after_sale.get",
+      "executor": "http",
+      "operation": "READ",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:717889ded8d5f85e709bcbe9",
+      "requestEnvelope": {
+        "stageId": "app.after_sale.get",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.after_sale.get",
+        "kind": "response"
+      },
+      "effectEnvelope": {},
+      "evidence": {
+        "afterSaleId": "after-sale-1",
+        "orderId": "order-1",
+        "caseStatus": "COMPLETED",
+        "refundStatus": "SUCCEEDED",
+        "returnFulfillmentStatus": "INSPECTION_ACCEPTED"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "orderId": "order-1",
+        "afterSaleId": "after-sale-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.after_sale.get",
+        "bindingDefinitionSha256": "f69ba018feed19594ee8008ecf25024baf8518d98ec11bb7b3be08f67e49dde2"
+      },
+      "requestSha256": "6a90efe8c027c57428a3de27dfc4074ecca00b9feee1c5f89cc418df44f0b20e",
+      "responseSha256": "54f8f325ef17d75157c225fbd3f6ebb204162c1d8aca9c8cfaf05ec86e563156",
+      "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "receiptSha256": "a0fbb95faa06f8bef24d78bcfb9cccfc17f7378756d4a00e1fb6b822365f3c32"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.customer_service.ticket_create",
+      "executor": "http",
+      "operation": "WRITE",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:5980ee3f0175cc55e4808dea",
+      "requestEnvelope": {
+        "stageId": "app.customer_service.ticket_create",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.customer_service.ticket_create",
+        "kind": "response"
+      },
+      "effectEnvelope": {
+        "stageId": "app.customer_service.ticket_create",
+        "kind": "effect",
+        "eventIds": [
+          "event:app.customer_service.ticket_create"
+        ]
+      },
+      "evidence": {
+        "ticketId": "ticket-1",
+        "ticketNo": "TICKET-1",
+        "ticketStatus": "OPEN",
+        "ticketVersion": 1,
+        "outboxEventIds": [
+          "ticket-event-1"
+        ]
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "orderId": "order-1",
+        "afterSaleId": "after-sale-1",
+        "ticketId": "ticket-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.customer_service.ticket_create",
+        "bindingDefinitionSha256": "1b2c4ca5ee175054fd50c60f9d937760a05825b91b6ddc0364e391b101dea912"
+      },
+      "requestSha256": "9a24740b5c795ad2421b3079fece07c343094101d274a988f72ec742beec5955",
+      "responseSha256": "4fca9d844ed766033809b52c206258c3df4c024d3841052a2970db9fd85ccf22",
+      "effectSha256": "6e7e5900623397fcb082d33246a64cbf18beb41191b36e4e267bd3085f2acc89",
+      "receiptSha256": "89fe1ba8ecfeeb04c870e65c0cea09d464c161fd1976eaaac5d274d3c57898fc"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "app.customer_service.ticket_get",
+      "executor": "http",
+      "operation": "READ",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:c038da8e56c9d9c4cc1430b1",
+      "requestEnvelope": {
+        "stageId": "app.customer_service.ticket_get",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "app.customer_service.ticket_get",
+        "kind": "response"
+      },
+      "effectEnvelope": {},
+      "evidence": {
+        "ticketId": "ticket-1",
+        "ticketStatus": "OPEN",
+        "ticketVersion": 1
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1",
+        "sessionId": "00000000-0000-4000-8000-000000000001",
+        "orderId": "order-1",
+        "afterSaleId": "after-sale-1",
+        "ticketId": "ticket-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "app.customer_service.ticket_get",
+        "bindingDefinitionSha256": "bd327748bd2a2b289aa7551fc0463e56c38784944fa24040c128222d430cd056"
+      },
+      "requestSha256": "8283f93d4af19668337149948af6032b27e789728c464251b7753a575fb644d3",
+      "responseSha256": "dfb999b142c34ed27b89e9768817db72f2950967fe3c733e78eab6190ed80401",
+      "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "receiptSha256": "4a5f0067b06cfd65fb3140d4c14a2bb425d9f80184fce2088493f23ddb0f04fe"
+    },
+    {
+      "schema_version": 2,
+      "stageId": "reconcile.lakehouse",
+      "executor": "external_evidence",
+      "operation": "ASSERT",
+      "status": "SUCCEEDED",
+      "idempotencyKey": "cca:cross-channel-0725:8d305928e1580f97bcb5b436",
+      "requestEnvelope": {
+        "stageId": "reconcile.lakehouse",
+        "kind": "request"
+      },
+      "responseEnvelope": {
+        "stageId": "reconcile.lakehouse",
+        "kind": "response"
+      },
+      "effectEnvelope": {},
+      "evidence": {
+        "outboxCdcCheckpointSucceeded": true,
+        "fullDenominator": true,
+        "nonempty": true,
+        "sourceToFactMismatchCount": 0,
+        "factToProjectionMismatchCount": 0,
+        "crossTenantLinkCount": 0,
+        "identityLinkMismatchCount": 0,
+        "productLinkMismatchCount": 0,
+        "orderPaymentMoneyMismatchCount": 0,
+        "returnQuantityMismatchCount": 0,
+        "dqcViolationCount": 0,
+        "modelResults": {
+          "yshopping_ads.ads_canonical_commerce_v2_readiness": "RECONCILED",
+          "yshopping_ads.ads_canonical_after_sale_readiness": "RECONCILED",
+          "yshopping_ads.ads_canonical_customer_service_readiness": "READY",
+          "yshopping_ads.ads_canonical_commerce_acquisition_funnel": "NONEMPTY"
+        },
+        "dataFreshnessAt": "2026-07-25T11:59:00Z"
+      },
+      "linkage": {
+        "runId": "cross-channel-0725",
+        "environment": "test",
+        "tenantId": "1",
+        "principalId": "principal-1"
+      },
+      "runtime": {
+        "recordedAt": "2026-07-25T10:28:01Z",
+        "receiptSource": "local-manual",
+        "recorder": "cross_channel_agentctl.resume"
+      },
+      "definition": {
+        "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+        "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+        "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+        "bindingId": "reconcile.lakehouse",
+        "bindingDefinitionSha256": "c4a86d03c1df0c8d9a7c56ecf3ee305449ab478f105fc8b842c00817e19292e4"
+      },
+      "requestSha256": "5bac1085337e72b03361b58b55cbda8d6cf466a2a0cd24cb7d0ac24d176f8df5",
+      "responseSha256": "d693e1c2ed7ef9b0b5c38f8ae6104991199dd80c160efa9b06c5ff1462fb526c",
+      "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "receiptSha256": "816152e8c3f28539253c2f25ec2270f26126ee0120cfbe4a704178119a99e508"
+    }
+  ],
+  "runtimeReceiptManifestSha256": "4a97aaff0e23bcb215cb1ca6d0a90f45aae18d779b27bb5fc51fa7c032d70da3",
+  "terminalEvidence": {
+    "identity": {
+      "memberUserId": 247,
+      "principalId": "principal-1",
+      "sessionId": "00000000-0000-4000-8000-000000000001"
+    },
+    "address": {
+      "addressRef": "11111111-1111-4111-8111-111111111111",
+      "snapshotVersion": 1,
+      "destinationRegionCode": "310000",
+      "receiverSummary": "张*",
+      "mobileSummary": "138****0000"
+    },
+    "recommendation": {
+      "decisionToken": "recommend:1234567890abcdef123456",
+      "resultSetToken": "recommend:1234567890abcdef123456",
+      "policyVersion": "LOCAL_DETERMINISTIC_V1",
+      "primaryListingId": "listing-1",
+      "primaryRank": 1
+    },
+    "community": {
+      "contentId": "content-1",
+      "likedByCurrentUser": true,
+      "commentCount": 1,
+      "productLinkListingId": "listing-1"
+    },
+    "product": {
+      "merchantId": "merchant-1",
+      "shopId": "shop-1",
+      "canonicalSpuId": "spu-1",
+      "canonicalSkuId": "sku-1",
+      "listingId": "listing-1",
+      "listingOfferId": "offer-1",
+      "priceMinor": 39800,
+      "currencyCode": "CNY",
+      "inventoryVersion": 9,
+      "qualityStatus": "QUALIFIED",
+      "inStock": true
+    },
+    "cart": {
+      "cartId": "cart-1",
+      "aggregateVersion": 2,
+      "lineId": "line-1",
+      "selectedLineCount": 1,
+      "checkoutToken": "checkout-1"
+    },
+    "checkout": {
+      "checkoutToken": "checkout-1",
+      "principalId": "principal-1",
+      "addressRef": "11111111-1111-4111-8111-111111111111",
+      "addressSnapshotVersion": 1,
+      "canonicalSpuId": "spu-1",
+      "canonicalSkuId": "sku-1",
+      "listingId": "listing-1",
+      "listingOfferId": "offer-1",
+      "payableAmountMinor": 39800,
+      "currencyCode": "CNY"
+    },
+    "order": {
+      "orderId": "order-1",
+      "orderItemId": "order-item-1",
+      "buyerPrincipalId": "principal-1",
+      "canonicalSkuId": "sku-1",
+      "listingId": "listing-1",
+      "listingOfferId": "offer-1",
+      "quantity": 2,
+      "payableAmountMinor": 39800,
+      "currencyCode": "CNY"
+    },
+    "payment": {
+      "paymentId": "payment-1",
+      "orderId": "order-1",
+      "capturedAmountMinor": 39800,
+      "currencyCode": "CNY"
+    },
+    "fulfillment": {
+      "fulfillmentId": "fulfillment-1",
+      "shipmentId": "shipment-1",
+      "orderId": "order-1",
+      "canonicalSkuId": "sku-1",
+      "listingId": "listing-1",
+      "listingOfferId": "offer-1"
+    },
+    "review": {
+      "eligible": true,
+      "reviewId": "review-1",
+      "moderationStatus": "APPROVED",
+      "listingId": "listing-1",
+      "canonicalSpuId": "spu-1",
+      "canonicalSkuId": "sku-1",
+      "total": 1
+    },
+    "afterSale": {
+      "afterSaleId": "after-sale-1",
+      "orderId": "order-1",
+      "canonicalSkuId": "sku-1",
+      "listingId": "listing-1",
+      "listingOfferId": "offer-1",
+      "returnedQuantity": 2,
+      "refundedAmountMinor": 39800,
+      "currencyCode": "CNY"
+    },
+    "customerService": {
+      "ticketId": "ticket-1",
+      "referenceType": "AFTER_SALE",
+      "referenceId": "after-sale-1"
+    },
+    "behavior": {
+      "sessionId": "00000000-0000-4000-8000-000000000001",
+      "principalId": "principal-1",
+      "eventTypes": [
+        "SEARCH_REQUESTED",
+        "SEARCH_RESULT_EXPOSED",
+        "SEARCH_RESULT_CLICKED",
+        "PDP_VIEWED",
+        "CART_ADDED",
+        "CHECKOUT_STARTED"
+      ]
+    },
+    "inventory": {
+      "availableQuantityBefore": 10,
+      "availableQuantityAfter": 10,
+      "restockedQuantity": 2
+    },
+    "states": {
+      "merchantStatus": "ACTIVE",
+      "shopStatus": "ACTIVE",
+      "catalogStatus": "ACTIVE",
+      "listingStatus": "PUBLISHED",
+      "stockStatus": "SELLABLE",
+      "qualityStatus": "QUALIFIED",
+      "paymentStatus": "REFUNDED",
+      "fulfillmentStatus": "DELIVERED",
+      "afterSaleStatus": "COMPLETED",
+      "returnFulfillmentStatus": "INSPECTION_ACCEPTED",
+      "refundStatus": "SUCCEEDED",
+      "orderStatus": "RETURNED"
+    },
+    "lakehouse": {
+      "outboxCdcCheckpointSucceeded": true,
+      "fullDenominator": true,
+      "nonempty": true,
+      "sourceToFactMismatchCount": 0,
+      "factToProjectionMismatchCount": 0,
+      "crossTenantLinkCount": 0,
+      "identityLinkMismatchCount": 0,
+      "productLinkMismatchCount": 0,
+      "orderPaymentMoneyMismatchCount": 0,
+      "returnQuantityMismatchCount": 0,
+      "dqcViolationCount": 0,
+      "modelResults": {
+        "yshopping_ads.ads_canonical_commerce_v2_readiness": "RECONCILED",
+        "yshopping_ads.ads_canonical_after_sale_readiness": "RECONCILED",
+        "yshopping_ads.ads_canonical_customer_service_readiness": "READY",
+        "yshopping_ads.ads_canonical_commerce_acquisition_funnel": "NONEMPTY"
+      }
+    },
+    "replay": {
+      "verified": true,
+      "effectHashMatch": true,
+      "originalLedgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "duplicateStageIds": [
+        "operator.merchant.onboard",
+        "operator.catalog.publish",
+        "operator.catalog.metadata_update",
+        "operator.catalog.barcode_rotate",
+        "operator.listing.publish",
+        "operator.supply.prepare",
+        "operator.warehouse.receive",
+        "operator.quality.release",
+        "app.session.start",
+        "app.session.link_identity",
+        "app.recommendation.exposure",
+        "app.recommendation.click",
+        "app.community.like",
+        "app.community.comment_create",
+        "app.address.snapshot_create",
+        "app.address.snapshot_replay",
+        "app.behavior.search_requested",
+        "app.behavior.search_exposed",
+        "app.behavior.search_clicked",
+        "app.behavior.pdp",
+        "app.behavior.cart_added",
+        "app.cart.add",
+        "app.cart.preview_selected",
+        "app.checkout.preview",
+        "app.behavior.checkout",
+        "app.order.create",
+        "app.payment.capture",
+        "operator.fulfillment.complete",
+        "app.product_review.create",
+        "app.after_sale.create",
+        "operator.after_sale.complete",
+        "app.customer_service.ticket_create"
+      ]
+    }
+  },
+  "terminalEvidenceSha256": "8851be8971874fecf09e1f35c32a00d49db29e225218e741a701e25f35803184",
+  "terminalSignature": {
+    "signatureType": "LOCAL_RUNTIME_ATTESTATION_V1",
+    "signer": "cross_channel_agentctl.replay",
+    "signedAt": "2026-07-25T10:29:01Z",
+    "signedPayloadSha256": "1112bb96824d43a861c43f16d3cde003b0cf4fc602d388e08b8cdf2fd28fd9f8"
+  }
+}

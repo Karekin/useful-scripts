@@ -115,17 +115,24 @@ WITH behavior_subject_base AS (
         CONCAT('First-ever paid buyers on latest loaded paid business day ', CAST(latest_paid_date AS STRING)),
         data_freshness_at
     FROM new_paid_buyer_rollup
+), complete_tenants AS (
+    SELECT tenant_id
+    FROM metric_rows
+    WHERE metric_value IS NOT NULL
+    GROUP BY tenant_id
+    HAVING COUNT(*) = 3 AND COUNT(DISTINCT metric_id) = 3
 )
 SELECT
-    tenant_id,
-    metric_id,
-    metric_value,
-    numerator,
-    denominator,
-    unit,
+    metric.tenant_id,
+    metric.metric_id,
+    metric.metric_value,
+    metric.numerator,
+    metric.denominator,
+    metric.unit,
     'LOCAL_TEST_CANONICAL_CURRENT' AS evidence_scope,
-    source_row_count,
-    evidence_note,
-    data_freshness_at
-FROM metric_rows
-WHERE metric_value IS NOT NULL;
+    metric.source_row_count,
+    metric.evidence_note,
+    metric.data_freshness_at
+FROM metric_rows metric
+JOIN complete_tenants complete ON complete.tenant_id = metric.tenant_id
+WHERE metric.metric_value IS NOT NULL;

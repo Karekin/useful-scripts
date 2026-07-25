@@ -1,0 +1,59 @@
+{
+  "schema_version": 2,
+  "stageId": "reconcile.lakehouse",
+  "executor": "external_evidence",
+  "operation": "ASSERT",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:8d305928e1580f97bcb5b436",
+  "requestEnvelope": {
+    "stageId": "reconcile.lakehouse",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "reconcile.lakehouse",
+    "kind": "response"
+  },
+  "effectEnvelope": {},
+  "evidence": {
+    "outboxCdcCheckpointSucceeded": true,
+    "fullDenominator": true,
+    "nonempty": true,
+    "sourceToFactMismatchCount": 0,
+    "factToProjectionMismatchCount": 0,
+    "crossTenantLinkCount": 0,
+    "identityLinkMismatchCount": 0,
+    "productLinkMismatchCount": 0,
+    "orderPaymentMoneyMismatchCount": 0,
+    "returnQuantityMismatchCount": 0,
+    "dqcViolationCount": 0,
+    "modelResults": {
+      "yshopping_ads.ads_canonical_commerce_v2_readiness": "RECONCILED",
+      "yshopping_ads.ads_canonical_after_sale_readiness": "RECONCILED",
+      "yshopping_ads.ads_canonical_customer_service_readiness": "READY",
+      "yshopping_ads.ads_canonical_commerce_acquisition_funnel": "NONEMPTY"
+    },
+    "dataFreshnessAt": "2026-07-25T11:59:00Z"
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "reconcile.lakehouse",
+    "bindingDefinitionSha256": "c4a86d03c1df0c8d9a7c56ecf3ee305449ab478f105fc8b842c00817e19292e4"
+  },
+  "requestSha256": "5bac1085337e72b03361b58b55cbda8d6cf466a2a0cd24cb7d0ac24d176f8df5",
+  "responseSha256": "d693e1c2ed7ef9b0b5c38f8ae6104991199dd80c160efa9b06c5ff1462fb526c",
+  "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "receiptSha256": "816152e8c3f28539253c2f25ec2270f26126ee0120cfbe4a704178119a99e508"
+}

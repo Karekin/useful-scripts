@@ -1,0 +1,50 @@
+{
+  "schema_version": 2,
+  "stageId": "operator.warehouse.receive",
+  "executor": "external_evidence",
+  "operation": "WRITE",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:68006bcf62408cdc2baa0bc4",
+  "requestEnvelope": {
+    "stageId": "operator.warehouse.receive",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "operator.warehouse.receive",
+    "kind": "response"
+  },
+  "effectEnvelope": {
+    "stageId": "operator.warehouse.receive",
+    "kind": "effect",
+    "eventIds": [
+      "event:operator.warehouse.receive"
+    ]
+  },
+  "evidence": {
+    "warehouseId": "warehouse-1",
+    "locationId": "location-1",
+    "inventoryLedgerTransactionId": "inventory-ledger-1",
+    "receivedQuantity": 10,
+    "outboxEventIds": [
+      "warehouse-event-1"
+    ]
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "operator.warehouse.receive",
+    "bindingDefinitionSha256": "3c4ace4d81a73f9b0508faa932f069c2c23626a40e8fc4238c6e186cefc6492d"
+  }
+}

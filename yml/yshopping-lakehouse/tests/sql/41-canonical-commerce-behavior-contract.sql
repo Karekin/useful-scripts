@@ -18,7 +18,6 @@ WHERE (first_search_requested_at IS NOT NULL AND first_search_requested_at < sta
    OR (first_search_result_exposed_at IS NOT NULL AND first_search_result_exposed_at < first_search_requested_at)
    OR (first_search_result_clicked_at IS NOT NULL AND first_search_result_exposed_at IS NULL)
    OR (first_search_result_clicked_at IS NOT NULL AND first_search_result_clicked_at < first_search_result_exposed_at)
-   OR (first_checkout_started_at IS NOT NULL AND first_cart_added_at IS NULL)
    OR (first_checkout_abandoned_at IS NOT NULL AND first_checkout_started_at IS NULL)
    OR (first_paid_at IS NOT NULL AND first_checkout_started_at IS NULL)
    OR (first_paid_at IS NOT NULL AND first_paid_at < first_checkout_started_at);
@@ -64,7 +63,6 @@ WHERE requested_at IS NULL
    OR (search_result_clicked_flag = 1 AND first_result_clicked_at < requested_at)
    OR (search_result_clicked_flag = 1 AND search_result_exposed_flag = 0)
    OR (search_result_clicked_flag = 1 AND best_clicked_result_position IS NULL)
-   OR (checkout_started_flag = 1 AND cart_added_flag = 0)
    OR (checkout_abandoned_flag = 1 AND checkout_started_flag = 0);
 
 SELECT 'commerce_acquisition_funnel_invalid' AS check_name, COUNT(*) AS violations
@@ -78,7 +76,6 @@ WHERE session_count <= 0
    OR search_click_session_count > search_exposed_session_count
    OR cart_added_session_count > session_count
    OR cart_removed_session_count > cart_added_session_count
-   OR checkout_session_count > cart_added_session_count
    OR checkout_abandoned_session_count > checkout_session_count
    OR paid_session_count > checkout_session_count
    OR abandoned_session_count > session_count

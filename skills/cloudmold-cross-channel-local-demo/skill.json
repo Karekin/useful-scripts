@@ -3,7 +3,7 @@
   "skill_id": "skill.cloudmold.cross-channel.local-demo.v1",
   "workflow_id": "workflow.cloudmold.cross-channel.agent-reconciled.v1",
   "name": "cloudmold-cross-channel-local-demo",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "owner": "cloudmold-commerce-data",
   "authority": "canonical-cloudmold",
   "risk_level": "R3",
@@ -15,11 +15,14 @@
     "demo",
     "test"
   ],
-  "status": "blocked-until-bindings-implemented",
+  "status": "local-execute-ready-production-partial",
   "entrypoints": {
     "validate": "python3 scripts/cross_channel_agentctl.py validate-contracts",
     "plan": "python3 scripts/cross_channel_agentctl.py plan",
     "gate_execute": "python3 scripts/cross_channel_agentctl.py gate-execute",
+    "execute": "python3 scripts/cross_channel_agentctl.py execute",
+    "resume": "python3 scripts/cross_channel_agentctl.py resume",
+    "replay": "python3 scripts/cross_channel_agentctl.py replay",
     "validate_ledger": "python3 scripts/cross_channel_agentctl.py validate-ledger"
   }
 }

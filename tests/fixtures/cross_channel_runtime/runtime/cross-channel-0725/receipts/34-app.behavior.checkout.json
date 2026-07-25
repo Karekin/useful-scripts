@@ -1,0 +1,52 @@
+{
+  "schema_version": 2,
+  "stageId": "app.behavior.checkout",
+  "executor": "http",
+  "operation": "WRITE",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:efefcf622958a0e85643bfa1",
+  "requestEnvelope": {
+    "stageId": "app.behavior.checkout",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.behavior.checkout",
+    "kind": "response"
+  },
+  "effectEnvelope": {
+    "stageId": "app.behavior.checkout",
+    "kind": "effect",
+    "eventIds": [
+      "event:app.behavior.checkout"
+    ]
+  },
+  "evidence": {
+    "behaviorId": "behavior-checkout-1",
+    "sessionId": "00000000-0000-4000-8000-000000000001",
+    "behaviorType": "CHECKOUT_STARTED",
+    "eventId": "behavior-event-6"
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1",
+    "sessionId": "00000000-0000-4000-8000-000000000001"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.behavior.checkout",
+    "bindingDefinitionSha256": "84d0094b37b17d41ea86f80816e15b4bbbc633b9e16f046d3e32e946c22e791e"
+  },
+  "requestSha256": "4567410d5a1f2f9e811ac16687fcfe0cbc66524e7d30e1b0b0534e6f05155646",
+  "responseSha256": "71b0e6478b36f09d4187af2a4a2c46c253276677c6aefacdeebe4e548e741590",
+  "effectSha256": "fb28f6dfa797d7febbc2f927bbf1a3dd7b184dbe6e70da899cf53953da430683",
+  "receiptSha256": "8737bf790e613bb2a6729071fde9f87048b41aca000f46c49e6711a50e482d71"
+}

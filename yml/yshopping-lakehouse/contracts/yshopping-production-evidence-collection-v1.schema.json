@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cloudmold:contract:yshopping-production-evidence-collection:v1",
+  "title": "Y-Shopping production evidence collection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_id",
+    "collection_id",
+    "readiness_checked_at",
+    "external_access",
+    "denominator",
+    "freshness",
+    "entries",
+    "collection_sha256"
+  ],
+  "properties": {
+    "contract_id": {
+      "const": "cloudmold.yshopping.production-evidence-collection.v1"
+    },
+    "collection_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "readiness_checked_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
+    },
+    "external_access": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_environment",
+        "endpoint_id",
+        "read_only_identity",
+        "identity_provider",
+        "read_only_confirmed",
+        "production_read_attempted",
+        "audit_export_ref",
+        "audit_export_sha256"
+      ],
+      "properties": {
+        "source_environment": {"const": "production"},
+        "endpoint_id": {"type": "string", "minLength": 1},
+        "read_only_identity": {"type": "string", "minLength": 1},
+        "identity_provider": {"type": "string", "minLength": 1},
+        "read_only_confirmed": {"const": true},
+        "production_read_attempted": {"const": true},
+        "audit_export_ref": {"type": "string", "minLength": 1},
+        "audit_export_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "denominator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected_asset_count",
+        "asset_universe_ref",
+        "asset_universe_sha256",
+        "asset_names_sha256"
+      ],
+      "properties": {
+        "expected_asset_count": {"const": 718},
+        "asset_universe_ref": {"type": "string", "minLength": 1},
+        "asset_universe_sha256": {"$ref": "#/$defs/sha256"},
+        "asset_names_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_age_seconds"],
+      "properties": {
+        "max_age_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400
+        }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "maxItems": 718,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_asset",
+          "evidence_class",
+          "fixture",
+          "bundle_ref",
+          "bundle_sha256",
+          "reconciliation_ref",
+          "reconciliation_sha256"
+        ],
+        "properties": {
+          "source_asset": {"type": "string", "minLength": 1},
+          "evidence_class": {"const": "PRODUCTION_OBSERVED"},
+          "fixture": {"const": false},
+          "bundle_ref": {"type": "string", "minLength": 1},
+          "bundle_sha256": {"$ref": "#/$defs/sha256"},
+          "reconciliation_ref": {"type": "string", "minLength": 1},
+          "reconciliation_sha256": {"$ref": "#/$defs/sha256"}
+        }
+      }
+    },
+    "collection_sha256": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

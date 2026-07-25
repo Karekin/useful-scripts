@@ -25,7 +25,7 @@ class CommerceAnalyticsDataProductTest(unittest.TestCase):
         self.assertGreaterEqual(summary["metrics"], 60)
         self.assertEqual(8, summary["views"])
         self.assertEqual(719, summary["governed_sources"])
-        self.assertEqual(264, summary["sql_models"])
+        self.assertEqual(276, summary["sql_models"])
 
     def test_role_metric_mart_is_governed_and_fail_closed(self):
         model = (

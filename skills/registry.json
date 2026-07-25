@@ -102,6 +102,13 @@
       "owner": "cloudmold-commerce-data"
     },
     {
+      "skill_id": "skill.cloudmold.production.p4.v1",
+      "path": "cloudmold-production-p4",
+      "manifest": "cloudmold-production-p4/skill.json",
+      "status": "blocked",
+      "owner": "cloudmold-platform-security"
+    },
+    {
       "skill_id": "skill.cloudmold.dreamplant.knowledge.v1",
       "path": "cloudmold-dreamplant-knowledge",
       "manifest": "cloudmold-dreamplant-knowledge/skill.json",

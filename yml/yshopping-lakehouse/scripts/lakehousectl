@@ -5,9 +5,16 @@ ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
 STARROCKS_CONTAINER=${STARROCKS_CONTAINER:-yshopping-starrocks}
 YSHOPPING_REFERENCE_ROOT=${YSHOPPING_REFERENCE_ROOT:-/Users/karekin/Library/Mobile Documents/iCloud~md~obsidian/Documents/project/语兴好物（y shopping）-电商数仓搭建}
+STARROCKS_API_URL=${STARROCKS_API_URL:-http://127.0.0.1:8030}
+FLINK_API_URL=${FLINK_API_URL:-http://127.0.0.1:8081}
+CDC_ENV_FILE=${CDC_ENV_FILE:-"$ROOT_DIR/.env"}
+CDC_CHECKPOINT_TIMEOUT_SECONDS=${CDC_CHECKPOINT_TIMEOUT_SECONDS:-300}
+CDC_CHECKPOINT_POLL_SECONDS=${CDC_CHECKPOINT_POLL_SECONDS:-5}
+CDC_SAVEPOINT_TIMEOUT_SECONDS=${CDC_SAVEPOINT_TIMEOUT_SECONDS:-300}
+CDC_SAVEPOINT_POLL_SECONDS=${CDC_SAVEPOINT_POLL_SECONDS:-5}
 
 usage() {
-  echo "usage: lakehousectl {config-check|contract-test|report-contract-test|report-status|source-assets|source-disposition-status|source-evidence-policy|semantic-status|start|submit-cdc|submit-catalog-cdc|submit-legacy-mall-cdc|submit-legacy-commerce-observability-cdc|submit-event-cdc|apply-models|health|test|reconcile|reconcile-legacy-commerce-observability|reconcile-legacy-trade-benefit-assessment|reconcile-canonical-legacy-trade-benefit-assessment|reconcile-canonical-inventory|reconcile-canonical-inventory-lot|reconcile-canonical-inventory-migration|reconcile-canonical-catalog|reconcile-canonical-commerce|reconcile-canonical-commerce-v2|reconcile-canonical-order-benefit|reconcile-canonical-cancellation-saga|reconcile-canonical-paid-cancellation-saga|reconcile-canonical-aftersales|reconcile-canonical-listing-unpublish-saga|reconcile-canonical-merchant|reconcile-canonical-merchant-deposit|reconcile-canonical-warehouse-network} [--tenant ID] [--run-id ID] [--after-sale-id UUID] [--saga-id UUID] [--merchant-id UUID] [--warehouse-id UUID] [--source-system CODE] [--source-type CODE] [--source-id ID]"
+  echo "usage: lakehousectl {config-check|contract-test|report-contract-test|report-status|source-assets|source-disposition-status|source-evidence-policy|semantic-status|runtime-preflight|runtime-gate|empty-recovery-rehearsal|start|start-cdc-set|savepoint-set|restore-cdc-set|submit-cdc|submit-catalog-cdc|submit-legacy-mall-cdc|submit-legacy-commerce-observability-cdc|submit-event-cdc|apply-models|health|test|reconcile|reconcile-legacy-commerce-observability|reconcile-legacy-trade-benefit-assessment|reconcile-canonical-legacy-trade-benefit-assessment|reconcile-canonical-inventory|reconcile-canonical-inventory-lot|reconcile-canonical-inventory-migration|reconcile-canonical-catalog|reconcile-canonical-commerce|reconcile-canonical-commerce-v2|reconcile-canonical-order-benefit|reconcile-canonical-cancellation-saga|reconcile-canonical-paid-cancellation-saga|reconcile-canonical-aftersales|reconcile-canonical-listing-unpublish-saga|reconcile-canonical-merchant|reconcile-canonical-merchant-deposit|reconcile-canonical-warehouse-network} [--manifest FILE] [--execute] [--tenant ID] [--run-id ID] [--after-sale-id UUID] [--saga-id UUID] [--merchant-id UUID] [--warehouse-id UUID] [--source-system CODE] [--source-type CODE] [--source-id ID]"
 }
 
 sql() {
@@ -62,6 +69,1060 @@ run_tests() {
   fi
 }
 
+runtime_snapshot() {
+  local mode=${1:?runtime snapshot mode is required}
+  local desired_jobs_json taskmanagers_json starrocks_health status
+  local docker_health_available=1 starrocks_api_available=1
+  local jobs_api_available=1 taskmanagers_api_available=1
+  if ! status=$(docker inspect -f '{{.State.Health.Status}}' "$STARROCKS_CONTAINER" 2>/dev/null); then
+    status=unknown
+    docker_health_available=0
+  fi
+  if ! starrocks_health=$(curl -sf "$STARROCKS_API_URL/api/health" 2>/dev/null); then
+    starrocks_health='{}'
+    starrocks_api_available=0
+  fi
+  if ! desired_jobs_json=$(curl -sf "$FLINK_API_URL/jobs/overview" 2>/dev/null); then
+    desired_jobs_json='{}'
+    jobs_api_available=0
+  fi
+  if ! taskmanagers_json=$(curl -sf "$FLINK_API_URL/taskmanagers" 2>/dev/null); then
+    taskmanagers_json='{}'
+    taskmanagers_api_available=0
+  fi
+  local fe_meta_kb be_storage_kb savepoint_bytes checkpoint_bytes
+  fe_meta_kb=$(docker exec "$STARROCKS_CONTAINER" sh -lc "df -Pk /data/deploy/starrocks/fe/meta | awk 'NR==2 {print \$4}'" 2>/dev/null || echo 0)
+  be_storage_kb=$(docker exec "$STARROCKS_CONTAINER" sh -lc "df -Pk /data/deploy/starrocks/be/storage | awk 'NR==2 {print \$4}'" 2>/dev/null || echo 0)
+  savepoint_bytes=$(docker exec yshopping-flink-jobmanager sh -lc "du -sk /opt/flink/savepoints 2>/dev/null | awk 'NR==1 {print \$1 + 0}'" 2>/dev/null || echo 0)
+  checkpoint_bytes=$(docker exec yshopping-flink-jobmanager sh -lc "du -sk /opt/flink/checkpoints 2>/dev/null | awk 'NR==1 {print \$1 + 0}'" 2>/dev/null || echo 0)
+  STARROCKS_HEALTH_JSON="$starrocks_health" \
+  JOBS_JSON="$desired_jobs_json" \
+  TASKMANAGERS_JSON="$taskmanagers_json" \
+  STARROCKS_HEALTH_STATUS="$status" \
+  FE_META_FREE_KB="${fe_meta_kb:-0}" \
+  BE_STORAGE_FREE_KB="${be_storage_kb:-0}" \
+  SAVEPOINT_KB="${savepoint_bytes:-0}" \
+  CHECKPOINT_KB="${checkpoint_bytes:-0}" \
+  SNAPSHOT_MODE="$mode" \
+  DOCKER_HEALTH_AVAILABLE="$docker_health_available" \
+  STARROCKS_API_AVAILABLE="$starrocks_api_available" \
+  JOBS_API_AVAILABLE="$jobs_api_available" \
+  TASKMANAGERS_API_AVAILABLE="$taskmanagers_api_available" \
+  python3 - <<'PY'
+import json
+import os
+
+desired_names = [
+    "CloudMold Domain Event Outbox to StarRocks ODS",
+    "Y Shopping ERP MySQL to StarRocks ODS",
+    "Y Shopping Catalog MySQL to StarRocks ODS",
+    "Y Shopping Legacy Mall Alignment MySQL to StarRocks ODS",
+]
+observability_name = "Y Shopping Legacy Commerce Observability MySQL to StarRocks ODS"
+
+
+def object_from_env(name):
+    try:
+        value = json.loads(os.environ[name])
+    except (json.JSONDecodeError, TypeError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def integer_from_env(name):
+    try:
+        return int(os.environ[name] or "0")
+    except ValueError:
+        return 0
+
+
+jobs_payload = object_from_env("JOBS_JSON")
+taskmanagers_payload = object_from_env("TASKMANAGERS_JSON")
+starrocks_payload = object_from_env("STARROCKS_HEALTH_JSON")
+jobs_shape_valid = isinstance(jobs_payload.get("jobs"), list)
+taskmanagers_shape_valid = isinstance(taskmanagers_payload.get("taskmanagers"), list)
+job_items = jobs_payload.get("jobs", []) if jobs_shape_valid else []
+jobs = {
+    job.get("name"): job.get("state")
+    for job in job_items
+    if isinstance(job, dict) and job.get("name")
+}
+taskmanagers = [
+    tm
+    for tm in (
+        taskmanagers_payload.get("taskmanagers", []) if taskmanagers_shape_valid else []
+    )
+    if isinstance(tm, dict)
+]
+total_slots = sum(
+    value if isinstance(value := tm.get("slotsNumber", 0), int) else 0
+    for tm in taskmanagers
+)
+free_slots = sum(
+    value if isinstance(value := tm.get("freeSlots", 0), int) else 0
+    for tm in taskmanagers
+)
+fe_meta_free_kb = integer_from_env("FE_META_FREE_KB")
+be_storage_free_kb = integer_from_env("BE_STORAGE_FREE_KB")
+savepoint_kb = integer_from_env("SAVEPOINT_KB")
+checkpoint_kb = integer_from_env("CHECKPOINT_KB")
+min_guard_kb = 5 * 1024 * 1024
+mode = os.environ["SNAPSHOT_MODE"]
+reasons = []
+
+if os.environ["DOCKER_HEALTH_AVAILABLE"] != "1":
+    reasons.append("STARROCKS_DOCKER_HEALTH_UNAVAILABLE")
+elif os.environ["STARROCKS_HEALTH_STATUS"] != "healthy":
+    reasons.append("STARROCKS_CONTAINER_NOT_HEALTHY")
+if os.environ["STARROCKS_API_AVAILABLE"] != "1":
+    reasons.append("STARROCKS_API_UNAVAILABLE")
+elif str(starrocks_payload.get("status", "")).upper() not in {"OK", "HEALTHY"}:
+    reasons.append("STARROCKS_API_NOT_HEALTHY")
+if os.environ["JOBS_API_AVAILABLE"] != "1":
+    reasons.append("FLINK_JOBS_API_UNAVAILABLE")
+elif not jobs_shape_valid:
+    reasons.append("FLINK_JOBS_API_INVALID")
+if os.environ["TASKMANAGERS_API_AVAILABLE"] != "1":
+    reasons.append("FLINK_TASKMANAGERS_API_UNAVAILABLE")
+elif not taskmanagers_shape_valid:
+    reasons.append("FLINK_TASKMANAGERS_API_INVALID")
+if total_slots < len(desired_names):
+    reasons.append(f"FLINK_SLOT_CAPACITY_{total_slots}_LT_{len(desired_names)}")
+if fe_meta_free_kb < min_guard_kb:
+    reasons.append("STARROCKS_FE_META_CAPACITY_BELOW_5GIB")
+if be_storage_free_kb < min_guard_kb:
+    reasons.append("STARROCKS_BE_STORAGE_CAPACITY_BELOW_5GIB")
+if mode == "strict":
+    for name in desired_names:
+        if sum(
+            1
+            for job in job_items
+            if isinstance(job, dict) and job.get("name") == name
+        ) > 1:
+            reasons.append(f"JOB_DUPLICATE:{name}")
+        state = jobs.get(name)
+        if state is None:
+            reasons.append(f"JOB_MISSING:{name}")
+        elif state != "RUNNING":
+            reasons.append(f"JOB_NOT_RUNNING:{name}:{state}")
+
+print(f"dry_run=1")
+print(f"starrocks_health_status={os.environ['STARROCKS_HEALTH_STATUS']}")
+print(f"starrocks_api_status={starrocks_payload.get('status', 'UNKNOWN')}")
+print(f"fe_meta_free_kb={fe_meta_free_kb}")
+print(f"be_storage_free_kb={be_storage_free_kb}")
+print(
+    "starrocks_meta_guard="
+    + ("PASS" if fe_meta_free_kb >= min_guard_kb and be_storage_free_kb >= min_guard_kb else "FAIL")
+)
+print(f"checkpoint_volume_kb={checkpoint_kb}")
+print(f"savepoint_volume_kb={savepoint_kb}")
+print(f"total_slots={total_slots}")
+print(f"free_slots={free_slots}")
+print(f"observability_capacity_mode={'DISABLED_IN_4_SLOT_MODE' if total_slots <= 4 else 'OPTIONAL'}")
+for name in desired_names:
+    print(f"{name}={jobs.get(name, 'MISSING')}")
+print(f"{observability_name}={jobs.get(observability_name, 'INTENTIONALLY_NOT_RUNNING')}")
+print(f"runtime_gate={'PASS' if not reasons else 'FAIL'}")
+for reason in reasons:
+    print(f"runtime_gate_reason={reason}")
+if mode in {"strict", "infrastructure"} and reasons:
+    raise SystemExit(1)
+PY
+}
+
+runtime_preflight() {
+  runtime_snapshot preflight || true
+}
+
+runtime_gate() {
+  runtime_snapshot strict
+}
+
+runtime_infrastructure_gate() {
+  runtime_snapshot infrastructure
+}
+
+empty_recovery_rehearsal() {
+  runtime_preflight
+  local fe_meta_kb
+  fe_meta_kb=$(docker exec "$STARROCKS_CONTAINER" sh -lc "df -Pk /data/deploy/starrocks/fe/meta | awk 'NR==2 {print \$4}'" 2>/dev/null || echo 0)
+  if (( fe_meta_kb < 5242880 )); then
+    echo "EMPTY_ENVIRONMENT_REHEARSAL_DRY_RUN=BLOCKED_STARROCKS_META_CAPACITY" >&2
+    return 1
+  fi
+  cat <<'EOF'
+EMPTY_ENVIRONMENT_REHEARSAL_DRY_RUN=PLAN_READY
+recovery_order=starrocks->jobmanager->taskmanager->outbox->erp->catalog->legacy_mall
+checkpoint_policy=wait_for_first_successful_checkpoint_before_next_submission
+savepoint_policy=read_only_inventory_only_no_mutation
+observability_policy=disabled_in_4_slot_mode
+EOF
+}
+
+cdc_job_specs() {
+  cat <<'EOF'
+CloudMold Domain Event Outbox to StarRocks ODS|event-cdc-cli|pipelines/event-outbox-mysql-to-starrocks.yaml
+Y Shopping ERP MySQL to StarRocks ODS|cdc-cli|pipelines/erp-mysql-to-starrocks.yaml
+Y Shopping Catalog MySQL to StarRocks ODS|catalog-cdc-cli|pipelines/catalog-mysql-to-starrocks.yaml
+Y Shopping Legacy Mall Alignment MySQL to StarRocks ODS|legacy-mall-cdc-cli|pipelines/legacy-mall-alignment-mysql-to-starrocks.yaml
+EOF
+}
+
+find_runtime_job() {
+  local expected_name=${1:?expected job name is required}
+  local jobs_json
+  jobs_json=$(curl -sf "$FLINK_API_URL/jobs/overview") || {
+    echo "Flink jobs API is unavailable while locating $expected_name" >&2
+    return 2
+  }
+  JOBS_JSON="$jobs_json" EXPECTED_JOB_NAME="$expected_name" python3 - <<'PY'
+import json
+import os
+import sys
+
+try:
+    jobs = json.loads(os.environ["JOBS_JSON"]).get("jobs", [])
+except (json.JSONDecodeError, AttributeError):
+    print("invalid Flink jobs API response", file=sys.stderr)
+    raise SystemExit(2)
+matches = [
+    job for job in jobs
+    if isinstance(job, dict) and job.get("name") == os.environ["EXPECTED_JOB_NAME"]
+]
+if not matches:
+    raise SystemExit(1)
+if len(matches) != 1 or not matches[0].get("jid") or not matches[0].get("state"):
+    print("expected exactly one identified Flink job", file=sys.stderr)
+    raise SystemExit(2)
+print(f"{matches[0]['jid']}\t{matches[0]['state']}")
+PY
+}
+
+wait_for_running_job() {
+  local expected_name=${1:?expected job name is required}
+  local started_at now job_info job_state
+  started_at=$(date +%s)
+  while true; do
+    if job_info=$(find_runtime_job "$expected_name"); then
+      job_state=${job_info#*$'\t'}
+      if [[ "$job_state" == "RUNNING" ]]; then
+        printf '%s\n' "$job_info"
+        return 0
+      fi
+      echo "$expected_name reached non-running state $job_state" >&2
+      return 1
+    else
+      case $? in
+        1) ;;
+        *) return 1 ;;
+      esac
+    fi
+    now=$(date +%s)
+    if (( now - started_at >= CDC_CHECKPOINT_TIMEOUT_SECONDS )); then
+      echo "timed out waiting for $expected_name to enter RUNNING" >&2
+      return 1
+    fi
+    sleep "$CDC_CHECKPOINT_POLL_SECONDS"
+  done
+}
+
+wait_for_completed_checkpoint() {
+  local job_id=${1:?job id is required}
+  local job_name=${2:?job name is required}
+  local started_at now checkpoints_json checkpoint
+  started_at=$(date +%s)
+  while true; do
+    if checkpoints_json=$(curl -sf "$FLINK_API_URL/jobs/$job_id/checkpoints"); then
+      if checkpoint=$(CHECKPOINTS_JSON="$checkpoints_json" python3 - <<'PY'
+import json
+import os
+import sys
+
+try:
+    payload = json.loads(os.environ["CHECKPOINTS_JSON"])
+except (json.JSONDecodeError, TypeError):
+    raise SystemExit(2)
+counts = payload.get("counts", {})
+completed = payload.get("latest", {}).get("completed")
+if not isinstance(counts, dict) or not isinstance(completed, dict):
+    raise SystemExit(1)
+if counts.get("completed", 0) < 1 or completed.get("status") != "COMPLETED":
+    raise SystemExit(1)
+evidence = {
+    "id": completed.get("id"),
+    "status": completed.get("status"),
+    "is_savepoint": completed.get("is_savepoint", False),
+    "trigger_timestamp": completed.get("trigger_timestamp"),
+    "latest_ack_timestamp": completed.get("latest_ack_timestamp"),
+    "end_to_end_duration": completed.get("end_to_end_duration"),
+    "external_path": completed.get("external_path"),
+    "completed_count": counts.get("completed"),
+    "failed_count": counts.get("failed", 0),
+}
+if evidence["id"] is None or not evidence["external_path"]:
+    raise SystemExit(1)
+print(json.dumps(evidence, sort_keys=True, separators=(",", ":")))
+PY
+      ); then
+        printf '%s\n' "$checkpoint"
+        return 0
+      fi
+    fi
+    now=$(date +%s)
+    if (( now - started_at >= CDC_CHECKPOINT_TIMEOUT_SECONDS )); then
+      echo "timed out waiting for the first completed checkpoint for $job_name ($job_id)" >&2
+      return 1
+    fi
+    sleep "$CDC_CHECKPOINT_POLL_SECONDS"
+  done
+}
+
+submit_cdc_service() {
+  local service=${1:?CDC compose service is required}
+  docker compose --env-file "$CDC_ENV_FILE" -f "$COMPOSE_FILE" \
+    --profile tools run --rm "$service" >&2
+}
+
+append_runtime_manifest_record() {
+  local records_file=${1:?records file is required}
+  local job_id=${2:?job id is required}
+  local job_name=${3:?job name is required}
+  local service=${4:?service is required}
+  local pipeline=${5:?pipeline is required}
+  local submitted_at=${6-}
+  local submitted=${7:?submission state is required}
+  local checkpoint_json=${8:?checkpoint JSON is required}
+  RECORD_JOB_ID="$job_id" \
+  RECORD_JOB_NAME="$job_name" \
+  RECORD_SERVICE="$service" \
+  RECORD_PIPELINE="$pipeline" \
+  RECORD_SUBMITTED_AT="$submitted_at" \
+  RECORD_SUBMITTED="$submitted" \
+  RECORD_CHECKPOINT_JSON="$checkpoint_json" \
+  python3 - "$records_file" <<'PY'
+import json
+import os
+import sys
+from datetime import datetime, timezone
+
+record = {
+    "job_id": os.environ["RECORD_JOB_ID"],
+    "name": os.environ["RECORD_JOB_NAME"],
+    "compose_service": os.environ["RECORD_SERVICE"],
+    "pipeline": os.environ["RECORD_PIPELINE"],
+    "submitted": os.environ["RECORD_SUBMITTED"] == "1",
+    "submitted_at": os.environ["RECORD_SUBMITTED_AT"] or None,
+    "checkpoint_observed_at": datetime.now(timezone.utc).isoformat(),
+    "checkpoint": json.loads(os.environ["RECORD_CHECKPOINT_JSON"]),
+}
+with open(sys.argv[1], "a", encoding="utf-8") as handle:
+    handle.write(json.dumps(record, sort_keys=True) + "\n")
+PY
+}
+
+emit_runtime_manifest() {
+  local records_file=${1:?records file is required}
+  local output_path=${2:-}
+  python3 - "$records_file" "$ROOT_DIR" "$COMPOSE_FILE" "$0" "$output_path" <<'PY'
+import hashlib
+import json
+import os
+import pathlib
+import sys
+import tempfile
+from datetime import datetime, timezone
+
+records_path = pathlib.Path(sys.argv[1])
+root = pathlib.Path(sys.argv[2])
+compose_path = pathlib.Path(sys.argv[3])
+script_path = pathlib.Path(sys.argv[4])
+output_path = pathlib.Path(sys.argv[5]).expanduser() if sys.argv[5] else None
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+jobs = []
+for line in records_path.read_text(encoding="utf-8").splitlines():
+    if not line:
+        continue
+    record = json.loads(line)
+    pipeline_path = root / record["pipeline"]
+    record["pipeline_sha256"] = digest(pipeline_path)
+    jobs.append(record)
+
+manifest = {
+    "schema_version": 1,
+    "status": "RUNNING_WITH_CHECKPOINTS",
+    "generated_at": datetime.now(timezone.utc).isoformat(),
+    "job_count": len(jobs),
+    "expected_job_count": 4,
+    "lakehousectl_sha256": digest(script_path),
+    "compose_sha256": digest(compose_path),
+    "jobs": jobs,
+}
+if len(jobs) != manifest["expected_job_count"]:
+    raise SystemExit("refusing to emit an incomplete CDC runtime manifest")
+rendered = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
+if output_path:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    file_descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{output_path.name}.", dir=str(output_path.parent)
+    )
+    try:
+        with os.fdopen(file_descriptor, "w", encoding="utf-8") as handle:
+            handle.write(rendered)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_name, output_path)
+    finally:
+        if os.path.exists(temporary_name):
+            os.unlink(temporary_name)
+print(rendered, end="")
+PY
+}
+
+start_cdc_set() {
+  [[ "$CDC_CHECKPOINT_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ ]] || {
+    echo "CDC_CHECKPOINT_TIMEOUT_SECONDS must be a positive integer" >&2
+    return 2
+  }
+  [[ "$CDC_CHECKPOINT_POLL_SECONDS" =~ ^[0-9]+$ ]] || {
+    echo "CDC_CHECKPOINT_POLL_SECONDS must be a non-negative integer" >&2
+    return 2
+  }
+  test -f "$CDC_ENV_FILE" || {
+    echo "missing $CDC_ENV_FILE" >&2
+    return 1
+  }
+  runtime_infrastructure_gate >&2
+  local records_file
+  records_file=$(mktemp "${TMPDIR:-/tmp}/cloudmold-cdc-runtime.XXXXXX")
+  trap "rm -f '$records_file'" EXIT
+  local job_name service pipeline submitted_at submitted job_info job_id job_state checkpoint_json
+  while IFS='|' read -r job_name service pipeline; do
+    [[ -n "$job_name" ]] || continue
+    submitted=0
+    submitted_at=""
+    if job_info=$(find_runtime_job "$job_name"); then
+      job_state=${job_info#*$'\t'}
+      if [[ "$job_state" != "RUNNING" ]]; then
+        echo "refusing duplicate submission: $job_name is $job_state" >&2
+        return 1
+      fi
+    else
+      case $? in
+        1)
+          submitted_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          submit_cdc_service "$service"
+          submitted=1
+          ;;
+        *) return 1 ;;
+      esac
+    fi
+    job_info=$(wait_for_running_job "$job_name")
+    job_id=${job_info%%$'\t'*}
+    checkpoint_json=$(wait_for_completed_checkpoint "$job_id" "$job_name")
+    append_runtime_manifest_record \
+      "$records_file" "$job_id" "$job_name" "$service" "$pipeline" \
+      "$submitted_at" "$submitted" "$checkpoint_json"
+  done < <(cdc_job_specs)
+  runtime_gate >&2
+  emit_runtime_manifest "$records_file" "$MANIFEST_PATH"
+  rm -f "$records_file"
+  trap - EXIT
+}
+
+trigger_savepoint() {
+  local job_id=${1:?job id is required}
+  local job_name=${2:?job name is required}
+  local response
+  response=$(curl -sf -X POST \
+    -H 'Content-Type: application/json' \
+    -d '{"cancel-job":false}' \
+    "$FLINK_API_URL/jobs/$job_id/savepoints") || {
+    echo "failed to trigger savepoint for $job_name ($job_id)" >&2
+    return 1
+  }
+  SAVEPOINT_TRIGGER_JSON="$response" python3 - <<'PY'
+import json
+import os
+import sys
+
+try:
+    payload = json.loads(os.environ["SAVEPOINT_TRIGGER_JSON"])
+except (json.JSONDecodeError, TypeError):
+    print("invalid savepoint trigger response", file=sys.stderr)
+    raise SystemExit(1)
+trigger_id = payload.get("request-id") if isinstance(payload, dict) else None
+if not isinstance(trigger_id, str) or not trigger_id:
+    print("savepoint trigger response has no request-id", file=sys.stderr)
+    raise SystemExit(1)
+print(trigger_id)
+PY
+}
+
+wait_for_savepoint() {
+  local job_id=${1:?job id is required}
+  local job_name=${2:?job name is required}
+  local trigger_id=${3:?trigger id is required}
+  local started_at now response savepoint
+  started_at=$(date +%s)
+  while true; do
+    response=$(curl -sf "$FLINK_API_URL/jobs/$job_id/savepoints/$trigger_id") || {
+      echo "savepoint status API failed for $job_name ($job_id)" >&2
+      return 1
+    }
+    if savepoint=$(SAVEPOINT_STATUS_JSON="$response" \
+      SAVEPOINT_TRIGGER_ID="$trigger_id" python3 - <<'PY'
+import json
+import os
+import sys
+
+try:
+    payload = json.loads(os.environ["SAVEPOINT_STATUS_JSON"])
+except (json.JSONDecodeError, TypeError):
+    print("invalid savepoint status response", file=sys.stderr)
+    raise SystemExit(2)
+status = payload.get("status", {}).get("id") if isinstance(payload, dict) else None
+if status == "IN_PROGRESS":
+    raise SystemExit(1)
+if status != "COMPLETED":
+    print(f"unexpected savepoint status: {status!r}", file=sys.stderr)
+    raise SystemExit(2)
+operation = payload.get("operation", {})
+if not isinstance(operation, dict):
+    print("invalid savepoint operation response", file=sys.stderr)
+    raise SystemExit(2)
+failure = operation.get("failure-cause")
+if failure:
+    print(f"savepoint operation failed: {failure}", file=sys.stderr)
+    raise SystemExit(2)
+location = operation.get("location")
+if not isinstance(location, str) or not location:
+    print("completed savepoint has no location", file=sys.stderr)
+    raise SystemExit(2)
+print(json.dumps({
+    "trigger_id": os.environ["SAVEPOINT_TRIGGER_ID"],
+    "status": "COMPLETED",
+    "location": location,
+}, sort_keys=True, separators=(",", ":")))
+PY
+    ); then
+      printf '%s\n' "$savepoint"
+      return 0
+    else
+      case $? in
+        1) ;;
+        *) return 1 ;;
+      esac
+    fi
+    now=$(date +%s)
+    if (( now - started_at >= CDC_SAVEPOINT_TIMEOUT_SECONDS )); then
+      echo "timed out waiting for savepoint for $job_name ($job_id)" >&2
+      return 1
+    fi
+    sleep "$CDC_SAVEPOINT_POLL_SECONDS"
+  done
+}
+
+append_savepoint_manifest_record() {
+  local records_file=${1:?records file is required}
+  local job_id=${2:?job id is required}
+  local job_name=${3:?job name is required}
+  local service=${4:?service is required}
+  local pipeline=${5:?pipeline is required}
+  local triggered_at=${6:?trigger time is required}
+  local savepoint_json=${7:?savepoint JSON is required}
+  RECORD_JOB_ID="$job_id" \
+  RECORD_JOB_NAME="$job_name" \
+  RECORD_SERVICE="$service" \
+  RECORD_PIPELINE="$pipeline" \
+  RECORD_TRIGGERED_AT="$triggered_at" \
+  RECORD_SAVEPOINT_JSON="$savepoint_json" \
+  python3 - "$records_file" <<'PY'
+import json
+import os
+import sys
+from datetime import datetime, timezone
+
+record = {
+    "job_id": os.environ["RECORD_JOB_ID"],
+    "name": os.environ["RECORD_JOB_NAME"],
+    "compose_service": os.environ["RECORD_SERVICE"],
+    "pipeline": os.environ["RECORD_PIPELINE"],
+    "triggered_at": os.environ["RECORD_TRIGGERED_AT"],
+    "completed_at": datetime.now(timezone.utc).isoformat(),
+    "savepoint": json.loads(os.environ["RECORD_SAVEPOINT_JSON"]),
+}
+with open(sys.argv[1], "a", encoding="utf-8") as handle:
+    handle.write(json.dumps(record, sort_keys=True) + "\n")
+PY
+}
+
+append_savepoint_trigger_record() {
+  local records_file=${1:?records file is required}
+  local job_id=${2:?job id is required}
+  local job_name=${3:?job name is required}
+  local service=${4:?service is required}
+  local pipeline=${5:?pipeline is required}
+  local triggered_at=${6:?trigger time is required}
+  local trigger_id=${7:?trigger id is required}
+  TRIGGER_JOB_ID="$job_id" \
+  TRIGGER_JOB_NAME="$job_name" \
+  TRIGGER_SERVICE="$service" \
+  TRIGGER_PIPELINE="$pipeline" \
+  TRIGGERED_AT="$triggered_at" \
+  TRIGGER_ID="$trigger_id" \
+  python3 - "$records_file" <<'PY'
+import json
+import os
+import sys
+
+record = {
+    "job_id": os.environ["TRIGGER_JOB_ID"],
+    "name": os.environ["TRIGGER_JOB_NAME"],
+    "compose_service": os.environ["TRIGGER_SERVICE"],
+    "pipeline": os.environ["TRIGGER_PIPELINE"],
+    "triggered_at": os.environ["TRIGGERED_AT"],
+    "trigger_id": os.environ["TRIGGER_ID"],
+}
+with open(sys.argv[1], "a", encoding="utf-8") as handle:
+    handle.write(json.dumps(record, sort_keys=True) + "\n")
+PY
+}
+
+savepoint_trigger_fields() {
+  local record=${1:?savepoint trigger record is required}
+  SAVEPOINT_TRIGGER_RECORD="$record" python3 - <<'PY'
+import json
+import os
+
+record = json.loads(os.environ["SAVEPOINT_TRIGGER_RECORD"])
+print("\t".join([
+    record["job_id"],
+    record["name"],
+    record["compose_service"],
+    record["pipeline"],
+    record["triggered_at"],
+    record["trigger_id"],
+]))
+PY
+}
+
+emit_savepoint_manifest() {
+  local records_file=${1:?records file is required}
+  local output_path=${2:?savepoint manifest output path is required}
+  python3 - "$records_file" "$ROOT_DIR" "$COMPOSE_FILE" "$0" "$output_path" <<'PY'
+import hashlib
+import json
+import os
+import pathlib
+import sys
+import tempfile
+from datetime import datetime, timezone
+
+records_path = pathlib.Path(sys.argv[1])
+root = pathlib.Path(sys.argv[2])
+compose_path = pathlib.Path(sys.argv[3])
+script_path = pathlib.Path(sys.argv[4])
+output_path = pathlib.Path(sys.argv[5]).expanduser()
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+jobs = []
+for line in records_path.read_text(encoding="utf-8").splitlines():
+    if not line:
+        continue
+    record = json.loads(line)
+    record["pipeline_sha256"] = digest(root / record["pipeline"])
+    jobs.append(record)
+manifest = {
+    "schema_version": 1,
+    "status": "SAVEPOINTS_COMPLETED",
+    "generated_at": datetime.now(timezone.utc).isoformat(),
+    "job_count": len(jobs),
+    "expected_job_count": 4,
+    "lakehousectl_sha256": digest(script_path),
+    "compose_sha256": digest(compose_path),
+    "jobs": jobs,
+}
+if len(jobs) != manifest["expected_job_count"]:
+    raise SystemExit("refusing to emit an incomplete savepoint manifest")
+canonical = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode("utf-8")
+manifest["manifest_sha256"] = hashlib.sha256(canonical).hexdigest()
+rendered = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
+output_path.parent.mkdir(parents=True, exist_ok=True)
+file_descriptor, temporary_name = tempfile.mkstemp(
+    prefix=f".{output_path.name}.", dir=str(output_path.parent)
+)
+try:
+    with os.fdopen(file_descriptor, "w", encoding="utf-8") as handle:
+        handle.write(rendered)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(temporary_name, output_path)
+finally:
+    if os.path.exists(temporary_name):
+        os.unlink(temporary_name)
+print(rendered, end="")
+PY
+}
+
+savepoint_set() {
+  [[ -n "$MANIFEST_PATH" ]] || {
+    echo "savepoint-set requires --manifest FILE" >&2
+    return 2
+  }
+  [[ "$CDC_SAVEPOINT_TIMEOUT_SECONDS" =~ ^[1-9][0-9]*$ ]] || {
+    echo "CDC_SAVEPOINT_TIMEOUT_SECONDS must be a positive integer" >&2
+    return 2
+  }
+  [[ "$CDC_SAVEPOINT_POLL_SECONDS" =~ ^[0-9]+$ ]] || {
+    echo "CDC_SAVEPOINT_POLL_SECONDS must be a non-negative integer" >&2
+    return 2
+  }
+  runtime_gate >&2
+  local trigger_records completed_records
+  trigger_records=$(mktemp "${TMPDIR:-/tmp}/cloudmold-savepoint-triggers.XXXXXX")
+  completed_records=$(mktemp "${TMPDIR:-/tmp}/cloudmold-savepoint-set.XXXXXX")
+  trap "rm -f '$trigger_records' '$completed_records'" EXIT
+  local job_name service pipeline job_info job_id job_state
+  local triggered_at trigger_id savepoint_json trigger_record fields
+  while IFS='|' read -r job_name service pipeline; do
+    [[ -n "$job_name" ]] || continue
+    job_info=$(find_runtime_job "$job_name")
+    job_id=${job_info%%$'\t'*}
+    job_state=${job_info#*$'\t'}
+    [[ "$job_state" == "RUNNING" ]] || {
+      echo "cannot savepoint non-running job $job_name ($job_state)" >&2
+      return 1
+    }
+    triggered_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    trigger_id=$(trigger_savepoint "$job_id" "$job_name")
+    append_savepoint_trigger_record \
+      "$trigger_records" "$job_id" "$job_name" "$service" "$pipeline" \
+      "$triggered_at" "$trigger_id"
+  done < <(cdc_job_specs)
+  while IFS= read -r trigger_record; do
+    [[ -n "$trigger_record" ]] || continue
+    fields=$(savepoint_trigger_fields "$trigger_record")
+    IFS=$'\t' read -r \
+      job_id job_name service pipeline triggered_at trigger_id <<< "$fields"
+    savepoint_json=$(wait_for_savepoint "$job_id" "$job_name" "$trigger_id")
+    append_savepoint_manifest_record \
+      "$completed_records" "$job_id" "$job_name" "$service" "$pipeline" \
+      "$triggered_at" "$savepoint_json"
+  done < "$trigger_records"
+  emit_savepoint_manifest "$completed_records" "$MANIFEST_PATH"
+  rm -f "$trigger_records" "$completed_records"
+  trap - EXIT
+}
+
+validate_restore_manifest() {
+  local manifest_path=${1:?manifest path is required}
+  local records_file=${2:?validated records path is required}
+  test -f "$manifest_path" || {
+    echo "restore manifest does not exist: $manifest_path" >&2
+    return 1
+  }
+  python3 - "$manifest_path" "$records_file" "$ROOT_DIR" "$COMPOSE_FILE" <<'PY'
+import hashlib
+import json
+import pathlib
+import re
+import sys
+
+manifest_path = pathlib.Path(sys.argv[1])
+records_path = pathlib.Path(sys.argv[2])
+root = pathlib.Path(sys.argv[3])
+compose_path = pathlib.Path(sys.argv[4])
+expected = [
+    (
+        "CloudMold Domain Event Outbox to StarRocks ODS",
+        "event-cdc-cli",
+        "pipelines/event-outbox-mysql-to-starrocks.yaml",
+    ),
+    (
+        "Y Shopping ERP MySQL to StarRocks ODS",
+        "cdc-cli",
+        "pipelines/erp-mysql-to-starrocks.yaml",
+    ),
+    (
+        "Y Shopping Catalog MySQL to StarRocks ODS",
+        "catalog-cdc-cli",
+        "pipelines/catalog-mysql-to-starrocks.yaml",
+    ),
+    (
+        "Y Shopping Legacy Mall Alignment MySQL to StarRocks ODS",
+        "legacy-mall-cdc-cli",
+        "pipelines/legacy-mall-alignment-mysql-to-starrocks.yaml",
+    ),
+]
+
+
+def fail(message):
+    print(message, file=sys.stderr)
+    raise SystemExit(1)
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+try:
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+except (OSError, json.JSONDecodeError) as exc:
+    fail(f"invalid restore manifest: {exc}")
+if not isinstance(manifest, dict):
+    fail("invalid restore manifest root")
+if manifest.get("schema_version") != 1 or manifest.get("status") != "SAVEPOINTS_COMPLETED":
+    fail("restore manifest is not a completed schema-v1 savepoint set")
+stored_manifest_sha256 = manifest.pop("manifest_sha256", None)
+canonical = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode("utf-8")
+if stored_manifest_sha256 != hashlib.sha256(canonical).hexdigest():
+    fail("manifest checksum mismatch")
+if manifest.get("job_count") != 4 or manifest.get("expected_job_count") != 4:
+    fail("restore manifest does not contain the complete four-job denominator")
+if manifest.get("compose_sha256") != digest(compose_path):
+    fail("compose hash mismatch")
+jobs = manifest.get("jobs")
+if not isinstance(jobs, list) or len(jobs) != len(expected):
+    fail("restore manifest jobs are incomplete")
+normalized = []
+for index, (job, specification) in enumerate(zip(jobs, expected)):
+    if not isinstance(job, dict):
+        fail(f"restore manifest job {index} is invalid")
+    name, service, pipeline = specification
+    if (
+        job.get("name") != name
+        or job.get("compose_service") != service
+        or job.get("pipeline") != pipeline
+    ):
+        fail(f"restore manifest job {index} identity/order mismatch")
+    pipeline_path = root / pipeline
+    if job.get("pipeline_sha256") != digest(pipeline_path):
+        fail(f"pipeline hash mismatch: {pipeline}")
+    job_id = job.get("job_id")
+    if not isinstance(job_id, str) or not job_id:
+        fail(f"restore manifest job {index} has no job id")
+    savepoint = job.get("savepoint")
+    if not isinstance(savepoint, dict) or savepoint.get("status") != "COMPLETED":
+        fail(f"restore manifest job {index} has no completed savepoint")
+    location = savepoint.get("location")
+    if not isinstance(location, str) or not location:
+        fail(f"restore manifest job {index} has no savepoint location")
+    if (
+        not re.fullmatch(r"file:(?://)?/opt/flink/savepoints/[A-Za-z0-9._/-]+", location)
+        or ".." in pathlib.PurePosixPath(
+            "/" + location.split(":", 1)[1].lstrip("/")
+        ).parts
+    ):
+        fail(f"restore manifest job {index} has unsupported savepoint location")
+    normalized.append(job)
+records_path.write_text(
+    "".join(json.dumps(job, sort_keys=True) + "\n" for job in normalized),
+    encoding="utf-8",
+)
+PY
+}
+
+verify_savepoint_paths() {
+  local records_file=${1:?validated records path is required}
+  local record fields job_name location container_path
+  while IFS= read -r record; do
+    [[ -n "$record" ]] || continue
+    fields=$(RESTORE_RECORD="$record" python3 - <<'PY'
+import json
+import os
+
+record = json.loads(os.environ["RESTORE_RECORD"])
+location = record["savepoint"]["location"]
+container_path = "/" + location.split(":", 1)[1].lstrip("/")
+print(record["name"] + "\t" + location + "\t" + container_path)
+PY
+)
+    job_name=${fields%%$'\t'*}
+    fields=${fields#*$'\t'}
+    location=${fields%%$'\t'*}
+    container_path=${fields#*$'\t'}
+    docker exec yshopping-flink-jobmanager \
+      test -r "$container_path/_metadata" 2>/dev/null || {
+      echo "savepoint path is not readable for $job_name: $location" >&2
+      return 1
+    }
+  done < "$records_file"
+}
+
+emit_restore_result() {
+  local mode=${1:?restore result mode is required}
+  local records_file=${2:?restore records path is required}
+  local source_manifest=${3:?source manifest is required}
+  python3 - "$mode" "$records_file" "$source_manifest" <<'PY'
+import hashlib
+import json
+import pathlib
+import sys
+from datetime import datetime, timezone
+
+mode = sys.argv[1]
+records_path = pathlib.Path(sys.argv[2])
+source_manifest = pathlib.Path(sys.argv[3])
+records = [
+    json.loads(line)
+    for line in records_path.read_text(encoding="utf-8").splitlines()
+    if line
+]
+if mode == "dry-run":
+    jobs = [
+        {
+            "name": record["name"],
+            "compose_service": record["compose_service"],
+            "pipeline": record["pipeline"],
+            "savepoint_location": record["savepoint"]["location"],
+            "action": "RESTORE_FROM_SAVEPOINT",
+        }
+        for record in records
+    ]
+    status = "RESTORE_PLAN_VALIDATED"
+else:
+    jobs = records
+    status = "RESTORED_WITH_CHECKPOINTS"
+result = {
+    "schema_version": 1,
+    "status": status,
+    "dry_run": mode == "dry-run",
+    "generated_at": datetime.now(timezone.utc).isoformat(),
+    "source_manifest": str(source_manifest),
+    "source_manifest_sha256": hashlib.sha256(source_manifest.read_bytes()).hexdigest(),
+    "job_count": len(jobs),
+    "jobs": jobs,
+}
+print(json.dumps(result, indent=2, sort_keys=True))
+PY
+}
+
+restore_record_fields() {
+  local record=${1:?restore record is required}
+  RESTORE_RECORD="$record" python3 - <<'PY'
+import json
+import os
+
+record = json.loads(os.environ["RESTORE_RECORD"])
+print("\t".join([
+    record["name"],
+    record["compose_service"],
+    record["pipeline"],
+    record["savepoint"]["location"],
+]))
+PY
+}
+
+submit_cdc_restore_service() {
+  local service=${1:?CDC compose service is required}
+  local pipeline=${2:?pipeline is required}
+  local savepoint_location=${3:?savepoint location is required}
+  local container_pipeline="/opt/pipelines/${pipeline#pipelines/}"
+  local rendered_pipeline="/tmp/${pipeline##*/}"
+  docker compose --env-file "$CDC_ENV_FILE" -f "$COMPOSE_FILE" \
+    --profile tools run --rm \
+    -e "FLINK_RESTORE_SAVEPOINT=$savepoint_location" \
+    --entrypoint bash "$service" -lc \
+    "envsubst < '$container_pipeline' > '$rendered_pipeline' && \
+     /opt/flink-cdc/bin/flink-cdc.sh \
+       -s \"\$FLINK_RESTORE_SAVEPOINT\" -cm no_claim '$rendered_pipeline'" >&2
+}
+
+append_restore_result_record() {
+  local records_file=${1:?records file is required}
+  local source_record=${2:?source record is required}
+  local restored_job_id=${3:?restored job id is required}
+  local checkpoint_json=${4:?checkpoint JSON is required}
+  SOURCE_RESTORE_RECORD="$source_record" \
+  RESTORED_JOB_ID="$restored_job_id" \
+  RESTORED_CHECKPOINT_JSON="$checkpoint_json" \
+  python3 - "$records_file" <<'PY'
+import json
+import os
+import sys
+from datetime import datetime, timezone
+
+source = json.loads(os.environ["SOURCE_RESTORE_RECORD"])
+record = {
+    "name": source["name"],
+    "compose_service": source["compose_service"],
+    "pipeline": source["pipeline"],
+    "source_job_id": source["job_id"],
+    "restored_job_id": os.environ["RESTORED_JOB_ID"],
+    "savepoint_location": source["savepoint"]["location"],
+    "checkpoint_observed_at": datetime.now(timezone.utc).isoformat(),
+    "checkpoint": json.loads(os.environ["RESTORED_CHECKPOINT_JSON"]),
+}
+with open(sys.argv[1], "a", encoding="utf-8") as handle:
+    handle.write(json.dumps(record, sort_keys=True) + "\n")
+PY
+}
+
+restore_cdc_set() {
+  [[ -n "$MANIFEST_PATH" ]] || {
+    echo "restore-cdc-set requires --manifest FILE" >&2
+    return 2
+  }
+  local validated_records restored_records
+  validated_records=$(mktemp "${TMPDIR:-/tmp}/cloudmold-restore-validated.XXXXXX")
+  restored_records=$(mktemp "${TMPDIR:-/tmp}/cloudmold-restore-result.XXXXXX")
+  trap "rm -f '$validated_records' '$restored_records'" EXIT
+  validate_restore_manifest "$MANIFEST_PATH" "$validated_records"
+  verify_savepoint_paths "$validated_records"
+  runtime_infrastructure_gate >&2
+  if (( RESTORE_EXECUTE == 0 )); then
+    emit_restore_result dry-run "$validated_records" "$MANIFEST_PATH"
+    rm -f "$validated_records" "$restored_records"
+    trap - EXIT
+    return 0
+  fi
+  test -f "$CDC_ENV_FILE" || {
+    echo "missing $CDC_ENV_FILE" >&2
+    return 1
+  }
+  local source_record fields job_name service pipeline savepoint_location
+  local job_info job_id checkpoint_json
+  while IFS= read -r source_record; do
+    [[ -n "$source_record" ]] || continue
+    fields=$(restore_record_fields "$source_record")
+    IFS=$'\t' read -r job_name service pipeline savepoint_location <<< "$fields"
+    if job_info=$(find_runtime_job "$job_name"); then
+      echo "refusing restore while exact-name job already exists: $job_name" >&2
+      return 1
+    else
+      case $? in
+        1) ;;
+        *) return 1 ;;
+      esac
+    fi
+  done < "$validated_records"
+  while IFS= read -r source_record; do
+    [[ -n "$source_record" ]] || continue
+    fields=$(restore_record_fields "$source_record")
+    IFS=$'\t' read -r job_name service pipeline savepoint_location <<< "$fields"
+    submit_cdc_restore_service "$service" "$pipeline" "$savepoint_location"
+    job_info=$(wait_for_running_job "$job_name")
+    job_id=${job_info%%$'\t'*}
+    checkpoint_json=$(wait_for_completed_checkpoint "$job_id" "$job_name")
+    append_restore_result_record \
+      "$restored_records" "$source_record" "$job_id" "$checkpoint_json"
+  done < "$validated_records"
+  runtime_gate >&2
+  emit_restore_result execute "$restored_records" "$MANIFEST_PATH"
+  rm -f "$validated_records" "$restored_records"
+  trap - EXIT
+}
+
 TENANT_ID=""
 RUN_ID=""
 AFTER_SALE_ID=""
@@ -71,10 +1132,14 @@ WAREHOUSE_ID=""
 SOURCE_SYSTEM=""
 SOURCE_TYPE=""
 SOURCE_ID=""
+MANIFEST_PATH=""
+RESTORE_EXECUTE=0
 COMMAND=${1:-}
 shift || true
 while (( $# )); do
   case "$1" in
+    --manifest) MANIFEST_PATH=${2:?missing manifest path}; shift 2 ;;
+    --execute) RESTORE_EXECUTE=1; shift ;;
     --tenant) TENANT_ID=${2:?missing tenant}; shift 2 ;;
     --run-id) RUN_ID=${2:?missing run id}; shift 2 ;;
     --after-sale-id) AFTER_SALE_ID=${2:?missing after-sale id}; shift 2 ;;
@@ -88,6 +1153,10 @@ while (( $# )); do
   esac
 done
 
+if (( RESTORE_EXECUTE != 0 )) && [[ "$COMMAND" != "restore-cdc-set" ]]; then
+  echo "--execute is only valid with restore-cdc-set" >&2
+  exit 2
+fi
 if [[ -n "$TENANT_ID" && ! "$TENANT_ID" =~ ^[1-9][0-9]*$ ]]; then
   echo "--tenant must be a positive integer" >&2
   exit 2
@@ -192,8 +1261,26 @@ case "$COMMAND" in
   semantic-status)
     "$ROOT_DIR/scripts/alignmentctl" semantic-score
     ;;
+  runtime-preflight)
+    runtime_preflight
+    ;;
+  runtime-gate)
+    runtime_gate
+    ;;
+  empty-recovery-rehearsal)
+    empty_recovery_rehearsal
+    ;;
   start)
     docker compose -f "$COMPOSE_FILE" up -d --build starrocks jobmanager taskmanager
+    ;;
+  start-cdc-set)
+    start_cdc_set
+    ;;
+  savepoint-set)
+    savepoint_set
+    ;;
+  restore-cdc-set)
+    restore_cdc_set
     ;;
   submit-cdc)
     test -f "$ROOT_DIR/.env" || { echo "missing $ROOT_DIR/.env" >&2; exit 1; }

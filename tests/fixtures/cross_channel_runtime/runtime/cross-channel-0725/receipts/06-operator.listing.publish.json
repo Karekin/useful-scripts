@@ -1,0 +1,57 @@
+{
+  "schema_version": 2,
+  "stageId": "operator.listing.publish",
+  "executor": "external_evidence",
+  "operation": "WRITE",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:b92ddae3ebb866ee553c8012",
+  "requestEnvelope": {
+    "stageId": "operator.listing.publish",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "operator.listing.publish",
+    "kind": "response"
+  },
+  "effectEnvelope": {
+    "stageId": "operator.listing.publish",
+    "kind": "effect",
+    "eventIds": [
+      "event:operator.listing.publish"
+    ]
+  },
+  "evidence": {
+    "listingId": "listing-1",
+    "listingOfferId": "offer-1",
+    "listingRevision": 1,
+    "listingVersion": 6,
+    "listingStatus": "PUBLISHED",
+    "priceMinor": 39800,
+    "currencyCode": "CNY",
+    "outboxEventIds": [
+      "listing-event-1"
+    ]
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "operator.listing.publish",
+    "bindingDefinitionSha256": "3c4ace4d81a73f9b0508faa932f069c2c23626a40e8fc4238c6e186cefc6492d"
+  },
+  "requestSha256": "ee51c173a4148fbf3fd679f4f6ecf626808ebd3649645dbc28a4c89bc069b36b",
+  "responseSha256": "36898ca9260251789d5dcb9884cd95df92ff3ff26f9bbf1d9ce2d35a359e3be1",
+  "effectSha256": "9a84f6fccfa46672e9997cc6bbef4d394afc51ca2eeac51261197afe1772fa01",
+  "receiptSha256": "8e0725010852acf78f727decd4de7da56ea2e0e89cebd5b723e2ffd3235ce471"
+}

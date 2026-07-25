@@ -97,7 +97,7 @@ class ContractCtlTest(unittest.TestCase):
         manifest = CONTRACT.load(CONTRACT.CONTRACTS / "event-manifest-v1.json")
         expected_versions = {
             "inventory.stock.changed": [1, 2, 3, 4, 5],
-            "order.status.changed": [1, 2, 3],
+            "order.status.changed": [1, 2, 3, 4],
             "order.cancellation_saga.status_changed": [1, 2],
             "fulfillment.status.changed": [1, 2, 3],
             "payment.status.changed": [1, 2, 3],
@@ -132,6 +132,84 @@ class ContractCtlTest(unittest.TestCase):
             schema = CONTRACT.load(CONTRACT.CONTRACTS / "events" / filename)
             self.assertIn("cancellation_saga_id", schema["required"])
             self.assertIn("step_ordinal", schema["required"])
+
+    def test_order_v4_contract_only_allows_canonical_address_refs(self):
+        manifest = CONTRACT.load(CONTRACT.CONTRACTS / "event-manifest-v1.json")
+        config = manifest["events"]["order.status.changed"]["versions"][-1]
+        self.assertEqual(4, config["schema_version"])
+        schema = CONTRACT.load(CONTRACT.CONTRACTS / config["payload_schema"])
+        self.assertFalse(schema["additionalProperties"])
+        required = set(schema["required"])
+        self.assertTrue(
+            {"address_ref", "address_snapshot_version", "destination_region_code"} <= required
+        )
+        self.assertEqual(["string", "null"], schema["properties"]["payment_id"]["type"])
+        self.assertEqual("uuid", schema["properties"]["address_ref"]["format"])
+        self.assertEqual(36, schema["properties"]["address_ref"]["maxLength"])
+        self.assertEqual(1, schema["properties"]["address_snapshot_version"]["minimum"])
+        self.assertEqual(32, schema["properties"]["destination_region_code"]["maxLength"])
+        forbidden = {
+            "buyer_name",
+            "buyer_phone",
+            "receiver_name",
+            "receiver_phone",
+            "receiver_mobile",
+            "receiver_area_id",
+            "receiver_detail_address",
+            "full_address",
+            "address",
+            "address_detail",
+        }
+        self.assertFalse(forbidden & set(schema["properties"]))
+        example = CONTRACT.load(CONTRACT.CONTRACTS / config["example"])
+        self.assertEqual([], CONTRACT.validate_instance(example["payload"], schema, "$.payload"))
+
+    def test_order_v4_rejects_raw_address_pii_or_incomplete_canonical_snapshot(self):
+        schema = CONTRACT.load(
+            CONTRACT.CONTRACTS / "events" / "order-status-changed-v4.schema.json"
+        )
+        payload = {
+            "run_id": "commerce-v4-negative",
+            "order_id": "90000000-0000-4000-8000-000000000001",
+            "order_no": "CMO90000000000040008000",
+            "buyer_id": "principal-buyer-001",
+            "address_ref": "90000000-0000-4000-8000-000000000010",
+            "address_snapshot_version": 2,
+            "destination_region_code": "CN-120101",
+            "previous_status": "PAYMENT_CONFIRMED",
+            "current_status": "SHIPPED",
+            "product_amount_minor": 39800,
+            "shipping_amount_minor": 0,
+            "discount_amount_minor": 0,
+            "payable_amount_minor": 39800,
+            "currency_code": "CNY",
+            "payment_id": "90000000-0000-4000-8000-000000000011",
+            "fulfillment_id": "90000000-0000-4000-8000-000000000012",
+            "shipment_id": "90000000-0000-4000-8000-000000000013",
+            "refund_id": None,
+            "reason": "negative test",
+            "items": [{
+                "order_item_id": "90000000-0000-4000-8000-000000000002",
+                "canonical_sku_id": "10000000-0000-4000-8000-000000000006",
+                "quantity": "2",
+                "unit_price_minor": 19900,
+                "line_amount_minor": 39800,
+                "reservation_id": "90000000-0000-4000-8000-000000000003",
+                "listing_id": "10000000-0000-4000-8000-000000000002",
+                "listing_offer_id": "10000000-0000-4000-8000-000000000005",
+                "listing_revision": 1,
+                "listing_version": 6,
+                "channel_code": "YSHOPPING_INTERNAL",
+                "shop_id": "internal-shop",
+            }],
+        }
+        pii_payload = dict(payload, receiver_name="raw name", receiver_detail_address="street 1")
+        errors = CONTRACT.validate_instance(pii_payload, schema)
+        self.assertTrue(any("additional property" in error.lower() for error in errors))
+        incomplete = dict(payload)
+        del incomplete["destination_region_code"]
+        errors = CONTRACT.validate_instance(incomplete, schema)
+        self.assertTrue(any("$.destination_region_code: required" == error for error in errors))
 
     def test_aftersales_contracts_are_registered_and_pii_minimized(self):
         manifest = CONTRACT.load(CONTRACT.CONTRACTS / "event-manifest-v1.json")

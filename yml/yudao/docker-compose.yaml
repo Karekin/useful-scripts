@@ -115,6 +115,7 @@ services:
         --cloudmold.agent-control.action-submission-enabled=$${CLOUDMOLD_AGENT_CONTROL_ACTION_SUBMISSION_ENABLED}
         --cloudmold.agent-control.runtime.enabled=$${CLOUDMOLD_AGENT_CONTROL_RUNTIME_ENABLED}
         --cloudmold.agent-control.runtime.legacy-erp-bridge-enabled=$${CLOUDMOLD_AGENT_CONTROL_RUNTIME_LEGACY_ERP_BRIDGE_ENABLED}
+        --cloudmold.agent-control.approval-workflow.enabled=$${CLOUDMOLD_AGENT_APPROVAL_WORKFLOW_ENABLED}
     environment:
       CLOUDMOLD_RPC_ENABLED: "true"
       CLOUDMOLD_RPC_EXPORT_ENABLED: "true"
@@ -125,6 +126,9 @@ services:
       CLOUDMOLD_AGENT_CONTROL_ACTION_SUBMISSION_ENABLED: ${CLOUDMOLD_AGENT_CONTROL_ACTION_SUBMISSION_ENABLED:-false}
       CLOUDMOLD_AGENT_CONTROL_RUNTIME_ENABLED: ${CLOUDMOLD_AGENT_CONTROL_RUNTIME_ENABLED:-false}
       CLOUDMOLD_AGENT_CONTROL_RUNTIME_LEGACY_ERP_BRIDGE_ENABLED: ${CLOUDMOLD_AGENT_CONTROL_RUNTIME_LEGACY_ERP_BRIDGE_ENABLED:-false}
+      # The BPM dependency is packaged through the isolated Maven profile. Its
+      # Agent Control adapter remains fail-closed unless explicitly enabled.
+      CLOUDMOLD_AGENT_APPROVAL_WORKFLOW_ENABLED: ${CLOUDMOLD_AGENT_APPROVAL_WORKFLOW_ENABLED:-false}
       # The issuer and durable executor must share the same externally supplied
       # approval authority secret. Empty configuration keeps issuance fail-closed.
       CLOUDMOLD_SKILL_TASK_APPROVAL_HMAC_SECRET: ${CLOUDMOLD_SKILL_TASK_APPROVAL_HMAC_SECRET:-}
@@ -142,7 +146,7 @@ services:
       SPRING_DATA_REDIS_HOST: yudao-redis
       SPRING_DATA_REDIS_PORT: "6379"
       SPRING_BOOT_ADMIN_CLIENT_ENABLED: "false"
-      FLOWABLE_DATABASE_SCHEMA_UPDATE: "false"
+      FLOWABLE_DATABASE_SCHEMA_UPDATE: ${FLOWABLE_DATABASE_SCHEMA_UPDATE:-false}
       JAVA_OPTS: -Xms512m -Xmx1536m -Dfile.encoding=UTF-8 -Djava.security.egd=file:/dev/./urandom -Ddubbo.application.serialize-check-status=STRICT -Ddubbo.application.check-serializable=false -Ddubbo.hessian.allowNonSerializable=true
     secrets:
       - cloudmold_rpc_shared_secret

@@ -1,0 +1,62 @@
+{
+  "schema_version": 2,
+  "stageId": "app.product_review.create",
+  "executor": "http",
+  "operation": "WRITE",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:86bb65283fe19e9fc29718e5",
+  "requestEnvelope": {
+    "stageId": "app.product_review.create",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.product_review.create",
+    "kind": "response"
+  },
+  "effectEnvelope": {
+    "stageId": "app.product_review.create",
+    "kind": "effect",
+    "eventIds": [
+      "event:app.product_review.create"
+    ]
+  },
+  "evidence": {
+    "reviewId": "review-1",
+    "orderId": "order-1",
+    "orderItemId": "order-item-1",
+    "listingId": "listing-1",
+    "listingOfferId": "offer-1",
+    "merchantId": "merchant-1",
+    "shopId": "shop-1",
+    "canonicalSpuId": "spu-1",
+    "canonicalSkuId": "sku-1",
+    "overallScore": 4,
+    "moderationStatus": "APPROVED",
+    "duplicate": false
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1",
+    "sessionId": "00000000-0000-4000-8000-000000000001",
+    "orderId": "order-1",
+    "orderItemId": "order-item-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.product_review.create",
+    "bindingDefinitionSha256": "6661f4fccffa48226436cf4264adf27e2eefc25dd58cb25c55cc591bb03de8a0"
+  },
+  "requestSha256": "1f808021b0aa1f8257cf2abc33e88f0a5b4f74c867f8c34f79fcde2c17a0e724",
+  "responseSha256": "e6da49de0b13fc94865c20d08925e95ad16cf91149ba40866a8b9f04d3d89bcd",
+  "effectSha256": "17b1d53f1bc3e1de88d7ea070778652c3ca32060f247e5122bd739bd384d5681",
+  "receiptSha256": "ad8c509d6ba15ef6cc5306a8cb2d0d162dad98e61e911cec5dee2b7295f5ec17"
+}

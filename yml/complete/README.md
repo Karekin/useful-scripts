@@ -159,7 +159,7 @@ Standardized logging configuration:
 ```
 yml/complete/
 ├── docker-compose.yml          # Main compose file
-├── .env                        # Environment variables
+├── .env.example                # Safe template; copy to ignored .env and set local secrets
 ├── data/                       # Persistent data
 │   ├── mysql/                  # MySQL data
 │   ├── kafka/                  # Kafka data
@@ -275,5 +275,4 @@ For issues and questions:
 - Initial setup with basic services
 - Standalone Doris configuration
 - Basic DolphinScheduler setup
-
 

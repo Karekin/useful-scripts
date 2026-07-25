@@ -1,0 +1,49 @@
+{
+  "schema_version": 2,
+  "stageId": "app.after_sale.get",
+  "executor": "http",
+  "operation": "READ",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:717889ded8d5f85e709bcbe9",
+  "requestEnvelope": {
+    "stageId": "app.after_sale.get",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.after_sale.get",
+    "kind": "response"
+  },
+  "effectEnvelope": {},
+  "evidence": {
+    "afterSaleId": "after-sale-1",
+    "orderId": "order-1",
+    "caseStatus": "COMPLETED",
+    "refundStatus": "SUCCEEDED",
+    "returnFulfillmentStatus": "INSPECTION_ACCEPTED"
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1",
+    "sessionId": "00000000-0000-4000-8000-000000000001",
+    "orderId": "order-1",
+    "afterSaleId": "after-sale-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.after_sale.get",
+    "bindingDefinitionSha256": "f69ba018feed19594ee8008ecf25024baf8518d98ec11bb7b3be08f67e49dde2"
+  },
+  "requestSha256": "6a90efe8c027c57428a3de27dfc4074ecca00b9feee1c5f89cc418df44f0b20e",
+  "responseSha256": "54f8f325ef17d75157c225fbd3f6ebb204162c1d8aca9c8cfaf05ec86e563156",
+  "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "receiptSha256": "a0fbb95faa06f8bef24d78bcfb9cccfc17f7378756d4a00e1fb6b822365f3c32"
+}

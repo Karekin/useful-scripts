@@ -1,0 +1,46 @@
+{
+  "schema_version": 2,
+  "stageId": "app.identity.me",
+  "executor": "http",
+  "operation": "READ",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:0970a7261d993f34b1ad5583",
+  "requestEnvelope": {
+    "stageId": "app.identity.me",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.identity.me",
+    "kind": "response"
+  },
+  "effectEnvelope": {},
+  "evidence": {
+    "memberUserId": 247,
+    "principalId": "principal-1",
+    "principalStatus": "ACTIVE",
+    "sourceSystem": "member",
+    "sourceType": "MEMBER_USER"
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.identity.me",
+    "bindingDefinitionSha256": "07571b9354d79d44c25168831208acf13425de5d03eb13a6c36dd0db62d73854"
+  },
+  "requestSha256": "8db53797a6c7b9ca1f5a0053606d2ea7a46ecd0a765392495eb14bcda7bc20e0",
+  "responseSha256": "411017a552347c5ce48653cb7977892fff610e08ef72ccf2bc8ea75027e37395",
+  "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "receiptSha256": "d6d67264824a05e01594cab66f36a94586572f7561d2ebfc678e9f6f7cfc4007"
+}

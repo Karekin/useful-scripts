@@ -1,0 +1,42 @@
+{
+  "schema_version": 2,
+  "stageId": "operator.inventory.sellable",
+  "executor": "external_evidence",
+  "operation": "ASSERT",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:0656d4fdfeab7468bf8cf262",
+  "requestEnvelope": {
+    "stageId": "operator.inventory.sellable",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "operator.inventory.sellable",
+    "kind": "response"
+  },
+  "effectEnvelope": {},
+  "evidence": {
+    "inventoryBalanceId": "balance-1",
+    "inventoryVersion": 9,
+    "availableQuantity": 10,
+    "stockStatus": "SELLABLE",
+    "qualityStatus": "QUALIFIED"
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "operator.inventory.sellable",
+    "bindingDefinitionSha256": "e30a863b9875f3682d161d09459ca60dd650aa4f2737ca51ffa71192e6d3ee26"
+  }
+}

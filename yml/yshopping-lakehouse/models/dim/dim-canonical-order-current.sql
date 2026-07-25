@@ -3,6 +3,9 @@ WITH history AS (
     SELECT
         tenant_id,
         order_id,
+        MAX(address_ref) AS address_ref,
+        MAX(address_snapshot_version) AS address_snapshot_version,
+        MAX(destination_region_code) AS destination_region_code,
         MAX(cancellation_saga_id) AS cancellation_saga_id,
         MAX(pre_cancellation_status) AS pre_cancellation_status,
         MAX(cancellation_mode) AS cancellation_mode,
@@ -22,6 +25,9 @@ WITH history AS (
 SELECT
     latest.event_id, latest.schema_version, latest.tenant_id, latest.order_id, latest.order_no,
     latest.run_id, latest.buyer_id, latest.aggregate_version,
+    COALESCE(latest.address_ref, history.address_ref) AS address_ref,
+    COALESCE(latest.address_snapshot_version, history.address_snapshot_version) AS address_snapshot_version,
+    COALESCE(latest.destination_region_code, history.destination_region_code) AS destination_region_code,
     latest.previous_status, latest.current_status, latest.product_amount_minor,
     latest.shipping_amount_minor, latest.discount_amount_minor, latest.payable_amount_minor,
     latest.currency_code, latest.payment_id,

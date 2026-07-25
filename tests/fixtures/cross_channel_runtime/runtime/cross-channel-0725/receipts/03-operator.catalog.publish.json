@@ -1,0 +1,54 @@
+{
+  "schema_version": 2,
+  "stageId": "operator.catalog.publish",
+  "executor": "external_evidence",
+  "operation": "WRITE",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:1ab9fbf0577edb7a1a8e1af6",
+  "requestEnvelope": {
+    "stageId": "operator.catalog.publish",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "operator.catalog.publish",
+    "kind": "response"
+  },
+  "effectEnvelope": {
+    "stageId": "operator.catalog.publish",
+    "kind": "effect",
+    "eventIds": [
+      "event:operator.catalog.publish"
+    ]
+  },
+  "evidence": {
+    "canonicalSpuId": "spu-1",
+    "canonicalSkuId": "sku-1",
+    "skuCode": "YS-SKU-1",
+    "catalogStatus": "ACTIVE",
+    "outboxEventIds": [
+      "catalog-event-1"
+    ]
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "operator.catalog.publish",
+    "bindingDefinitionSha256": "2c1b5a037d92dfb9c1f934899323039b8b1ae49560d43d6759d08c264a282c03"
+  },
+  "requestSha256": "d1b71aa10b42dd3d8e49cd1579250bef910b2a38a79025aecb47ad45cb29c642",
+  "responseSha256": "bbc312bc9ef6417598fc948ea95d8146e414e2314dfa28abe0533d097770b51b",
+  "effectSha256": "2df8b14991e96f91a3dc436e8fea692ec039bc7b1b8b4de8decaa3c02a3476e8",
+  "receiptSha256": "9ab1d3faff9416a28ed53c578150201b0450918a1ff88f847c8fc73160403eb4"
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": 2,
+  "stageId": "app.products.list",
+  "executor": "http",
+  "operation": "READ",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:fad49663b3d98c45386e2051",
+  "requestEnvelope": {
+    "stageId": "app.products.list",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.products.list",
+    "kind": "response"
+  },
+  "effectEnvelope": {},
+  "evidence": {
+    "list": [
+      {
+        "listingId": "listing-1"
+      }
+    ],
+    "total": 1,
+    "pageNo": 1,
+    "pageSize": 10
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.products.list",
+    "bindingDefinitionSha256": "1eb9adb2ea9ca2970f17945bbd61b27321d1bb0f0d32b1138a79070c80758c3b"
+  },
+  "requestSha256": "5f5c5858b2bbe797e07276b6b73a6542149ad09b59371ad3e1b6dfef414960ad",
+  "responseSha256": "bf07a7d178641d9660eca051932a8899cfa1c98518e2da8f0873f8fa6066bd97",
+  "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "receiptSha256": "a5dfb9a5d574489d8c4bc6e9d4ca02c6a72b2434b4cf40999ab70d30935e5d11"
+}

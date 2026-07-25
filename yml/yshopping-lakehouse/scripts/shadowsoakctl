@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""Operate the resumable Y-Shopping 72-hour shadow/soak evidence window."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+from shadow_soak import ShadowSoakError, load_state, observe_round, open_window
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    open_parser = subparsers.add_parser("open")
+    open_parser.add_argument("--state-dir", type=Path, required=True)
+    open_parser.add_argument("--window-id", required=True)
+    open_parser.add_argument("--opened-at", required=True)
+    open_parser.add_argument("--expected-assets-sha256", required=True)
+    open_parser.add_argument("--access-manifest", type=Path)
+    open_parser.add_argument("--max-gap-seconds", type=int, default=21600)
+    open_parser.add_argument("--max-lag-seconds", type=int, default=300)
+    open_parser.add_argument("--max-freshness-seconds", type=int, default=600)
+    open_parser.add_argument("--required-round-count", type=int, default=12)
+
+    observe = subparsers.add_parser("observe")
+    observe.add_argument("--state-dir", type=Path, required=True)
+    observe.add_argument("--round", type=Path, required=True)
+
+    status = subparsers.add_parser("status")
+    status.add_argument("--state-dir", type=Path, required=True)
+    args = parser.parse_args()
+
+    if args.command == "open":
+        state = open_window(
+            args.state_dir,
+            window_id=args.window_id,
+            opened_at=args.opened_at,
+            expected_asset_names_sha256=args.expected_assets_sha256,
+            access_manifest=args.access_manifest,
+            max_gap_seconds=args.max_gap_seconds,
+            max_lag_seconds=args.max_lag_seconds,
+            max_freshness_seconds=args.max_freshness_seconds,
+            required_round_count=args.required_round_count,
+        )
+    elif args.command == "observe":
+        state = observe_round(args.state_dir, args.round)
+    else:
+        state = load_state(args.state_dir)
+    print(json.dumps(state, ensure_ascii=False, indent=2, sort_keys=True))
+    # V1 records unsigned local evidence only and therefore never exits as a
+    # successful production admission gate.
+    return 2
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except ShadowSoakError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        raise SystemExit(1)

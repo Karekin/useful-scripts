@@ -50,9 +50,15 @@ models/dwd/dwd-canonical-warehouse-source-mapping-event.sql
 models/dwd/dwd-canonical-warehouse-operator-assignment-event.sql
 models/dwd/dwd-canonical-promotion-event.sql
 models/dwd/dwd-canonical-engagement-event.sql
+models/dwd/dwd-canonical-engagement-reaction-event.sql
 models/dwd/dwd-canonical-customer-service-event.sql
 models/dwd/dwd-canonical-customer-service-buyer-feedback-event.sql
 models/dwd/dwd-canonical-commerce-session-event.sql
+models/dwd/dwd-app-recommendation-decision-event.sql
+models/dwd/dwd-app-recommendation-item-event.sql
+models/dwd/dwd-app-cart-event.sql
+models/dwd/dwd-app-cart-item-event.sql
+models/dwd/dwd-app-product-review-event.sql
 models/dwd/dwd-canonical-ai-operations-event.sql
 models/dwd/dwd-canonical-operations-intelligence-event.sql
 models/dwd/dwd-canonical-token-platform-event.sql
@@ -122,6 +128,8 @@ models/dim/dim-canonical-engagement-current.sql
 models/dim/dim-canonical-customer-service-current.sql
 models/dim/dim-canonical-customer-service-buyer-feedback-current.sql
 models/dim/dim-canonical-commerce-session-current.sql
+models/dim/dim-app-recommendation-decision-current.sql
+models/dim/dim-app-cart-current.sql
 models/dim/dim-canonical-ai-operations-current.sql
 models/dim/dim-canonical-operations-intelligence-current.sql
 models/dim/dim-canonical-token-platform-current.sql
@@ -179,6 +187,8 @@ models/dws/dws-canonical-engagement-current.sql
 models/dws/dws-canonical-commerce-session-funnel.sql
 models/dws/dws-canonical-commerce-search-request-funnel.sql
 models/dws/dws-canonical-merchant-acquisition-daily.sql
+models/dws/dws-app-recommendation-effectiveness.sql
+models/dws/dws-app-cart-current.sql
 models/dws/dws-canonical-customer-service-current.sql
 models/dws/dws-canonical-customer-service-buyer-csat-current.sql
 models/dws/dws-canonical-customer-service-service-metrics-current.sql
@@ -255,6 +265,8 @@ models/ads/ads-canonical-legacy-trade-target-readiness.sql
 models/ads/ads-canonical-legacy-trade-benefit-governance-readiness.sql
 models/ads/ads-legacy-commerce-source-metrics.sql
 models/ads/ads-canonical-commerce-acquisition-funnel.sql
+models/ads/ads-app-recommendation-readiness.sql
+models/ads/ads-app-cart-readiness.sql
 models/ads/ads-canonical-merchant-acquisition-metrics.sql
 models/ads/ads-ecommerce-merchant-role-metrics.sql
 models/ads/ads-ecommerce-operations-role-metrics.sql

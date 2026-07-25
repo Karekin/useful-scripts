@@ -1,0 +1,64 @@
+{
+  "schema_version": 2,
+  "stageId": "app.cart.add",
+  "executor": "http",
+  "operation": "WRITE",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:38a344d4b80d142eefe635a9",
+  "requestEnvelope": {
+    "stageId": "app.cart.add",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.cart.add",
+    "kind": "response"
+  },
+  "effectEnvelope": {
+    "stageId": "app.cart.add",
+    "kind": "effect",
+    "eventIds": [
+      "event:app.cart.add"
+    ]
+  },
+  "evidence": {
+    "cartId": "cart-1",
+    "principalId": "principal-1",
+    "aggregateVersion": 2,
+    "lineCount": 1,
+    "selectedLineCount": 1,
+    "duplicate": false,
+    "lines": [
+      {
+        "lineId": "line-1",
+        "listingId": "listing-1",
+        "listingOfferId": "offer-1",
+        "canonicalSkuId": "sku-1",
+        "selected": true
+      }
+    ]
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1",
+    "sessionId": "00000000-0000-4000-8000-000000000001",
+    "addressRef": "11111111-1111-4111-8111-111111111111"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.cart.add",
+    "bindingDefinitionSha256": "18a6f208aa05f15cbdc7d79e16dc9fd42c93004277d2dffd2635b1ffd413c307"
+  },
+  "requestSha256": "69fbf27e3f3174b2c8d911a27adad682ee7e6cf4f765610364180a78bca2f26a",
+  "responseSha256": "4897960c8059c92fbbfbbba6e156c0821b596addaf4d3d74e22e2a888c60542c",
+  "effectSha256": "6c8590cef81ae0e1f0a3ae67ad444a96f8fd57f17ca0c43888172f291acf1119",
+  "receiptSha256": "c80e5f3f13d87413bea53374317d4b7700b31bc6a95b84809393900bdb41146d"
+}

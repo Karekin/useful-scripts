@@ -26,6 +26,80 @@ retention requirements are proven.
 
 The local UIs are StarRocks FE on port 8030 and Flink on port 8081.
 
+## Runtime recovery guardrails
+
+Use the recovery control plane before restarting or resubmitting CDC jobs:
+
+```bash
+./scripts/lakehousectl runtime-preflight
+./scripts/lakehousectl runtime-gate
+./scripts/lakehousectl empty-recovery-rehearsal
+./scripts/lakehousectl start-cdc-set --manifest ./runtime/cdc-runtime-manifest.json
+./scripts/lakehousectl savepoint-set --manifest ./runtime/cdc-savepoint-manifest.json
+./scripts/lakehousectl restore-cdc-set --manifest ./runtime/cdc-savepoint-manifest.json
+# Only after reviewing the dry-run JSON and ensuring the exact-name jobs are absent:
+./scripts/lakehousectl restore-cdc-set \
+  --manifest ./runtime/cdc-savepoint-manifest.json --execute
+```
+
+`runtime-preflight` is the backward-compatible, read-only observation command:
+it always prints the complete snapshot and reports `runtime_gate=FAIL` plus
+machine-readable reasons without returning a failing status. `runtime-gate`
+evaluates the same snapshot and exits non-zero unless StarRocks container/API
+health, FE/BE free-space guards, Flink APIs, four-slot capacity and the exact
+four required `RUNNING` jobs all pass.
+
+The read-only commands report:
+
+- StarRocks container/API health and the FE/BE free-space guard.
+- Checkpoint/savepoint volume inventory.
+- Flink total/free slots and whether legacy commerce observability must stay
+  disabled in 4-slot mode.
+- The expected four-job set: Outbox, ERP, Catalog and Legacy Mall.
+- The empty-environment recovery order:
+  `starrocks -> jobmanager -> taskmanager -> outbox -> erp -> catalog -> legacy_mall`.
+
+The rehearsal does not submit, cancel, savepoint or restart anything. A
+successful dry run is therefore `PLAN_READY`, never proof that recovery passed.
+It blocks when StarRocks FE metadata free capacity is below 5 GiB, because that
+state causes FE journal writes to fail and makes all CDC recovery unsafe.
+
+`start-cdc-set` is the mutating control-plane command. It first passes the
+infrastructure-only gate, then submits Outbox, ERP, Catalog and Legacy Mall in
+that order. It waits for each exact job to enter `RUNNING` and expose its first
+completed checkpoint before submitting the next job. Existing exact-name
+`RUNNING` jobs are reused; duplicate or non-running matches fail closed. The
+final stdout is a JSON manifest containing job IDs, checkpoint evidence,
+timestamps, pipeline template hashes and the Compose/control-script hashes.
+`--manifest` atomically persists the same JSON. Override the default 300-second
+checkpoint wait only through `CDC_CHECKPOINT_TIMEOUT_SECONDS`; polling defaults
+to five seconds.
+
+`savepoint-set` is a non-cancelling but state-changing operation. It requires the
+strict four-job runtime gate, triggers one Flink savepoint per job through the
+asynchronous REST API, triggers the full set before polling, and waits for every
+operation to return `COMPLETED` with a concrete location. Only the complete
+four-job denominator is atomically
+written. The savepoint manifest binds each location to the exact job ID, ordered
+job identity, pipeline template SHA-256, Compose SHA-256 and control-script
+SHA-256, then seals the canonical payload with `manifest_sha256` for accidental
+or unaudited mutation detection. API failure, operation failure, timeout or a
+missing location leaves no successful manifest. The wait defaults to 300
+seconds and can be configured with `CDC_SAVEPOINT_TIMEOUT_SECONDS` and
+`CDC_SAVEPOINT_POLL_SECONDS`.
+
+`restore-cdc-set` is dry-run by default. A dry run validates the completed
+four-job manifest, exact order and identities, current pipeline/Compose hashes,
+supported path shape and readable `_metadata` in the JobManager savepoint
+volume, then prints a JSON restore plan without submitting, stopping or
+cancelling a job. Hash drift, tampering, missing paths and invalid evidence fail
+closed. `--execute` is the only mutation authority: it additionally requires
+all four exact-name jobs to be absent, restores them in the governed order with
+Flink CDC `-s` and explicit `no_claim` ownership, and waits for `RUNNING` plus a
+completed post-restore checkpoint before proceeding. The command deliberately
+never stops or cancels a live job; live-job shutdown remains a separate
+operator-controlled action.
+
 ## Governed procurement and inventory slice
 
 The first executable vertical slice now has a versioned contract, current

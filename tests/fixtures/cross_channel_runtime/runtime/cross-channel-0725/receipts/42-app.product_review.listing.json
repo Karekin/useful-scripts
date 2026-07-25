@@ -1,0 +1,52 @@
+{
+  "schema_version": 2,
+  "stageId": "app.product_review.listing",
+  "executor": "http",
+  "operation": "READ",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:e39607df86b88d809ac8804f",
+  "requestEnvelope": {
+    "stageId": "app.product_review.listing",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.product_review.listing",
+    "kind": "response"
+  },
+  "effectEnvelope": {},
+  "evidence": {
+    "total": 1,
+    "pageNo": 1,
+    "pageSize": 20,
+    "list": [
+      {
+        "reviewId": "review-1"
+      }
+    ]
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1",
+    "sessionId": "00000000-0000-4000-8000-000000000001",
+    "orderId": "order-1",
+    "orderItemId": "order-item-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.product_review.listing",
+    "bindingDefinitionSha256": "9fca190e87609882618510667a4878ceeb0c88e90e22bbfc0953eceeaee386d5"
+  },
+  "requestSha256": "732401c2c899f02dd815230e7e59ea1ba71d6a0bc549398385965c0a1541e719",
+  "responseSha256": "a4da29dfc3252cb5160c95ed50781916c3f23dd3c2894d7b4290792110f0e09b",
+  "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "receiptSha256": "de9996de176b6bc91995bb339eab91069fc89a7a6a026958b592b3d04ce91757"
+}

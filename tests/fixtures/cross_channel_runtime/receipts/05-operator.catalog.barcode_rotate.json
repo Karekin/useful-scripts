@@ -1,0 +1,51 @@
+{
+  "schema_version": 2,
+  "stageId": "operator.catalog.barcode_rotate",
+  "executor": "external_evidence",
+  "operation": "WRITE",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:d5ff35f7f17f6b605a454089",
+  "requestEnvelope": {
+    "stageId": "operator.catalog.barcode_rotate",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "operator.catalog.barcode_rotate",
+    "kind": "response"
+  },
+  "effectEnvelope": {
+    "stageId": "operator.catalog.barcode_rotate",
+    "kind": "effect",
+    "eventIds": [
+      "event:operator.catalog.barcode_rotate"
+    ]
+  },
+  "evidence": {
+    "skuId": "sku-1",
+    "previousBarcode": "6901234567890",
+    "currentBarcode": "6901234567893",
+    "barcodeType": "EAN13",
+    "aggregateVersion": 3,
+    "outboxEventIds": [
+      "catalog-barcode-event-1"
+    ]
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "operator.catalog.barcode_rotate",
+    "bindingDefinitionSha256": "88fb80df1e72020373704611a6a988913996e6c68586c4699d03115aa4b0dc8b"
+  }
+}

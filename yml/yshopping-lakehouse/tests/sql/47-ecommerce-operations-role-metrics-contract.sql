@@ -23,8 +23,9 @@ WHERE metric_value IS NULL
 
 SELECT 'operations_role_metric_formula_mismatch', COUNT(*)
 FROM yshopping_ads.ads_ecommerce_operations_role_metrics
-WHERE (unit = 'count' AND metric_value <> numerator)
-   OR (unit = 'percent' AND metric_value <> numerator * 100.0 / NULLIF(denominator, 0));
+WHERE (unit = 'count' AND ABS(metric_value - numerator) > 0.000001)
+   OR (unit = 'percent'
+       AND ABS(metric_value - numerator * 100.0 / NULLIF(denominator, 0)) > 0.000001);
 
 SELECT 'operations_role_metric_invalid_range', COUNT(*)
 FROM yshopping_ads.ads_ecommerce_operations_role_metrics

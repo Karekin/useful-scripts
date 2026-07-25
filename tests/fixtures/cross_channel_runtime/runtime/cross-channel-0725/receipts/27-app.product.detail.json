@@ -1,0 +1,66 @@
+{
+  "schema_version": 2,
+  "stageId": "app.product.detail",
+  "executor": "http",
+  "operation": "READ",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:417213d98e206db63c4f450b",
+  "requestEnvelope": {
+    "stageId": "app.product.detail",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.product.detail",
+    "kind": "response"
+  },
+  "effectEnvelope": {},
+  "evidence": {
+    "listingId": "listing-1",
+    "listingNo": "LIST-1",
+    "title": "CloudMold Sneaker",
+    "primaryImageUrl": "https://example.com/p.png",
+    "media": [
+      {
+        "type": "image"
+      }
+    ],
+    "merchantId": "merchant-1",
+    "shopId": "shop-1",
+    "canonicalSpuId": "spu-1",
+    "listingRevision": 1,
+    "listingVersion": 6,
+    "qualitySummary": {
+      "status": "QUALIFIED"
+    },
+    "skus": [
+      {
+        "canonicalSkuId": "sku-1",
+        "skuCode": "YS-SKU-REV2",
+        "barcode": "6901234567893",
+        "listingOfferId": "offer-1"
+      }
+    ]
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.product.detail",
+    "bindingDefinitionSha256": "2137cc525239a3cff8e1476d641d17161beaa4fbc478d9563526db35d1ba3336"
+  },
+  "requestSha256": "d162a2bb8d5e51a9026b3fd87fadcfff4c27729faa1f7a99e9cfad47d375a98d",
+  "responseSha256": "5c84993276e580ed9c14d1dd32790d924e44d3a9a9600f1394c13cde58bc377d",
+  "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "receiptSha256": "980b64c03ad3a45ac69fdc8a8e9adac197a2fed22e32417bedd11be115592936"
+}

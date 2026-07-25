@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/app-cart-changed-v1.schema.json",
+  "title": "app.cart.changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "buyer_principal_id",
+    "line_count",
+    "selected_line_count",
+    "lines"
+  ],
+  "properties": {
+    "buyer_principal_id": {"type": "string", "format": "uuid"},
+    "line_count": {"type": "integer", "minimum": 0, "maximum": 50},
+    "selected_line_count": {"type": "integer", "minimum": 0, "maximum": 50},
+    "lines": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "line_id",
+          "listing_id",
+          "listing_offer_id",
+          "canonical_sku_id",
+          "quantity",
+          "selected"
+        ],
+        "properties": {
+          "line_id": {"type": "string", "format": "uuid"},
+          "listing_id": {"type": "string", "format": "uuid"},
+          "listing_offer_id": {"type": "string", "format": "uuid"},
+          "canonical_sku_id": {"type": "string", "format": "uuid"},
+          "quantity": {"type": "number", "exclusiveMinimum": 0},
+          "selected": {"type": "boolean"}
+        }
+      }
+    }
+  }
+}

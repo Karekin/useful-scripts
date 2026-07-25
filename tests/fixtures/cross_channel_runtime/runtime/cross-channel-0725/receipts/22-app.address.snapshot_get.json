@@ -1,0 +1,47 @@
+{
+  "schema_version": 2,
+  "stageId": "app.address.snapshot_get",
+  "executor": "http",
+  "operation": "READ",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:8cfc337d2b6de906c7e42cfe",
+  "requestEnvelope": {
+    "stageId": "app.address.snapshot_get",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.address.snapshot_get",
+    "kind": "response"
+  },
+  "effectEnvelope": {},
+  "evidence": {
+    "addressRef": "11111111-1111-4111-8111-111111111111",
+    "snapshotVersion": 1,
+    "destinationRegionCode": "310000",
+    "receiverSummary": "张*",
+    "mobileSummary": "138****0000"
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1",
+    "addressRef": "11111111-1111-4111-8111-111111111111"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.address.snapshot_get",
+    "bindingDefinitionSha256": "eba69c291b15ebf752120b767db5cb95a4b0f990c905ba4e50ed16a2edf5ae0b"
+  },
+  "requestSha256": "912774f3d0a780450853a1870e2339a7e09c178d7edbfbd7904a826d9dd4db89",
+  "responseSha256": "6d72c78ab5191d69dbceda7285861309fe6c8e22c0d9dbe140338a7ece0c2c48",
+  "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "receiptSha256": "0472888ee4648276464b50be41c2758ba3d1b205c97590d2533cdb6a7694cb6d"
+}

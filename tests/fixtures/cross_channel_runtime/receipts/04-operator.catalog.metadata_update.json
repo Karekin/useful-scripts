@@ -1,0 +1,51 @@
+{
+  "schema_version": 2,
+  "stageId": "operator.catalog.metadata_update",
+  "executor": "external_evidence",
+  "operation": "WRITE",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:fe943471e3e9a9ba8d2c44f8",
+  "requestEnvelope": {
+    "stageId": "operator.catalog.metadata_update",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "operator.catalog.metadata_update",
+    "kind": "response"
+  },
+  "effectEnvelope": {
+    "stageId": "operator.catalog.metadata_update",
+    "kind": "effect",
+    "eventIds": [
+      "event:operator.catalog.metadata_update"
+    ]
+  },
+  "evidence": {
+    "entityType": "SKU",
+    "entityId": "sku-1",
+    "businessCode": "YS-SKU-REV2",
+    "currentStatus": "ACTIVE",
+    "aggregateVersion": 2,
+    "outboxEventIds": [
+      "catalog-metadata-event-1"
+    ]
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "operator.catalog.metadata_update",
+    "bindingDefinitionSha256": "f1be033f722f4ea2dfc63cdac8347eb9ee641afd3a05dd8eef0543a5f84d1abc"
+  }
+}

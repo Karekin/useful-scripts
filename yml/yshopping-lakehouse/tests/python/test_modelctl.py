@@ -62,9 +62,9 @@ class ModelCtlTest(unittest.TestCase):
             positions["models/dws/dws-canonical-paid-order-cancellation-saga-current.sql"],
         )
 
-    def test_models_extend_manifest_to_two_hundred_sixty_four_in_dependency_order(self):
+    def test_models_extend_manifest_to_two_hundred_seventy_six_in_dependency_order(self):
         order = MODEL.load_order()
-        self.assertEqual(len(order), 264)
+        self.assertEqual(len(order), 276)
         positions = {entry: index for index, entry in enumerate(order)}
         for dwd in (
             "models/dwd/dwd-legacy-pay-order-current.sql",
@@ -258,6 +258,35 @@ class ModelCtlTest(unittest.TestCase):
         self.assertLess(positions[benefit_dim], positions[benefit_dws])
         self.assertLess(positions[benefit_funding_dwd], positions[benefit_dws])
         self.assertLess(positions[benefit_dws], positions[benefit_ads])
+
+        recommendation_dwd = "models/dwd/dwd-app-recommendation-decision-event.sql"
+        recommendation_item_dwd = "models/dwd/dwd-app-recommendation-item-event.sql"
+        recommendation_dim = "models/dim/dim-app-recommendation-decision-current.sql"
+        recommendation_dws = "models/dws/dws-app-recommendation-effectiveness.sql"
+        recommendation_ads = "models/ads/ads-app-recommendation-readiness.sql"
+        cart_dwd = "models/dwd/dwd-app-cart-event.sql"
+        cart_item_dwd = "models/dwd/dwd-app-cart-item-event.sql"
+        cart_dim = "models/dim/dim-app-cart-current.sql"
+        cart_dws = "models/dws/dws-app-cart-current.sql"
+        cart_ads = "models/ads/ads-app-cart-readiness.sql"
+        self.assertLess(positions["models/dwd/dwd-domain-event.sql"], positions[recommendation_dwd])
+        self.assertLess(positions[recommendation_dwd], positions[recommendation_item_dwd])
+        self.assertLess(positions[recommendation_item_dwd], positions[recommendation_dim])
+        self.assertLess(positions[recommendation_dim], positions[recommendation_dws])
+        self.assertLess(positions[recommendation_dws], positions[recommendation_ads])
+        self.assertLess(positions["models/dwd/dwd-domain-event.sql"], positions[cart_dwd])
+        self.assertLess(positions[cart_dwd], positions[cart_item_dwd])
+        self.assertLess(positions[cart_item_dwd], positions[cart_dim])
+        self.assertLess(positions[cart_dim], positions[cart_dws])
+        self.assertLess(positions[cart_dws], positions[cart_ads])
+        self.assertLess(
+            positions["models/dwd/dwd-canonical-engagement-event.sql"],
+            positions["models/dwd/dwd-canonical-engagement-reaction-event.sql"],
+        )
+        self.assertLess(
+            positions["models/dwd/dwd-app-cart-item-event.sql"],
+            positions["models/dwd/dwd-app-product-review-event.sql"],
+        )
 
     def test_shadow_models_follow_historical_admission_and_full_denominator_dependencies(self):
         positions = {entry: index for index, entry in enumerate(MODEL.load_order())}

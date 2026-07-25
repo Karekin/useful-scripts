@@ -1,9 +1,9 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "binding_id": "cloudmold-app-facade-v1",
   "contract_base_path": "/app-api/cloudmold/app",
-  "evidence_scope": "LOCAL_REPOSITORY_CONTRACT",
-  "note": "availability 只有在控制器、契约测试和运行冒烟均存在后才能改为 IMPLEMENTED_AND_TESTED；当前文件不得被当作成功证据。消费者响应不得暴露内部质检证据、内部任务 ID 或收货人原始 PII。",
+  "evidence_scope": "LOCAL_RUNTIME_VERIFIED_2026_07_25",
+  "note": "IMPLEMENTED_AND_TESTED 表示控制器、契约测试与本地真实 HTTP 冒烟均已通过；不代表生产 PSP、Address Vault 或真实承运商已接通。消费者响应不得暴露内部质检证据、内部任务 ID 或收货人原始 PII。",
   "consumer_data_policy": {
     "raw_delivery_pii_forbidden": true,
     "restricted_quality_evidence_forbidden": true,
@@ -14,7 +14,7 @@
   "bindings": {
     "app.identity.me": {
       "executor": "http",
-      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "availability": "IMPLEMENTED_AND_TESTED",
       "method": "GET",
       "path": "/app-api/cloudmold/app/me",
       "request_fields": [],
@@ -42,9 +42,196 @@
         "eventId"
       ]
     },
+    "app.session.link_identity": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/app/behavior/sessions/link",
+      "request_fields": [
+        "idempotencyKey",
+        "sessionId",
+        "expectedSessionVersion"
+      ],
+      "response_fields": [
+        "aggregateId",
+        "aggregateVersion",
+        "status",
+        "duplicate"
+      ]
+    },
+    "app.address.snapshot_create": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/app/addresses/snapshots",
+      "request_fields": [
+        "idempotencyKey",
+        "sourceAddressId"
+      ],
+      "forbidden_request_fields": [
+        "receiverName",
+        "receiverMobile",
+        "receiverAddress"
+      ],
+      "response_fields": [
+        "addressRef",
+        "snapshotVersion",
+        "destinationRegionCode",
+        "receiverSummary",
+        "mobileSummary",
+        "duplicate"
+      ]
+    },
+    "app.address.snapshot_get": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "GET",
+      "path": "/app-api/cloudmold/app/addresses/snapshots/{addressRef}",
+      "request_fields": [
+        "addressRef"
+      ],
+      "response_fields": [
+        "addressRef",
+        "snapshotVersion",
+        "destinationRegionCode",
+        "receiverSummary",
+        "mobileSummary"
+      ]
+    },
+    "app.recommendation.home": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "GET",
+      "path": "/app-api/cloudmold/app/recommendations",
+      "request_fields": [
+        "sessionId",
+        "sceneCode",
+        "pageSize"
+      ],
+      "response_fields": [
+        "sceneCode",
+        "policyVersion",
+        "decisionToken",
+        "resultSetToken",
+        "ttlSeconds",
+        "expiresAt",
+        "items"
+      ]
+    },
+    "app.recommendation.exposure": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/app/recommendations/exposures",
+      "request_fields": [
+        "idempotencyKey",
+        "sessionId",
+        "decisionToken",
+        "listingId",
+        "rank"
+      ],
+      "response_fields": [
+        "aggregateId",
+        "aggregateVersion",
+        "eventId"
+      ]
+    },
+    "app.recommendation.click": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/app/recommendations/clicks",
+      "request_fields": [
+        "idempotencyKey",
+        "sessionId",
+        "decisionToken",
+        "listingId",
+        "rank"
+      ],
+      "response_fields": [
+        "aggregateId",
+        "aggregateVersion",
+        "eventId"
+      ]
+    },
+    "app.community.feed": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "GET",
+      "path": "/app-api/cloudmold/app/community/feed",
+      "request_fields": [
+        "pageNo",
+        "pageSize"
+      ],
+      "response_fields": [
+        "list",
+        "total",
+        "pageNo",
+        "pageSize"
+      ]
+    },
+    "app.community.detail": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "GET",
+      "path": "/app-api/cloudmold/app/community/posts/{contentId}",
+      "request_fields": [
+        "contentId"
+      ],
+      "response_fields": [
+        "contentId",
+        "authorPrincipalId",
+        "body",
+        "likeCount",
+        "commentCount",
+        "likedByCurrentUser",
+        "createdAt",
+        "productLink"
+      ]
+    },
+    "app.community.like": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "PUT",
+      "path": "/app-api/cloudmold/app/community/posts/{contentId}/like",
+      "request_fields": [
+        "idempotencyKey",
+        "liked"
+      ],
+      "response_fields": [
+        "contentId",
+        "authorPrincipalId",
+        "body",
+        "likeCount",
+        "commentCount",
+        "likedByCurrentUser",
+        "createdAt",
+        "productLink"
+      ]
+    },
+    "app.community.comment_create": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/app/community/posts/{contentId}/comments",
+      "request_fields": [
+        "idempotencyKey",
+        "body"
+      ],
+      "response_fields": [
+        "contentId",
+        "authorPrincipalId",
+        "body",
+        "likeCount",
+        "commentCount",
+        "likedByCurrentUser",
+        "createdAt",
+        "productLink"
+      ]
+    },
     "app.products.list": {
       "executor": "http",
-      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "availability": "IMPLEMENTED_AND_TESTED",
       "method": "GET",
       "path": "/app-api/cloudmold/app/products",
       "request_fields": [
@@ -130,7 +317,7 @@
     },
     "app.product.detail": {
       "executor": "http",
-      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "availability": "IMPLEMENTED_AND_TESTED",
       "method": "GET",
       "path": "/app-api/cloudmold/app/products/{listingId}",
       "request_fields": [
@@ -226,9 +413,78 @@
         "eventId"
       ]
     },
+    "app.cart.get": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "GET",
+      "path": "/app-api/cloudmold/app/cart",
+      "request_fields": [],
+      "response_fields": [
+        "cartId",
+        "principalId",
+        "aggregateVersion",
+        "lineCount",
+        "selectedLineCount",
+        "duplicate",
+        "lines"
+      ]
+    },
+    "app.cart.add": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/app/cart/items",
+      "request_fields": [
+        "idempotencyKey",
+        "expectedCartVersion",
+        "listingId",
+        "listingOfferId",
+        "canonicalSkuId",
+        "quantity",
+        "selected"
+      ],
+      "response_fields": [
+        "cartId",
+        "principalId",
+        "aggregateVersion",
+        "lineCount",
+        "selectedLineCount",
+        "duplicate",
+        "lines"
+      ]
+    },
+    "app.cart.preview_selected": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/app/cart/checkout/preview",
+      "request_fields": [
+        "idempotencyKey",
+        "expectedCartVersion",
+        "addressRef"
+      ],
+      "response_fields": [
+        "checkoutToken",
+        "principalId",
+        "addressRef",
+        "addressSnapshotVersion",
+        "listingId",
+        "listingOfferId",
+        "canonicalSkuId",
+        "quantity",
+        "unitPriceMinor",
+        "productAmountMinor",
+        "shippingAmountMinor",
+        "discountAmountMinor",
+        "payableAmountMinor",
+        "currencyCode",
+        "availableQuantity",
+        "expiresAt"
+      ]
+    },
     "app.checkout.preview": {
       "executor": "http",
-      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "availability": "IMPLEMENTED_AND_TESTED",
       "method": "POST",
       "path": "/app-api/cloudmold/app/checkout/preview",
       "request_fields": [
@@ -241,6 +497,8 @@
       "response_fields": [
         "checkoutToken",
         "principalId",
+        "addressRef",
+        "addressSnapshotVersion",
         "listingId",
         "listingOfferId",
         "canonicalSkuId",
@@ -281,7 +539,7 @@
     },
     "app.order.create": {
       "executor": "http",
-      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "availability": "IMPLEMENTED_AND_TESTED",
       "method": "POST",
       "path": "/app-api/cloudmold/app/orders",
       "request_fields": [
@@ -298,16 +556,21 @@
         "orderId",
         "orderNo",
         "buyerPrincipalId",
-        "orderStatus",
-        "orderVersion",
+        "status",
+        "aggregateVersion",
         "payableAmountMinor",
         "currencyCode",
+        "paymentId",
+        "paymentStatus",
+        "fulfillmentId",
+        "fulfillmentStatus",
+        "shipmentId",
         "items"
       ]
     },
     "app.order.get": {
       "executor": "http",
-      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "availability": "IMPLEMENTED_AND_TESTED",
       "method": "GET",
       "path": "/app-api/cloudmold/app/orders/{orderId}",
       "request_fields": [
@@ -317,35 +580,47 @@
         "orderId",
         "orderNo",
         "buyerPrincipalId",
-        "orderStatus",
-        "orderVersion",
+        "status",
+        "aggregateVersion",
         "payableAmountMinor",
         "currencyCode",
+        "paymentId",
+        "paymentStatus",
+        "fulfillmentId",
+        "fulfillmentStatus",
+        "shipmentId",
         "items"
       ]
     },
     "app.payment.capture": {
       "executor": "http",
-      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "availability": "IMPLEMENTED_AND_TESTED",
       "method": "POST",
-      "path": "/app-api/cloudmold/app/payments/internal-test/capture",
+      "path": "/app-api/cloudmold/app/payments/internal-test/capture-with-attribution",
       "request_fields": [
         "idempotencyKey",
         "orderId",
-        "expectedOrderVersion"
+        "expectedOrderVersion",
+        "sessionId",
+        "expectedSessionVersion",
+        "checkoutToken"
       ],
       "response_fields": [
         "paymentId",
         "orderId",
-        "paymentStatus",
-        "providerCode",
+        "currentStatus",
         "capturedAmountMinor",
-        "currencyCode"
+        "currencyCode",
+        "aggregateVersion",
+        "duplicate",
+        "behaviorStatus",
+        "behaviorVersion",
+        "attributionDuplicate"
       ]
     },
     "app.fulfillment.by_order": {
       "executor": "http",
-      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "availability": "IMPLEMENTED_AND_TESTED",
       "method": "GET",
       "path": "/app-api/cloudmold/app/fulfillments/by-order/{orderId}",
       "request_fields": [
@@ -355,13 +630,16 @@
         "orderId",
         "fulfillmentId",
         "shipmentId",
-        "fulfillmentStatus",
+        "status",
+        "aggregateVersion",
+        "carrierCode",
+        "waybillNo",
         "trackingEvents"
       ]
     },
     "app.after_sale.create": {
       "executor": "http",
-      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "availability": "IMPLEMENTED_AND_TESTED",
       "method": "POST",
       "path": "/app-api/cloudmold/app/after-sales",
       "request_fields": [
@@ -370,20 +648,21 @@
         "orderItemId",
         "quantity",
         "afterSaleType",
-        "reasonCode",
-        "detailToken"
+        "reasonCode"
       ],
       "response_fields": [
         "afterSaleId",
         "afterSaleNo",
         "orderId",
         "orderItemId",
-        "afterSaleStatus"
+        "caseStatus",
+        "aggregateVersion",
+        "refundStatus"
       ]
     },
     "app.after_sale.get": {
       "executor": "http",
-      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "availability": "IMPLEMENTED_AND_TESTED",
       "method": "GET",
       "path": "/app-api/cloudmold/app/after-sales/{afterSaleId}",
       "request_fields": [
@@ -394,35 +673,35 @@
         "afterSaleNo",
         "orderId",
         "orderItemId",
-        "afterSaleStatus",
+        "caseStatus",
+        "aggregateVersion",
         "refundStatus",
-        "returnFulfillmentStatus"
+        "returnFulfillmentStatus",
+        "resolutionSagaStatus"
       ]
     },
     "app.customer_service.ticket_create": {
       "executor": "http",
-      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "availability": "IMPLEMENTED_AND_TESTED",
       "method": "POST",
       "path": "/app-api/cloudmold/app/customer-service/tickets",
       "request_fields": [
         "idempotencyKey",
         "categoryCode",
-        "priority",
         "referenceType",
-        "referenceId",
-        "contentToken"
+        "referenceId"
       ],
       "response_fields": [
         "ticketId",
         "ticketNo",
-        "referenceType",
-        "referenceId",
-        "ticketStatus"
+        "ticketStatus",
+        "ticketVersion",
+        "duplicate"
       ]
     },
     "app.customer_service.ticket_get": {
       "executor": "http",
-      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "availability": "IMPLEMENTED_AND_TESTED",
       "method": "GET",
       "path": "/app-api/cloudmold/app/customer-service/tickets/{ticketId}",
       "request_fields": [
@@ -431,9 +710,86 @@
       "response_fields": [
         "ticketId",
         "ticketNo",
-        "referenceType",
-        "referenceId",
-        "ticketStatus"
+        "ticketStatus",
+        "ticketVersion"
+      ]
+    },
+    "app.product_review.eligibility": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "GET",
+      "path": "/app-api/cloudmold/app/product-reviews/eligibility",
+      "request_fields": [
+        "orderId",
+        "orderItemId"
+      ],
+      "response_fields": [
+        "eligible",
+        "reasonCode",
+        "existingReviewId",
+        "existingModerationStatus",
+        "orderId",
+        "orderItemId",
+        "listingId",
+        "listingOfferId",
+        "merchantId",
+        "shopId",
+        "canonicalSpuId",
+        "canonicalSkuId"
+      ]
+    },
+    "app.product_review.create": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/app/product-reviews",
+      "request_fields": [
+        "idempotencyKey",
+        "orderId",
+        "orderItemId",
+        "productScore",
+        "serviceScore",
+        "logisticsScore",
+        "body"
+      ],
+      "response_fields": [
+        "reviewId",
+        "orderId",
+        "orderItemId",
+        "listingId",
+        "listingOfferId",
+        "merchantId",
+        "shopId",
+        "canonicalSpuId",
+        "canonicalSkuId",
+        "productScore",
+        "serviceScore",
+        "logisticsScore",
+        "overallScore",
+        "body",
+        "publicSummary",
+        "moderationStatus",
+        "moderationPolicy",
+        "duplicate",
+        "createdAt",
+        "approvedAt"
+      ]
+    },
+    "app.product_review.listing": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "GET",
+      "path": "/app-api/cloudmold/app/product-reviews/listings/{listingId}",
+      "request_fields": [
+        "listingId",
+        "pageNo",
+        "pageSize"
+      ],
+      "response_fields": [
+        "total",
+        "pageNo",
+        "pageSize",
+        "list"
       ]
     }
   },
@@ -446,8 +802,56 @@
       "skill_id": "skill.cloudmold.commerce.catalog-matrix.v1",
       "availability": "IMPLEMENTED_AND_TESTED"
     },
+    "operator.catalog.metadata_update": {
+      "executor": "external_evidence",
+      "adapter": "admin_rest_command",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "authority": "cloudmold-catalog",
+      "base_url_env": "CLOUDMOLD_ADMIN_BASE_URL",
+      "token_env": "CLOUDMOLD_ADMIN_TOKEN",
+      "tenant_env": "CLOUDMOLD_TENANT_ID",
+      "permission": "cloudmold:catalog:metadata:update",
+      "method": "POST",
+      "path": "/admin-api/cloudmold/catalog/metadata/update",
+      "response_fields": [
+        "operationId",
+        "entityType",
+        "entityId",
+        "businessCode",
+        "currentStatus",
+        "aggregateVersion",
+        "duplicate"
+      ]
+    },
+    "operator.catalog.barcode_rotate": {
+      "executor": "external_evidence",
+      "adapter": "admin_rest_command",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "authority": "cloudmold-catalog",
+      "base_url_env": "CLOUDMOLD_ADMIN_BASE_URL",
+      "token_env": "CLOUDMOLD_ADMIN_TOKEN",
+      "tenant_env": "CLOUDMOLD_TENANT_ID",
+      "permission": "cloudmold:catalog:barcode:rotate",
+      "method": "POST",
+      "path": "/admin-api/cloudmold/catalog/barcode/rotate",
+      "response_fields": [
+        "operationId",
+        "skuId",
+        "previousBarcodeId",
+        "previousBarcode",
+        "currentBarcodeId",
+        "currentBarcode",
+        "barcodeType",
+        "aggregateVersion",
+        "duplicate"
+      ]
+    },
     "operator.listing.publish": {
       "skill_id": "skill.cloudmold.commerce.aftersale-saga.v1",
+      "availability": "IMPLEMENTED_AND_TESTED"
+    },
+    "operator.supply.prepare": {
+      "skill_id": "skill.cloudmold.supply-planning.prepare.v1",
       "availability": "IMPLEMENTED_AND_TESTED"
     },
     "operator.warehouse.receive": {
@@ -455,8 +859,112 @@
       "availability": "IMPLEMENTED_AND_TESTED"
     },
     "operator.quality.release": {
-      "skill_id": "target.skill.cloudmold.quality.release.v1",
-      "availability": "CONTRACT_REQUIRED"
+      "executor": "external_evidence",
+      "adapter": "admin_rest_sequence",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "authority": "cloudmold-quality",
+      "base_url_env": "CLOUDMOLD_ADMIN_BASE_URL",
+      "token_env": "CLOUDMOLD_ADMIN_TOKEN",
+      "tenant_env": "CLOUDMOLD_TENANT_ID",
+      "permission": "cloudmold:quality:command",
+      "method": "POST",
+      "path": "/admin-api/cloudmold/quality/command",
+      "operations": [
+        {
+          "operation": "CREATE_STANDARD",
+          "aggregate_type": "quality_standard",
+          "expected_status": "DRAFT"
+        },
+        {
+          "operation": "PUBLISH_STANDARD",
+          "aggregate_type": "quality_standard",
+          "expected_status": "PUBLISHED"
+        },
+        {
+          "operation": "CERTIFY_AUTHENTICATOR",
+          "aggregate_type": "authenticator_certification",
+          "expected_status": "ACTIVE"
+        },
+        {
+          "operation": "CREATE_INSPECTION_TASK",
+          "aggregate_type": "inspection_task",
+          "expected_status": "CREATED"
+        },
+        {
+          "operation": "ASSIGN_INSPECTION_TASK",
+          "aggregate_type": "inspection_task",
+          "expected_status": "ASSIGNED"
+        },
+        {
+          "operation": "START_INSPECTION_TASK",
+          "aggregate_type": "inspection_task",
+          "expected_status": "IN_PROGRESS"
+        },
+        {
+          "operation": "DECIDE_INSPECTION_TASK",
+          "aggregate_type": "inspection_task",
+          "expected_status": "DECIDED",
+          "required_decision": "PASS"
+        },
+        {
+          "operation": "COMPLETE_INSPECTION_TASK",
+          "aggregate_type": "inspection_task",
+          "expected_status": "COMPLETED"
+        }
+      ],
+      "request_invariants": [
+        "all commands use the exact tenantId and runId",
+        "every command has a stable stage-derived idempotencyKey",
+        "correlationId and causationId are UUID values",
+        "the inspection subjectType is INBOUND_ITEM",
+        "canonicalSkuId and warehouseId equal the warehouse receipt evidence",
+        "the assigned authenticator has an ACTIVE certification for the published standard",
+        "the decision is PASS and evidenceRef is a restricted or sha256 reference",
+        "every transition uses the aggregateVersion returned by the immediately preceding command"
+      ],
+      "response_contract": {
+        "common_result_code": 0,
+        "required_fields": [
+          "operationId",
+          "duplicate",
+          "aggregateType",
+          "aggregateId",
+          "aggregateVersion",
+          "status"
+        ],
+        "immutable_replay_required": true
+      },
+      "event_evidence": {
+        "source": "cloudmold_domain_outbox",
+        "source_system": "cloudmold-quality",
+        "destination": "lakehouse",
+        "required_event_types": [
+          "quality.standard.created",
+          "quality.standard.published",
+          "quality.authenticator.certified",
+          "quality.inspection_task.created",
+          "quality.inspection_task.status_changed"
+        ],
+        "delivery_status": 20,
+        "same_tenant_run_and_task_required": true
+      },
+      "evidence_mapping": {
+        "inspectionTaskId": "COMPLETE_INSPECTION_TASK.aggregateId",
+        "qualityStandardVersion": "quality.standard.published.payload.standard_version",
+        "qualityStatus": "QUALIFIED",
+        "inspectionDecision": "PASS",
+        "outboxEventIds": "cloudmold_domain_outbox.event_id"
+      },
+      "fail_closed": [
+        "HTTP or CommonResult failure",
+        "permission denial",
+        "missing or duplicate-conflicting command receipt",
+        "unexpected aggregate type, version or status",
+        "missing ACTIVE authenticator certification",
+        "non-PASS final decision",
+        "missing delivered Outbox denominator",
+        "tenant, run, SKU, warehouse, standard or task lineage mismatch"
+      ]
     },
     "operator.inventory.sellable": {
       "skill_id": "skill.cloudmold.commerce.terminal-readback.v1",
@@ -471,8 +979,100 @@
       "availability": "IMPLEMENTED_AND_TESTED"
     },
     "reconcile.lakehouse": {
-      "command": "lakehousectl reconcile-cross-channel-agent",
-      "availability": "CONTRACT_REQUIRED"
+      "executor": "external_evidence",
+      "adapter": "lakehousectl_sequence",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "executable": "yml/yshopping-lakehouse/scripts/lakehousectl",
+      "commands": [
+        {
+          "command": "reconcile-canonical-commerce-v2",
+          "arguments": [
+            "--tenant",
+            "{tenantId}",
+            "--run-id",
+            "{runId}"
+          ],
+          "required_result": "RECONCILED"
+        },
+        {
+          "command": "reconcile-canonical-aftersales",
+          "arguments": [
+            "--tenant",
+            "{tenantId}",
+            "--run-id",
+            "{runId}",
+            "--after-sale-id",
+            "{afterSaleId}"
+          ],
+          "required_result": "RECONCILED"
+        },
+        {
+          "command": "test",
+          "arguments": [],
+          "required_result": "ZERO_DQC_VIOLATIONS"
+        }
+      ],
+      "required_nonempty_models": [
+        "yshopping_dws.dws_canonical_commerce_session_funnel",
+        "yshopping_ads.ads_canonical_commerce_acquisition_funnel",
+        "yshopping_ads.ads_canonical_commerce_v2_readiness",
+        "yshopping_ads.ads_canonical_after_sale_readiness",
+        "yshopping_dws.dws_canonical_customer_service_ticket_current",
+        "yshopping_ads.ads_canonical_customer_service_readiness",
+        "yshopping_ads.ads_canonical_inventory_health",
+        "yshopping_ads.ads_canonical_quality_readiness"
+      ],
+      "exact_grain_parameters": [
+        "tenantId",
+        "runId",
+        "sessionId",
+        "principalId",
+        "orderId",
+        "afterSaleId",
+        "ticketId",
+        "inspectionTaskId",
+        "inventoryBalanceId"
+      ],
+      "required_behavior_types": [
+        "SEARCH_REQUESTED",
+        "SEARCH_RESULT_EXPOSED",
+        "SEARCH_RESULT_CLICKED",
+        "PDP_VIEWED",
+        "CART_ADDED",
+        "CHECKOUT_STARTED"
+      ],
+      "required_model_results": {
+        "yshopping_ads.ads_canonical_commerce_v2_readiness": "RECONCILED",
+        "yshopping_ads.ads_canonical_after_sale_readiness": "RECONCILED",
+        "yshopping_ads.ads_canonical_customer_service_readiness": "READY",
+        "yshopping_ads.ads_canonical_commerce_acquisition_funnel": "NONEMPTY"
+      },
+      "required_zero_checks": [
+        "sourceToFactMismatchCount",
+        "factToProjectionMismatchCount",
+        "crossTenantLinkCount",
+        "identityLinkMismatchCount",
+        "productLinkMismatchCount",
+        "orderPaymentMoneyMismatchCount",
+        "returnQuantityMismatchCount",
+        "dqcViolationCount"
+      ],
+      "acceptance": {
+        "outbox_cdc_checkpoint_succeeded": true,
+        "full_denominator": true,
+        "nonempty": true,
+        "simulated": false,
+        "production_credit": false
+      },
+      "fail_closed": [
+        "lakehousectl executable or required command is missing",
+        "StarRocks or Outbox CDC is unhealthy",
+        "a command exits non-zero",
+        "a required exact-grain row is absent or duplicated",
+        "a required model is empty",
+        "a model result differs from the contract",
+        "any mismatch or DQC count is non-zero"
+      ]
     }
   }
 }

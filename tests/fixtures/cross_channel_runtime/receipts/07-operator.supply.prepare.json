@@ -1,0 +1,48 @@
+{
+  "schema_version": 2,
+  "stageId": "operator.supply.prepare",
+  "executor": "external_evidence",
+  "operation": "WRITE",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:25607bc52008f5d251b74a91",
+  "requestEnvelope": {
+    "stageId": "operator.supply.prepare",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "operator.supply.prepare",
+    "kind": "response"
+  },
+  "effectEnvelope": {
+    "stageId": "operator.supply.prepare",
+    "kind": "effect",
+    "eventIds": [
+      "event:operator.supply.prepare"
+    ]
+  },
+  "evidence": {
+    "sourceSystem": "YUDAO_ERP",
+    "documentType": "PURCHASE_ORDER",
+    "documentId": "781",
+    "documentNo": "PO-20260725-01",
+    "status": "PREPARE"
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "operator.supply.prepare",
+    "bindingDefinitionSha256": "c45579d687102419163b9f0337d9afb4062ef1906ece33c436319436f7d433b3"
+  }
+}

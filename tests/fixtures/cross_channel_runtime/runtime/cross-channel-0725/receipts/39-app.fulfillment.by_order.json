@@ -1,0 +1,50 @@
+{
+  "schema_version": 2,
+  "stageId": "app.fulfillment.by_order",
+  "executor": "http",
+  "operation": "READ",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:0a1e225cb844e836622c0eb6",
+  "requestEnvelope": {
+    "stageId": "app.fulfillment.by_order",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.fulfillment.by_order",
+    "kind": "response"
+  },
+  "effectEnvelope": {},
+  "evidence": {
+    "orderId": "order-1",
+    "fulfillmentId": "fulfillment-1",
+    "shipmentId": "shipment-1",
+    "fulfillmentStatus": "DELIVERED",
+    "trackingEvents": [
+      {
+        "status": "SIGNED"
+      }
+    ]
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.fulfillment.by_order",
+    "bindingDefinitionSha256": "080d07b8938dee4d7e98004daccbd3d89f9b6fc3a7ed8fb7a12bd55437fd253b"
+  },
+  "requestSha256": "1a527df85960d58ca6c667a9e31177957df0eb2198f1b7f7421aa5089f9e9dbd",
+  "responseSha256": "9cc5336a9ca1f6f771ee1f81a06f168438f2d5c14cf4c0c08e7a9672a447414f",
+  "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "receiptSha256": "e96fe0a240ec216158de2cca8cc33fc7039893342ba075475f54dd770a3e0bd1"
+}

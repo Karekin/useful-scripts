@@ -1,0 +1,28 @@
+CREATE OR REPLACE VIEW yshopping_dwd.dwd_app_recommendation_item_event AS
+SELECT
+    event.event_id,
+    event.event_type,
+    event.tenant_id,
+    event.decision_id,
+    event.aggregate_version,
+    event.event_sequence,
+    event.occurred_at,
+    event.recorded_at,
+    event.session_id,
+    event.scene_code,
+    event.decision_token,
+    event.policy_version,
+    event.ttl_seconds,
+    event.item_count,
+    event.expires_at,
+    CAST(get_json_string(item.`value`, '$.rank') AS INT) AS rank_no,
+    get_json_string(item.`value`, '$.reason_code') AS reason_code,
+    get_json_string(item.`value`, '$.listing_id') AS listing_id,
+    get_json_string(item.`value`, '$.listing_offer_id') AS listing_offer_id,
+    get_json_string(item.`value`, '$.canonical_spu_id') AS canonical_spu_id,
+    get_json_string(item.`value`, '$.canonical_sku_id') AS canonical_sku_id,
+    CAST(get_json_string(item.`value`, '$.price_minor') AS BIGINT) AS price_minor,
+    get_json_string(item.`value`, '$.currency_code') AS currency_code,
+    get_json_string(item.`value`, '$.quality_status') AS quality_status
+FROM yshopping_dwd.dwd_app_recommendation_decision_event event,
+     LATERAL json_each(event.items) item;

@@ -1,0 +1,51 @@
+{
+  "schema_version": 2,
+  "stageId": "app.session.start",
+  "executor": "http",
+  "operation": "WRITE",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:4c08e8c3273c454aa1f75829",
+  "requestEnvelope": {
+    "stageId": "app.session.start",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.session.start",
+    "kind": "response"
+  },
+  "effectEnvelope": {
+    "stageId": "app.session.start",
+    "kind": "effect",
+    "eventIds": [
+      "event:app.session.start"
+    ]
+  },
+  "evidence": {
+    "sessionId": "00000000-0000-4000-8000-000000000001",
+    "aggregateVersion": 1,
+    "eventId": "session-event-1"
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1",
+    "sessionId": "00000000-0000-4000-8000-000000000001"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.session.start",
+    "bindingDefinitionSha256": "07fadef23628edc259a80087d9b6698a41ebb64fd0d90a940f1b97f066ffa68c"
+  },
+  "requestSha256": "c37be5a9918f749a9472a098f4390ddbf96bfdd7016166134464928488f586f1",
+  "responseSha256": "52abff9bfcad817766db28b424361fccf2af9172de9d77f4006560712d23f276",
+  "effectSha256": "9fee8ec08f445329789494268c244eae383b925411a591e576ae4bf16af153f9",
+  "receiptSha256": "a1188280e72d29fb2fbfdb638318574501d3fdd90416d9648f187664f9c67a95"
+}

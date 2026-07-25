@@ -1,0 +1,26 @@
+{
+  "event_id": "b3000000-0000-4000-8000-000000000001",
+  "event_type": "engagement.community.reaction_status_changed",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "community_reaction",
+  "aggregate_id": "b3000000-0000-4000-8000-000000000002",
+  "aggregate_version": 2,
+  "event_sequence": 1,
+  "idempotency_key": "reaction-change-0001",
+  "correlation_id": "b3000000-0000-4000-8000-000000000003",
+  "causation_id": "b3000000-0000-4000-8000-000000000004",
+  "occurred_at": "2026-07-25T12:00:00.000Z",
+  "recorded_at": "2026-07-25T12:00:00.100Z",
+  "source_system": "cloudmold-engagement",
+  "payload": {
+    "run_id": "b3000000-0000-4000-8000-000000000005",
+    "reaction_id": "b3000000-0000-4000-8000-000000000002",
+    "actor_principal_id": "b3000000-0000-4000-8000-000000000006",
+    "reaction_type": "LIKE",
+    "target_type": "CONTENT",
+    "target_id": "b3000000-0000-4000-8000-000000000007",
+    "previous_status": "ACTIVE",
+    "current_status": "REMOVED"
+  }
+}

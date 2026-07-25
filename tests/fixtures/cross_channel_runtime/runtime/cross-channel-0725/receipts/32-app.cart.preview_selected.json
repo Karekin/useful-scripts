@@ -1,0 +1,65 @@
+{
+  "schema_version": 2,
+  "stageId": "app.cart.preview_selected",
+  "executor": "http",
+  "operation": "WRITE",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:4095df18586e6aa2908580f2",
+  "requestEnvelope": {
+    "stageId": "app.cart.preview_selected",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.cart.preview_selected",
+    "kind": "response"
+  },
+  "effectEnvelope": {
+    "stageId": "app.cart.preview_selected",
+    "kind": "effect",
+    "eventIds": [
+      "event:app.cart.preview_selected"
+    ]
+  },
+  "evidence": {
+    "checkoutToken": "checkout-1",
+    "principalId": "principal-1",
+    "addressRef": "11111111-1111-4111-8111-111111111111",
+    "addressSnapshotVersion": 1,
+    "listingId": "listing-1",
+    "listingOfferId": "offer-1",
+    "canonicalSkuId": "sku-1",
+    "quantity": 2,
+    "unitPriceMinor": 19900,
+    "productAmountMinor": 39800,
+    "shippingAmountMinor": 0,
+    "discountAmountMinor": 0,
+    "payableAmountMinor": 39800,
+    "currencyCode": "CNY",
+    "availableQuantity": 10,
+    "expiresAt": "2026-07-25T12:30:00Z"
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1",
+    "sessionId": "00000000-0000-4000-8000-000000000001",
+    "addressRef": "11111111-1111-4111-8111-111111111111"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.cart.preview_selected",
+    "bindingDefinitionSha256": "64e98a0c2aa7906dbe7d49ad81b38520a6e02cf84aca18ef1d14414927f54ad7"
+  },
+  "requestSha256": "ec1e347d74860169e480b2b36c3ee234df2dbcb214dceb3490b3e2a0dc9155ce",
+  "responseSha256": "bd43a847d68df57f0400e7129af3acb7ae81298badeca13abedf0808447b861c",
+  "effectSha256": "9327bcec2ab35254b528c5bbd0f995b8eb43b58cfc84111ae4930a4a9ad8de36",
+  "receiptSha256": "277308858d4f056f98cd7a0f155b9d9e6b0ec94731431939904f5e5c0beb5606"
+}

@@ -82,7 +82,7 @@ WHERE (aggregate_version = 1 AND previous_status IS NOT NULL)
 UNION ALL
 SELECT 'canonical_fulfillment_exact_order_item_link', COUNT(*)
 FROM yshopping_dws.dws_canonical_fulfillment_item_current
-WHERE order_schema_version NOT IN (2, 3) OR order_item_link_valid <> TRUE
+WHERE order_schema_version NOT IN (2, 3, 4) OR order_item_link_valid <> TRUE
 UNION ALL
 SELECT 'canonical_fulfillment_exact_inventory_reservation_link', COUNT(*)
 FROM yshopping_dws.dws_canonical_fulfillment_item_current item
@@ -108,7 +108,7 @@ FROM (
   SELECT tenant_id, event_type, idempotency_key
   FROM yshopping_dwd.dwd_domain_event
   WHERE event_type IN ('listing.status.changed', 'listing.review.decided', 'fulfillment.status.changed')
-     OR (event_type = 'order.status.changed' AND schema_version = 2)
+     OR (event_type = 'order.status.changed' AND schema_version IN (2, 4))
   GROUP BY tenant_id, event_type, idempotency_key
   HAVING COUNT(*) > 1
 ) duplicate_replay

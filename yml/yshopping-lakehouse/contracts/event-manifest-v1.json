@@ -155,6 +155,12 @@
       "payload_schema": "events/engagement-community-interaction-recorded-v1.schema.json",
       "example": "examples/engagement-community-interaction-recorded-v1.json"
     },
+    "engagement.community.reaction_status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "community_reaction",
+      "payload_schema": "events/engagement-community-reaction-status-changed-v1.schema.json",
+      "example": "examples/engagement-community-reaction-status-changed-v1.json"
+    },
     "engagement.community.moderation_status_changed": {
       "schema_version": 1,
       "aggregate_type": "community_moderation_case",
@@ -220,6 +226,30 @@
       "aggregate_type": "commerce_session",
       "payload_schema": "events/commerce-session-payment-attributed-v1.schema.json",
       "example": "examples/commerce-session-payment-attributed-v1.json"
+    },
+    "app.recommendation.generated": {
+      "schema_version": 1,
+      "aggregate_type": "app_recommendation_decision",
+      "payload_schema": "events/app-recommendation-generated-v1.schema.json",
+      "example": "examples/app-recommendation-generated-v1.json"
+    },
+    "app.recommendation.served": {
+      "schema_version": 1,
+      "aggregate_type": "app_recommendation_decision",
+      "payload_schema": "events/app-recommendation-served-v1.schema.json",
+      "example": "examples/app-recommendation-served-v1.json"
+    },
+    "app.cart.changed": {
+      "schema_version": 1,
+      "aggregate_type": "app_cart",
+      "payload_schema": "events/app-cart-changed-v1.schema.json",
+      "example": "examples/app-cart-changed-v1.json"
+    },
+    "app.product_review.created": {
+      "schema_version": 1,
+      "aggregate_type": "app_product_review",
+      "payload_schema": "events/app-product-review-created-v1.schema.json",
+      "example": "examples/app-product-review-created-v1.json"
     },
     "procurement.purchase_promise.status_changed": {
       "schema_version": 1,
@@ -497,6 +527,11 @@
           "schema_version": 3,
           "payload_schema": "events/order-status-changed-v3.schema.json",
           "example": "examples/order-status-changed-v3.json"
+        },
+        {
+          "schema_version": 4,
+          "payload_schema": "events/order-status-changed-v4.schema.json",
+          "example": "examples/order-status-changed-v4.json"
         }
       ]
     },

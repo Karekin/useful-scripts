@@ -1,0 +1,63 @@
+{
+  "schema_version": 2,
+  "stageId": "operator.after_sale.complete",
+  "executor": "external_evidence",
+  "operation": "WRITE",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:d6ad6b4856b4fd049bc87bca",
+  "requestEnvelope": {
+    "stageId": "operator.after_sale.complete",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "operator.after_sale.complete",
+    "kind": "response"
+  },
+  "effectEnvelope": {
+    "stageId": "operator.after_sale.complete",
+    "kind": "effect",
+    "eventIds": [
+      "event:operator.after_sale.complete"
+    ]
+  },
+  "evidence": {
+    "afterSaleId": "after-sale-1",
+    "returnFulfillmentId": "return-fulfillment-1",
+    "inspectionId": "inspection-1",
+    "refundTransactionId": "refund-1",
+    "inventoryReturnLedgerTransactionId": "inventory-return-1",
+    "afterSaleStatus": "COMPLETED",
+    "paymentStatus": "REFUNDED",
+    "orderStatus": "RETURNED",
+    "returnedQuantity": 2,
+    "refundedAmountMinor": 39800,
+    "outboxEventIds": [
+      "after-sale-event-2"
+    ]
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1",
+    "sessionId": "00000000-0000-4000-8000-000000000001",
+    "orderId": "order-1",
+    "afterSaleId": "after-sale-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "operator.after_sale.complete",
+    "bindingDefinitionSha256": "3c4ace4d81a73f9b0508faa932f069c2c23626a40e8fc4238c6e186cefc6492d"
+  },
+  "requestSha256": "18b18cbb8954f39bf2cfdfa3b5cfbe1d755dda567bd49a04f95c1cacc1677cba",
+  "responseSha256": "545654076d01f8866d9eca58254bde1cc967532f35cdd64263bd58fc643cdc56",
+  "effectSha256": "12c620c5a0e04a63a4b853907330d4f58be63871ddfd612dbbdc0f8a63122915",
+  "receiptSha256": "422747b7f33c28a807f582dcaa5595e65595b60839c1b96ee4947cc876357cf4"
+}

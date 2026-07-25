@@ -39,6 +39,7 @@ services:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: 127.0.0.1
         rest.address: 0.0.0.0
+        jobmanager.memory.jvm-metaspace.size: 512m
         execution.checkpointing.interval: 10s
         execution.checkpointing.mode: EXACTLY_ONCE
         state.checkpoints.dir: file:///opt/flink/checkpoints
@@ -68,6 +69,7 @@ services:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: 127.0.0.1
         taskmanager.numberOfTaskSlots: 4
+        taskmanager.memory.jvm-metaspace.size: 512m
     volumes:
       - flink_checkpoints:/opt/flink/checkpoints
       - flink_savepoints:/opt/flink/savepoints

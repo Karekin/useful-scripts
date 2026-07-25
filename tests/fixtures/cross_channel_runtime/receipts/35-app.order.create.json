@@ -1,0 +1,60 @@
+{
+  "schema_version": 2,
+  "stageId": "app.order.create",
+  "executor": "http",
+  "operation": "WRITE",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:5d5902c3176a3173a003975c",
+  "requestEnvelope": {
+    "stageId": "app.order.create",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.order.create",
+    "kind": "response"
+  },
+  "effectEnvelope": {
+    "stageId": "app.order.create",
+    "kind": "effect",
+    "eventIds": [
+      "event:app.order.create"
+    ]
+  },
+  "evidence": {
+    "orderId": "order-1",
+    "orderNo": "ORDER-1",
+    "orderItemId": "order-item-1",
+    "buyerPrincipalId": "principal-1",
+    "listingId": "listing-1",
+    "listingOfferId": "offer-1",
+    "canonicalSkuId": "sku-1",
+    "quantity": 2,
+    "payableAmountMinor": 39800,
+    "currencyCode": "CNY",
+    "aggregateVersion": 1,
+    "status": "CREATED",
+    "outboxEventIds": [
+      "order-event-1"
+    ]
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1",
+    "sessionId": "00000000-0000-4000-8000-000000000001",
+    "orderId": "order-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.order.create",
+    "bindingDefinitionSha256": "ea572f31292528276ee91539a76cd07f7ce50401dddd3c58926153b4ed36d895"
+  }
+}

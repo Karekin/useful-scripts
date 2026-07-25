@@ -1,7 +1,7 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "scenario_id": "scenario.cloudmold.cross-channel.local-demo.v1",
-  "scenario_version": "1.0.0",
+  "scenario_version": "1.2.0",
   "name": "CloudMold 后台到 UniApp 消费者全链路",
   "default_mode": "plan",
   "allowed_execute_environments": [
@@ -24,6 +24,7 @@
   "product_invariant": "The same listingId, listingOfferId, canonicalSpuId and canonicalSkuId must be preserved from product read model through checkout, Order, Fulfillment and AfterSale.",
   "money_invariant": "checkout payable = Order payable = captured amount = refunded amount in one ISO-4217 currency using integer minor units.",
   "quantity_invariant": "ordered quantity = accepted return quantity = returned-to-stock quantity; all quantities use the SKU base UOM.",
+  "address_invariant": "Address Vault must preserve one owned addressRef and snapshotVersion from create to duplicate replay to read to checkout without exposing raw receiver name/mobile/address.",
   "stages": [
     {
       "id": "app.identity.me",
@@ -74,13 +75,49 @@
       ]
     },
     {
+      "id": "operator.catalog.metadata_update",
+      "phase": "OPERATOR_BOOTSTRAP",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "depends_on": [
+        "operator.catalog.publish"
+      ],
+      "binding_id": "operator.catalog.metadata_update",
+      "required_evidence": [
+        "entityType",
+        "entityId",
+        "businessCode",
+        "currentStatus",
+        "aggregateVersion",
+        "outboxEventIds"
+      ]
+    },
+    {
+      "id": "operator.catalog.barcode_rotate",
+      "phase": "OPERATOR_BOOTSTRAP",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "depends_on": [
+        "operator.catalog.metadata_update"
+      ],
+      "binding_id": "operator.catalog.barcode_rotate",
+      "required_evidence": [
+        "skuId",
+        "previousBarcode",
+        "currentBarcode",
+        "barcodeType",
+        "aggregateVersion",
+        "outboxEventIds"
+      ]
+    },
+    {
       "id": "operator.listing.publish",
       "phase": "OPERATOR_BOOTSTRAP",
       "executor": "external_evidence",
       "operation": "WRITE",
       "depends_on": [
         "operator.merchant.onboard",
-        "operator.catalog.publish"
+        "operator.catalog.barcode_rotate"
       ],
       "binding_id": "operator.listing.publish",
       "required_evidence": [
@@ -95,12 +132,29 @@
       ]
     },
     {
+      "id": "operator.supply.prepare",
+      "phase": "OPERATOR_BOOTSTRAP",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "depends_on": [
+        "operator.listing.publish"
+      ],
+      "binding_id": "operator.supply.prepare",
+      "required_evidence": [
+        "sourceSystem",
+        "documentType",
+        "documentId",
+        "documentNo",
+        "status"
+      ]
+    },
+    {
       "id": "operator.warehouse.receive",
       "phase": "OPERATOR_BOOTSTRAP",
       "executor": "external_evidence",
       "operation": "WRITE",
       "depends_on": [
-        "operator.catalog.publish"
+        "operator.supply.prepare"
       ],
       "binding_id": "operator.warehouse.receive",
       "required_evidence": [
@@ -161,6 +215,211 @@
       ]
     },
     {
+      "id": "app.session.link_identity",
+      "phase": "IDENTITY",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.identity.me",
+        "app.session.start"
+      ],
+      "binding_id": "app.session.link_identity",
+      "required_evidence": [
+        "sessionId",
+        "aggregateVersion",
+        "status"
+      ]
+    },
+    {
+      "id": "app.recommendation.home",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "READ",
+      "depends_on": [
+        "operator.listing.publish",
+        "operator.inventory.sellable",
+        "app.session.link_identity"
+      ],
+      "binding_id": "app.recommendation.home",
+      "required_evidence": [
+        "sceneCode",
+        "policyVersion",
+        "decisionToken",
+        "resultSetToken",
+        "ttlSeconds",
+        "expiresAt",
+        "items"
+      ]
+    },
+    {
+      "id": "app.recommendation.exposure",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.recommendation.home"
+      ],
+      "binding_id": "app.recommendation.exposure",
+      "required_evidence": [
+        "sessionId",
+        "decisionToken",
+        "listingId",
+        "rank",
+        "aggregateId",
+        "aggregateVersion",
+        "eventId"
+      ]
+    },
+    {
+      "id": "app.recommendation.click",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.recommendation.exposure"
+      ],
+      "binding_id": "app.recommendation.click",
+      "required_evidence": [
+        "sessionId",
+        "decisionToken",
+        "listingId",
+        "rank",
+        "aggregateId",
+        "aggregateVersion",
+        "eventId"
+      ]
+    },
+    {
+      "id": "app.community.feed",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "READ",
+      "depends_on": [
+        "app.session.link_identity",
+        "app.recommendation.click"
+      ],
+      "binding_id": "app.community.feed",
+      "required_evidence": [
+        "list",
+        "total",
+        "pageNo",
+        "pageSize"
+      ]
+    },
+    {
+      "id": "app.community.detail",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "READ",
+      "depends_on": [
+        "app.community.feed"
+      ],
+      "binding_id": "app.community.detail",
+      "required_evidence": [
+        "contentId",
+        "authorPrincipalId",
+        "body",
+        "likeCount",
+        "commentCount",
+        "likedByCurrentUser",
+        "createdAt",
+        "productLink"
+      ]
+    },
+    {
+      "id": "app.community.like",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.community.detail"
+      ],
+      "binding_id": "app.community.like",
+      "required_evidence": [
+        "contentId",
+        "authorPrincipalId",
+        "body",
+        "likeCount",
+        "commentCount",
+        "likedByCurrentUser",
+        "createdAt",
+        "productLink"
+      ]
+    },
+    {
+      "id": "app.community.comment_create",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.community.like"
+      ],
+      "binding_id": "app.community.comment_create",
+      "required_evidence": [
+        "contentId",
+        "authorPrincipalId",
+        "body",
+        "likeCount",
+        "commentCount",
+        "likedByCurrentUser",
+        "createdAt",
+        "productLink"
+      ]
+    },
+    {
+      "id": "app.address.snapshot_create",
+      "phase": "ADDRESS_VAULT",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.identity.me"
+      ],
+      "binding_id": "app.address.snapshot_create",
+      "required_evidence": [
+        "addressRef",
+        "snapshotVersion",
+        "destinationRegionCode",
+        "receiverSummary",
+        "mobileSummary",
+        "duplicate"
+      ]
+    },
+    {
+      "id": "app.address.snapshot_replay",
+      "phase": "ADDRESS_VAULT",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.address.snapshot_create"
+      ],
+      "binding_id": "app.address.snapshot_create",
+      "required_evidence": [
+        "addressRef",
+        "snapshotVersion",
+        "destinationRegionCode",
+        "receiverSummary",
+        "mobileSummary",
+        "duplicate"
+      ]
+    },
+    {
+      "id": "app.address.snapshot_get",
+      "phase": "ADDRESS_VAULT",
+      "executor": "http",
+      "operation": "READ",
+      "depends_on": [
+        "app.address.snapshot_replay"
+      ],
+      "binding_id": "app.address.snapshot_get",
+      "required_evidence": [
+        "addressRef",
+        "snapshotVersion",
+        "destinationRegionCode",
+        "receiverSummary",
+        "mobileSummary"
+      ]
+    },
+    {
       "id": "app.products.list",
       "phase": "CONSUMER_DISCOVERY",
       "executor": "http",
@@ -168,7 +427,7 @@
       "depends_on": [
         "operator.listing.publish",
         "operator.inventory.sellable",
-        "app.session.start"
+        "app.session.link_identity"
       ],
       "binding_id": "app.products.list",
       "required_evidence": [
@@ -232,7 +491,8 @@
       "executor": "http",
       "operation": "READ",
       "depends_on": [
-        "app.behavior.search_clicked"
+        "app.behavior.search_clicked",
+        "app.recommendation.click"
       ],
       "binding_id": "app.product.detail",
       "required_evidence": [
@@ -267,6 +527,24 @@
       ]
     },
     {
+      "id": "app.cart.get",
+      "phase": "CHECKOUT",
+      "executor": "http",
+      "operation": "READ",
+      "depends_on": [
+        "app.behavior.pdp"
+      ],
+      "binding_id": "app.cart.get",
+      "required_evidence": [
+        "cartId",
+        "principalId",
+        "aggregateVersion",
+        "lineCount",
+        "selectedLineCount",
+        "duplicate"
+      ]
+    },
+    {
       "id": "app.behavior.cart_added",
       "phase": "CHECKOUT",
       "executor": "http",
@@ -283,6 +561,55 @@
       ]
     },
     {
+      "id": "app.cart.add",
+      "phase": "CHECKOUT",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.cart.get",
+        "app.behavior.cart_added"
+      ],
+      "binding_id": "app.cart.add",
+      "required_evidence": [
+        "cartId",
+        "principalId",
+        "aggregateVersion",
+        "lineCount",
+        "selectedLineCount",
+        "duplicate",
+        "lines"
+      ]
+    },
+    {
+      "id": "app.cart.preview_selected",
+      "phase": "CHECKOUT",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.address.snapshot_get",
+        "app.cart.add"
+      ],
+      "binding_id": "app.cart.preview_selected",
+      "required_evidence": [
+        "checkoutToken",
+        "principalId",
+        "addressRef",
+        "addressSnapshotVersion",
+        "listingId",
+        "listingOfferId",
+        "canonicalSkuId",
+        "quantity",
+        "unitPriceMinor",
+        "productAmountMinor",
+        "shippingAmountMinor",
+        "discountAmountMinor",
+        "payableAmountMinor",
+        "currencyCode",
+        "availableQuantity",
+        "expiresAt"
+      ]
+    },
+    {
       "id": "app.checkout.preview",
       "phase": "CHECKOUT",
       "executor": "http",
@@ -290,12 +617,15 @@
       "depends_on": [
         "app.product.detail",
         "app.identity.me",
-        "app.behavior.cart_added"
+        "app.behavior.cart_added",
+        "app.address.snapshot_get"
       ],
       "binding_id": "app.checkout.preview",
       "required_evidence": [
         "checkoutToken",
         "principalId",
+        "addressRef",
+        "addressSnapshotVersion",
         "listingId",
         "listingOfferId",
         "canonicalSkuId",
@@ -347,8 +677,8 @@
         "quantity",
         "payableAmountMinor",
         "currencyCode",
-        "orderVersion",
-        "orderStatus",
+        "aggregateVersion",
+        "status",
         "outboxEventIds"
       ]
     },
@@ -363,8 +693,8 @@
       "binding_id": "app.order.get",
       "required_evidence": [
         "orderId",
-        "orderVersion",
-        "orderStatus",
+        "aggregateVersion",
+        "status",
         "items"
       ]
     },
@@ -379,10 +709,10 @@
       "binding_id": "app.payment.capture",
       "required_evidence": [
         "paymentId",
-        "paymentStatus",
-        "providerCode",
+        "currentStatus",
         "capturedAmountMinor",
         "currencyCode",
+        "behaviorVersion",
         "outboxEventIds"
       ]
     },
@@ -398,7 +728,8 @@
       "required_evidence": [
         "fulfillmentId",
         "shipmentId",
-        "fulfillmentStatus",
+        "status",
+        "aggregateVersion",
         "orderId",
         "outboxEventIds"
       ]
@@ -421,12 +752,73 @@
       ]
     },
     {
+      "id": "app.product_review.eligibility",
+      "phase": "AFTER_SALE_SERVICE",
+      "executor": "http",
+      "operation": "READ",
+      "depends_on": [
+        "app.fulfillment.by_order"
+      ],
+      "binding_id": "app.product_review.eligibility",
+      "required_evidence": [
+        "eligible",
+        "orderId",
+        "orderItemId",
+        "listingId",
+        "listingOfferId",
+        "merchantId",
+        "shopId",
+        "canonicalSpuId",
+        "canonicalSkuId"
+      ]
+    },
+    {
+      "id": "app.product_review.create",
+      "phase": "AFTER_SALE_SERVICE",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.product_review.eligibility"
+      ],
+      "binding_id": "app.product_review.create",
+      "required_evidence": [
+        "reviewId",
+        "orderId",
+        "orderItemId",
+        "listingId",
+        "listingOfferId",
+        "merchantId",
+        "shopId",
+        "canonicalSpuId",
+        "canonicalSkuId",
+        "overallScore",
+        "moderationStatus",
+        "duplicate"
+      ]
+    },
+    {
+      "id": "app.product_review.listing",
+      "phase": "AFTER_SALE_SERVICE",
+      "executor": "http",
+      "operation": "READ",
+      "depends_on": [
+        "app.product_review.create"
+      ],
+      "binding_id": "app.product_review.listing",
+      "required_evidence": [
+        "total",
+        "pageNo",
+        "pageSize",
+        "list"
+      ]
+    },
+    {
       "id": "app.after_sale.create",
       "phase": "AFTER_SALE_SERVICE",
       "executor": "http",
       "operation": "WRITE",
       "depends_on": [
-        "app.fulfillment.by_order"
+        "app.product_review.listing"
       ],
       "binding_id": "app.after_sale.create",
       "required_evidence": [
@@ -434,7 +826,8 @@
         "afterSaleNo",
         "orderId",
         "orderItemId",
-        "afterSaleStatus",
+        "caseStatus",
+        "aggregateVersion",
         "outboxEventIds"
       ]
     },
@@ -473,7 +866,7 @@
       "required_evidence": [
         "afterSaleId",
         "orderId",
-        "afterSaleStatus",
+        "caseStatus",
         "refundStatus",
         "returnFulfillmentStatus"
       ]
@@ -490,9 +883,8 @@
       "required_evidence": [
         "ticketId",
         "ticketNo",
-        "referenceType",
-        "referenceId",
         "ticketStatus",
+        "ticketVersion",
         "outboxEventIds"
       ]
     },
@@ -507,9 +899,8 @@
       "binding_id": "app.customer_service.ticket_get",
       "required_evidence": [
         "ticketId",
-        "referenceType",
-        "referenceId",
-        "ticketStatus"
+        "ticketStatus",
+        "ticketVersion"
       ]
     },
     {
@@ -524,8 +915,15 @@
       "binding_id": "reconcile.lakehouse",
       "required_evidence": [
         "outboxCdcCheckpointSucceeded",
+        "fullDenominator",
+        "nonempty",
         "sourceToFactMismatchCount",
         "factToProjectionMismatchCount",
+        "crossTenantLinkCount",
+        "identityLinkMismatchCount",
+        "productLinkMismatchCount",
+        "orderPaymentMoneyMismatchCount",
+        "returnQuantityMismatchCount",
         "dqcViolationCount",
         "modelResults",
         "dataFreshnessAt"

@@ -1,0 +1,318 @@
+{
+  "schema_version": 2,
+  "scenarioId": "scenario.cloudmold.cross-channel.local-demo.v1",
+  "scenarioVersion": "1.2.0",
+  "runId": "cross-channel-0725",
+  "environment": "test",
+  "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+  "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+  "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+  "approval": {
+    "schema_version": 1,
+    "approvalType": "LOCAL_TEST_HUMAN_APPROVAL",
+    "approvalId": "approval-cross-channel-0725",
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "approved": true,
+    "approvedBy": "test-reviewer",
+    "approvedAt": "2026-07-25T10:24:01Z",
+    "expiresAt": "2026-07-25T11:29:01Z",
+    "scopes": [
+      "cross-channel:execute"
+    ],
+    "approvalDigest": "e9d563533a735d87803f9323c96d13919b54ffd92dc4c3c3d837f4c06ab60e3a"
+  },
+  "status": "READY_TO_REPLAY",
+  "createdAt": "2026-07-25T10:29:01Z",
+  "updatedAt": "2026-07-25T10:29:01Z",
+  "stepStates": [
+    {
+      "stageId": "app.identity.me",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/01-app.identity.me.json",
+      "receiptSha256": "d6d67264824a05e01594cab66f36a94586572f7561d2ebfc678e9f6f7cfc4007"
+    },
+    {
+      "stageId": "operator.merchant.onboard",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/02-operator.merchant.onboard.json",
+      "receiptSha256": "b6522c6a3f627e331ec313604131671016a8ca3deb22e7eaa82f75573658f7f8"
+    },
+    {
+      "stageId": "operator.catalog.publish",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/03-operator.catalog.publish.json",
+      "receiptSha256": "9ab1d3faff9416a28ed53c578150201b0450918a1ff88f847c8fc73160403eb4"
+    },
+    {
+      "stageId": "operator.catalog.metadata_update",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/04-operator.catalog.metadata_update.json",
+      "receiptSha256": "0baa07ecb47b9ac94f650a2b7d860afe4b959079613d444c211635a22159a6dd"
+    },
+    {
+      "stageId": "operator.catalog.barcode_rotate",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/05-operator.catalog.barcode_rotate.json",
+      "receiptSha256": "8af05a9c23590d47fb389f93fd0b6f8c68600276e9aa428d4d077e46370ecd5b"
+    },
+    {
+      "stageId": "operator.listing.publish",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/06-operator.listing.publish.json",
+      "receiptSha256": "8e0725010852acf78f727decd4de7da56ea2e0e89cebd5b723e2ffd3235ce471"
+    },
+    {
+      "stageId": "operator.supply.prepare",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/07-operator.supply.prepare.json",
+      "receiptSha256": "5eaf1bcc19fd95f6c29f53408effe6ab3db51a52d7ae40806abc1ea97ad97bf5"
+    },
+    {
+      "stageId": "operator.warehouse.receive",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/08-operator.warehouse.receive.json",
+      "receiptSha256": "dc562fbc3a435bc20e28455cd13d072624401da49d6b63e798ab2d9e2dc99584"
+    },
+    {
+      "stageId": "operator.quality.release",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/09-operator.quality.release.json",
+      "receiptSha256": "69ccde48bb245422909a80cca16c033b9e525932d11b1ac7b49e5f4a2fa75832"
+    },
+    {
+      "stageId": "operator.inventory.sellable",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/10-operator.inventory.sellable.json",
+      "receiptSha256": "4b0d41c278efd59ea5fa2f80cf76e5593bb64c2324eb030efbf5a46c8fe4744d"
+    },
+    {
+      "stageId": "app.session.start",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/11-app.session.start.json",
+      "receiptSha256": "a1188280e72d29fb2fbfdb638318574501d3fdd90416d9648f187664f9c67a95"
+    },
+    {
+      "stageId": "app.session.link_identity",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/12-app.session.link_identity.json",
+      "receiptSha256": "a091293abda43d3ca181e406f365fd11d8a93696a44e0a9a3777976b5bd63a4b"
+    },
+    {
+      "stageId": "app.recommendation.home",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/13-app.recommendation.home.json",
+      "receiptSha256": "3657b1054d85f5b693fc2f8478121472f343f61116780e6938a1fea63dfb9e77"
+    },
+    {
+      "stageId": "app.recommendation.exposure",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/14-app.recommendation.exposure.json",
+      "receiptSha256": "6888e2c07e8c0f00c20a760ad261dcc96c7aa4883e971b6cb9e5c918059fe1c2"
+    },
+    {
+      "stageId": "app.recommendation.click",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/15-app.recommendation.click.json",
+      "receiptSha256": "d83d32b9f5e4c836a6635ca44b8c28690c6ccaf3e565814c4f8adf9a126a5a0e"
+    },
+    {
+      "stageId": "app.community.feed",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/16-app.community.feed.json",
+      "receiptSha256": "1c612dc25e38582abd7a2046f018355e2bee9f9884b676a905a641e4684e0186"
+    },
+    {
+      "stageId": "app.community.detail",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/17-app.community.detail.json",
+      "receiptSha256": "afc1f24c4871664134012c25ca1d6604e63d4458830015f23c39f34b1ea49f27"
+    },
+    {
+      "stageId": "app.community.like",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/18-app.community.like.json",
+      "receiptSha256": "3d3ebfd7d8b01573ce44861e685b3ec0ae1558f0eda305ab65e131d4327307e8"
+    },
+    {
+      "stageId": "app.community.comment_create",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/19-app.community.comment_create.json",
+      "receiptSha256": "501287f414aaaef5d63b8b7416d3dcfb2a8a489cff50d29a70b2ac72f384ea1e"
+    },
+    {
+      "stageId": "app.address.snapshot_create",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/20-app.address.snapshot_create.json",
+      "receiptSha256": "f87e455df26bc74d8900d4b8352219be9463c39abd7be05a57577f53bbaaf95c"
+    },
+    {
+      "stageId": "app.address.snapshot_replay",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/21-app.address.snapshot_replay.json",
+      "receiptSha256": "7ac9cc06d047404b183fe9c52b373627defeab776877725940bca557666b2a1a"
+    },
+    {
+      "stageId": "app.address.snapshot_get",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/22-app.address.snapshot_get.json",
+      "receiptSha256": "0472888ee4648276464b50be41c2758ba3d1b205c97590d2533cdb6a7694cb6d"
+    },
+    {
+      "stageId": "app.products.list",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/23-app.products.list.json",
+      "receiptSha256": "a5dfb9a5d574489d8c4bc6e9d4ca02c6a72b2434b4cf40999ab70d30935e5d11"
+    },
+    {
+      "stageId": "app.behavior.search_requested",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/24-app.behavior.search_requested.json",
+      "receiptSha256": "2454120df3218eb7c3b2858a22381abf2198b8d6bff7b135a678b86505f11d7c"
+    },
+    {
+      "stageId": "app.behavior.search_exposed",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/25-app.behavior.search_exposed.json",
+      "receiptSha256": "f31db40df05b758918670cb14a4aa89c6bcb4741c1af61c0a1f8c36ad746385d"
+    },
+    {
+      "stageId": "app.behavior.search_clicked",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/26-app.behavior.search_clicked.json",
+      "receiptSha256": "934d53e102cdff2345fc5271fc7c0532a3799b36dfccbb946d4415bca036f06e"
+    },
+    {
+      "stageId": "app.product.detail",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/27-app.product.detail.json",
+      "receiptSha256": "980b64c03ad3a45ac69fdc8a8e9adac197a2fed22e32417bedd11be115592936"
+    },
+    {
+      "stageId": "app.behavior.pdp",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/28-app.behavior.pdp.json",
+      "receiptSha256": "f59aaf886dc44b9ebc387e65071eeb1df05b1abbf78cd2ba63f167b8ff29d362"
+    },
+    {
+      "stageId": "app.cart.get",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/29-app.cart.get.json",
+      "receiptSha256": "20a10d1ce4e05106a62dd7794e3d7e7bf2c5a447ac2170366fbe9741a14ff18f"
+    },
+    {
+      "stageId": "app.behavior.cart_added",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/30-app.behavior.cart_added.json",
+      "receiptSha256": "7d9acf693b27b1f79fae350794aa8ccda34f26b539d743bcc61c36a969f073f1"
+    },
+    {
+      "stageId": "app.cart.add",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/31-app.cart.add.json",
+      "receiptSha256": "c80e5f3f13d87413bea53374317d4b7700b31bc6a95b84809393900bdb41146d"
+    },
+    {
+      "stageId": "app.cart.preview_selected",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/32-app.cart.preview_selected.json",
+      "receiptSha256": "277308858d4f056f98cd7a0f155b9d9e6b0ec94731431939904f5e5c0beb5606"
+    },
+    {
+      "stageId": "app.checkout.preview",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/33-app.checkout.preview.json",
+      "receiptSha256": "54c0c7ba72dfb58b81dce0ca18adca7386f952bb84e9681b00dbf6fcc2933257"
+    },
+    {
+      "stageId": "app.behavior.checkout",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/34-app.behavior.checkout.json",
+      "receiptSha256": "8737bf790e613bb2a6729071fde9f87048b41aca000f46c49e6711a50e482d71"
+    },
+    {
+      "stageId": "app.order.create",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/35-app.order.create.json",
+      "receiptSha256": "dce9054ab051dc9f47b376776e4f9e8c94e5d759330182bbf14607b79be84dc9"
+    },
+    {
+      "stageId": "app.order.get",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/36-app.order.get.json",
+      "receiptSha256": "e6423cbbdd336424d268bc24a75b01eb4156d4d51f4442101b22bfdf3542d7bc"
+    },
+    {
+      "stageId": "app.payment.capture",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/37-app.payment.capture.json",
+      "receiptSha256": "af6147c5e65abb98e5b3144f07039a282f01be267d8bd7594143f801262f4e4c"
+    },
+    {
+      "stageId": "operator.fulfillment.complete",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/38-operator.fulfillment.complete.json",
+      "receiptSha256": "bec32db9c2f29ca38c4a870277025eb7a668f86f5b53fa49bda07db5d2a60ecb"
+    },
+    {
+      "stageId": "app.fulfillment.by_order",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/39-app.fulfillment.by_order.json",
+      "receiptSha256": "e96fe0a240ec216158de2cca8cc33fc7039893342ba075475f54dd770a3e0bd1"
+    },
+    {
+      "stageId": "app.product_review.eligibility",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/40-app.product_review.eligibility.json",
+      "receiptSha256": "4dd0ad098a359f4c1c93b2f1107affcac604b9e2ccfe909bf175bbe5d8b5d087"
+    },
+    {
+      "stageId": "app.product_review.create",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/41-app.product_review.create.json",
+      "receiptSha256": "ad8c509d6ba15ef6cc5306a8cb2d0d162dad98e61e911cec5dee2b7295f5ec17"
+    },
+    {
+      "stageId": "app.product_review.listing",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/42-app.product_review.listing.json",
+      "receiptSha256": "de9996de176b6bc91995bb339eab91069fc89a7a6a026958b592b3d04ce91757"
+    },
+    {
+      "stageId": "app.after_sale.create",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/43-app.after_sale.create.json",
+      "receiptSha256": "dfb92b841e6105c257641bbd36855afcbf39b16b7e93c0330f27234a93e9bb96"
+    },
+    {
+      "stageId": "operator.after_sale.complete",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/44-operator.after_sale.complete.json",
+      "receiptSha256": "422747b7f33c28a807f582dcaa5595e65595b60839c1b96ee4947cc876357cf4"
+    },
+    {
+      "stageId": "app.after_sale.get",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/45-app.after_sale.get.json",
+      "receiptSha256": "a0fbb95faa06f8bef24d78bcfb9cccfc17f7378756d4a00e1fb6b822365f3c32"
+    },
+    {
+      "stageId": "app.customer_service.ticket_create",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/46-app.customer_service.ticket_create.json",
+      "receiptSha256": "89fe1ba8ecfeeb04c870e65c0cea09d464c161fd1976eaaac5d274d3c57898fc"
+    },
+    {
+      "stageId": "app.customer_service.ticket_get",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/47-app.customer_service.ticket_get.json",
+      "receiptSha256": "4a5f0067b06cfd65fb3140d4c14a2bb425d9f80184fce2088493f23ddb0f04fe"
+    },
+    {
+      "stageId": "reconcile.lakehouse",
+      "status": "RECORDED",
+      "receiptPath": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/tests/fixtures/cross_channel_runtime/runtime/cross-channel-0725/receipts/48-reconcile.lakehouse.json",
+      "receiptSha256": "816152e8c3f28539253c2f25ec2270f26126ee0120cfbe4a704178119a99e508"
+    }
+  ]
+}

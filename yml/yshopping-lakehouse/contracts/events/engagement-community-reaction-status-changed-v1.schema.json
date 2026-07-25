@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/engagement-community-reaction-status-changed-v1.schema.json",
+  "title": "engagement.community.reaction_status_changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "reaction_id",
+    "actor_principal_id",
+    "reaction_type",
+    "target_type",
+    "target_id",
+    "previous_status",
+    "current_status"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "format": "uuid"},
+    "reaction_id": {"type": "string", "format": "uuid"},
+    "actor_principal_id": {"type": "string", "format": "uuid"},
+    "reaction_type": {"type": "string", "enum": ["LIKE", "FOLLOW"]},
+    "target_type": {"type": "string", "enum": ["CONTENT", "PRINCIPAL"]},
+    "target_id": {"type": "string", "format": "uuid"},
+    "previous_status": {"type": ["string", "null"], "enum": [null, "ACTIVE", "REMOVED"]},
+    "current_status": {"type": "string", "enum": ["ACTIVE", "REMOVED"]}
+  }
+}

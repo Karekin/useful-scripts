@@ -1,0 +1,216 @@
+{
+  "contract_id": "cloudmold.production-p4.gates.v1",
+  "gates": [
+    {
+      "gate_id": "prod.cloud.identity-network",
+      "owner": "cloud-platform",
+      "max_age_seconds": 604800,
+      "required_assertions": {
+        "production_account_isolated": true,
+        "private_network_only": true,
+        "rrsa_workload_identity": true,
+        "waf_or_api_gateway_enforced": true
+      }
+    },
+    {
+      "gate_id": "prod.delivery.supply-chain",
+      "owner": "release-engineering",
+      "max_age_seconds": 86400,
+      "required_assertions": {
+        "gitops_sync_verified": true,
+        "image_signature_verified": true,
+        "sbom_attested": true,
+        "vulnerability_gate_passed": true,
+        "rollback_revision_verified": true
+      }
+    },
+    {
+      "gate_id": "prod.data.managed-state",
+      "owner": "cloud-platform",
+      "max_age_seconds": 604800,
+      "required_assertions": {
+        "managed_database_verified": true,
+        "managed_cache_verified": true,
+        "object_storage_verified": true,
+        "encryption_at_rest_verified": true
+      }
+    },
+    {
+      "gate_id": "prod.security.kms-hsm-secrets",
+      "owner": "security",
+      "max_age_seconds": 2592000,
+      "required_assertions": {
+        "kms_or_hsm_key_verified": true,
+        "envelope_encryption_verified": true,
+        "no_long_lived_access_keys": true,
+        "secret_rotation_verified": true,
+        "repository_secret_scan_clean": true
+      }
+    },
+    {
+      "gate_id": "prod.payment.psp-money",
+      "owner": "payments",
+      "max_age_seconds": 86400,
+      "required_assertions": {
+        "real_psp_capture_verified": true,
+        "callback_signature_verified": true,
+        "exact_amount_currency_verified": true,
+        "refund_verified": true,
+        "settlement_reconciled": true,
+        "raw_callback_not_logged": true
+      },
+      "minimum_measurements": {
+        "captured_refunded_reconciled_cases": 1
+      }
+    },
+    {
+      "gate_id": "prod.logistics.external-wms",
+      "owner": "fulfillment",
+      "max_age_seconds": 86400,
+      "required_assertions": {
+        "external_wms_receipt_verified": true,
+        "external_wms_pick_pack_ship_verified": true,
+        "inventory_reservation_reconciled": true,
+        "webhook_replay_idempotent": true
+      },
+      "minimum_measurements": {
+        "reconciled_shipments": 1
+      }
+    },
+    {
+      "gate_id": "prod.logistics.carrier",
+      "owner": "fulfillment",
+      "max_age_seconds": 86400,
+      "required_assertions": {
+        "carrier_order_verified": true,
+        "label_verified": true,
+        "tracking_events_verified": true,
+        "delivery_exception_verified": true
+      },
+      "minimum_measurements": {
+        "delivered_shipments": 1
+      }
+    },
+    {
+      "gate_id": "prod.logistics.reverse",
+      "owner": "aftersales",
+      "max_age_seconds": 86400,
+      "required_assertions": {
+        "return_label_verified": true,
+        "reverse_tracking_verified": true,
+        "inspection_disposition_verified": true,
+        "refund_and_restock_reconciled": true
+      },
+      "minimum_measurements": {
+        "completed_returns": 1
+      }
+    },
+    {
+      "gate_id": "prod.experience.realtime-customer-service",
+      "owner": "customer-service",
+      "max_age_seconds": 86400,
+      "required_assertions": {
+        "realtime_session_verified": true,
+        "agent_assignment_verified": true,
+        "message_retention_verified": true,
+        "order_aftersale_context_verified": true
+      },
+      "minimum_measurements": {
+        "completed_sessions": 1
+      }
+    },
+    {
+      "gate_id": "prod.experience.content-moderation",
+      "owner": "trust-safety",
+      "max_age_seconds": 86400,
+      "required_assertions": {
+        "content_vault_verified": true,
+        "automated_moderation_verified": true,
+        "human_review_escalation_verified": true,
+        "blocked_content_not_discoverable": true
+      },
+      "minimum_measurements": {
+        "moderated_content_cases": 1
+      }
+    },
+    {
+      "gate_id": "prod.experience.recommendation-search",
+      "owner": "growth-data",
+      "max_age_seconds": 86400,
+      "required_assertions": {
+        "production_index_verified": true,
+        "recommendation_serving_verified": true,
+        "exposure_click_attribution_verified": true,
+        "experiment_guardrails_verified": true,
+        "fallback_verified": true
+      },
+      "minimum_measurements": {
+        "attributed_sessions": 1
+      }
+    },
+    {
+      "gate_id": "prod.observability.security-incident",
+      "owner": "sre-security",
+      "max_age_seconds": 86400,
+      "required_assertions": {
+        "slo_alerts_verified": true,
+        "audit_logs_immutable": true,
+        "pii_redaction_verified": true,
+        "incident_runbook_exercised": true
+      }
+    },
+    {
+      "gate_id": "prod.resilience.backup-restore",
+      "owner": "sre",
+      "max_age_seconds": 2592000,
+      "required_assertions": {
+        "backup_verified": true,
+        "restore_verified": true,
+        "rpo_met": true,
+        "rto_met": true,
+        "cross_failure_domain_copy_verified": true
+      }
+    },
+    {
+      "gate_id": "prod.resilience.capacity-soak",
+      "owner": "sre",
+      "max_age_seconds": 2592000,
+      "required_assertions": {
+        "peak_capacity_verified": true,
+        "autoscaling_verified": true,
+        "no_failed_checkpoints": true,
+        "resource_limits_verified": true
+      },
+      "minimum_measurements": {
+        "continuous_window_hours": 72
+      }
+    },
+    {
+      "gate_id": "prod.data.production-reconciliation",
+      "owner": "data-platform",
+      "max_age_seconds": 86400,
+      "required_assertions": {
+        "production_source_observed": true,
+        "independent_reconciliation_verified": true,
+        "non_empty_denominator_verified": true,
+        "zero_unexplained_mismatches": true,
+        "watermark_chain_verified": true
+      },
+      "minimum_measurements": {
+        "reconciled_assets": 718
+      }
+    },
+    {
+      "gate_id": "prod.agent.approval-audit",
+      "owner": "agent-platform",
+      "max_age_seconds": 86400,
+      "required_assertions": {
+        "production_risk_authority_verified": true,
+        "least_privilege_scope_verified": true,
+        "idempotent_replay_verified": true,
+        "immutable_effect_audit_verified": true,
+        "cutover_separate_from_readiness": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "schema_version": 2,
+  "stageId": "app.customer_service.ticket_create",
+  "executor": "http",
+  "operation": "WRITE",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:5980ee3f0175cc55e4808dea",
+  "requestEnvelope": {
+    "stageId": "app.customer_service.ticket_create",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.customer_service.ticket_create",
+    "kind": "response"
+  },
+  "effectEnvelope": {
+    "stageId": "app.customer_service.ticket_create",
+    "kind": "effect",
+    "eventIds": [
+      "event:app.customer_service.ticket_create"
+    ]
+  },
+  "evidence": {
+    "ticketId": "ticket-1",
+    "ticketNo": "TICKET-1",
+    "ticketStatus": "OPEN",
+    "ticketVersion": 1,
+    "outboxEventIds": [
+      "ticket-event-1"
+    ]
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1",
+    "sessionId": "00000000-0000-4000-8000-000000000001",
+    "orderId": "order-1",
+    "afterSaleId": "after-sale-1",
+    "ticketId": "ticket-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.customer_service.ticket_create",
+    "bindingDefinitionSha256": "1b2c4ca5ee175054fd50c60f9d937760a05825b91b6ddc0364e391b101dea912"
+  },
+  "requestSha256": "9a24740b5c795ad2421b3079fece07c343094101d274a988f72ec742beec5955",
+  "responseSha256": "4fca9d844ed766033809b52c206258c3df4c024d3841052a2970db9fd85ccf22",
+  "effectSha256": "6e7e5900623397fcb082d33246a64cbf18beb41191b36e4e267bd3085f2acc89",
+  "receiptSha256": "89fe1ba8ecfeeb04c870e65c0cea09d464c161fd1976eaaac5d274d3c57898fc"
+}

@@ -1,0 +1,56 @@
+{
+  "schema_version": 2,
+  "stageId": "app.community.detail",
+  "executor": "http",
+  "operation": "READ",
+  "status": "SUCCEEDED",
+  "idempotencyKey": "cca:cross-channel-0725:7db83dca783ecbb461a9141b",
+  "requestEnvelope": {
+    "stageId": "app.community.detail",
+    "kind": "request"
+  },
+  "responseEnvelope": {
+    "stageId": "app.community.detail",
+    "kind": "response"
+  },
+  "effectEnvelope": {},
+  "evidence": {
+    "contentId": "content-1",
+    "authorPrincipalId": "principal-creator-1",
+    "body": "真实种草正文",
+    "likeCount": 1,
+    "commentCount": 1,
+    "likedByCurrentUser": false,
+    "createdAt": "2026-07-25T11:40:00Z",
+    "productLink": {
+      "listingId": "listing-1",
+      "listingOfferId": "offer-1",
+      "canonicalSpuId": "spu-1",
+      "canonicalSkuId": "sku-1"
+    }
+  },
+  "linkage": {
+    "runId": "cross-channel-0725",
+    "environment": "test",
+    "tenantId": "1",
+    "principalId": "principal-1",
+    "sessionId": "00000000-0000-4000-8000-000000000001",
+    "contentId": "content-1"
+  },
+  "runtime": {
+    "recordedAt": "2026-07-25T10:28:01Z",
+    "receiptSource": "local-manual",
+    "recorder": "cross_channel_agentctl.resume"
+  },
+  "definition": {
+    "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+    "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+    "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+    "bindingId": "app.community.detail",
+    "bindingDefinitionSha256": "00f39b55a585e8d6c1ca634577e3493a180f3a1b2f58a7f6a69b4540c1bff206"
+  },
+  "requestSha256": "6ba38531bb007f9949264eb38b546a7d36a656943c95d2a1f59de096c0eeb03c",
+  "responseSha256": "bff8fdd350c7c63aca6bf8c70cfa690945a4e3310ba655e730ff4192ec1b423a",
+  "effectSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "receiptSha256": "afc1f24c4871664134012c25ca1d6604e63d4458830015f23c39f34b1ea49f27"
+}

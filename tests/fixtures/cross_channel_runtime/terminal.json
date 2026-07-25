@@ -1,0 +1,197 @@
+{
+  "identity": {
+    "memberUserId": 247,
+    "principalId": "principal-1",
+    "sessionId": "00000000-0000-4000-8000-000000000001"
+  },
+  "address": {
+    "addressRef": "11111111-1111-4111-8111-111111111111",
+    "snapshotVersion": 1,
+    "destinationRegionCode": "310000",
+    "receiverSummary": "张*",
+    "mobileSummary": "138****0000"
+  },
+  "recommendation": {
+    "decisionToken": "recommend:1234567890abcdef123456",
+    "resultSetToken": "recommend:1234567890abcdef123456",
+    "policyVersion": "LOCAL_DETERMINISTIC_V1",
+    "primaryListingId": "listing-1",
+    "primaryRank": 1
+  },
+  "community": {
+    "contentId": "content-1",
+    "likedByCurrentUser": true,
+    "commentCount": 1,
+    "productLinkListingId": "listing-1"
+  },
+  "product": {
+    "merchantId": "merchant-1",
+    "shopId": "shop-1",
+    "canonicalSpuId": "spu-1",
+    "canonicalSkuId": "sku-1",
+    "listingId": "listing-1",
+    "listingOfferId": "offer-1",
+    "priceMinor": 39800,
+    "currencyCode": "CNY",
+    "inventoryVersion": 9,
+    "qualityStatus": "QUALIFIED",
+    "inStock": true
+  },
+  "cart": {
+    "cartId": "cart-1",
+    "aggregateVersion": 2,
+    "lineId": "line-1",
+    "selectedLineCount": 1,
+    "checkoutToken": "checkout-1"
+  },
+  "checkout": {
+    "checkoutToken": "checkout-1",
+    "principalId": "principal-1",
+    "addressRef": "11111111-1111-4111-8111-111111111111",
+    "addressSnapshotVersion": 1,
+    "canonicalSpuId": "spu-1",
+    "canonicalSkuId": "sku-1",
+    "listingId": "listing-1",
+    "listingOfferId": "offer-1",
+    "payableAmountMinor": 39800,
+    "currencyCode": "CNY"
+  },
+  "order": {
+    "orderId": "order-1",
+    "orderItemId": "order-item-1",
+    "buyerPrincipalId": "principal-1",
+    "canonicalSkuId": "sku-1",
+    "listingId": "listing-1",
+    "listingOfferId": "offer-1",
+    "quantity": 2,
+    "payableAmountMinor": 39800,
+    "currencyCode": "CNY"
+  },
+  "payment": {
+    "paymentId": "payment-1",
+    "orderId": "order-1",
+    "capturedAmountMinor": 39800,
+    "currencyCode": "CNY"
+  },
+  "fulfillment": {
+    "fulfillmentId": "fulfillment-1",
+    "shipmentId": "shipment-1",
+    "orderId": "order-1",
+    "canonicalSkuId": "sku-1",
+    "listingId": "listing-1",
+    "listingOfferId": "offer-1"
+  },
+  "review": {
+    "eligible": true,
+    "reviewId": "review-1",
+    "moderationStatus": "APPROVED",
+    "listingId": "listing-1",
+    "canonicalSpuId": "spu-1",
+    "canonicalSkuId": "sku-1",
+    "total": 1
+  },
+  "afterSale": {
+    "afterSaleId": "after-sale-1",
+    "orderId": "order-1",
+    "canonicalSkuId": "sku-1",
+    "listingId": "listing-1",
+    "listingOfferId": "offer-1",
+    "returnedQuantity": 2,
+    "refundedAmountMinor": 39800,
+    "currencyCode": "CNY"
+  },
+  "customerService": {
+    "ticketId": "ticket-1",
+    "referenceType": "AFTER_SALE",
+    "referenceId": "after-sale-1"
+  },
+  "behavior": {
+    "sessionId": "00000000-0000-4000-8000-000000000001",
+    "principalId": "principal-1",
+    "eventTypes": [
+      "SEARCH_REQUESTED",
+      "SEARCH_RESULT_EXPOSED",
+      "SEARCH_RESULT_CLICKED",
+      "PDP_VIEWED",
+      "CART_ADDED",
+      "CHECKOUT_STARTED"
+    ]
+  },
+  "inventory": {
+    "availableQuantityBefore": 10,
+    "availableQuantityAfter": 10,
+    "restockedQuantity": 2
+  },
+  "states": {
+    "merchantStatus": "ACTIVE",
+    "shopStatus": "ACTIVE",
+    "catalogStatus": "ACTIVE",
+    "listingStatus": "PUBLISHED",
+    "stockStatus": "SELLABLE",
+    "qualityStatus": "QUALIFIED",
+    "paymentStatus": "REFUNDED",
+    "fulfillmentStatus": "DELIVERED",
+    "afterSaleStatus": "COMPLETED",
+    "returnFulfillmentStatus": "INSPECTION_ACCEPTED",
+    "refundStatus": "SUCCEEDED",
+    "orderStatus": "RETURNED"
+  },
+  "lakehouse": {
+    "outboxCdcCheckpointSucceeded": true,
+    "fullDenominator": true,
+    "nonempty": true,
+    "sourceToFactMismatchCount": 0,
+    "factToProjectionMismatchCount": 0,
+    "crossTenantLinkCount": 0,
+    "identityLinkMismatchCount": 0,
+    "productLinkMismatchCount": 0,
+    "orderPaymentMoneyMismatchCount": 0,
+    "returnQuantityMismatchCount": 0,
+    "dqcViolationCount": 0,
+    "modelResults": {
+      "yshopping_ads.ads_canonical_commerce_v2_readiness": "RECONCILED",
+      "yshopping_ads.ads_canonical_after_sale_readiness": "RECONCILED",
+      "yshopping_ads.ads_canonical_customer_service_readiness": "READY",
+      "yshopping_ads.ads_canonical_commerce_acquisition_funnel": "NONEMPTY"
+    }
+  },
+  "replay": {
+    "verified": true,
+    "effectHashMatch": true,
+    "originalLedgerSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "duplicateStageIds": [
+      "operator.merchant.onboard",
+      "operator.catalog.publish",
+      "operator.catalog.metadata_update",
+      "operator.catalog.barcode_rotate",
+      "operator.listing.publish",
+      "operator.supply.prepare",
+      "operator.warehouse.receive",
+      "operator.quality.release",
+      "app.session.start",
+      "app.session.link_identity",
+      "app.recommendation.exposure",
+      "app.recommendation.click",
+      "app.community.like",
+      "app.community.comment_create",
+      "app.address.snapshot_create",
+      "app.address.snapshot_replay",
+      "app.behavior.search_requested",
+      "app.behavior.search_exposed",
+      "app.behavior.search_clicked",
+      "app.behavior.pdp",
+      "app.behavior.cart_added",
+      "app.cart.add",
+      "app.cart.preview_selected",
+      "app.checkout.preview",
+      "app.behavior.checkout",
+      "app.order.create",
+      "app.payment.capture",
+      "operator.fulfillment.complete",
+      "app.product_review.create",
+      "app.after_sale.create",
+      "operator.after_sale.complete",
+      "app.customer_service.ticket_create"
+    ]
+  }
+}

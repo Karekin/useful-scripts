@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "approvalType": "LOCAL_TEST_HUMAN_APPROVAL",
+  "approvalId": "approval-cross-channel-0725",
+  "runId": "cross-channel-0725",
+  "environment": "test",
+  "approved": true,
+  "approvedBy": "test-reviewer",
+  "approvedAt": "2026-07-25T10:24:01Z",
+  "expiresAt": "2026-07-25T11:29:01Z",
+  "scopes": [
+    "cross-channel:execute"
+  ],
+  "approvalDigest": "e9d563533a735d87803f9323c96d13919b54ffd92dc4c3c3d837f4c06ab60e3a"
+}

@@ -44,7 +44,9 @@
         "CART_ADDED",
         "CART_REMOVED",
         "CHECKOUT_STARTED",
-        "CHECKOUT_ABANDONED"
+        "CHECKOUT_ABANDONED",
+        "RECOMMENDATION_EXPOSED",
+        "RECOMMENDATION_CLICKED"
       ]
     },
     "canonical_spu_id": {"type": ["string", "null"], "format": "uuid"},

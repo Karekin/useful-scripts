@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/app-recommendation-served-v1.schema.json",
+  "title": "app.recommendation.served payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "session_id",
+    "scene_code",
+    "decision_id",
+    "decision_token",
+    "policy_version",
+    "ttl_seconds",
+    "item_count",
+    "expires_at",
+    "items"
+  ],
+  "properties": {
+    "session_id": {"type": "string", "format": "uuid"},
+    "scene_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,31}$"},
+    "decision_id": {"type": "string", "format": "uuid"},
+    "decision_token": {"type": "string", "minLength": 8, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9:_-]{7,127}$"},
+    "policy_version": {"type": "string", "const": "LOCAL_DETERMINISTIC_V1"},
+    "ttl_seconds": {"type": "integer", "minimum": 60, "maximum": 86400},
+    "item_count": {"type": "integer", "minimum": 0, "maximum": 20},
+    "expires_at": {"type": "string", "format": "date-time"},
+    "items": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rank",
+          "reason_code",
+          "listing_id",
+          "listing_offer_id",
+          "canonical_spu_id",
+          "canonical_sku_id",
+          "price_minor",
+          "currency_code",
+          "quality_status"
+        ],
+        "properties": {
+          "rank": {"type": "integer", "minimum": 1, "maximum": 20},
+          "reason_code": {"type": "string", "enum": ["VERIFIED_IN_STOCK", "VERIFIED_LOW_STOCK"]},
+          "listing_id": {"type": "string", "format": "uuid"},
+          "listing_offer_id": {"type": "string", "format": "uuid"},
+          "canonical_spu_id": {"type": "string", "format": "uuid"},
+          "canonical_sku_id": {"type": "string", "format": "uuid"},
+          "price_minor": {"type": "integer", "minimum": 0},
+          "currency_code": {"type": "string", "const": "CNY"},
+          "quality_status": {"type": "string", "maxLength": 32}
+        }
+      }
+    }
+  }
+}

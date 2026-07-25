@@ -1,0 +1,18 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.production.p4.v1",
+  "workflow_id": "workflow.cloudmold.production-p4.admission.v1",
+  "name": "cloudmold-production-p4",
+  "version": "1.0.0",
+  "owner": "cloudmold-platform-security",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R4",
+  "default_mode": "readiness",
+  "allowed_execute_environments": [],
+  "status": "blocked-pending-production-trust-and-evidence",
+  "entrypoints": {
+    "requirements": "python3 scripts/production_p4_gate.py requirements",
+    "check": "python3 scripts/production_p4_gate.py check",
+    "secret_hygiene": "python3 scripts/secret_hygiene.py"
+  }
+}

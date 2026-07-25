@@ -91,10 +91,14 @@ SELECT
     ) AS data_freshness_at,
     CASE
         WHEN promise.promise_status = 'ACTIVE'
-         AND promise.effective_deadline_at <= GREATEST(
-             promise.promise_recorded_at,
-             COALESCE(order_line.order_line_updated_at, promise.promise_recorded_at),
-             COALESCE(receipt_total.receipt_updated_at, promise.promise_recorded_at)
+         AND (
+             promise.effective_deadline_at <= GREATEST(
+                 promise.promise_recorded_at,
+                 COALESCE(order_line.order_line_updated_at, promise.promise_recorded_at),
+                 COALESCE(receipt_total.receipt_updated_at, promise.promise_recorded_at)
+             )
+             OR COALESCE(receipt_on_time.on_time_received_quantity, 0)
+                >= COALESCE(order_line.erp_ordered_quantity, promise.ordered_quantity)
          )
         THEN TRUE ELSE FALSE
     END AS comparable_otif,
@@ -110,14 +114,14 @@ SELECT
     END AS on_time_in_full,
     CASE
         WHEN promise.promise_status = 'CANCELLED' THEN 'PROMISE_CANCELLED'
+        WHEN COALESCE(receipt_on_time.on_time_received_quantity, 0)
+             >= COALESCE(order_line.erp_ordered_quantity, promise.ordered_quantity)
+        THEN 'DUE_ON_TIME_IN_FULL'
         WHEN promise.effective_deadline_at > GREATEST(
             promise.promise_recorded_at,
             COALESCE(order_line.order_line_updated_at, promise.promise_recorded_at),
             COALESCE(receipt_total.receipt_updated_at, promise.promise_recorded_at)
         ) THEN 'PROMISE_PENDING_NOT_DUE'
-        WHEN COALESCE(receipt_on_time.on_time_received_quantity, 0)
-             >= COALESCE(order_line.erp_ordered_quantity, promise.ordered_quantity)
-        THEN 'DUE_ON_TIME_IN_FULL'
         WHEN COALESCE(receipt_total.total_received_quantity, 0)
              >= COALESCE(order_line.erp_ordered_quantity, promise.ordered_quantity)
         THEN 'DUE_LATE_FULL'

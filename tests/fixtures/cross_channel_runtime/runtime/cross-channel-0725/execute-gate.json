@@ -1,0 +1,1253 @@
+{
+  "schema_version": 1,
+  "scenarioId": "scenario.cloudmold.cross-channel.local-demo.v1",
+  "scenarioVersion": "1.2.0",
+  "mode": "EXECUTE_GATE",
+  "runId": "cross-channel-0725",
+  "environment": "test",
+  "status": "AUTHORIZED",
+  "simulated": false,
+  "scenarioDigest": "0fec3579547692bf1de07ae56e3ae74e4b5faa59f46e2a94bf4f083c27ff808e",
+  "bindingsDigest": "9f43450d76406dade7e9bab85517d735967f172943956f593c11322ec1ceb0a8",
+  "reconciliationDigest": "395625b884f050340598c7b040fa6563546518c25273d6a1b23886783961d6ff",
+  "steps": [
+    {
+      "stageId": "app.identity.me",
+      "phase": "IDENTITY",
+      "executor": "http",
+      "operation": "READ",
+      "dependsOn": [],
+      "idempotencyKey": "cca:cross-channel-0725:0970a7261d993f34b1ad5583",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "memberUserId",
+        "principalId",
+        "principalStatus",
+        "sourceSystem",
+        "sourceType"
+      ],
+      "bindingDefinitionSha256": "07571b9354d79d44c25168831208acf13425de5d03eb13a6c36dd0db62d73854"
+    },
+    {
+      "stageId": "operator.merchant.onboard",
+      "phase": "OPERATOR_BOOTSTRAP",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "dependsOn": [],
+      "idempotencyKey": "cca:cross-channel-0725:1c3f52773530af8bc27312bf",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "merchantId",
+        "shopId",
+        "principalId",
+        "merchantStatus",
+        "shopStatus",
+        "outboxEventIds"
+      ],
+      "bindingDefinitionSha256": "7e580bae0917074670cbcfc9db507826452a34e455358b5b5cbb3ce06fa24993",
+      "invocation": {
+        "adapter": "governed_skill",
+        "skillId": "skill.cloudmold.commerce.reuse-ready-master.v1",
+        "failClosed": true
+      }
+    },
+    {
+      "stageId": "operator.catalog.publish",
+      "phase": "OPERATOR_BOOTSTRAP",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "dependsOn": [
+        "operator.merchant.onboard"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:1ab9fbf0577edb7a1a8e1af6",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "canonicalSpuId",
+        "canonicalSkuId",
+        "skuCode",
+        "catalogStatus",
+        "outboxEventIds"
+      ],
+      "bindingDefinitionSha256": "2c1b5a037d92dfb9c1f934899323039b8b1ae49560d43d6759d08c264a282c03",
+      "invocation": {
+        "adapter": "governed_skill",
+        "skillId": "skill.cloudmold.commerce.catalog-matrix.v1",
+        "failClosed": true
+      }
+    },
+    {
+      "stageId": "operator.catalog.metadata_update",
+      "phase": "OPERATOR_BOOTSTRAP",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "dependsOn": [
+        "operator.catalog.publish"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:fe943471e3e9a9ba8d2c44f8",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "entityType",
+        "entityId",
+        "businessCode",
+        "currentStatus",
+        "aggregateVersion",
+        "outboxEventIds"
+      ],
+      "bindingDefinitionSha256": "f1be033f722f4ea2dfc63cdac8347eb9ee641afd3a05dd8eef0543a5f84d1abc",
+      "invocation": {
+        "adapter": "admin_rest_command",
+        "baseUrlEnv": "CLOUDMOLD_ADMIN_BASE_URL",
+        "tokenEnv": "CLOUDMOLD_ADMIN_TOKEN",
+        "tenantEnv": "CLOUDMOLD_TENANT_ID",
+        "permission": "cloudmold:catalog:metadata:update",
+        "method": "POST",
+        "path": "/admin-api/cloudmold/catalog/metadata/update",
+        "responseFields": [
+          "operationId",
+          "entityType",
+          "entityId",
+          "businessCode",
+          "currentStatus",
+          "aggregateVersion",
+          "duplicate"
+        ],
+        "failClosed": true
+      }
+    },
+    {
+      "stageId": "operator.catalog.barcode_rotate",
+      "phase": "OPERATOR_BOOTSTRAP",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "dependsOn": [
+        "operator.catalog.metadata_update"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:d5ff35f7f17f6b605a454089",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "skuId",
+        "previousBarcode",
+        "currentBarcode",
+        "barcodeType",
+        "aggregateVersion",
+        "outboxEventIds"
+      ],
+      "bindingDefinitionSha256": "88fb80df1e72020373704611a6a988913996e6c68586c4699d03115aa4b0dc8b",
+      "invocation": {
+        "adapter": "admin_rest_command",
+        "baseUrlEnv": "CLOUDMOLD_ADMIN_BASE_URL",
+        "tokenEnv": "CLOUDMOLD_ADMIN_TOKEN",
+        "tenantEnv": "CLOUDMOLD_TENANT_ID",
+        "permission": "cloudmold:catalog:barcode:rotate",
+        "method": "POST",
+        "path": "/admin-api/cloudmold/catalog/barcode/rotate",
+        "responseFields": [
+          "operationId",
+          "skuId",
+          "previousBarcodeId",
+          "previousBarcode",
+          "currentBarcodeId",
+          "currentBarcode",
+          "barcodeType",
+          "aggregateVersion",
+          "duplicate"
+        ],
+        "failClosed": true
+      }
+    },
+    {
+      "stageId": "operator.listing.publish",
+      "phase": "OPERATOR_BOOTSTRAP",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "dependsOn": [
+        "operator.merchant.onboard",
+        "operator.catalog.barcode_rotate"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:b92ddae3ebb866ee553c8012",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "listingId",
+        "listingOfferId",
+        "listingRevision",
+        "listingVersion",
+        "listingStatus",
+        "priceMinor",
+        "currencyCode",
+        "outboxEventIds"
+      ],
+      "bindingDefinitionSha256": "3c4ace4d81a73f9b0508faa932f069c2c23626a40e8fc4238c6e186cefc6492d",
+      "invocation": {
+        "adapter": "governed_skill",
+        "skillId": "skill.cloudmold.commerce.aftersale-saga.v1",
+        "failClosed": true
+      }
+    },
+    {
+      "stageId": "operator.supply.prepare",
+      "phase": "OPERATOR_BOOTSTRAP",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "dependsOn": [
+        "operator.listing.publish"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:25607bc52008f5d251b74a91",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "sourceSystem",
+        "documentType",
+        "documentId",
+        "documentNo",
+        "status"
+      ],
+      "bindingDefinitionSha256": "c45579d687102419163b9f0337d9afb4062ef1906ece33c436319436f7d433b3",
+      "invocation": {
+        "adapter": "governed_skill",
+        "skillId": "skill.cloudmold.supply-planning.prepare.v1",
+        "failClosed": true
+      }
+    },
+    {
+      "stageId": "operator.warehouse.receive",
+      "phase": "OPERATOR_BOOTSTRAP",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "dependsOn": [
+        "operator.supply.prepare"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:68006bcf62408cdc2baa0bc4",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "warehouseId",
+        "locationId",
+        "inventoryLedgerTransactionId",
+        "receivedQuantity",
+        "outboxEventIds"
+      ],
+      "bindingDefinitionSha256": "3c4ace4d81a73f9b0508faa932f069c2c23626a40e8fc4238c6e186cefc6492d",
+      "invocation": {
+        "adapter": "governed_skill",
+        "skillId": "skill.cloudmold.commerce.aftersale-saga.v1",
+        "failClosed": true
+      }
+    },
+    {
+      "stageId": "operator.quality.release",
+      "phase": "OPERATOR_BOOTSTRAP",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "dependsOn": [
+        "operator.warehouse.receive"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:8ed0faf0742aca783b8cc445",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "inspectionTaskId",
+        "qualityStandardVersion",
+        "qualityStatus",
+        "inspectionDecision",
+        "outboxEventIds"
+      ],
+      "bindingDefinitionSha256": "0f627a10b7fa4597d1466b7cc2193cd5884a53348fbd6815e5503201153c307a",
+      "invocation": {
+        "adapter": "admin_rest_sequence",
+        "baseUrlEnv": "CLOUDMOLD_ADMIN_BASE_URL",
+        "tokenEnv": "CLOUDMOLD_ADMIN_TOKEN",
+        "tenantEnv": "CLOUDMOLD_TENANT_ID",
+        "permission": "cloudmold:quality:command",
+        "method": "POST",
+        "path": "/admin-api/cloudmold/quality/command",
+        "operations": [
+          {
+            "operation": "CREATE_STANDARD",
+            "expectedStatus": "DRAFT"
+          },
+          {
+            "operation": "PUBLISH_STANDARD",
+            "expectedStatus": "PUBLISHED"
+          },
+          {
+            "operation": "CERTIFY_AUTHENTICATOR",
+            "expectedStatus": "ACTIVE"
+          },
+          {
+            "operation": "CREATE_INSPECTION_TASK",
+            "expectedStatus": "CREATED"
+          },
+          {
+            "operation": "ASSIGN_INSPECTION_TASK",
+            "expectedStatus": "ASSIGNED"
+          },
+          {
+            "operation": "START_INSPECTION_TASK",
+            "expectedStatus": "IN_PROGRESS"
+          },
+          {
+            "operation": "DECIDE_INSPECTION_TASK",
+            "expectedStatus": "DECIDED"
+          },
+          {
+            "operation": "COMPLETE_INSPECTION_TASK",
+            "expectedStatus": "COMPLETED"
+          }
+        ],
+        "failClosed": true
+      }
+    },
+    {
+      "stageId": "operator.inventory.sellable",
+      "phase": "OPERATOR_BOOTSTRAP",
+      "executor": "external_evidence",
+      "operation": "ASSERT",
+      "dependsOn": [
+        "operator.quality.release"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:0656d4fdfeab7468bf8cf262",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "inventoryBalanceId",
+        "inventoryVersion",
+        "availableQuantity",
+        "stockStatus",
+        "qualityStatus"
+      ],
+      "bindingDefinitionSha256": "e30a863b9875f3682d161d09459ca60dd650aa4f2737ca51ffa71192e6d3ee26",
+      "invocation": {
+        "adapter": "governed_skill",
+        "skillId": "skill.cloudmold.commerce.terminal-readback.v1",
+        "failClosed": true
+      }
+    },
+    {
+      "stageId": "app.session.start",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.identity.me"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:4c08e8c3273c454aa1f75829",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "sessionId",
+        "aggregateVersion",
+        "eventId"
+      ],
+      "bindingDefinitionSha256": "07fadef23628edc259a80087d9b6698a41ebb64fd0d90a940f1b97f066ffa68c"
+    },
+    {
+      "stageId": "app.session.link_identity",
+      "phase": "IDENTITY",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.identity.me",
+        "app.session.start"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:2135eeb4e9192ac03dee28ff",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "sessionId",
+        "aggregateVersion",
+        "status"
+      ],
+      "bindingDefinitionSha256": "025498b6d87c0821a153c7debd0bc0aa38a10ad0779810171dbc5ab725703fc2"
+    },
+    {
+      "stageId": "app.recommendation.home",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "READ",
+      "dependsOn": [
+        "operator.listing.publish",
+        "operator.inventory.sellable",
+        "app.session.link_identity"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:b2e37ecdbbcf30ddced07b29",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "sceneCode",
+        "policyVersion",
+        "decisionToken",
+        "resultSetToken",
+        "ttlSeconds",
+        "expiresAt",
+        "items"
+      ],
+      "bindingDefinitionSha256": "cc2cd28cd30fa1ee3afec14e403216f8a6466441abfa8948bddb07943c890364"
+    },
+    {
+      "stageId": "app.recommendation.exposure",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.recommendation.home"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:dc780d0896d002d228c2eb2f",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "sessionId",
+        "decisionToken",
+        "listingId",
+        "rank",
+        "aggregateId",
+        "aggregateVersion",
+        "eventId"
+      ],
+      "bindingDefinitionSha256": "84f894cb63faf8986bcde14df238da15578bcfd93a1748ac24cedbb22c9a4b6c"
+    },
+    {
+      "stageId": "app.recommendation.click",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.recommendation.exposure"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:a5e55ac35848405df720a712",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "sessionId",
+        "decisionToken",
+        "listingId",
+        "rank",
+        "aggregateId",
+        "aggregateVersion",
+        "eventId"
+      ],
+      "bindingDefinitionSha256": "8b71b6adb388682595765e7524826f921e632a968c4e06cc1f7d21108af82dba"
+    },
+    {
+      "stageId": "app.community.feed",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "READ",
+      "dependsOn": [
+        "app.session.link_identity",
+        "app.recommendation.click"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:9d760a68e4a8670b3a715081",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "list",
+        "total",
+        "pageNo",
+        "pageSize"
+      ],
+      "bindingDefinitionSha256": "b0c416f62dcec6a2319d0a4f82ac850f10c54af5783a7e5b79abc7be42d2c48f"
+    },
+    {
+      "stageId": "app.community.detail",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "READ",
+      "dependsOn": [
+        "app.community.feed"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:7db83dca783ecbb461a9141b",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "contentId",
+        "authorPrincipalId",
+        "body",
+        "likeCount",
+        "commentCount",
+        "likedByCurrentUser",
+        "createdAt",
+        "productLink"
+      ],
+      "bindingDefinitionSha256": "00f39b55a585e8d6c1ca634577e3493a180f3a1b2f58a7f6a69b4540c1bff206"
+    },
+    {
+      "stageId": "app.community.like",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.community.detail"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:b1b89294bd345d13a34323fe",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "contentId",
+        "authorPrincipalId",
+        "body",
+        "likeCount",
+        "commentCount",
+        "likedByCurrentUser",
+        "createdAt",
+        "productLink"
+      ],
+      "bindingDefinitionSha256": "0185e1e8703e9fa2a16dac2ad7a5610b9919ce3f87f4b21f2b5f2a40f84b0b5a"
+    },
+    {
+      "stageId": "app.community.comment_create",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.community.like"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:3e30b78001543723a998065f",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "contentId",
+        "authorPrincipalId",
+        "body",
+        "likeCount",
+        "commentCount",
+        "likedByCurrentUser",
+        "createdAt",
+        "productLink"
+      ],
+      "bindingDefinitionSha256": "24ba0ed86bd5cb8f2661f35e2ddb3e089ab676992a0b3cbe73d7239e82c5ebd1"
+    },
+    {
+      "stageId": "app.address.snapshot_create",
+      "phase": "ADDRESS_VAULT",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.identity.me"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:83fdc8def60cecd14f03bf07",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "addressRef",
+        "snapshotVersion",
+        "destinationRegionCode",
+        "receiverSummary",
+        "mobileSummary",
+        "duplicate"
+      ],
+      "bindingDefinitionSha256": "6497e3728b48067bcaed736b69648488c02e602dda320607122947713efa9ad1"
+    },
+    {
+      "stageId": "app.address.snapshot_replay",
+      "phase": "ADDRESS_VAULT",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.address.snapshot_create"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:e364f90441ae85eb06ecca34",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "addressRef",
+        "snapshotVersion",
+        "destinationRegionCode",
+        "receiverSummary",
+        "mobileSummary",
+        "duplicate"
+      ],
+      "bindingDefinitionSha256": "6497e3728b48067bcaed736b69648488c02e602dda320607122947713efa9ad1"
+    },
+    {
+      "stageId": "app.address.snapshot_get",
+      "phase": "ADDRESS_VAULT",
+      "executor": "http",
+      "operation": "READ",
+      "dependsOn": [
+        "app.address.snapshot_replay"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:8cfc337d2b6de906c7e42cfe",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "addressRef",
+        "snapshotVersion",
+        "destinationRegionCode",
+        "receiverSummary",
+        "mobileSummary"
+      ],
+      "bindingDefinitionSha256": "eba69c291b15ebf752120b767db5cb95a4b0f990c905ba4e50ed16a2edf5ae0b"
+    },
+    {
+      "stageId": "app.products.list",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "READ",
+      "dependsOn": [
+        "operator.listing.publish",
+        "operator.inventory.sellable",
+        "app.session.link_identity"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:fad49663b3d98c45386e2051",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "list",
+        "total",
+        "pageNo",
+        "pageSize"
+      ],
+      "bindingDefinitionSha256": "1eb9adb2ea9ca2970f17945bbd61b27321d1bb0f0d32b1138a79070c80758c3b"
+    },
+    {
+      "stageId": "app.behavior.search_requested",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.products.list"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:623c29cd18b5f743b8554c80",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "behaviorId",
+        "sessionId",
+        "behaviorType",
+        "eventId"
+      ],
+      "bindingDefinitionSha256": "07ffb7863bb88b90fc65c8ac33f3f338c9b8a976abec9c81cd6bc130a1d5603c"
+    },
+    {
+      "stageId": "app.behavior.search_exposed",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.behavior.search_requested"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:6747b954360832ddd2090d05",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "behaviorId",
+        "sessionId",
+        "behaviorType",
+        "eventId"
+      ],
+      "bindingDefinitionSha256": "58d22f486cd413408fd72d68bc17c875ed75ae7d8be064be5de640d35c0e79da"
+    },
+    {
+      "stageId": "app.behavior.search_clicked",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.behavior.search_exposed"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:3b6418a0e2b9374e2d64acc1",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "behaviorId",
+        "sessionId",
+        "behaviorType",
+        "eventId"
+      ],
+      "bindingDefinitionSha256": "58d22f486cd413408fd72d68bc17c875ed75ae7d8be064be5de640d35c0e79da"
+    },
+    {
+      "stageId": "app.product.detail",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "READ",
+      "dependsOn": [
+        "app.behavior.search_clicked",
+        "app.recommendation.click"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:417213d98e206db63c4f450b",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "listingId",
+        "listingNo",
+        "title",
+        "primaryImageUrl",
+        "media",
+        "merchantId",
+        "shopId",
+        "canonicalSpuId",
+        "listingRevision",
+        "listingVersion",
+        "qualitySummary",
+        "skus"
+      ],
+      "bindingDefinitionSha256": "2137cc525239a3cff8e1476d641d17161beaa4fbc478d9563526db35d1ba3336"
+    },
+    {
+      "stageId": "app.behavior.pdp",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.product.detail"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:dbf2b419d76ade538df0cbdc",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "behaviorId",
+        "sessionId",
+        "behaviorType",
+        "eventId"
+      ],
+      "bindingDefinitionSha256": "8b433b5be53f8a6676e41995199430db614c2f033f676c4fa5076314cec3237e"
+    },
+    {
+      "stageId": "app.cart.get",
+      "phase": "CHECKOUT",
+      "executor": "http",
+      "operation": "READ",
+      "dependsOn": [
+        "app.behavior.pdp"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:6e3f7874222d346c1372bc72",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "cartId",
+        "principalId",
+        "aggregateVersion",
+        "lineCount",
+        "selectedLineCount",
+        "duplicate"
+      ],
+      "bindingDefinitionSha256": "ad784551edb38a43d8bd4dfb81cf9ad69cf12179f1ca82b317aef5aed45b9234"
+    },
+    {
+      "stageId": "app.behavior.cart_added",
+      "phase": "CHECKOUT",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.behavior.pdp"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:d9c033dcc47bd66b90b5005a",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "behaviorId",
+        "sessionId",
+        "behaviorType",
+        "eventId"
+      ],
+      "bindingDefinitionSha256": "8f1222ac9b0fdef80066df526d48ce06aa181180c85d43f23ce3fbf7dcb6dff8"
+    },
+    {
+      "stageId": "app.cart.add",
+      "phase": "CHECKOUT",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.cart.get",
+        "app.behavior.cart_added"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:38a344d4b80d142eefe635a9",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "cartId",
+        "principalId",
+        "aggregateVersion",
+        "lineCount",
+        "selectedLineCount",
+        "duplicate",
+        "lines"
+      ],
+      "bindingDefinitionSha256": "18a6f208aa05f15cbdc7d79e16dc9fd42c93004277d2dffd2635b1ffd413c307"
+    },
+    {
+      "stageId": "app.cart.preview_selected",
+      "phase": "CHECKOUT",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.address.snapshot_get",
+        "app.cart.add"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:4095df18586e6aa2908580f2",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "checkoutToken",
+        "principalId",
+        "addressRef",
+        "addressSnapshotVersion",
+        "listingId",
+        "listingOfferId",
+        "canonicalSkuId",
+        "quantity",
+        "unitPriceMinor",
+        "productAmountMinor",
+        "shippingAmountMinor",
+        "discountAmountMinor",
+        "payableAmountMinor",
+        "currencyCode",
+        "availableQuantity",
+        "expiresAt"
+      ],
+      "bindingDefinitionSha256": "64e98a0c2aa7906dbe7d49ad81b38520a6e02cf84aca18ef1d14414927f54ad7"
+    },
+    {
+      "stageId": "app.checkout.preview",
+      "phase": "CHECKOUT",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.product.detail",
+        "app.identity.me",
+        "app.behavior.cart_added",
+        "app.address.snapshot_get"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:e4164148fb146c2cadacf7e7",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "checkoutToken",
+        "principalId",
+        "addressRef",
+        "addressSnapshotVersion",
+        "listingId",
+        "listingOfferId",
+        "canonicalSkuId",
+        "quantity",
+        "unitPriceMinor",
+        "productAmountMinor",
+        "shippingAmountMinor",
+        "discountAmountMinor",
+        "payableAmountMinor",
+        "currencyCode",
+        "availableQuantity",
+        "expiresAt"
+      ],
+      "bindingDefinitionSha256": "44effbf2b165198502972a96883171c535f2294041a47e817d960fe4b43e225e"
+    },
+    {
+      "stageId": "app.behavior.checkout",
+      "phase": "CHECKOUT",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.checkout.preview"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:efefcf622958a0e85643bfa1",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "behaviorId",
+        "sessionId",
+        "behaviorType",
+        "eventId"
+      ],
+      "bindingDefinitionSha256": "84d0094b37b17d41ea86f80816e15b4bbbc633b9e16f046d3e32e946c22e791e"
+    },
+    {
+      "stageId": "app.order.create",
+      "phase": "ORDER_PAYMENT",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.checkout.preview",
+        "app.behavior.checkout"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:5d5902c3176a3173a003975c",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "orderId",
+        "orderNo",
+        "orderItemId",
+        "buyerPrincipalId",
+        "listingId",
+        "listingOfferId",
+        "canonicalSkuId",
+        "quantity",
+        "payableAmountMinor",
+        "currencyCode",
+        "aggregateVersion",
+        "status",
+        "outboxEventIds"
+      ],
+      "bindingDefinitionSha256": "ea572f31292528276ee91539a76cd07f7ce50401dddd3c58926153b4ed36d895"
+    },
+    {
+      "stageId": "app.order.get",
+      "phase": "ORDER_PAYMENT",
+      "executor": "http",
+      "operation": "READ",
+      "dependsOn": [
+        "app.order.create"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:fbdbce2dfeb4ee1f6330af22",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "orderId",
+        "aggregateVersion",
+        "status",
+        "items"
+      ],
+      "bindingDefinitionSha256": "9d33819cee1ba28b83385583bcd2385da3acf50dc582301d49b5a0c565457590"
+    },
+    {
+      "stageId": "app.payment.capture",
+      "phase": "ORDER_PAYMENT",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.order.get"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:34e732fa9372931efafc9187",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "paymentId",
+        "currentStatus",
+        "capturedAmountMinor",
+        "currencyCode",
+        "behaviorVersion",
+        "outboxEventIds"
+      ],
+      "bindingDefinitionSha256": "d3a9cf01ca7ee0093951319eed1820e89676bcf67fecba35ff894daf639c8021"
+    },
+    {
+      "stageId": "operator.fulfillment.complete",
+      "phase": "FULFILLMENT",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.payment.capture"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:0cd38e6a0c3e0e15438ab1cd",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "fulfillmentId",
+        "shipmentId",
+        "status",
+        "aggregateVersion",
+        "orderId",
+        "outboxEventIds"
+      ],
+      "bindingDefinitionSha256": "3c4ace4d81a73f9b0508faa932f069c2c23626a40e8fc4238c6e186cefc6492d",
+      "invocation": {
+        "adapter": "governed_skill",
+        "skillId": "skill.cloudmold.commerce.aftersale-saga.v1",
+        "failClosed": true
+      }
+    },
+    {
+      "stageId": "app.fulfillment.by_order",
+      "phase": "FULFILLMENT",
+      "executor": "http",
+      "operation": "READ",
+      "dependsOn": [
+        "operator.fulfillment.complete"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:0a1e225cb844e836622c0eb6",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "orderId",
+        "fulfillmentId",
+        "shipmentId",
+        "fulfillmentStatus",
+        "trackingEvents"
+      ],
+      "bindingDefinitionSha256": "080d07b8938dee4d7e98004daccbd3d89f9b6fc3a7ed8fb7a12bd55437fd253b"
+    },
+    {
+      "stageId": "app.product_review.eligibility",
+      "phase": "AFTER_SALE_SERVICE",
+      "executor": "http",
+      "operation": "READ",
+      "dependsOn": [
+        "app.fulfillment.by_order"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:ee77fc900cf36b86400c9e1c",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "eligible",
+        "orderId",
+        "orderItemId",
+        "listingId",
+        "listingOfferId",
+        "merchantId",
+        "shopId",
+        "canonicalSpuId",
+        "canonicalSkuId"
+      ],
+      "bindingDefinitionSha256": "4ddcce971055476c29357c01eb29d389ab04312dc9fdd6152d54646b21985d1f"
+    },
+    {
+      "stageId": "app.product_review.create",
+      "phase": "AFTER_SALE_SERVICE",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.product_review.eligibility"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:86bb65283fe19e9fc29718e5",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "reviewId",
+        "orderId",
+        "orderItemId",
+        "listingId",
+        "listingOfferId",
+        "merchantId",
+        "shopId",
+        "canonicalSpuId",
+        "canonicalSkuId",
+        "overallScore",
+        "moderationStatus",
+        "duplicate"
+      ],
+      "bindingDefinitionSha256": "6661f4fccffa48226436cf4264adf27e2eefc25dd58cb25c55cc591bb03de8a0"
+    },
+    {
+      "stageId": "app.product_review.listing",
+      "phase": "AFTER_SALE_SERVICE",
+      "executor": "http",
+      "operation": "READ",
+      "dependsOn": [
+        "app.product_review.create"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:e39607df86b88d809ac8804f",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "total",
+        "pageNo",
+        "pageSize",
+        "list"
+      ],
+      "bindingDefinitionSha256": "9fca190e87609882618510667a4878ceeb0c88e90e22bbfc0953eceeaee386d5"
+    },
+    {
+      "stageId": "app.after_sale.create",
+      "phase": "AFTER_SALE_SERVICE",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.product_review.listing"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:3640edb11de182a636220399",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "afterSaleId",
+        "afterSaleNo",
+        "orderId",
+        "orderItemId",
+        "caseStatus",
+        "aggregateVersion",
+        "outboxEventIds"
+      ],
+      "bindingDefinitionSha256": "a1a63f65dd6d31b8242c3369b2ca9b59eb9684b521b63fd673f7c71f0b99413c"
+    },
+    {
+      "stageId": "operator.after_sale.complete",
+      "phase": "AFTER_SALE_SERVICE",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.after_sale.create"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:d6ad6b4856b4fd049bc87bca",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "afterSaleId",
+        "returnFulfillmentId",
+        "inspectionId",
+        "refundTransactionId",
+        "inventoryReturnLedgerTransactionId",
+        "afterSaleStatus",
+        "paymentStatus",
+        "orderStatus",
+        "returnedQuantity",
+        "refundedAmountMinor",
+        "outboxEventIds"
+      ],
+      "bindingDefinitionSha256": "3c4ace4d81a73f9b0508faa932f069c2c23626a40e8fc4238c6e186cefc6492d",
+      "invocation": {
+        "adapter": "governed_skill",
+        "skillId": "skill.cloudmold.commerce.aftersale-saga.v1",
+        "failClosed": true
+      }
+    },
+    {
+      "stageId": "app.after_sale.get",
+      "phase": "AFTER_SALE_SERVICE",
+      "executor": "http",
+      "operation": "READ",
+      "dependsOn": [
+        "operator.after_sale.complete"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:717889ded8d5f85e709bcbe9",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "afterSaleId",
+        "orderId",
+        "caseStatus",
+        "refundStatus",
+        "returnFulfillmentStatus"
+      ],
+      "bindingDefinitionSha256": "f69ba018feed19594ee8008ecf25024baf8518d98ec11bb7b3be08f67e49dde2"
+    },
+    {
+      "stageId": "app.customer_service.ticket_create",
+      "phase": "AFTER_SALE_SERVICE",
+      "executor": "http",
+      "operation": "WRITE",
+      "dependsOn": [
+        "app.after_sale.create"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:5980ee3f0175cc55e4808dea",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "ticketId",
+        "ticketNo",
+        "ticketStatus",
+        "ticketVersion",
+        "outboxEventIds"
+      ],
+      "bindingDefinitionSha256": "1b2c4ca5ee175054fd50c60f9d937760a05825b91b6ddc0364e391b101dea912"
+    },
+    {
+      "stageId": "app.customer_service.ticket_get",
+      "phase": "AFTER_SALE_SERVICE",
+      "executor": "http",
+      "operation": "READ",
+      "dependsOn": [
+        "app.customer_service.ticket_create"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:c038da8e56c9d9c4cc1430b1",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "ticketId",
+        "ticketStatus",
+        "ticketVersion"
+      ],
+      "bindingDefinitionSha256": "bd327748bd2a2b289aa7551fc0463e56c38784944fa24040c128222d430cd056"
+    },
+    {
+      "stageId": "reconcile.lakehouse",
+      "phase": "RECONCILIATION",
+      "executor": "external_evidence",
+      "operation": "ASSERT",
+      "dependsOn": [
+        "app.after_sale.get",
+        "app.customer_service.ticket_get"
+      ],
+      "idempotencyKey": "cca:cross-channel-0725:8d305928e1580f97bcb5b436",
+      "status": "PLANNED",
+      "blocker": null,
+      "requiredEvidence": [
+        "outboxCdcCheckpointSucceeded",
+        "fullDenominator",
+        "nonempty",
+        "sourceToFactMismatchCount",
+        "factToProjectionMismatchCount",
+        "crossTenantLinkCount",
+        "identityLinkMismatchCount",
+        "productLinkMismatchCount",
+        "orderPaymentMoneyMismatchCount",
+        "returnQuantityMismatchCount",
+        "dqcViolationCount",
+        "modelResults",
+        "dataFreshnessAt"
+      ],
+      "bindingDefinitionSha256": "c4a86d03c1df0c8d9a7c56ecf3ee305449ab478f105fc8b842c00817e19292e4",
+      "invocation": {
+        "adapter": "lakehousectl_sequence",
+        "executable": "/Users/karekin/Downloads/coding/project/CloudMold/useful-scripts/yml/yshopping-lakehouse/scripts/lakehousectl",
+        "commands": [
+          {
+            "command": "reconcile-canonical-commerce-v2",
+            "arguments": [
+              "--tenant",
+              "{tenantId}",
+              "--run-id",
+              "{runId}"
+            ],
+            "required_result": "RECONCILED"
+          },
+          {
+            "command": "reconcile-canonical-aftersales",
+            "arguments": [
+              "--tenant",
+              "{tenantId}",
+              "--run-id",
+              "{runId}",
+              "--after-sale-id",
+              "{afterSaleId}"
+            ],
+            "required_result": "RECONCILED"
+          },
+          {
+            "command": "test",
+            "arguments": [],
+            "required_result": "ZERO_DQC_VIOLATIONS"
+          }
+        ],
+        "requiredNonemptyModels": [
+          "yshopping_dws.dws_canonical_commerce_session_funnel",
+          "yshopping_ads.ads_canonical_commerce_acquisition_funnel",
+          "yshopping_ads.ads_canonical_commerce_v2_readiness",
+          "yshopping_ads.ads_canonical_after_sale_readiness",
+          "yshopping_dws.dws_canonical_customer_service_ticket_current",
+          "yshopping_ads.ads_canonical_customer_service_readiness",
+          "yshopping_ads.ads_canonical_inventory_health",
+          "yshopping_ads.ads_canonical_quality_readiness"
+        ],
+        "requiredZeroChecks": [
+          "sourceToFactMismatchCount",
+          "factToProjectionMismatchCount",
+          "crossTenantLinkCount",
+          "identityLinkMismatchCount",
+          "productLinkMismatchCount",
+          "orderPaymentMoneyMismatchCount",
+          "returnQuantityMismatchCount",
+          "dqcViolationCount"
+        ],
+        "failClosed": true
+      }
+    }
+  ],
+  "approval": {
+    "approvalId": "approval-cross-channel-0725",
+    "approvedBy": "test-reviewer",
+    "approvalDigest": "e9d563533a735d87803f9323c96d13919b54ffd92dc4c3c3d837f4c06ab60e3a",
+    "expiresAt": "2026-07-25T11:29:01Z"
+  },
+  "guardrails": {
+    "environment": "test",
+    "productionForbidden": true,
+    "terminalEvidenceRequired": true,
+    "immutableReplayRequired": true,
+    "zeroMismatchRequired": true
+  }
+}

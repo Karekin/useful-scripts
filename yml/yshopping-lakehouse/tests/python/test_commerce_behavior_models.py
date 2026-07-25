@@ -38,6 +38,8 @@ class CommerceBehaviorModelsTest(unittest.TestCase):
                 "CART_REMOVED",
                 "CHECKOUT_STARTED",
                 "CHECKOUT_ABANDONED",
+                "RECOMMENDATION_EXPOSED",
+                "RECOMMENDATION_CLICKED",
             ],
         )
         self.assertIn("search_token", behavior_schema["properties"])

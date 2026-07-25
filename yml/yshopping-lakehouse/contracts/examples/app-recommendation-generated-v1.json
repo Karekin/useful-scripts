@@ -1,0 +1,50 @@
+{
+  "event_id": "b1000000-0000-4000-8000-000000000001",
+  "event_type": "app.recommendation.generated",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "app_recommendation_decision",
+  "aggregate_id": "b1000000-0000-4000-8000-000000000002",
+  "aggregate_version": 1,
+  "event_sequence": 1,
+  "idempotency_key": "b1000000-0000-4000-8000-000000000002:app.recommendation.generated",
+  "correlation_id": "b1000000-0000-4000-8000-000000000003",
+  "causation_id": "b1000000-0000-4000-8000-000000000002",
+  "occurred_at": "2026-07-25T10:00:00.000Z",
+  "recorded_at": "2026-07-25T10:00:00.100Z",
+  "source_system": "cloudmold-app-commerce",
+  "payload": {
+    "session_id": "b1000000-0000-4000-8000-000000000003",
+    "scene_code": "HOME_FEED",
+    "decision_id": "b1000000-0000-4000-8000-000000000002",
+    "decision_token": "recommend:7f6e5d4c3b2a1908",
+    "policy_version": "LOCAL_DETERMINISTIC_V1",
+    "ttl_seconds": 900,
+    "item_count": 2,
+    "expires_at": "2026-07-25T10:15:00.000Z",
+    "items": [
+      {
+        "rank": 1,
+        "reason_code": "VERIFIED_IN_STOCK",
+        "listing_id": "b1000000-0000-4000-8000-000000000011",
+        "listing_offer_id": "b1000000-0000-4000-8000-000000000012",
+        "canonical_spu_id": "b1000000-0000-4000-8000-000000000013",
+        "canonical_sku_id": "b1000000-0000-4000-8000-000000000014",
+        "price_minor": 39900,
+        "currency_code": "CNY",
+        "quality_status": "VERIFIED"
+      },
+      {
+        "rank": 2,
+        "reason_code": "VERIFIED_LOW_STOCK",
+        "listing_id": "b1000000-0000-4000-8000-000000000021",
+        "listing_offer_id": "b1000000-0000-4000-8000-000000000022",
+        "canonical_spu_id": "b1000000-0000-4000-8000-000000000023",
+        "canonical_sku_id": "b1000000-0000-4000-8000-000000000024",
+        "price_minor": 19900,
+        "currency_code": "CNY",
+        "quality_status": "VERIFIED"
+      }
+    ]
+  }
+}

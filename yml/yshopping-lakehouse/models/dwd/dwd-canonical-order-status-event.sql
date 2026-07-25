@@ -13,6 +13,9 @@ SELECT
     get_json_string(payload, '$.run_id') AS run_id,
     get_json_string(payload, '$.order_no') AS order_no,
     get_json_string(payload, '$.buyer_id') AS buyer_id,
+    get_json_string(payload, '$.address_ref') AS address_ref,
+    CAST(get_json_string(payload, '$.address_snapshot_version') AS BIGINT) AS address_snapshot_version,
+    get_json_string(payload, '$.destination_region_code') AS destination_region_code,
     get_json_string(payload, '$.previous_status') AS previous_status,
     get_json_string(payload, '$.current_status') AS current_status,
     CAST(get_json_string(payload, '$.product_amount_minor') AS BIGINT) AS product_amount_minor,
@@ -34,5 +37,5 @@ SELECT
     json_query(payload, '$.items') AS items
 FROM yshopping_dwd.dwd_domain_event
 WHERE event_type = 'order.status.changed'
-  AND schema_version IN (1, 2, 3)
+  AND schema_version IN (1, 2, 3, 4)
   AND source_system = 'cloudmold-order';
