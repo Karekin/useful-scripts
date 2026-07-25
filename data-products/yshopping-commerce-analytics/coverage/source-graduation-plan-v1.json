@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "plan_id": "yshopping-source-graduation-plan-v1",
+  "generated_at": "2026-07-18T21:15:00+08:00",
+  "policy": "719 是受治理候选资产全集。来源只要在本地测试或预生产环境通过完整准入门禁，即计入生产准入就绪；实际生产验收另行记录，不再要求先在生产产数才打破分子为零。",
+  "summary": {
+    "governed_candidate_universe": 719,
+    "terminal_disposition_complete": 719,
+    "static_admission_review_queue": 450,
+    "rejected_or_quarantined": 269,
+    "active_model_pipeline_violations": 0,
+    "production_admission_ready": 5,
+    "strict_production_final": 0
+  },
+  "target_interpretation": {
+    "completed_target": "719/719 个候选资产均已有受治理的终态处置。",
+    "incorrect_target": "不能把 719 个已治理候选直接解释为 719 个已具备生产发布条件的来源。",
+    "next_target": "按业务域分批审查 450 个静态可准入候选；在 LOCAL_TEST 或 PRE_PROD 通过 Schema、CDC、分层模型、DQC、零差异对账与责任人验收后，即计入生产准入就绪。",
+    "terminal_outcomes": ["production_accepted", "derived_only", "duplicate_or_alias", "quarantined", "rejected"]
+  },
+  "gates": [
+    {
+      "id": "inventory_and_disposition",
+      "order": 1,
+      "label": "资产盘点与终态处置",
+      "status": "passed",
+      "value": 719,
+      "denominator": 719,
+      "owner": "数据治理团队",
+      "acceptance": "每个候选资产都有明确的接受、纠正、隔离或拒绝结论。"
+    },
+    {
+      "id": "static_admission_fence",
+      "order": 2,
+      "label": "静态准入围栏",
+      "status": "passed",
+      "value": 450,
+      "denominator": 719,
+      "owner": "数据平台团队",
+      "acceptance": "269 个拒绝或隔离项已排除，现有模型与管道违规数保持为零。"
+    },
+    {
+      "id": "production_source_evidence",
+      "order": 3,
+      "label": "测试/预生产来源与 CDC 证据",
+      "status": "passed",
+      "value": 5,
+      "denominator": 450,
+      "owner": "业务域负责人 + 数据平台团队",
+      "acceptance": "版本化 Schema、租户与稳定键、非空完整分母、删除与重放、稳定检查点证据全部通过；证据环境必须明确标注。"
+    },
+    {
+      "id": "model_quality_reconciliation",
+      "order": 4,
+      "label": "分层模型与零差异对账",
+      "status": "passed",
+      "value": 5,
+      "denominator": 450,
+      "owner": "分析工程团队",
+      "acceptance": "来源到 ODS/DWD/DIM/DWS/ADS 的血缘、DQC、受限字段检查和独立对账全部通过。"
+    },
+    {
+      "id": "authority_owner_acceptance",
+      "order": 5,
+      "label": "生产准入评审",
+      "status": "passed",
+      "value": 5,
+      "denominator": null,
+      "owner": "业务负责人 + 数据负责人",
+      "acceptance": "已登记权威来源候选、指标分母、对账证据、证据环境及具名责任人；允许在 LOCAL_TEST/PRE_PROD 完成验收。"
+    }
+  ],
+  "admission_ready_evidence": {
+    "environment": "LOCAL_TEST",
+    "count": 5,
+    "sources": ["yshopping.pay_order", "yshopping.refund", "yshopping.member", "yshopping.browse", "yshopping.cart"],
+    "gates_passed": ["versioned_schema", "non_empty_source", "cdc_checkpoint", "ods_dwd_dws_ads_lineage", "dqc", "zero_difference_reconciliation", "named_owner_acceptance"],
+    "production_deployment_required_for_count": false,
+    "actual_production_accepted_count": 0
+  },
+  "batch_strategy": [
+    {
+      "priority": "P0",
+      "domain": "交易、支付与售后",
+      "reason": "直接决定 GMV、实收支付、退款与财务对账口径。",
+      "first_actions": ["支付 CDC", "历史订单与明细映射", "权益身份与出资方命名", "隔离结论"]
+    },
+    {
+      "priority": "P0",
+      "domain": "商品、库存与采购",
+      "reason": "决定可售供给、库存权威来源和采购履约口径。",
+      "first_actions": ["历史 SKU 映射", "仓库与库位证据", "库存影子对账", "采购承诺语义"]
+    },
+    {
+      "priority": "P1",
+      "domain": "流量、商家与买家",
+      "reason": "解锁转化漏斗、新买家、复购和商家归因。",
+      "first_actions": ["电商行为事件", "买家与主体映射", "订单与店铺映射", "广告来源 Schema"]
+    },
+    {
+      "priority": "P1",
+      "domain": "客服、AI 与治理",
+      "reason": "闭环服务 SLA、质量、血缘与人工复核证据。",
+      "first_actions": ["客服运行数据", "CSAT 生命周期", "元数据生产证据", "AI 分类与复核血缘"]
+    }
+  ]
+}

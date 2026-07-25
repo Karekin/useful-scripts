@@ -11,9 +11,17 @@ LOADER = importlib.machinery.SourceFileLoader("alignmentctl", str(SCRIPT))
 SPEC = importlib.util.spec_from_loader(LOADER.name, LOADER)
 ALIGNMENT = importlib.util.module_from_spec(SPEC)
 LOADER.exec_module(ALIGNMENT)
+REFERENCE_FIXTURES_AVAILABLE = all(
+    (ALIGNMENT.DEFAULT_REFERENCE_ROOT / item["filename"]).exists()
+    for item in ALIGNMENT.load(ALIGNMENT.DEFAULT_MANIFEST)["source_documents"]
+)
 
 
 class AlignmentCtlTest(unittest.TestCase):
+    @unittest.skipUnless(
+        REFERENCE_FIXTURES_AVAILABLE,
+        "canonical Obsidian source documents are not available in this checkout",
+    )
     def test_checked_in_alignment_contract_validates(self):
         ALIGNMENT.validate_all()
 
@@ -184,6 +192,10 @@ class AlignmentCtlTest(unittest.TestCase):
         self.assertIn("SHADOW_MATCH_VERIFIED", ads["corrections"][0])
         self.assertIn("execution and cutover remain false", ads["corrections"][0])
 
+    @unittest.skipUnless(
+        REFERENCE_FIXTURES_AVAILABLE,
+        "canonical Obsidian source documents are not available in this checkout",
+    )
     def test_source_anchor_assets_must_exist_in_declared_lines(self):
         manifest = ALIGNMENT.load(ALIGNMENT.DEFAULT_MANIFEST)
         broken = json.loads(json.dumps(manifest))

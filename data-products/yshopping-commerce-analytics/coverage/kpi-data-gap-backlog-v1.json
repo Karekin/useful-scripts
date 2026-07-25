@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "backlog_id": "yshopping-kpi-data-gap-backlog-v1",
+  "generated_at": "2026-07-18T23:15:00+08:00",
+  "policy": "Tasks may unlock a KPI only after non-empty evidence, DQC, denominator coverage and authority review all pass.",
+  "tasks": [
+    {
+      "id": "P0-PAYMENT-CDC",
+      "priority": "P0",
+      "owner": "Payment + Data Platform",
+      "status": "ready",
+      "next_gate": "建立脱敏 Payment CDC 并完成按租户、checkpoint 的非空行数对账。",
+      "problem_class": "pipeline_gap",
+      "source_evidence": {"pay_order_rows": 255, "pay_refund_rows": 29},
+      "action": "Add pay_order and pay_refund to a dedicated, masked Payment CDC route; build payment attempt/refund DWD and a current+history DWS. Do not treat Order's payment reference as Payment authority.",
+      "unlocks": ["payment.success_rate", "commerce.captured_amount_yuan", "aftersales.refunded_amount_yuan"],
+      "acceptance": [
+        "ODS count reconciles to source by tenant and checkpoint",
+        "Payment attempt status and channel are preserved without credentials or payer PII",
+        "success-rate denominator includes initiated attempts, not only captured payments"
+      ]
+    },
+    {
+      "id": "P0-COMMERCE-BEHAVIOR-EVENT",
+      "priority": "P0",
+      "owner": "Growth + Commerce Backend",
+      "status": "in_progress",
+      "next_gate": "LOCAL_TEST Session→Order/Payment 归因已关闭；下一门禁是生产 Payment Intent/Attempt 分母与持续流量。",
+      "problem_class": "backend_event_gap",
+      "source_evidence": {"trade_cart_current_rows": 45, "product_browse_history_rows": 1489, "local_test_session_versions": 9, "local_test_behavior_events": 7, "cdc_to_ads_verified": true},
+      "action": "Append-only session/search/PDP/cart/checkout plus strict Session→Order/Payment attribution are live through API→Outbox→CDC→DWD/DIM/DWS/ADS in LOCAL_TEST. Continue with production Payment Intent/Attempt denominator coverage.",
+      "delivered": [
+        "traffic.visitor_count", "search.success_rate", "funnel.product_detail_view_count",
+        "funnel.add_to_cart_rate", "funnel.checkout_start_rate",
+        "funnel.visit_to_pay_rate", "funnel.cart_abandonment_rate",
+        "buyer.time_to_first_order_hours"
+      ],
+      "unlocks": ["buyer.time_to_first_order_hours"],
+      "acceptance": [
+        "Events are append-only and idempotent",
+        "Anonymous-to-principal stitching is versioned and privacy reviewed",
+        "Search request, exposure, click and order lineage can be joined without raw query text leakage",
+        "Current trade_cart and product_browse_history are never used as historical event denominators"
+      ]
+    },
+    {
+      "id": "P0-HISTORICAL-IDENTITY-BACKFILL",
+      "priority": "P0",
+      "owner": "Identity + Merchant + Catalog + Data Platform",
+      "status": "in_progress",
+      "next_gate": "闭合剩余买家、历史 SKU、Order/OrderItem 与 Shop/Merchant 的显式映射。",
+      "problem_class": "identity_mapping_gap",
+      "source_evidence": {"legacy_active_orders": 230, "canonical_paid_order_merchant_coverage_percent": 50},
+      "action": "Backfill buyer-to-principal, order-to-shop/merchant and legacy-SKU-to-canonical-SKU mappings with validity intervals and explicit unresolved rows.",
+      "unlocks": [
+        "buyer.repeat_purchase_rate_90d", "buyer.category_breadth_90d"
+      ],
+      "acceptance": [
+        "Every denominator reports resolved, unresolved and conflicted counts",
+        "Historical mappings are time-valid and never inferred from the current catalog alone",
+        "Legacy history remains LEGACY_SOURCE_ONLY until money and identity DQC both pass"
+      ]
+    },
+    {
+      "id": "P1-PROMISE-AND-SLA",
+      "priority": "P1",
+      "owner": "Fulfillment + Procurement + Customer Service",
+      "status": "ready",
+      "next_gate": "三类版本化 Promise/SLA 已完成 LOCAL_TEST 运行闭环；下一门禁是扩大生产样本与持续对账窗口。",
+      "problem_class": "business_semantics_gap",
+      "action": "Fulfillment promise, Procurement OTIF and Customer Service SLA are live through authoritative facts→Outbox→CDC→ADS in LOCAL_TEST. Keep the same contracts while expanding production cohorts.",
+      "delivered": ["buyer.delivery_promise_hit_rate", "fulfillment.on_time_delivery_rate", "procurement.otif_rate", "service.resolution_sla_rate"],
+      "unlocks": [
+        "fulfillment.on_time_delivery_rate", "procurement.otif_rate", "service.resolution_sla_rate"
+      ],
+      "acceptance": [
+        "Promise/SLA version is frozen on each business case",
+        "Actual milestones cannot overwrite promised timestamps",
+        "Timezone, grace period and pause semantics are explicit"
+      ]
+    },
+    {
+      "id": "P1-COMMERCIAL-LEDGER",
+      "priority": "P1",
+      "owner": "Finance + Merchant Settlement + Advertising",
+      "status": "ready",
+      "next_gate": "订单盈利、平台收入与 FIFO 成本已完成 LOCAL_TEST 对账；下一门禁是总账控制数与生产结算批次。",
+      "problem_class": "business_semantics_gap",
+      "action": "Append-only platform revenue, order-time profitability and FIFO Inventory cost evidence now feed governed ADS metrics in LOCAL_TEST. Expand to production settlement and GL control totals without changing metric formulas.",
+      "delivered": [
+        "platform.take_rate", "finance.net_revenue_yuan", "finance.gross_profit_yuan",
+        "finance.contribution_margin_rate", "inventory.turnover_days", "inventory.aged_stock_value_yuan"
+      ],
+      "unlocks": [
+        "platform.take_rate",
+        "finance.net_revenue_yuan", "finance.gross_profit_yuan",
+        "finance.contribution_margin_rate", "inventory.turnover_days",
+        "inventory.aged_stock_value_yuan"
+      ],
+      "acceptance": [
+        "Every amount has currency, minor-unit scale, accounting date and immutable business reference",
+        "Order cost is frozen at fulfillment/settlement time",
+        "Ledger totals reconcile to settlement and general-ledger control totals"
+      ]
+    },
+    {
+      "id": "P1-CUSTOMER-SERVICE-RUNTIME",
+      "priority": "P1",
+      "owner": "Customer Service + Platform Operations",
+      "status": "ready",
+      "next_gate": "首响、一次解决和 SLA 已出现本地非空值；下一步扩展更多队列、优先级和重开场景。",
+      "problem_class": "data_production_gap",
+      "action": "Keep the governed first-response, first-contact-resolution and SLA marts in place; expand representative ticket/message/reopen flows and harden repeated Outbox-to-ADS evidence.",
+      "delivered": ["service.first_response_minutes", "service.first_contact_resolution_rate", "service.resolution_sla_rate"],
+      "unlocks": ["service.first_response_minutes"],
+      "acceptance": [
+        "Ticket, first human outbound message and resolution timestamps are non-empty",
+        "Message content and attachments remain outside aggregate dashboard outputs",
+        "Internal quality review is not published as buyer CSAT"
+      ]
+    },
+    {
+      "id": "P2-CSAT-DISPUTE-RISK",
+      "priority": "P2",
+      "owner": "Customer Experience + Payment Risk",
+      "status": "ready",
+      "next_gate": "买家反馈、风险审查、拒付与损失账本已完成 LOCAL_TEST；下一门禁是生产支付机构争议回执和财务总账对账。",
+      "problem_class": "business_semantics_gap",
+      "action": "Buyer-authored feedback, payment dispute/chargeback and order-linked risk loss lifecycles now feed governed metrics in LOCAL_TEST; preserve explicit outcomes and signed amount ledgers for production expansion.",
+      "delivered": ["buyer.csat", "risk.flagged_order_rate", "risk.chargeback_rate", "risk.loss_amount_yuan", "service.order_defect_rate"],
+      "unlocks": [
+        "buyer.csat", "risk.flagged_order_rate", "risk.chargeback_rate",
+        "risk.loss_amount_yuan", "service.order_defect_rate"
+      ],
+      "acceptance": [
+        "Survey response is buyer-authored and sample size is exposed",
+        "Risk facts carry governed order/payment references",
+        "Chargeback and loss amounts reconcile to Payment and Finance authorities"
+      ]
+    }
+  ]
+}

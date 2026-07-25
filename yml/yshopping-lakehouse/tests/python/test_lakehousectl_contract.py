@@ -4,6 +4,10 @@ from pathlib import Path
 
 
 SCRIPT = Path(__file__).parents[2] / "scripts" / "lakehousectl"
+TRADE_SOURCE_DOCUMENT = Path(
+    "/Users/karekin/Library/Mobile Documents/iCloud~md~obsidian/Documents/project/"
+    "语兴好物（y shopping）-电商数仓搭建/ODS语兴好物（y shopping）电商数据表.md"
+)
 
 
 class LakehouseCtlContractTest(unittest.TestCase):
@@ -26,6 +30,10 @@ class LakehouseCtlContractTest(unittest.TestCase):
         self.assertIn("reconcile-legacy-commerce-observability", result.stdout)
         self.assertIn("source-evidence-policy", result.stdout)
 
+    @unittest.skipUnless(
+        TRADE_SOURCE_DOCUMENT.exists(),
+        "canonical Obsidian source document is not available in this checkout",
+    )
     def test_trade_source_evidence_policy_is_executable(self):
         result = self.run_ctl("source-evidence-policy")
         self.assertEqual(result.returncode, 0, result.stderr)

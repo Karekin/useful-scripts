@@ -16,6 +16,13 @@ LOADER.exec_module(ATTACHMENTS)
 class AttachmentCtlTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        attachment_root = (
+            ATTACHMENTS.DEFAULT_REFERENCE_ROOT / ATTACHMENTS.ATTACHMENT_DIRECTORY
+        )
+        if not attachment_root.exists():
+            raise unittest.SkipTest(
+                "canonical Obsidian attachment directory is not available in this checkout"
+            )
         cls.snapshot = ATTACHMENTS.extract_snapshot()
         cls.contract = ATTACHMENTS.load_contract()
 

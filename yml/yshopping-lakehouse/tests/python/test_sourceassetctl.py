@@ -139,6 +139,14 @@ def write_valid_reconciliation(
 class SourceAssetCtlTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        source_document = (
+            SOURCE_ASSETS.DEFAULT_REFERENCE_ROOT
+            / SOURCE_ASSETS.LAYER_DOCUMENTS["MAIN"]
+        )
+        if not source_document.exists():
+            raise unittest.SkipTest(
+                "canonical Obsidian source documents are not available in this checkout"
+            )
         cls.inventory = SOURCE_ASSETS.extract_inventory()
 
     def test_checked_in_source_snapshot_validates(self):

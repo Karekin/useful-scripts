@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "audit_id": "yshopping-kpi-source-readiness-v1",
+  "generated_at": "2026-07-18T23:15:00+08:00",
+  "scope": "115 governed ecommerce KPIs: 67 runtime-local metrics and 48 governed-source-only metrics",
+  "evidence_scope": "LOCAL_TEST_AND_REPOSITORY_AUDIT",
+  "summary": {
+    "total_kpis": 115,
+    "runtime_local_test": 67,
+    "governed_source_only": 48,
+    "computability_scope_kpis": 67,
+    "existing_model_direct": 55,
+    "fields_available_new_mart": 12,
+    "missing_authoritative_semantics": 0,
+    "delivered_in_role_metric_mart": 67
+  },
+  "rules": [
+    "Missing evidence is NULL/absent, never zero.",
+    "Current-state tables do not become behavior histories by being copied to the lakehouse.",
+    "LOCAL_TEST and LEGACY_SOURCE_ONLY evidence must not be presented as production business truth.",
+    "A KPI is publishable only when its numerator, denominator, grain and authority are all explicit."
+  ],
+  "computability": {
+    "existing_model_direct": [
+      "commerce.order_count", "listing.active_offer_count", "payment.success_rate",
+      "promotion.coupon_redemption_rate", "catalog.active_sku_count", "listing.approval_rate",
+      "inventory.available_quantity", "procurement.receipt_fulfillment_rate",
+      "commerce.captured_amount_yuan", "aftersales.refunded_amount_yuan",
+      "finance.discount_funding_yuan", "aftersales.case_count", "aftersales.reconciled_rate",
+      "commerce.reconciled_rate", "aftersales.recovery_required_count",
+      "inventory.balance_count", "inventory.canonical_v3_rate",
+      "inventory.low_stock_balance_count", "inventory.out_of_stock_balance_count",
+      "procurement.purchase_order_count", "procurement.open_order_count",
+      "buyer.refund_cycle_hours", "inventory.sell_through_rate_30d",
+      "service.first_response_minutes", "traffic.visitor_count", "search.success_rate",
+      "funnel.product_detail_view_count",
+      "funnel.add_to_cart_rate", "funnel.checkout_start_rate",
+      "funnel.visit_to_pay_rate", "funnel.cart_abandonment_rate",
+      "buyer.new_paid_buyer_count",
+      "merchant.net_sales_yuan", "merchant.new_buyer_count",
+      "merchant.store_conversion_rate", "marketing.ad_roas",
+      "marketing.promotion_roi", "merchant.cancellation_rate",
+      "buyer.time_to_first_order_hours", "buyer.delivery_promise_hit_rate",
+      "platform.take_rate", "finance.contribution_margin_rate",
+      "fulfillment.on_time_delivery_rate", "buyer.csat",
+      "inventory.turnover_days", "inventory.aged_stock_value_yuan",
+      "procurement.otif_rate", "finance.net_revenue_yuan", "finance.gross_profit_yuan",
+      "risk.flagged_order_rate", "risk.chargeback_rate", "risk.loss_amount_yuan",
+      "service.first_contact_resolution_rate", "service.resolution_sla_rate",
+      "service.order_defect_rate"
+    ],
+    "fields_available_new_mart": [
+      "commerce.gmv_yuan", "commerce.net_gmv_yuan", "commerce.paid_buyer_count",
+      "merchant.active_merchant_count", "commerce.average_order_value_yuan",
+      "buyer.repeat_purchase_rate_90d",
+      "buyer.order_frequency_90d",
+      "buyer.category_breadth_90d", "buyer.return_rate",
+      "catalog.selection_breadth", "inventory.in_stock_rate", "inventory.stockout_rate"
+    ],
+    "missing_authoritative_semantics": []
+  },
+  "delivery": {
+    "role_metric_mart": "yshopping_ads.ads_ecommerce_role_metrics",
+    "delivered_metric_ids": [
+      "commerce.order_count", "commerce.gmv_yuan", "commerce.net_gmv_yuan",
+      "commerce.captured_amount_yuan", "commerce.reconciled_rate",
+      "commerce.paid_buyer_count", "commerce.average_order_value_yuan",
+      "buyer.repeat_purchase_rate_90d", "buyer.order_frequency_90d",
+      "buyer.category_breadth_90d", "buyer.return_rate", "buyer.refund_cycle_hours",
+      "merchant.active_merchant_count", "listing.active_offer_count",
+      "listing.approval_rate", "catalog.active_sku_count", "catalog.selection_breadth",
+      "inventory.available_quantity", "inventory.in_stock_rate", "inventory.stockout_rate",
+      "inventory.sell_through_rate_30d",
+      "inventory.balance_count", "inventory.canonical_v3_rate",
+      "inventory.low_stock_balance_count", "inventory.out_of_stock_balance_count",
+      "payment.success_rate", "promotion.coupon_redemption_rate",
+      "finance.discount_funding_yuan", "aftersales.case_count",
+      "aftersales.refunded_amount_yuan", "aftersales.reconciled_rate",
+      "aftersales.recovery_required_count", "service.first_response_minutes",
+      "procurement.receipt_fulfillment_rate",
+      "procurement.purchase_order_count", "procurement.open_order_count",
+      "traffic.visitor_count", "search.success_rate", "funnel.product_detail_view_count",
+      "funnel.add_to_cart_rate", "funnel.checkout_start_rate",
+      "funnel.visit_to_pay_rate", "funnel.cart_abandonment_rate",
+      "buyer.new_paid_buyer_count",
+      "merchant.net_sales_yuan", "merchant.new_buyer_count",
+      "merchant.store_conversion_rate", "marketing.ad_roas",
+      "marketing.promotion_roi", "merchant.cancellation_rate",
+      "buyer.time_to_first_order_hours", "buyer.delivery_promise_hit_rate",
+      "platform.take_rate", "finance.contribution_margin_rate",
+      "fulfillment.on_time_delivery_rate", "buyer.csat",
+      "inventory.turnover_days", "inventory.aged_stock_value_yuan",
+      "procurement.otif_rate", "finance.net_revenue_yuan", "finance.gross_profit_yuan",
+      "risk.flagged_order_rate", "risk.chargeback_rate", "risk.loss_amount_yuan",
+      "service.first_contact_resolution_rate", "service.resolution_sla_rate",
+      "service.order_defect_rate"
+    ]
+  },
+  "root_causes": [
+    {
+      "id": "pipeline_gap",
+      "label": "后端有数据，湖仓未接入",
+      "examples": ["pay_order", "pay_refund", "product_browse_history", "trade_cart", "member_user"],
+      "impact": ["production payment source expansion"],
+      "action": "扩充受控 CDC 白名单并新增脱敏 DWD/DWS；买家首单归因已完成 LOCAL_TEST 闭环，canonical Payment 仍只代表本地场景事件。"
+    },
+    {
+      "id": "source_schema_gap",
+      "label": "历史广告候选来源仍缺字段级 Schema",
+      "examples": ["7 advertising sources", "visitor client source", "12 payment source candidates"],
+      "impact": ["historical advertising source expansion"],
+      "action": "商家广告 ROAS 已由受控追加式广告账本产出；历史候选来源取得 Schema 和样本前继续隔离。"
+    },
+    {
+      "id": "backend_event_gap",
+      "label": "行为到支付已完成 LOCAL_TEST 严格归因，生产流量与 Payment Attempt 仍待扩展",
+      "examples": ["production payment attempt", "production session-to-order attribution", "production cart-to-payment completion"],
+      "impact": ["production funnel cohort expansion"],
+      "action": "Session→Order/Payment 严格归因已在 LOCAL_TEST 经 API→Outbox→CDC→ADS 产数；生产接入仍须补完整 Payment Intent/Attempt 分母和持续流量。"
+    },
+    {
+      "id": "business_semantics_gap",
+      "label": "权威语义已闭合，生产覆盖仍待扩展",
+      "examples": ["versioned fulfillment promise", "procurement promise", "FIFO cost evidence", "platform revenue ledger", "risk lifecycle", "buyer feedback", "SLA deadline"],
+      "impact": ["production cohort expansion"],
+      "action": "当前 67 个 KPI 已完成 LOCAL_TEST 运行闭环；另有 48 个 KPI 只有治理口径、尚无运行事实，必须补齐业务作业、事件和非空数据后才能发布。"
+    },
+    {
+      "id": "identity_mapping_gap",
+      "label": "历史身份和业务关系未闭合",
+      "examples": ["legacy buyer to principal", "order to merchant/shop", "legacy SKU to canonical SKU", "favorite to principal/catalog"],
+      "impact": ["legacy buyer cohort expansion"],
+      "action": "当前商家订单、访客与支付归因已闭合；旧库买家历史回填仍须暴露未映射分母，不得静默丢弃。"
+    },
+    {
+      "id": "data_production_gap",
+      "label": "模型已存在但业务场景未产数",
+      "examples": ["community", "notification", "canonical favorite", "additional production risk cohorts"],
+      "impact": ["production cohort expansion"],
+      "action": "风险、买家反馈与客服服务指标已接入 role mart；社区、通知、质检、趋势和物流等新增指标属于 48 个 governed_source_only 缺口，必须按业务域补齐作业事实后再晋级。"
+    }
+  ],
+  "runtime_evidence": {
+    "outbox_rows": 4818,
+    "dwd_domain_event_rows": 4818,
+    "latest_recorded_at": "2026-07-18T05:45:02+08:00",
+    "conclusion": "现有 Outbox 事件数量和最大时间与 DWD 一致；当前主要缺口不在通用 CDC 传输。"
+  },
+  "legacy_source_only": {
+    "trade_active_orders": 230,
+    "paid_orders": 105,
+    "paid_buyers": 9,
+    "gmv_yuan": 149426.79,
+    "refund_yuan": 43010.78,
+    "quality_flags": [
+      "3 unpaid orders are fulfilled/completed",
+      "1 order has refund greater than paid amount",
+      "7 paid orders have no pay_time",
+      "10 active items point to deleted order headers"
+    ],
+    "publication_rule": "May be shown only in an isolated LEGACY_SOURCE_ONLY report; never added to canonical totals."
+  }
+}
