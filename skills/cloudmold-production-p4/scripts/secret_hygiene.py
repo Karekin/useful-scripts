@@ -51,6 +51,7 @@ TEXT_SUFFIXES = {
     ".vue",
     ".sh",
 }
+CONFIG_SUFFIXES = {".yaml", ".yml", ".properties", ".toml"}
 
 
 def _tracked(root: Path) -> list[Path]:
@@ -102,7 +103,7 @@ def scan(root: Path) -> dict:
             stripped = line.lstrip()
             if not stripped or stripped.startswith(("#", "//", "*")):
                 continue
-            match = ASSIGNMENT.match(line)
+            match = ASSIGNMENT.match(line) if path.suffix.lower() in CONFIG_SUFFIXES else None
             if match and not _safe(match.group("value")):
                 findings.append(
                     {
