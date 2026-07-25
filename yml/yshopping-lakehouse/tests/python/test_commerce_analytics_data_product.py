@@ -25,7 +25,7 @@ class CommerceAnalyticsDataProductTest(unittest.TestCase):
         self.assertGreaterEqual(summary["metrics"], 60)
         self.assertEqual(8, summary["views"])
         self.assertEqual(719, summary["governed_sources"])
-        self.assertEqual(258, summary["sql_models"])
+        self.assertEqual(264, summary["sql_models"])
 
     def test_role_metric_mart_is_governed_and_fail_closed(self):
         model = (
@@ -90,12 +90,30 @@ class CommerceAnalyticsDataProductTest(unittest.TestCase):
             referenced = set(view["primary_metrics"] + view["supporting_metrics"])
             self.assertLessEqual(referenced, known)
 
-    def test_coverage_audit_classifies_every_kpi_once(self):
+    def test_coverage_audit_classifies_runtime_kpis_and_fences_governed_sources(self):
         catalog = analyticsctl.load_json(analyticsctl.CATALOG)
         coverage = analyticsctl.load_json(analyticsctl.COVERAGE)
         classified = sum(coverage["computability"].values(), [])
-        self.assertEqual(len(catalog["metrics"]), len(classified))
-        self.assertEqual({metric["id"] for metric in catalog["metrics"]}, set(classified))
+        runtime_metrics = {
+            metric["id"]
+            for metric in catalog["metrics"]
+            if metric["status"] == "runtime_local_test"
+        }
+        governed_source_only = {
+            metric["id"]
+            for metric in catalog["metrics"]
+            if metric["status"] == "governed_source_only"
+        }
+        self.assertEqual(67, len(runtime_metrics))
+        self.assertEqual(48, len(governed_source_only))
+        self.assertEqual(runtime_metrics, set(classified))
+        self.assertTrue(runtime_metrics.isdisjoint(governed_source_only))
+        for metric in catalog["metrics"]:
+            if metric["id"] in governed_source_only:
+                self.assertTrue(metric["source"].startswith("governed_source_only:"))
+        self.assertEqual(115, coverage["summary"]["total_kpis"])
+        self.assertEqual(67, coverage["summary"]["computability_scope_kpis"])
+        self.assertEqual(48, coverage["summary"]["governed_source_only"])
         self.assertEqual(67, coverage["summary"]["delivered_in_role_metric_mart"])
         self.assertEqual([], coverage["computability"]["missing_authoritative_semantics"])
 

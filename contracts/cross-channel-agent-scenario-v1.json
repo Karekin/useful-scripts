@@ -1,0 +1,565 @@
+{
+  "schema_version": 1,
+  "scenario_id": "scenario.cloudmold.cross-channel.local-demo.v1",
+  "scenario_version": "1.0.0",
+  "name": "CloudMold 后台到 UniApp 消费者全链路",
+  "default_mode": "plan",
+  "allowed_execute_environments": [
+    "local",
+    "demo",
+    "test"
+  ],
+  "forbidden_execute_environments": [
+    "staging",
+    "production"
+  ],
+  "approval": {
+    "required_for_execute": true,
+    "type": "LOCAL_TEST_HUMAN_APPROVAL",
+    "required_scope": "cross-channel:execute",
+    "note": "本地审批文件只适用于 local/demo/test，不替代生产 Risk Authority。"
+  },
+  "identity_invariant": "Member source account must resolve to one canonical Principal; Principal, Member user and System user IDs must never be equated.",
+  "product_invariant": "The same listingId, listingOfferId, canonicalSpuId and canonicalSkuId must be preserved from product read model through checkout, Order, Fulfillment and AfterSale.",
+  "money_invariant": "checkout payable = Order payable = captured amount = refunded amount in one ISO-4217 currency using integer minor units.",
+  "quantity_invariant": "ordered quantity = accepted return quantity = returned-to-stock quantity; all quantities use the SKU base UOM.",
+  "stages": [
+    {
+      "id": "app.identity.me",
+      "phase": "IDENTITY",
+      "executor": "http",
+      "operation": "READ",
+      "depends_on": [],
+      "binding_id": "app.identity.me",
+      "required_evidence": [
+        "memberUserId",
+        "principalId",
+        "principalType",
+        "identityLinkVersion"
+      ]
+    },
+    {
+      "id": "operator.merchant.onboard",
+      "phase": "OPERATOR_BOOTSTRAP",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "depends_on": [],
+      "binding_id": "operator.merchant.onboard",
+      "required_evidence": [
+        "merchantId",
+        "shopId",
+        "principalId",
+        "merchantStatus",
+        "shopStatus",
+        "outboxEventIds"
+      ]
+    },
+    {
+      "id": "operator.catalog.publish",
+      "phase": "OPERATOR_BOOTSTRAP",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "depends_on": [
+        "operator.merchant.onboard"
+      ],
+      "binding_id": "operator.catalog.publish",
+      "required_evidence": [
+        "canonicalSpuId",
+        "canonicalSkuId",
+        "skuCode",
+        "catalogStatus",
+        "outboxEventIds"
+      ]
+    },
+    {
+      "id": "operator.listing.publish",
+      "phase": "OPERATOR_BOOTSTRAP",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "depends_on": [
+        "operator.merchant.onboard",
+        "operator.catalog.publish"
+      ],
+      "binding_id": "operator.listing.publish",
+      "required_evidence": [
+        "listingId",
+        "listingOfferId",
+        "listingRevision",
+        "listingVersion",
+        "listingStatus",
+        "priceMinor",
+        "currencyCode",
+        "outboxEventIds"
+      ]
+    },
+    {
+      "id": "operator.warehouse.receive",
+      "phase": "OPERATOR_BOOTSTRAP",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "depends_on": [
+        "operator.catalog.publish"
+      ],
+      "binding_id": "operator.warehouse.receive",
+      "required_evidence": [
+        "warehouseId",
+        "locationId",
+        "inventoryLedgerTransactionId",
+        "receivedQuantity",
+        "outboxEventIds"
+      ]
+    },
+    {
+      "id": "operator.quality.release",
+      "phase": "OPERATOR_BOOTSTRAP",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "depends_on": [
+        "operator.warehouse.receive"
+      ],
+      "binding_id": "operator.quality.release",
+      "required_evidence": [
+        "inspectionTaskId",
+        "qualityStandardVersion",
+        "qualityStatus",
+        "inspectionDecision",
+        "outboxEventIds"
+      ]
+    },
+    {
+      "id": "operator.inventory.sellable",
+      "phase": "OPERATOR_BOOTSTRAP",
+      "executor": "external_evidence",
+      "operation": "ASSERT",
+      "depends_on": [
+        "operator.quality.release"
+      ],
+      "binding_id": "operator.inventory.sellable",
+      "required_evidence": [
+        "inventoryBalanceId",
+        "inventoryVersion",
+        "availableQuantity",
+        "stockStatus",
+        "qualityStatus"
+      ]
+    },
+    {
+      "id": "app.session.start",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.identity.me"
+      ],
+      "binding_id": "app.session.start",
+      "required_evidence": [
+        "sessionId",
+        "aggregateVersion",
+        "eventId"
+      ]
+    },
+    {
+      "id": "app.products.list",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "READ",
+      "depends_on": [
+        "operator.listing.publish",
+        "operator.inventory.sellable",
+        "app.session.start"
+      ],
+      "binding_id": "app.products.list",
+      "required_evidence": [
+        "list",
+        "total",
+        "pageNo",
+        "pageSize"
+      ]
+    },
+    {
+      "id": "app.behavior.search_requested",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.products.list"
+      ],
+      "binding_id": "app.behavior.search_requested",
+      "required_evidence": [
+        "behaviorId",
+        "sessionId",
+        "behaviorType",
+        "eventId"
+      ]
+    },
+    {
+      "id": "app.behavior.search_exposed",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.behavior.search_requested"
+      ],
+      "binding_id": "app.behavior.search_exposed",
+      "required_evidence": [
+        "behaviorId",
+        "sessionId",
+        "behaviorType",
+        "eventId"
+      ]
+    },
+    {
+      "id": "app.behavior.search_clicked",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.behavior.search_exposed"
+      ],
+      "binding_id": "app.behavior.search_clicked",
+      "required_evidence": [
+        "behaviorId",
+        "sessionId",
+        "behaviorType",
+        "eventId"
+      ]
+    },
+    {
+      "id": "app.product.detail",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "READ",
+      "depends_on": [
+        "app.behavior.search_clicked"
+      ],
+      "binding_id": "app.product.detail",
+      "required_evidence": [
+        "listingId",
+        "listingNo",
+        "title",
+        "primaryImageUrl",
+        "media",
+        "merchantId",
+        "shopId",
+        "canonicalSpuId",
+        "listingRevision",
+        "listingVersion",
+        "qualitySummary",
+        "skus"
+      ]
+    },
+    {
+      "id": "app.behavior.pdp",
+      "phase": "CONSUMER_DISCOVERY",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.product.detail"
+      ],
+      "binding_id": "app.behavior.pdp",
+      "required_evidence": [
+        "behaviorId",
+        "sessionId",
+        "behaviorType",
+        "eventId"
+      ]
+    },
+    {
+      "id": "app.behavior.cart_added",
+      "phase": "CHECKOUT",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.behavior.pdp"
+      ],
+      "binding_id": "app.behavior.cart_added",
+      "required_evidence": [
+        "behaviorId",
+        "sessionId",
+        "behaviorType",
+        "eventId"
+      ]
+    },
+    {
+      "id": "app.checkout.preview",
+      "phase": "CHECKOUT",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.product.detail",
+        "app.identity.me",
+        "app.behavior.cart_added"
+      ],
+      "binding_id": "app.checkout.preview",
+      "required_evidence": [
+        "checkoutToken",
+        "principalId",
+        "listingId",
+        "listingOfferId",
+        "canonicalSkuId",
+        "quantity",
+        "unitPriceMinor",
+        "productAmountMinor",
+        "shippingAmountMinor",
+        "discountAmountMinor",
+        "payableAmountMinor",
+        "currencyCode",
+        "availableQuantity",
+        "expiresAt"
+      ]
+    },
+    {
+      "id": "app.behavior.checkout",
+      "phase": "CHECKOUT",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.checkout.preview"
+      ],
+      "binding_id": "app.behavior.checkout",
+      "required_evidence": [
+        "behaviorId",
+        "sessionId",
+        "behaviorType",
+        "eventId"
+      ]
+    },
+    {
+      "id": "app.order.create",
+      "phase": "ORDER_PAYMENT",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.checkout.preview",
+        "app.behavior.checkout"
+      ],
+      "binding_id": "app.order.create",
+      "required_evidence": [
+        "orderId",
+        "orderNo",
+        "orderItemId",
+        "buyerPrincipalId",
+        "listingId",
+        "listingOfferId",
+        "canonicalSkuId",
+        "quantity",
+        "payableAmountMinor",
+        "currencyCode",
+        "orderVersion",
+        "orderStatus",
+        "outboxEventIds"
+      ]
+    },
+    {
+      "id": "app.order.get",
+      "phase": "ORDER_PAYMENT",
+      "executor": "http",
+      "operation": "READ",
+      "depends_on": [
+        "app.order.create"
+      ],
+      "binding_id": "app.order.get",
+      "required_evidence": [
+        "orderId",
+        "orderVersion",
+        "orderStatus",
+        "items"
+      ]
+    },
+    {
+      "id": "app.payment.capture",
+      "phase": "ORDER_PAYMENT",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.order.get"
+      ],
+      "binding_id": "app.payment.capture",
+      "required_evidence": [
+        "paymentId",
+        "paymentStatus",
+        "providerCode",
+        "capturedAmountMinor",
+        "currencyCode",
+        "outboxEventIds"
+      ]
+    },
+    {
+      "id": "operator.fulfillment.complete",
+      "phase": "FULFILLMENT",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.payment.capture"
+      ],
+      "binding_id": "operator.fulfillment.complete",
+      "required_evidence": [
+        "fulfillmentId",
+        "shipmentId",
+        "fulfillmentStatus",
+        "orderId",
+        "outboxEventIds"
+      ]
+    },
+    {
+      "id": "app.fulfillment.by_order",
+      "phase": "FULFILLMENT",
+      "executor": "http",
+      "operation": "READ",
+      "depends_on": [
+        "operator.fulfillment.complete"
+      ],
+      "binding_id": "app.fulfillment.by_order",
+      "required_evidence": [
+        "orderId",
+        "fulfillmentId",
+        "shipmentId",
+        "fulfillmentStatus",
+        "trackingEvents"
+      ]
+    },
+    {
+      "id": "app.after_sale.create",
+      "phase": "AFTER_SALE_SERVICE",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.fulfillment.by_order"
+      ],
+      "binding_id": "app.after_sale.create",
+      "required_evidence": [
+        "afterSaleId",
+        "afterSaleNo",
+        "orderId",
+        "orderItemId",
+        "afterSaleStatus",
+        "outboxEventIds"
+      ]
+    },
+    {
+      "id": "operator.after_sale.complete",
+      "phase": "AFTER_SALE_SERVICE",
+      "executor": "external_evidence",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.after_sale.create"
+      ],
+      "binding_id": "operator.after_sale.complete",
+      "required_evidence": [
+        "afterSaleId",
+        "returnFulfillmentId",
+        "inspectionId",
+        "refundTransactionId",
+        "inventoryReturnLedgerTransactionId",
+        "afterSaleStatus",
+        "paymentStatus",
+        "orderStatus",
+        "returnedQuantity",
+        "refundedAmountMinor",
+        "outboxEventIds"
+      ]
+    },
+    {
+      "id": "app.after_sale.get",
+      "phase": "AFTER_SALE_SERVICE",
+      "executor": "http",
+      "operation": "READ",
+      "depends_on": [
+        "operator.after_sale.complete"
+      ],
+      "binding_id": "app.after_sale.get",
+      "required_evidence": [
+        "afterSaleId",
+        "orderId",
+        "afterSaleStatus",
+        "refundStatus",
+        "returnFulfillmentStatus"
+      ]
+    },
+    {
+      "id": "app.customer_service.ticket_create",
+      "phase": "AFTER_SALE_SERVICE",
+      "executor": "http",
+      "operation": "WRITE",
+      "depends_on": [
+        "app.after_sale.create"
+      ],
+      "binding_id": "app.customer_service.ticket_create",
+      "required_evidence": [
+        "ticketId",
+        "ticketNo",
+        "referenceType",
+        "referenceId",
+        "ticketStatus",
+        "outboxEventIds"
+      ]
+    },
+    {
+      "id": "app.customer_service.ticket_get",
+      "phase": "AFTER_SALE_SERVICE",
+      "executor": "http",
+      "operation": "READ",
+      "depends_on": [
+        "app.customer_service.ticket_create"
+      ],
+      "binding_id": "app.customer_service.ticket_get",
+      "required_evidence": [
+        "ticketId",
+        "referenceType",
+        "referenceId",
+        "ticketStatus"
+      ]
+    },
+    {
+      "id": "reconcile.lakehouse",
+      "phase": "RECONCILIATION",
+      "executor": "external_evidence",
+      "operation": "ASSERT",
+      "depends_on": [
+        "app.after_sale.get",
+        "app.customer_service.ticket_get"
+      ],
+      "binding_id": "reconcile.lakehouse",
+      "required_evidence": [
+        "outboxCdcCheckpointSucceeded",
+        "sourceToFactMismatchCount",
+        "factToProjectionMismatchCount",
+        "dqcViolationCount",
+        "modelResults",
+        "dataFreshnessAt"
+      ]
+    }
+  ],
+  "terminal_evidence": {
+    "required_behavior_types": [
+      "SEARCH_REQUESTED",
+      "SEARCH_RESULT_EXPOSED",
+      "SEARCH_RESULT_CLICKED",
+      "PDP_VIEWED",
+      "CART_ADDED",
+      "CHECKOUT_STARTED"
+    ],
+    "required_states": {
+      "merchantStatus": "ACTIVE",
+      "shopStatus": "ACTIVE",
+      "catalogStatus": "ACTIVE",
+      "listingStatus": "PUBLISHED",
+      "stockStatus": "SELLABLE",
+      "qualityStatus": "QUALIFIED",
+      "paymentStatus": "REFUNDED",
+      "fulfillmentStatus": "DELIVERED",
+      "afterSaleStatus": "COMPLETED",
+      "returnFulfillmentStatus": "INSPECTION_ACCEPTED",
+      "refundStatus": "SUCCEEDED",
+      "orderStatus": "RETURNED"
+    },
+    "required_lakehouse_results": {
+      "yshopping_ads.ads_canonical_commerce_v2_readiness": "RECONCILED",
+      "yshopping_ads.ads_canonical_after_sale_readiness": "RECONCILED",
+      "yshopping_ads.ads_canonical_customer_service_readiness": "READY",
+      "yshopping_ads.ads_canonical_commerce_acquisition_funnel": "NONEMPTY"
+    },
+    "immutable_replay_required": true,
+    "zero_mismatch_required": true
+  }
+}

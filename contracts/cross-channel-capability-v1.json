@@ -1,0 +1,346 @@
+{
+  "schema_version": 1,
+  "audit_id": "cloudmold-admin-mobile-cross-channel-v1",
+  "audited_at": "2026-07-25T00:00:00+08:00",
+  "evidence_scope": "LOCAL_REPOSITORY_AND_LOCAL_TEST",
+  "scoring": {
+    "dimensions": [
+      "surface",
+      "live_api",
+      "canonical_sor",
+      "event",
+      "agent",
+      "cross_channel"
+    ],
+    "rule": "每个阶段每项 1 分；页面或接口存在但仍读取 Legacy Mall，不计 canonical_sor 与 cross_channel。",
+    "status_rule": {
+      "connected": "六项全部通过",
+      "partial": "至少一项通过，但未全部通过",
+      "missing": "只有静态页面或完全无实现"
+    }
+  },
+  "stages": [
+    {
+      "id": "operator.merchant_onboarding",
+      "name": "商家入驻与经营资格",
+      "side": "operator",
+      "authority": "cloudmold-module-merchant + cloudmold-module-identity",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": true, "event": true, "agent": true, "cross_channel": false},
+      "source_files": [
+        "yudao-ui-admin-vben/apps/web-antd/src/views/cloudmold/merchant/index.vue",
+        "yudao-cloud/cloudmold-module-merchant/cloudmold-module-merchant-server/src/main/java/cn/iocoder/yudao/module/cloudmold/merchant/controller/admin/MerchantCommandController.java",
+        "/Users/karekin/.codex/skills/cloudmold-erp-operator/scripts/canonical_merchant_sales_eligibility_runner.py"
+      ],
+      "gap": "商家资格尚未成为移动端可售商品的强制可解释门禁。"
+    },
+    {
+      "id": "operator.catalog_authoring",
+      "name": "款色码发品",
+      "side": "operator",
+      "authority": "cloudmold-module-catalog",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": true, "event": true, "agent": true, "cross_channel": false},
+      "source_files": [
+        "yudao-ui-admin-vben/apps/web-antd/src/views/cloudmold/catalog/index.vue",
+        "yudao-cloud/cloudmold-module-catalog/cloudmold-module-catalog-server/src/main/java/cn/iocoder/yudao/module/cloudmold/catalog/controller/admin/CatalogCommandController.java",
+        "/Users/karekin/.codex/skills/cloudmold-erp-operator/scripts/canonical_catalog_runner.py"
+      ],
+      "gap": "移动端商品仍读取 Legacy Product；Canonical→Mall 目前只有 PENDING 投影计划。"
+    },
+    {
+      "id": "operator.listing_publish",
+      "name": "审核、上架与渠道发布",
+      "side": "operator",
+      "authority": "cloudmold-module-listing",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": true, "event": true, "agent": true, "cross_channel": false},
+      "source_files": [
+        "yudao-ui-admin-vben/apps/web-antd/src/views/cloudmold/commerce/listing/index.vue",
+        "yudao-cloud/cloudmold-module-listing/cloudmold-module-listing-server/src/main/java/cn/iocoder/yudao/module/cloudmold/listing/controller/admin/ListingCommandController.java",
+        "/Users/karekin/.codex/skills/cloudmold-erp-operator/scripts/canonical_listing_fulfillment_runner.py"
+      ],
+      "gap": "发布结果尚未投影为移动端首页、搜索和商详统一可读的 Offer。"
+    },
+    {
+      "id": "operator.supply_planning",
+      "name": "供应链计划与销量预测",
+      "side": "operator",
+      "authority": "cloudmold-module-supply-planning",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": true, "event": true, "agent": false, "cross_channel": false},
+      "source_files": [
+        "yudao-ui-admin-vben/apps/web-antd/src/views/cloudmold/supply-chain/index.vue",
+        "yudao-cloud/cloudmold-module-supply-planning/cloudmold-module-supply-planning-server/src/main/java/cn/iocoder/yudao/module/cloudmold/supplyplanning/controller/admin/SupplyPlanningAdminController.java"
+      ],
+      "gap": "已接预测回测 WAPE/Bias/MAE、多情景选择、计划发布、自动补货和人工审批/转单意图；尚未接真实采购/WMS 执行、跨端消费与 Agent 场景。"
+    },
+    {
+      "id": "operator.inbound_receipt",
+      "name": "采购到货、入仓与上架",
+      "side": "operator",
+      "authority": "ERP purchase + cloudmold warehouse/inventory",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": true, "event": true, "agent": true, "cross_channel": false},
+      "source_files": [
+        "yudao-ui-admin-vben/apps/web-antd/src/views/cloudmold/warehouse/index.vue",
+        "yudao-cloud/cloudmold-module-inventory/cloudmold-module-inventory-server/src/main/java/cn/iocoder/yudao/module/cloudmold/inventory/controller/admin/InventoryV3CommandController.java",
+        "/Users/karekin/.codex/skills/cloudmold-erp-operator/scripts/erp_scenario_runner.py"
+      ],
+      "gap": "采购收货、WMS 实物上架与 Canonical Inventory 可售的单据级对账尚未统一展示。"
+    },
+    {
+      "id": "operator.quality_inspection",
+      "name": "品控质检与放行",
+      "side": "operator",
+      "authority": "cloudmold-module-quality",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": true, "event": true, "agent": false, "cross_channel": false},
+      "source_files": [
+        "yudao-ui-admin-vben/apps/web-antd/src/views/cloudmold/quality/index.vue",
+        "yudao-cloud/cloudmold-module-quality/cloudmold-module-quality-server/src/main/java/cn/iocoder/yudao/module/cloudmold/quality/controller/admin/QualityAdminController.java"
+      ],
+      "gap": "已接独立复核、冲突裁决、ground truth、召回动作和准确率/召回率/精确率；质检结论尚未成为库存可售、鉴别证书、消费者商详承诺与 Agent 场景的硬门禁。"
+    },
+    {
+      "id": "operator.inventory_health",
+      "name": "库存健康与可售量",
+      "side": "operator",
+      "authority": "cloudmold-module-inventory",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": true, "event": true, "agent": true, "cross_channel": false},
+      "source_files": [
+        "yudao-ui-admin-vben/apps/web-antd/src/views/cloudmold/inventory/index.vue",
+        "yudao-cloud/cloudmold-module-inventory/cloudmold-module-inventory-server/src/main/java/cn/iocoder/yudao/module/cloudmold/inventory/controller/admin/InventoryV3QueryController.java",
+        "/Users/karekin/.codex/skills/cloudmold-erp-operator/scripts/canonical_inventory_runner.py"
+      ],
+      "gap": "移动端仍显示 Legacy SKU stock，不消费 Canonical available quantity。"
+    },
+    {
+      "id": "operator.order_operations",
+      "name": "交易订单运营",
+      "side": "operator",
+      "authority": "cloudmold-module-order + cloudmold-module-payment",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": true, "event": true, "agent": true, "cross_channel": false},
+      "source_files": [
+        "yudao-ui-admin-vben/apps/web-antd/src/views/cloudmold/commerce/order/index.vue",
+        "yudao-cloud/cloudmold-module-order/cloudmold-module-order-server/src/main/java/cn/iocoder/yudao/module/cloudmold/order/controller/admin/OrderCommandController.java",
+        "/Users/karekin/.codex/skills/cloudmold-erp-operator/scripts/canonical_order_payment_runner.py"
+      ],
+      "gap": "移动端下单仍创建 Legacy Trade Order，不进入 Canonical Order Saga。"
+    },
+    {
+      "id": "operator.fulfillment",
+      "name": "履约发货与物流",
+      "side": "operator",
+      "authority": "cloudmold-module-fulfillment",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": true, "event": true, "agent": true, "cross_channel": false},
+      "source_files": [
+        "yudao-ui-admin-vben/apps/web-antd/src/views/cloudmold/commerce/fulfillment/index.vue",
+        "yudao-cloud/cloudmold-module-fulfillment/cloudmold-module-fulfillment-server/src/main/java/cn/iocoder/yudao/module/cloudmold/fulfillment/controller/admin/FulfillmentCommandController.java",
+        "/Users/karekin/.codex/skills/cloudmold-erp-operator/scripts/yshopping_listing_fulfillment_vertical_runner.py"
+      ],
+      "gap": "移动端物流页读取 Legacy Delivery，不读取 Canonical Fulfillment。"
+    },
+    {
+      "id": "operator.reverse_aftersales",
+      "name": "销退、退款与逆向履约",
+      "side": "operator",
+      "authority": "cloudmold-module-aftersales",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": true, "event": true, "agent": true, "cross_channel": false},
+      "source_files": [
+        "yudao-ui-admin-vben/apps/web-antd/src/views/cloudmold/commerce/aftersale/index.vue",
+        "yudao-cloud/cloudmold-module-aftersales/cloudmold-module-aftersales-server/src/main/java/cn/iocoder/yudao/module/cloudmold/aftersale/controller/admin/AfterSaleCommandController.java",
+        "/Users/karekin/.codex/skills/cloudmold-erp-operator/scripts/yshopping_aftersales_vertical_runner.py"
+      ],
+      "gap": "移动端售后仍创建 Legacy AfterSale，未进入 Canonical 退款与回库 Saga。"
+    },
+    {
+      "id": "operator.service_experience",
+      "name": "客服、体验与问题闭环",
+      "side": "operator",
+      "authority": "cloudmold-module-customer-service + commerce behavior",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": true, "event": true, "agent": false, "cross_channel": false},
+      "source_files": [
+        "yudao-ui-admin-vben/apps/web-antd/src/views/cloudmold/customer-service/index.vue",
+        "yudao-cloud/cloudmold-module-customer-service/cloudmold-module-customer-service-server/src/main/java/cn/iocoder/yudao/module/cloudmold/customerservice/controller/admin/CustomerServiceController.java"
+      ],
+      "gap": "移动端咨询、评价、退货原因与后台工单尚未通过统一身份、订单和体验标签串联。"
+    },
+    {
+      "id": "consumer.content_discovery",
+      "name": "种草社区",
+      "side": "consumer",
+      "authority": "target: cloudmold-module-engagement",
+      "status": "missing",
+      "readiness": {"surface": true, "live_api": false, "canonical_sor": false, "event": false, "agent": false, "cross_channel": false},
+      "source_files": [
+        "yudao-mall-uniapp/pages/dewu/discover.vue",
+        "yudao-mall-uniapp/pages/dewu/post-detail.vue"
+      ],
+      "gap": "页面数据、点赞、关注、评论均为本地常量，没有后端内容、审核、推荐和事件链。"
+    },
+    {
+      "id": "consumer.recommendation",
+      "name": "首页与个性化推荐",
+      "side": "consumer",
+      "authority": "target: listing + recommendation policy",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": false, "event": false, "agent": false, "cross_channel": false},
+      "source_files": [
+        "yudao-mall-uniapp/pages/index/index.vue",
+        "yudao-mall-uniapp/sheep/api/product/spu.js"
+      ],
+      "gap": "当前是 Legacy SPU 分页和静态推荐标签，不是可解释、可实验、可回放的推荐服务。"
+    },
+    {
+      "id": "consumer.search",
+      "name": "搜索与结果点击",
+      "side": "consumer",
+      "authority": "target: canonical search index + commerce behavior",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": false, "event": true, "agent": false, "cross_channel": false},
+      "source_files": [
+        "yudao-mall-uniapp/pages/index/search.vue",
+        "yudao-mall-uniapp/sheep/helper/cloudmold-behavior.js",
+        "yudao-cloud/cloudmold-module-commerce-behavior/cloudmold-module-commerce-behavior-server/src/main/java/cn/iocoder/yudao/module/cloudmold/commercebehavior/controller/app/AppCommerceBehaviorController.java"
+      ],
+      "gap": "已接脱敏 SEARCH_REQUESTED 事件；搜索结果仍来自 Legacy Product，缺索引版本、曝光和点击归因。"
+    },
+    {
+      "id": "consumer.product_detail",
+      "name": "商品详情、价格、库存与鉴别承诺",
+      "side": "consumer",
+      "authority": "target: catalog + listing + inventory + quality",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": false, "event": false, "agent": false, "cross_channel": false},
+      "source_files": [
+        "yudao-mall-uniapp/pages/goods/index.vue",
+        "yudao-mall-uniapp/sheep/api/product/spu.js"
+      ],
+      "gap": "默认进入静态设计态；业务态仍读取 Legacy SPU/SKU，未聚合 Canonical Offer、库存和质检证据。"
+    },
+    {
+      "id": "consumer.cart",
+      "name": "购物车",
+      "side": "consumer",
+      "authority": "target: canonical checkout context",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": false, "event": false, "agent": false, "cross_channel": false},
+      "source_files": [
+        "yudao-mall-uniapp/pages/index/cart.vue",
+        "yudao-mall-uniapp/sheep/api/trade/cart.js"
+      ],
+      "gap": "购物车仍绑定 Legacy SKU，未冻结 Canonical Offer、价格版本和可售量。"
+    },
+    {
+      "id": "consumer.checkout_order",
+      "name": "结算与下单",
+      "side": "consumer",
+      "authority": "target: cloudmold-module-order facade",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": false, "event": false, "agent": false, "cross_channel": false},
+      "source_files": [
+        "yudao-mall-uniapp/pages/order/confirm.vue",
+        "yudao-mall-uniapp/sheep/api/trade/order.js"
+      ],
+      "gap": "存在 mock fallback，真实调用创建 Legacy Trade Order，未进入 Canonical reserve/pay Saga。"
+    },
+    {
+      "id": "consumer.payment",
+      "name": "收银与支付结果",
+      "side": "consumer",
+      "authority": "target: cloudmold payment facade + legacy pay adapter",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": false, "event": false, "agent": false, "cross_channel": false},
+      "source_files": [
+        "yudao-mall-uniapp/pages/pay/index.vue",
+        "yudao-mall-uniapp/sheep/api/pay/order.js"
+      ],
+      "gap": "支付只关联 Legacy PayOrder，Canonical Payment 与会话归因未接移动端。"
+    },
+    {
+      "id": "consumer.order_tracking",
+      "name": "订单详情与物流跟踪",
+      "side": "consumer",
+      "authority": "target: canonical order + fulfillment read model",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": false, "event": false, "agent": false, "cross_channel": false},
+      "source_files": [
+        "yudao-mall-uniapp/pages/order/detail.vue",
+        "yudao-mall-uniapp/pages/order/express/log.vue"
+      ],
+      "gap": "状态与轨迹读取 Legacy Trade/Delivery，后台 Canonical 状态变化不可见。"
+    },
+    {
+      "id": "consumer.return_refund",
+      "name": "退货、退款与寄回",
+      "side": "consumer",
+      "authority": "target: canonical aftersales facade",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": false, "event": false, "agent": false, "cross_channel": false},
+      "source_files": [
+        "yudao-mall-uniapp/pages/order/aftersale/apply.vue",
+        "yudao-mall-uniapp/sheep/api/trade/afterSale.js"
+      ],
+      "gap": "移动端售后未进入 Canonical AfterSale/Reverse Fulfillment/Inventory/Payment Saga。"
+    },
+    {
+      "id": "consumer.customer_service",
+      "name": "消费者客服",
+      "side": "consumer",
+      "authority": "target: cloudmold customer service",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": false, "event": false, "agent": false, "cross_channel": false},
+      "source_files": [
+        "yudao-mall-uniapp/pages/chat/index.vue",
+        "yudao-mall-uniapp/sheep/api/promotion/kefu.js"
+      ],
+      "gap": "聊天仍使用 Legacy Promotion Kefu，未建立 Canonical Ticket、SLA、订单关联和 Agent 协同。"
+    },
+    {
+      "id": "consumer.review_feedback",
+      "name": "评价与体验反馈",
+      "side": "consumer",
+      "authority": "target: engagement + service + quality feedback",
+      "status": "partial",
+      "readiness": {"surface": true, "live_api": true, "canonical_sor": false, "event": false, "agent": false, "cross_channel": false},
+      "source_files": [
+        "yudao-mall-uniapp/pages/goods/comment/add.vue",
+        "yudao-mall-uniapp/sheep/api/product/comment.js"
+      ],
+      "gap": "评价未回流商品、质检、商家、履约和客服体验标签。"
+    }
+  ],
+  "phase_gates": [
+    {
+      "phase": "P0",
+      "name": "可测",
+      "exit": "台账校验通过；后台、App、后端、事件、指标和 Agent 证据均可追溯。"
+    },
+    {
+      "phase": "P1",
+      "name": "可逛可买",
+      "exit": "一个 Canonical SKU 从发品、上架、质检放行到 App 搜索/商详/下单/支付/履约全程同源。"
+    },
+    {
+      "phase": "P2",
+      "name": "可退可服务",
+      "exit": "消费者退货、退款、回库、客服工单和体验反馈进入同一订单及售后证据链。"
+    },
+    {
+      "phase": "P3",
+      "name": "可经营",
+      "exit": "供应链计划、库存健康、预测、品控和增长指标具备非空数据、DQC、归因和异常工单。"
+    },
+    {
+      "phase": "P4",
+      "name": "Agent 可跑",
+      "exit": "Agent 在本地/测试租户从商家入驻跑到消费者退货，支持幂等重放、故障恢复、对账与证据包。"
+    }
+  ]
+}

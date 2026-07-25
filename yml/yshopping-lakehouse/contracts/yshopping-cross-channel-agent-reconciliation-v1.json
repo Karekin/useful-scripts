@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "contract_id": "yshopping.cross-channel-agent-reconciliation.v1",
+  "evidence_scope": [
+    "LOCAL_TEST",
+    "DEMO_TEST",
+    "TEST"
+  ],
+  "grain": [
+    "tenant_id",
+    "run_id",
+    "session_id",
+    "principal_id",
+    "order_id",
+    "after_sale_id",
+    "ticket_id"
+  ],
+  "required_models": {
+    "yshopping_dws.dws_canonical_commerce_session_funnel": "models/dws/dws-canonical-commerce-session-funnel.sql",
+    "yshopping_ads.ads_canonical_commerce_acquisition_funnel": "models/ads/ads-canonical-commerce-acquisition-funnel.sql",
+    "yshopping_ads.ads_canonical_commerce_v2_readiness": "models/ads/ads-canonical-commerce-v2-readiness.sql",
+    "yshopping_ads.ads_canonical_after_sale_readiness": "models/ads/ads-canonical-after-sale-readiness.sql",
+    "yshopping_dws.dws_canonical_customer_service_ticket_current": "models/dws/dws-canonical-customer-service-current.sql",
+    "yshopping_ads.ads_canonical_customer_service_readiness": "models/ads/ads-canonical-customer-service-readiness.sql",
+    "yshopping_ads.ads_canonical_inventory_health": "models/ads/ads-canonical-inventory-health.sql",
+    "yshopping_ads.ads_canonical_quality_readiness": "models/ads/ads-canonical-quality-readiness.sql"
+  },
+  "required_behavior_types": [
+    "SEARCH_REQUESTED",
+    "SEARCH_RESULT_EXPOSED",
+    "SEARCH_RESULT_CLICKED",
+    "PDP_VIEWED",
+    "CART_ADDED",
+    "CHECKOUT_STARTED"
+  ],
+  "required_terminal_results": {
+    "commerce_v2_readiness": "RECONCILED",
+    "after_sale_readiness": "RECONCILED",
+    "customer_service_readiness": "READY",
+    "acquisition_funnel": "NONEMPTY"
+  },
+  "required_zero_checks": [
+    "source_to_fact_mismatch_count",
+    "fact_to_projection_mismatch_count",
+    "cross_tenant_link_count",
+    "identity_link_mismatch_count",
+    "product_link_mismatch_count",
+    "order_payment_money_mismatch_count",
+    "return_quantity_mismatch_count",
+    "dqc_violation_count"
+  ],
+  "acceptance": {
+    "outbox_cdc_checkpoint_succeeded": true,
+    "full_denominator": true,
+    "nonempty": true,
+    "simulated": false,
+    "production_credit": false
+  },
+  "note": "这是 local/demo/test 场景的独立对账合同。模型存在或空表 DQC 为零不构成成功；必须提交同 run_id 的非空终态证据。"
+}

@@ -35,10 +35,11 @@ yml/yshopping-lakehouse/analytics/apps/cloudmold-analytics/app/data/
 - Y-Shopping 当前治理宇宙为 719 项来源候选；严格生产最终语义证据仍为 `0/719`。
 - 208 个 SQL 模型表示结构与建模资产，不等同于生产非空、财务对账或业务验收。
 - `ads_ecommerce_role_metrics` 已将 33 个可验证指标汇聚成统一、聚合、无 PII 的角色报表接口。
-- `coverage/kpi-source-readiness-v1.json` 对全部 76 个 KPI 逐项分类；缺权威语义的指标保持为空，不使用 0 或演示值替代。
+- `coverage/kpi-source-readiness-v1.json` 对全部 115 个业务 KPI 逐项分类：67 个具备 LOCAL_TEST 运行证据，48 个仅有治理口径；缺运行事实的指标保持为空，不使用 0 或演示值替代。
+- Snapshot 另保留 9 个数据治理/AI 运行遥测，只用于证明数据链健康，不计入 115 个业务 KPI，也不进入业务中心绩效归属。
 - `coverage/kpi-data-gap-backlog-v1.json` 把 CDC、后端事件、身份回填、Promise/SLA 与商业账本缺口固化为 P0–P2 任务和验收条件。
 - `coverage/source-graduation-plan-v1.json` 明确区分“719/719 已完成终态处置”“5 个来源已在 LOCAL_TEST 通过完整生产准入门禁”和“0 个来源已完成实际生产验收”；进入准入分子不要求先在生产产数。
-- 经营驾驶舱是唯一跨域一级总览；七个专业视图的 76 个指标按责任域互斥编排，避免同一指标在多个页签反复出现。
+- 经营驾驶舱是唯一跨域一级总览；商家经营、增长营销、买家旅程、供应链、鉴别质检、信任保障、财务与风控七个专业中心按责任域编排 115 个指标，避免同一指标在多个页签反复出现。
 - `ads_legacy_commerce_source_metrics` 单独暴露旧 Trade 当前快照及质量告警，明确标记为 `LEGACY_SOURCE_ONLY`，禁止与 Canonical 指标相加。
 - 指标状态分为 `runtime_local_test`、`model_ready_no_runtime`、`governed_source_only`。前端对后两类显示“待运行”或“待接入”，不得把缺失值渲染成 0。
 

@@ -18,11 +18,11 @@
     "governed_source_candidates": 719,
     "production_admission_ready_sources": 5,
     "strict_production_final_sources": 0,
-    "sql_models": 258,
+    "sql_models": 264,
     "model_layers": {
-      "ads": 59,
-      "dws": 59,
-      "dwd": 74,
+      "ads": 61,
+      "dws": 61,
+      "dwd": 76,
       "dim": 65,
       "bootstrap": 1
     },
@@ -37,6 +37,17 @@
     "tenant_scope": "tenant_id = 1",
     "publication_scope": "local_test_snapshot"
   },
+  "operational_telemetry_metric_ids": [
+    "governance.governed_source_candidates",
+    "governance.strict_final_source_count",
+    "governance.sql_model_count",
+    "governance.dataset_count",
+    "governance.failed_dqc_result_count",
+    "governance.invalid_reference_count",
+    "ai.observation_count",
+    "ai.pending_clue_count",
+    "ai.invalid_taxonomy_reference_count"
+  ],
   "evidence_levels": [
     {
       "id": "runtime_local_test",

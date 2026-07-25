@@ -1,0 +1,454 @@
+{
+  "schema_version": 1,
+  "binding_id": "cloudmold-app-facade-v1",
+  "contract_base_path": "/app-api/cloudmold/app",
+  "evidence_scope": "LOCAL_REPOSITORY_CONTRACT",
+  "note": "availability 只有在控制器、契约测试和运行冒烟均存在后才能改为 IMPLEMENTED_AND_TESTED；当前文件不得被当作成功证据。",
+  "bindings": {
+    "app.identity.me": {
+      "executor": "http",
+      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "method": "GET",
+      "path": "/app-api/cloudmold/app/me",
+      "request_fields": [],
+      "response_fields": [
+        "memberUserId",
+        "principalId",
+        "principalType",
+        "identityLinkVersion"
+      ]
+    },
+    "app.session.start": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/commerce-behavior/session/start",
+      "request_fields": [
+        "sessionId",
+        "channelCode",
+        "entrypointCode"
+      ],
+      "response_fields": [
+        "aggregateId",
+        "aggregateVersion",
+        "eventId"
+      ]
+    },
+    "app.products.list": {
+      "executor": "http",
+      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "method": "GET",
+      "path": "/app-api/cloudmold/app/products",
+      "request_fields": [
+        "keyword",
+        "pageNo",
+        "pageSize"
+      ],
+      "response_fields": [
+        "list",
+        "total",
+        "pageNo",
+        "pageSize"
+      ]
+    },
+    "app.behavior.search_requested": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/commerce-behavior/event/record",
+      "request_fields": [
+        "behaviorId",
+        "sessionId",
+        "behaviorType",
+        "searchToken",
+        "resultSetToken",
+        "resultPosition"
+      ],
+      "response_fields": [
+        "aggregateId",
+        "aggregateVersion",
+        "eventId"
+      ]
+    },
+    "app.behavior.search_exposed": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/commerce-behavior/event/record",
+      "request_fields": [
+        "behaviorId",
+        "sessionId",
+        "behaviorType",
+        "canonicalSpuId",
+        "skuId",
+        "listingId",
+        "listingOfferId",
+        "expectedPriceMinor",
+        "currencyCode",
+        "searchToken",
+        "resultSetToken",
+        "resultPosition"
+      ],
+      "response_fields": [
+        "aggregateId",
+        "aggregateVersion",
+        "eventId"
+      ]
+    },
+    "app.behavior.search_clicked": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/commerce-behavior/event/record",
+      "request_fields": [
+        "behaviorId",
+        "sessionId",
+        "behaviorType",
+        "canonicalSpuId",
+        "skuId",
+        "listingId",
+        "listingOfferId",
+        "expectedPriceMinor",
+        "currencyCode",
+        "searchToken",
+        "resultSetToken",
+        "resultPosition"
+      ],
+      "response_fields": [
+        "aggregateId",
+        "aggregateVersion",
+        "eventId"
+      ]
+    },
+    "app.product.detail": {
+      "executor": "http",
+      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "method": "GET",
+      "path": "/app-api/cloudmold/app/products/{listingId}",
+      "request_fields": [
+        "listingId"
+      ],
+      "response_fields": [
+        "listingId",
+        "listingNo",
+        "title",
+        "primaryImageUrl",
+        "media",
+        "merchantId",
+        "shopId",
+        "canonicalSpuId",
+        "listingRevision",
+        "listingVersion",
+        "qualitySummary",
+        "skus"
+      ],
+      "sku_response_fields": [
+        "canonicalSkuId",
+        "skuCode",
+        "colorCode",
+        "colorName",
+        "sizeCode",
+        "sizeName",
+        "barcode",
+        "listingOfferId",
+        "priceMinor",
+        "currencyCode",
+        "enabled",
+        "availableQuantity",
+        "inStock",
+        "inventoryVersion",
+        "qualityStatus"
+      ]
+    },
+    "app.behavior.pdp": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/commerce-behavior/event/record",
+      "request_fields": [
+        "behaviorId",
+        "sessionId",
+        "behaviorType",
+        "canonicalSpuId",
+        "skuId",
+        "listingId",
+        "listingOfferId",
+        "expectedPriceMinor",
+        "currencyCode"
+      ],
+      "response_fields": [
+        "aggregateId",
+        "aggregateVersion",
+        "eventId"
+      ]
+    },
+    "app.behavior.cart_added": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/commerce-behavior/event/record",
+      "request_fields": [
+        "behaviorId",
+        "sessionId",
+        "behaviorType",
+        "canonicalSpuId",
+        "skuId",
+        "listingId",
+        "listingOfferId",
+        "expectedPriceMinor",
+        "currencyCode",
+        "quantity"
+      ],
+      "response_fields": [
+        "aggregateId",
+        "aggregateVersion",
+        "eventId"
+      ]
+    },
+    "app.checkout.preview": {
+      "executor": "http",
+      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/app/checkout/preview",
+      "request_fields": [
+        "idempotencyKey",
+        "listingId",
+        "listingOfferId",
+        "canonicalSkuId",
+        "quantity"
+      ],
+      "response_fields": [
+        "checkoutToken",
+        "principalId",
+        "listingId",
+        "listingOfferId",
+        "canonicalSkuId",
+        "quantity",
+        "unitPriceMinor",
+        "productAmountMinor",
+        "shippingAmountMinor",
+        "discountAmountMinor",
+        "payableAmountMinor",
+        "currencyCode",
+        "availableQuantity",
+        "expiresAt"
+      ]
+    },
+    "app.behavior.checkout": {
+      "executor": "http",
+      "availability": "IMPLEMENTED_AND_TESTED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/commerce-behavior/event/record",
+      "request_fields": [
+        "behaviorId",
+        "sessionId",
+        "behaviorType",
+        "canonicalSpuId",
+        "skuId",
+        "listingId",
+        "listingOfferId",
+        "expectedPriceMinor",
+        "currencyCode",
+        "quantity",
+        "checkoutToken"
+      ],
+      "response_fields": [
+        "aggregateId",
+        "aggregateVersion",
+        "eventId"
+      ]
+    },
+    "app.order.create": {
+      "executor": "http",
+      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/app/orders",
+      "request_fields": [
+        "idempotencyKey",
+        "checkoutToken",
+        "receiverName",
+        "receiverMobile",
+        "receiverAddress"
+      ],
+      "response_fields": [
+        "orderId",
+        "orderNo",
+        "buyerPrincipalId",
+        "orderStatus",
+        "orderVersion",
+        "payableAmountMinor",
+        "currencyCode",
+        "items"
+      ]
+    },
+    "app.order.get": {
+      "executor": "http",
+      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "method": "GET",
+      "path": "/app-api/cloudmold/app/orders/{orderId}",
+      "request_fields": [
+        "orderId"
+      ],
+      "response_fields": [
+        "orderId",
+        "orderNo",
+        "buyerPrincipalId",
+        "orderStatus",
+        "orderVersion",
+        "payableAmountMinor",
+        "currencyCode",
+        "items"
+      ]
+    },
+    "app.payment.capture": {
+      "executor": "http",
+      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/app/payments/internal-test/capture",
+      "request_fields": [
+        "idempotencyKey",
+        "orderId",
+        "expectedOrderVersion"
+      ],
+      "response_fields": [
+        "paymentId",
+        "orderId",
+        "paymentStatus",
+        "providerCode",
+        "capturedAmountMinor",
+        "currencyCode"
+      ]
+    },
+    "app.fulfillment.by_order": {
+      "executor": "http",
+      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "method": "GET",
+      "path": "/app-api/cloudmold/app/fulfillments/by-order/{orderId}",
+      "request_fields": [
+        "orderId"
+      ],
+      "response_fields": [
+        "orderId",
+        "fulfillmentId",
+        "shipmentId",
+        "fulfillmentStatus",
+        "trackingEvents"
+      ]
+    },
+    "app.after_sale.create": {
+      "executor": "http",
+      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/app/after-sales",
+      "request_fields": [
+        "idempotencyKey",
+        "orderId",
+        "orderItemId",
+        "quantity",
+        "afterSaleType",
+        "reasonCode",
+        "reason"
+      ],
+      "response_fields": [
+        "afterSaleId",
+        "afterSaleNo",
+        "orderId",
+        "orderItemId",
+        "afterSaleStatus"
+      ]
+    },
+    "app.after_sale.get": {
+      "executor": "http",
+      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "method": "GET",
+      "path": "/app-api/cloudmold/app/after-sales/{afterSaleId}",
+      "request_fields": [
+        "afterSaleId"
+      ],
+      "response_fields": [
+        "afterSaleId",
+        "afterSaleNo",
+        "orderId",
+        "orderItemId",
+        "afterSaleStatus",
+        "refundStatus",
+        "returnFulfillmentStatus"
+      ]
+    },
+    "app.customer_service.ticket_create": {
+      "executor": "http",
+      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "method": "POST",
+      "path": "/app-api/cloudmold/app/customer-service/tickets",
+      "request_fields": [
+        "idempotencyKey",
+        "categoryCode",
+        "priority",
+        "referenceType",
+        "referenceId",
+        "contentToken"
+      ],
+      "response_fields": [
+        "ticketId",
+        "ticketNo",
+        "referenceType",
+        "referenceId",
+        "ticketStatus"
+      ]
+    },
+    "app.customer_service.ticket_get": {
+      "executor": "http",
+      "availability": "CONTRACT_FROZEN_NOT_DISCOVERED",
+      "method": "GET",
+      "path": "/app-api/cloudmold/app/customer-service/tickets/{ticketId}",
+      "request_fields": [
+        "ticketId"
+      ],
+      "response_fields": [
+        "ticketId",
+        "ticketNo",
+        "referenceType",
+        "referenceId",
+        "ticketStatus"
+      ]
+    }
+  },
+  "external_evidence_bindings": {
+    "operator.merchant.onboard": {
+      "skill_id": "skill.cloudmold.commerce.reuse-ready-master.v1",
+      "availability": "IMPLEMENTED_AND_TESTED"
+    },
+    "operator.catalog.publish": {
+      "skill_id": "skill.cloudmold.commerce.catalog-matrix.v1",
+      "availability": "IMPLEMENTED_AND_TESTED"
+    },
+    "operator.listing.publish": {
+      "skill_id": "skill.cloudmold.commerce.aftersale-saga.v1",
+      "availability": "IMPLEMENTED_AND_TESTED"
+    },
+    "operator.warehouse.receive": {
+      "skill_id": "skill.cloudmold.commerce.aftersale-saga.v1",
+      "availability": "IMPLEMENTED_AND_TESTED"
+    },
+    "operator.quality.release": {
+      "skill_id": "target.skill.cloudmold.quality.release.v1",
+      "availability": "CONTRACT_REQUIRED"
+    },
+    "operator.inventory.sellable": {
+      "skill_id": "skill.cloudmold.commerce.terminal-readback.v1",
+      "availability": "IMPLEMENTED_AND_TESTED"
+    },
+    "operator.fulfillment.complete": {
+      "skill_id": "skill.cloudmold.commerce.aftersale-saga.v1",
+      "availability": "IMPLEMENTED_AND_TESTED"
+    },
+    "operator.after_sale.complete": {
+      "skill_id": "skill.cloudmold.commerce.aftersale-saga.v1",
+      "availability": "IMPLEMENTED_AND_TESTED"
+    },
+    "reconcile.lakehouse": {
+      "command": "lakehousectl reconcile-cross-channel-agent",
+      "availability": "CONTRACT_REQUIRED"
+    }
+  }
+}

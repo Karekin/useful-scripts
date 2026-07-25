@@ -60,6 +60,8 @@ models/dwd/dwd-canonical-risk-event.sql
 models/dwd/dwd-canonical-risk-commerce-event.sql
 models/dwd/dwd-canonical-gamification-event.sql
 models/dwd/dwd-canonical-metadata-event.sql
+models/dwd/dwd-canonical-supply-planning-event.sql
+models/dwd/dwd-canonical-quality-event.sql
 models/dwd/dwd-legacy-coupon-current.sql
 models/dwd/dwd-legacy-activity-current.sql
 models/dwd/dwd-legacy-collect-current.sql
@@ -187,6 +189,8 @@ models/dws/dws-canonical-risk-current.sql
 models/dws/dws-canonical-risk-commerce-current.sql
 models/dws/dws-canonical-gamification-current.sql
 models/dws/dws-canonical-metadata-current.sql
+models/dws/dws-canonical-supply-planning-current.sql
+models/dws/dws-canonical-quality-current.sql
 models/dws/dws-legacy-payment-current.sql
 models/dws/dws-legacy-user-behavior-current.sql
 models/dws/dws-legacy-coupon-current.sql
@@ -238,6 +242,8 @@ models/ads/ads-canonical-risk-readiness.sql
 models/ads/ads-canonical-risk-commerce-metrics.sql
 models/ads/ads-canonical-gamification-readiness.sql
 models/ads/ads-canonical-metadata-readiness.sql
+models/ads/ads-canonical-supply-planning-readiness.sql
+models/ads/ads-canonical-quality-readiness.sql
 models/ads/ads-legacy-coupon-current.sql
 models/ads/ads-legacy-activity-current.sql
 models/ads/ads-legacy-collect-current.sql

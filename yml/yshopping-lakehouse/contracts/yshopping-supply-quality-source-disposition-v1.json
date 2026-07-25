@@ -1,0 +1,59 @@
+{
+  "contract_id": "yshopping-supply-quality-source-disposition-v1",
+  "version": 1,
+  "status": "implemented_first_slice",
+  "authority": {
+    "supply_planning": "cloudmold-supply-planning",
+    "authentication_quality": "cloudmold-quality"
+  },
+  "privacy": {
+    "evidence_policy": "Only lowercase SHA-256 digests and opaque restricted-store references cross the event boundary.",
+    "forbidden": ["raw image bytes", "raw document text", "personal contact data"]
+  },
+  "event_families": [
+    {
+      "source_system": "cloudmold-supply-planning",
+      "schema_version": 1,
+      "prefix": "supply_planning.",
+      "aggregate_types": [
+        "demand_forecast",
+        "supply_plan",
+        "replenishment_recommendation",
+        "inventory_health_issue"
+      ],
+      "lakehouse_refs": [
+        "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-supply-planning-event.sql",
+        "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-supply-planning-current.sql",
+        "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-supply-planning-readiness.sql"
+      ]
+    },
+    {
+      "source_system": "cloudmold-quality",
+      "schema_version": 1,
+      "prefix": "quality.",
+      "aggregate_types": [
+        "quality_standard",
+        "authenticator_certification",
+        "inspection_task",
+        "quality_capa"
+      ],
+      "lakehouse_refs": [
+        "useful-scripts/yml/yshopping-lakehouse/models/dwd/dwd-canonical-quality-event.sql",
+        "useful-scripts/yml/yshopping-lakehouse/models/dws/dws-canonical-quality-current.sql",
+        "useful-scripts/yml/yshopping-lakehouse/models/ads/ads-canonical-quality-readiness.sql"
+      ]
+    }
+  ],
+  "admission": {
+    "business_kpi_status": "governed_source_only",
+    "promotion_rule": "Do not mark forecast accuracy, authentication accuracy, dispute rate, SKU coverage, TAT or productivity runtime-ready until denominators and adjudicated outcome joins are deployed and snapshot-verified.",
+    "available_first_slice_metrics": [
+      "supply published forecast count",
+      "approved supply plan count",
+      "approved replenishment count",
+      "active inventory issue count",
+      "inspection pass rate",
+      "recheck rate"
+    ]
+  }
+}

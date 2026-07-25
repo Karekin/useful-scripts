@@ -95,6 +95,13 @@
       "owner": "cloudmold-commerce"
     },
     {
+      "skill_id": "skill.cloudmold.cross-channel.local-demo.v1",
+      "path": "cloudmold-cross-channel-local-demo",
+      "manifest": "cloudmold-cross-channel-local-demo/skill.json",
+      "status": "partial",
+      "owner": "cloudmold-commerce-data"
+    },
+    {
       "skill_id": "skill.cloudmold.dreamplant.knowledge.v1",
       "path": "cloudmold-dreamplant-knowledge",
       "manifest": "cloudmold-dreamplant-knowledge/skill.json",
