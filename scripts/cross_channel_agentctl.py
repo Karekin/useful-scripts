@@ -34,6 +34,17 @@ SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 EXECUTE_ENVIRONMENTS = {"local", "demo", "test"}
 TERMINAL_SCOPES = {"LOCAL_TEST", "DEMO_TEST", "TEST"}
 EXECUTABLE_AVAILABILITY = "IMPLEMENTED_AND_TESTED"
+RAW_DELIVERY_PII_FIELDS = {"receiverName", "receiverMobile", "receiverAddress"}
+RESTRICTED_CONSUMER_FIELDS = {
+    "inspectionTaskId",
+    "qualityStandardVersion",
+    "inspectionDecision",
+    "evidenceToken",
+    "qualityEvidence",
+    "qualityEvidenceUri",
+    "internalTaskId",
+    "operatorTaskId",
+}
 
 
 class CrossChannelAgentError(RuntimeError):
@@ -183,6 +194,25 @@ def validate_contracts(
         seen.add(stage_id)
 
     _require(bindings.get("schema_version") == 1, "bindings schema_version must be 1")
+    consumer_policy = bindings.get("consumer_data_policy")
+    _require(isinstance(consumer_policy, dict), "consumer_data_policy is required")
+    _require(
+        consumer_policy.get("raw_delivery_pii_forbidden") is True,
+        "consumer contracts must forbid raw delivery PII",
+    )
+    _require(
+        consumer_policy.get("restricted_quality_evidence_forbidden") is True,
+        "consumer contracts must forbid restricted quality evidence",
+    )
+    _require(
+        consumer_policy.get("internal_task_ids_forbidden") is True,
+        "consumer contracts must forbid internal task IDs",
+    )
+    _require(
+        consumer_policy.get("delivery_address_capability")
+        == "DEFERRED_ADDRESS_VAULT_TOKEN",
+        "delivery address must remain deferred to Address Vault token",
+    )
     http_bindings = bindings.get("bindings")
     external_bindings = bindings.get("external_evidence_bindings")
     _require(isinstance(http_bindings, dict), "HTTP bindings are required")
@@ -206,6 +236,20 @@ def validate_contracts(
                 binding.get("method") in {"GET", "POST"},
                 f"{stage['id']}: HTTP method must be GET or POST",
             )
+            request_fields = set(binding.get("request_fields", []))
+            response_fields = set(binding.get("response_fields", []))
+            sku_response_fields = set(binding.get("sku_response_fields", []))
+            _require(
+                not request_fields.intersection(RAW_DELIVERY_PII_FIELDS),
+                f"{stage['id']}: raw delivery PII is forbidden",
+            )
+            restricted = (response_fields | sku_response_fields).intersection(
+                RESTRICTED_CONSUMER_FIELDS
+            )
+            _require(
+                not restricted,
+                f"{stage['id']}: restricted consumer fields are forbidden: {sorted(restricted)}",
+            )
         if binding.get("availability") != EXECUTABLE_AVAILABILITY:
             blockers.append(
                 {
@@ -213,6 +257,27 @@ def validate_contracts(
                     "availability": binding.get("availability", "MISSING"),
                 }
             )
+    order_create = http_bindings.get("app.order.create", {})
+    _require(
+        set(order_create.get("forbidden_request_fields", []))
+        == RAW_DELIVERY_PII_FIELDS,
+        "app.order.create must explicitly forbid raw delivery PII fields",
+    )
+    _require(
+        order_create.get("deferred_capability") == "ADDRESS_VAULT_DELIVERY_TOKEN",
+        "app.order.create must defer delivery address to Address Vault token",
+    )
+    product_detail = http_bindings.get("app.product.detail", {})
+    _require(
+        RESTRICTED_CONSUMER_FIELDS.issubset(
+            set(product_detail.get("forbidden_response_fields", []))
+        ),
+        "app.product.detail must explicitly forbid restricted quality/task fields",
+    )
+    _require(
+        product_detail.get("quality_summary_fields") == ["status"],
+        "app.product.detail quality summary must expose status only",
+    )
 
     _require(
         reconciliation.get("schema_version") == 1,

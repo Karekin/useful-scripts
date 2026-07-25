@@ -20,6 +20,7 @@
     "note": "本地审批文件只适用于 local/demo/test，不替代生产 Risk Authority。"
   },
   "identity_invariant": "Member source account must resolve to one canonical Principal; Principal, Member user and System user IDs must never be equated.",
+  "consumer_data_invariant": "Consumer App contracts must not carry raw delivery PII, restricted quality evidence, or internal task IDs. Real delivery address is deferred to an Address Vault restricted token.",
   "product_invariant": "The same listingId, listingOfferId, canonicalSpuId and canonicalSkuId must be preserved from product read model through checkout, Order, Fulfillment and AfterSale.",
   "money_invariant": "checkout payable = Order payable = captured amount = refunded amount in one ISO-4217 currency using integer minor units.",
   "quantity_invariant": "ordered quantity = accepted return quantity = returned-to-stock quantity; all quantities use the SKU base UOM.",
@@ -34,8 +35,9 @@
       "required_evidence": [
         "memberUserId",
         "principalId",
-        "principalType",
-        "identityLinkVersion"
+        "principalStatus",
+        "sourceSystem",
+        "sourceType"
       ]
     },
     {

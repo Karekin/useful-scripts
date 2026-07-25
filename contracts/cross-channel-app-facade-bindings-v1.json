@@ -3,7 +3,14 @@
   "binding_id": "cloudmold-app-facade-v1",
   "contract_base_path": "/app-api/cloudmold/app",
   "evidence_scope": "LOCAL_REPOSITORY_CONTRACT",
-  "note": "availability 只有在控制器、契约测试和运行冒烟均存在后才能改为 IMPLEMENTED_AND_TESTED；当前文件不得被当作成功证据。",
+  "note": "availability 只有在控制器、契约测试和运行冒烟均存在后才能改为 IMPLEMENTED_AND_TESTED；当前文件不得被当作成功证据。消费者响应不得暴露内部质检证据、内部任务 ID 或收货人原始 PII。",
+  "consumer_data_policy": {
+    "raw_delivery_pii_forbidden": true,
+    "restricted_quality_evidence_forbidden": true,
+    "internal_task_ids_forbidden": true,
+    "delivery_address_capability": "DEFERRED_ADDRESS_VAULT_TOKEN",
+    "deferred_blocker": "真实履约地址必须由独立 Address Vault 生成受限 delivery token；App Commerce 首切片不得接收或保存 receiverName、receiverMobile、receiverAddress。"
+  },
   "bindings": {
     "app.identity.me": {
       "executor": "http",
@@ -14,8 +21,9 @@
       "response_fields": [
         "memberUserId",
         "principalId",
-        "principalType",
-        "identityLinkVersion"
+        "principalStatus",
+        "sourceSystem",
+        "sourceType"
       ]
     },
     "app.session.start": {
@@ -142,6 +150,19 @@
         "qualitySummary",
         "skus"
       ],
+      "forbidden_response_fields": [
+        "inspectionTaskId",
+        "qualityStandardVersion",
+        "inspectionDecision",
+        "evidenceToken",
+        "qualityEvidence",
+        "qualityEvidenceUri",
+        "internalTaskId",
+        "operatorTaskId"
+      ],
+      "quality_summary_fields": [
+        "status"
+      ],
       "sku_response_fields": [
         "canonicalSkuId",
         "skuCode",
@@ -265,11 +286,14 @@
       "path": "/app-api/cloudmold/app/orders",
       "request_fields": [
         "idempotencyKey",
-        "checkoutToken",
+        "checkoutToken"
+      ],
+      "forbidden_request_fields": [
         "receiverName",
         "receiverMobile",
         "receiverAddress"
       ],
+      "deferred_capability": "ADDRESS_VAULT_DELIVERY_TOKEN",
       "response_fields": [
         "orderId",
         "orderNo",
@@ -347,7 +371,7 @@
         "quantity",
         "afterSaleType",
         "reasonCode",
-        "reason"
+        "detailToken"
       ],
       "response_fields": [
         "afterSaleId",

@@ -1,7 +1,9 @@
 from copy import deepcopy
 from datetime import datetime, timezone
 import importlib.util
+import json
 from pathlib import Path
+import tempfile
 import unittest
 
 
@@ -345,6 +347,69 @@ class CrossChannelAgentCtlTest(unittest.TestCase):
         self.assertIn("qualitySummary", bindings["app.product.detail"]["response_fields"])
         self.assertIn("availableQuantity", bindings["app.product.detail"]["sku_response_fields"])
         self.assertIn("qualityStatus", bindings["app.product.detail"]["sku_response_fields"])
+        self.assertEqual(
+            bindings["app.order.create"]["request_fields"],
+            ["idempotencyKey", "checkoutToken"],
+        )
+        self.assertEqual(
+            set(bindings["app.order.create"]["forbidden_request_fields"]),
+            MODULE.RAW_DELIVERY_PII_FIELDS,
+        )
+        self.assertEqual(
+            set(bindings["app.identity.me"]["response_fields"]),
+            {
+                "memberUserId",
+                "principalId",
+                "principalStatus",
+                "sourceSystem",
+                "sourceType",
+            },
+        )
+        self.assertTrue(
+            MODULE.RESTRICTED_CONSUMER_FIELDS.issubset(
+                set(bindings["app.product.detail"]["forbidden_response_fields"])
+            )
+        )
+
+    def test_contract_validation_rejects_raw_pii_and_restricted_evidence(self):
+        root = Path(__file__).resolve().parents[1]
+        scenario_path = root / "contracts" / "cross-channel-agent-scenario-v1.json"
+        reconciliation_path = (
+            root
+            / "yml"
+            / "yshopping-lakehouse"
+            / "contracts"
+            / "yshopping-cross-channel-agent-reconciliation-v1.json"
+        )
+        invalid_variants = []
+        raw_pii = deepcopy(self.contracts["bindings"])
+        raw_pii["bindings"]["app.order.create"]["request_fields"].append(
+            "receiverMobile"
+        )
+        invalid_variants.append((raw_pii, "raw delivery PII"))
+        restricted = deepcopy(self.contracts["bindings"])
+        restricted["bindings"]["app.product.detail"]["response_fields"].append(
+            "inspectionTaskId"
+        )
+        invalid_variants.append((restricted, "restricted consumer fields"))
+
+        for invalid_bindings, expected_error in invalid_variants:
+            with self.subTest(expected_error=expected_error):
+                with tempfile.TemporaryDirectory() as directory:
+                    bindings_path = Path(directory) / "bindings.json"
+                    bindings_path.write_text(
+                        json.dumps(invalid_bindings, ensure_ascii=False),
+                        encoding="utf-8",
+                    )
+                    with self.assertRaisesRegex(
+                        MODULE.CrossChannelAgentError,
+                        expected_error,
+                    ):
+                        MODULE.validate_contracts(
+                            scenario_path,
+                            bindings_path,
+                            reconciliation_path,
+                        )
 
     def test_plan_is_deterministic_and_fail_closed(self):
         first = MODULE.build_plan(RUN_ID, "test", self.contracts)

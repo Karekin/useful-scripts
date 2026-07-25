@@ -21,6 +21,10 @@ remain identical across the admin system, UniApp, Agent ledger and lakehouse.
   fallback, or fixture data. The terminal ledger must be non-simulated and non-empty.
 - A binding remains unavailable until its controller, contract test and runtime smoke
   all exist. `gate-execute` fails closed while any binding is unavailable.
+- Consumer App requests and responses must not carry raw receiver name/mobile/address,
+  restricted quality evidence, or internal task IDs. Real delivery stays blocked until
+  an Address Vault can issue a restricted delivery token; the first Order slice accepts
+  only `idempotencyKey` and `checkoutToken`.
 
 ## Machine contracts
 
