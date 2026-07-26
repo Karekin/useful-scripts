@@ -1,5 +1,6 @@
 {
   "contract_id": "cloudmold.production-p4.trust-policy.v1",
   "policy_status": "BLOCKED_PENDING_PRODUCTION_TRUST_ANCHORS",
-  "signers": []
+  "signers": [],
+  "storage_attestors": []
 }

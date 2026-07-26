@@ -37,6 +37,14 @@ SELECT
                   THEN mae END) AS DECIMAL(24,6)) AS average_mae,
     COUNT(DISTINCT CASE WHEN aggregate_type='supply_plan_scenario' THEN aggregate_id END)
         AS evaluated_scenario_count,
+    COUNT(DISTINCT CASE WHEN aggregate_type='supply_plan_scenario_recommendation'
+                         THEN aggregate_id END) AS scenario_recommendation_count,
+    COUNT(DISTINCT CASE WHEN aggregate_type='supply_plan_scenario_recommendation'
+                         AND constraint_violations_json IN ('[]', '')
+                         THEN aggregate_id END) AS feasible_scenario_recommendation_count,
+    CAST(AVG(CASE WHEN aggregate_type='supply_plan_scenario_recommendation'
+                  THEN worst_case_service_level_basis_points END) AS DECIMAL(18,6))
+        AS average_worst_case_service_level_basis_points,
     CAST(AVG(CASE WHEN aggregate_type='supply_plan_scenario'
                   THEN projected_service_level_basis_points END) AS DECIMAL(18,6))
         AS average_projected_service_level_basis_points,

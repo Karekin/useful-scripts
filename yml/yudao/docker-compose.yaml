@@ -111,6 +111,7 @@ services:
       - >-
         export CLOUDMOLD_RPC_SHARED_SECRET="$$(</run/secrets/cloudmold_rpc_shared_secret)";
         exec java $${JAVA_OPTS} -jar app.jar --spring.profiles.active=local
+        --yudao.captcha.enable=$${YUDAO_CAPTCHA_ENABLE}
         --cloudmold.agent-control.enabled=$${CLOUDMOLD_AGENT_CONTROL_ENABLED}
         --cloudmold.agent-control.action-submission-enabled=$${CLOUDMOLD_AGENT_CONTROL_ACTION_SUBMISSION_ENABLED}
         --cloudmold.agent-control.runtime.enabled=$${CLOUDMOLD_AGENT_CONTROL_RUNTIME_ENABLED}
@@ -122,6 +123,8 @@ services:
       CLOUDMOLD_RPC_READINESS_MARKER: /tmp/cloudmold-rpc-ready
       # Agent Control is fail-closed. Local/test operators must opt in to the
       # business-card API and each autonomous runtime separately.
+      # Browser smoke tests run against this loopback-only demo stack.
+      YUDAO_CAPTCHA_ENABLE: ${YUDAO_CAPTCHA_ENABLE:-false}
       CLOUDMOLD_AGENT_CONTROL_ENABLED: ${CLOUDMOLD_AGENT_CONTROL_ENABLED:-false}
       CLOUDMOLD_AGENT_CONTROL_ACTION_SUBMISSION_ENABLED: ${CLOUDMOLD_AGENT_CONTROL_ACTION_SUBMISSION_ENABLED:-false}
       CLOUDMOLD_AGENT_CONTROL_RUNTIME_ENABLED: ${CLOUDMOLD_AGENT_CONTROL_RUNTIME_ENABLED:-false}
@@ -137,6 +140,8 @@ services:
       CLOUDMOLD_RPC_GROUP: cloudmold-compose-internal
       CLOUDMOLD_DUBBO_REGISTRY: nacos://yudao-nacos:8848
       CLOUDMOLD_DUBBO_REGISTRY_GROUP: CLOUDMOLD_DUBBO
+      # The 得物 V1 demo listings are published on the consumer YSHOPPING channel.
+      CLOUDMOLD_APP_COMMERCE_CHANNEL_CODE: ${CLOUDMOLD_APP_COMMERCE_CHANNEL_CODE:-YSHOPPING}
       SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL: jdbc:mysql://yudao-mysql:3306/ruoyi-vue-pro?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true
       SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_USERNAME: root
       SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD: "123456"

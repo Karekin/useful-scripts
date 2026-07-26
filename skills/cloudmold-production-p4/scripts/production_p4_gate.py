@@ -22,9 +22,16 @@ CONTRACT_ID = "cloudmold.production-p4.evidence.v1"
 READINESS_ID = "cloudmold.production-p4.readiness.v1"
 GATES_ID = "cloudmold.production-p4.gates.v1"
 TRUST_ID = "cloudmold.production-p4.trust-policy.v1"
+IMMUTABLE_ATTESTATION_ID = "cloudmold.immutable-storage-attestation.v1"
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 IMAGE_DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
 COMMIT = re.compile(r"^[0-9a-f]{40}(?:[0-9a-f]{24})?$")
+IMMUTABLE_PROVIDERS = {
+    "ALIBABA_CLOUD_OSS_WORM",
+    "AWS_S3_OBJECT_LOCK",
+    "AZURE_IMMUTABLE_BLOB",
+    "GCS_BUCKET_LOCK",
+}
 BASE = Path(__file__).resolve().parents[1]
 DEFAULT_GATES = BASE / "references" / "production-p4-gates-v1.json"
 DEFAULT_TRUST = BASE / "references" / "production-trust-policy-v1.json"
@@ -181,6 +188,146 @@ def _verify_signature(public_key: Path, signature: Path, payload: bytes) -> str 
     return None
 
 
+def _trusted_storage_attestor(
+    trust_path: Path,
+    attestor_id: Any,
+    account: Any,
+    region: Any,
+    immutable_provider: Any,
+    errors: list[str],
+) -> Path | None:
+    trust = _load(trust_path)
+    if trust.get("contract_id") != TRUST_ID:
+        errors.append(f"trust policy contract_id must be {TRUST_ID}")
+        return None
+    attestors = trust.get("storage_attestors")
+    if not isinstance(attestors, list) or not attestors:
+        errors.append("no reviewed immutable-storage attestors are configured")
+        return None
+    matches = [
+        item
+        for item in attestors
+        if isinstance(item, dict) and item.get("attestor_id") == attestor_id
+    ]
+    if len(matches) != 1:
+        errors.append(
+            "immutable-source attestor_id is not uniquely pinned by the trust policy"
+        )
+        return None
+    attestor = matches[0]
+    if attestor.get("provider") not in {
+        "ALIBABA_CLOUD_KMS_ASYMMETRIC",
+        "APPROVED_ENTERPRISE_CA",
+    }:
+        errors.append(
+            "immutable-source attestor is not an approved production trust source"
+        )
+    if account not in attestor.get("allowed_production_accounts", []):
+        errors.append(
+            "production account is not allowed by immutable-source attestor policy"
+        )
+    if region not in attestor.get("allowed_regions", []):
+        errors.append(
+            "production region is not allowed by immutable-source attestor policy"
+        )
+    if immutable_provider not in attestor.get("allowed_immutable_providers", []):
+        errors.append(
+            "immutable store provider is not allowed by immutable-source attestor policy"
+        )
+    return _safe_file(
+        trust_path.parent,
+        attestor.get("public_key_ref"),
+        attestor.get("public_key_sha256"),
+        "immutable_source_attestor_public_key",
+        errors,
+    )
+
+
+def _validate_immutable_source(
+    source: Any,
+    checked: datetime,
+    base: Path,
+    trust_path: Path,
+    account: Any,
+    region: Any,
+    artifact_sha256: Any,
+    label: str,
+    errors: list[str],
+) -> None:
+    source = source if isinstance(source, dict) else {}
+    if source.get("provider") not in IMMUTABLE_PROVIDERS:
+        errors.append(f"{label}.provider must be an approved immutable store")
+    for key in ("bucket", "object_key", "version_id", "etag"):
+        if not isinstance(source.get(key), str) or not source[key].strip():
+            errors.append(f"{label}.{key} is required")
+    retention = _utc(source.get("retention_until"))
+    if retention is None:
+        errors.append(f"{label}.retention_until must be UTC")
+    elif retention <= checked:
+        errors.append(f"{label}.retention_until must be later than checked_at")
+    attestation_path = _safe_file(
+        base,
+        source.get("attestation_ref"),
+        source.get("attestation_sha256"),
+        f"{label}.attestation",
+        errors,
+    )
+    signature_path = _safe_file(
+        base,
+        source.get("attestation_signature_ref"),
+        source.get("attestation_signature_sha256"),
+        f"{label}.attestation_signature",
+        errors,
+    )
+    public_key = _trusted_storage_attestor(
+        trust_path,
+        source.get("attestor_id"),
+        account,
+        region,
+        source.get("provider"),
+        errors,
+    )
+    if attestation_path is None:
+        return
+    try:
+        attestation = _load(attestation_path)
+    except EvidenceError as exc:
+        errors.append(f"{label}.attestation is invalid: {exc}")
+        return
+    expected = {
+        "contract_id": IMMUTABLE_ATTESTATION_ID,
+        "attestor_id": source.get("attestor_id"),
+        "provider": source.get("provider"),
+        "production_account_id": account,
+        "region": region,
+        "bucket": source.get("bucket"),
+        "object_key": source.get("object_key"),
+        "version_id": source.get("version_id"),
+        "etag": source.get("etag"),
+        "artifact_sha256": artifact_sha256,
+        "retention_until": source.get("retention_until"),
+    }
+    for key, value in expected.items():
+        if attestation.get(key) != value:
+            errors.append(
+                f"{label}.attestation.{key} does not match the reviewed evidence"
+            )
+    issued_at = _utc(attestation.get("issued_at"))
+    if issued_at is None:
+        errors.append(f"{label}.attestation.issued_at must be UTC")
+    elif issued_at > checked:
+        errors.append(f"{label}.attestation.issued_at is in the future")
+    if signature_path is not None and public_key is not None:
+        signature_error = _verify_signature(
+            public_key, signature_path, _canonical(attestation)
+        )
+        if signature_error:
+            errors.append(
+                f"{label}.attestation signature is not valid for the pinned "
+                "immutable-storage attestor"
+            )
+
+
 def _base_readiness(checked_at: str, registry: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "contract_id": READINESS_ID,
@@ -285,6 +432,7 @@ def evaluate(
         signature_error = _verify_signature(public_key, signature, canonical)
         if signature_error:
             errors.append(signature_error)
+    trust_established = not errors
 
     expected = {gate["gate_id"]: gate for gate in registry}
     entries = manifest.get("gates")
@@ -324,6 +472,17 @@ def evaluate(
             entry.get("artifact_ref"),
             entry.get("artifact_sha256"),
             f"{label}.artifact",
+            gate_errors,
+        )
+        _validate_immutable_source(
+            entry.get("immutable_source"),
+            checked,
+            base,
+            trust_path,
+            manifest.get("production_account_id"),
+            manifest.get("region"),
+            entry.get("artifact_sha256"),
+            f"{label}.immutable_source",
             gate_errors,
         )
         assertions = entry.get("assertions")
@@ -370,6 +529,8 @@ def evaluate(
 
     missing = sorted(set(expected) - seen)
     errors.extend(f"missing required production gate: {gate_id}" for gate_id in missing)
+    if not trust_established:
+        verified = []
     verified = sorted(verified)
     result["verified_gate_ids"] = verified
     result["verified_gate_count"] = len(verified)

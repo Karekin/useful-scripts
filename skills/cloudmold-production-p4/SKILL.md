@@ -14,9 +14,14 @@ LOCAL/DEMO/TEST readiness.
 - Production mutation requires a separate unexpired Risk Authority approval bound to
   the exact account, region, environment, action, resource scope, budget and rollback.
 - Evidence must be observed in `production`, non-fixture, fresh, hashed, independently
-  verified, and signed by an asymmetric public key pinned in the reviewed trust policy.
+  verified, retained in an immutable object-store version with an active retention lock,
+  and signed by an asymmetric public key pinned in the reviewed trust policy. The object
+  version and retention lock must also have a storage control-plane attestation whose
+  signer is independently pinned; manifest fields alone are not proof of immutability.
 - A locally generated manifest, synthetic timestamp, self-declared identity, screenshot,
   HTTP 200, empty dataset, or test PSP/WMS result earns no production credit.
+- Structurally complete gate entries still score 0/16 when the global production trust
+  anchor, manifest signature, collector attestation, or deployment identity is invalid.
 - Secrets, private keys, PSP credentials and customer PII must never be put in evidence.
 
 ## Denominator

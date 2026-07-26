@@ -39,6 +39,10 @@ class SupplyQualityDecisionModelsTest(unittest.TestCase):
             self.assertIn(field, dwd)
         self.assertIn("forecast_evaluation_count", ads)
         self.assertIn("inventory_health_scan_count", ads)
+        self.assertIn("scenario_recommendation_count", ads)
+        self.assertIn("average_worst_case_service_level_basis_points", ads)
+        self.assertIn("supply_planning.plan_scenario.recommended", dwd)
+        self.assertIn("execution_authorized", dwd)
 
     def test_quality_metrics_use_final_ground_truth(self):
         ads = (ROOT / "models/ads/ads-canonical-quality-readiness.sql").read_text(

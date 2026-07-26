@@ -32,6 +32,7 @@ SELECT
             WHEN 'supply_planning.forecast.published' THEN 'PUBLISHED'
             WHEN 'supply_planning.plan.created' THEN 'DRAFT'
             WHEN 'supply_planning.plan.approved' THEN 'APPROVED'
+            WHEN 'supply_planning.plan_scenario.recommended' THEN 'PROPOSED'
             WHEN 'supply_planning.replenishment.created' THEN 'PROPOSED'
             WHEN 'supply_planning.inventory_issue.opened' THEN 'OPEN'
         END
@@ -72,6 +73,9 @@ SELECT
     ,CAST(get_json_string(payload, '$.mae') AS DECIMAL(24,6)) AS mae
     ,get_json_string(payload, '$.scenario_id') AS scenario_id
     ,get_json_string(payload, '$.scenario_code') AS scenario_code
+    ,get_json_string(payload, '$.recommended_scenario_id') AS recommended_scenario_id
+    ,get_json_string(payload, '$.candidate_scenario_ids') AS candidate_scenario_ids_json
+    ,get_json_string(payload, '$.candidate_set_sha256') AS candidate_set_sha256
     ,get_json_string(payload, '$.selected_scenario_id') AS selected_scenario_id
     ,get_json_string(payload, '$.selected_by_principal_id') AS selected_by_principal_id
     ,get_json_string(payload, '$.release_principal_id') AS release_principal_id
@@ -81,6 +85,21 @@ SELECT
         AS projected_shortage_quantity
     ,CAST(get_json_string(payload, '$.projected_service_level_basis_points') AS INT)
         AS projected_service_level_basis_points
+    ,CAST(get_json_string(payload, '$.worst_case_service_level_basis_points') AS INT)
+        AS worst_case_service_level_basis_points
+    ,CAST(get_json_string(payload, '$.target_service_level_floor_basis_points') AS INT)
+        AS target_service_level_floor_basis_points
+    ,CAST(get_json_string(payload, '$.max_projected_cost_minor') AS BIGINT)
+        AS max_projected_cost_minor
+    ,CAST(get_json_string(payload, '$.demand_stress_basis_points') AS INT)
+        AS demand_stress_basis_points
+    ,CAST(get_json_string(payload, '$.supply_availability_basis_points') AS INT)
+        AS supply_availability_basis_points
+    ,CAST(get_json_string(payload, '$.sensitivity_basis_points') AS INT)
+        AS sensitivity_basis_points
+    ,get_json_string(payload, '$.constraint_violations') AS constraint_violations_json
+    ,CAST(get_json_string(payload, '$.execution_authorized') AS BOOLEAN)
+        AS execution_authorized
     ,CAST(get_json_string(payload, '$.projected_cost_minor') AS BIGINT)
         AS projected_cost_minor
     ,get_json_string(payload, '$.solver_type') AS solver_type
