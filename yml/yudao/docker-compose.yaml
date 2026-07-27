@@ -105,6 +105,15 @@ services:
         condition: service_healthy
       yudao-redis:
         condition: service_started
+      temporal:
+        condition: service_healthy
+        required: false
+      # Agent Control creates strict SkillTask RPC references when enabled.
+      # With the agent profile active, wait for that external authority first;
+      # without the profile this optional dependency stays out of the base stack.
+      cloudmold-skill-task-executor:
+        condition: service_healthy
+        required: false
     command:
       - /bin/bash
       - -c
@@ -117,6 +126,7 @@ services:
         --cloudmold.agent-control.runtime.enabled=$${CLOUDMOLD_AGENT_CONTROL_RUNTIME_ENABLED}
         --cloudmold.agent-control.runtime.legacy-erp-bridge-enabled=$${CLOUDMOLD_AGENT_CONTROL_RUNTIME_LEGACY_ERP_BRIDGE_ENABLED}
         --cloudmold.agent-control.approval-workflow.enabled=$${CLOUDMOLD_AGENT_APPROVAL_WORKFLOW_ENABLED}
+        --cloudmold.ai-operations.temporal.enabled=$${CLOUDMOLD_AI_OPERATIONS_TEMPORAL_ENABLED}
     environment:
       CLOUDMOLD_RPC_ENABLED: "true"
       CLOUDMOLD_RPC_EXPORT_ENABLED: "true"
@@ -132,6 +142,11 @@ services:
       # The BPM dependency is packaged through the isolated Maven profile. Its
       # Agent Control adapter remains fail-closed unless explicitly enabled.
       CLOUDMOLD_AGENT_APPROVAL_WORKFLOW_ENABLED: ${CLOUDMOLD_AGENT_APPROVAL_WORKFLOW_ENABLED:-false}
+      CLOUDMOLD_AI_OPERATIONS_TEMPORAL_ENABLED: ${CLOUDMOLD_AI_OPERATIONS_TEMPORAL_ENABLED:-false}
+      CLOUDMOLD_TEMPORAL_TARGET: temporal:7233
+      CLOUDMOLD_TEMPORAL_NAMESPACE: default
+      CLOUDMOLD_TEMPORAL_TASK_QUEUE: cloudmold-ai-operations
+      YUDAO_WEB_ADMIN_UI_URL: ${YUDAO_WEB_ADMIN_UI_URL:-http://127.0.0.1:5666/#}
       # The issuer and durable executor must share the same externally supplied
       # approval authority secret. Empty configuration keeps issuance fail-closed.
       CLOUDMOLD_SKILL_TASK_APPROVAL_HMAC_SECRET: ${CLOUDMOLD_SKILL_TASK_APPROVAL_HMAC_SECRET:-}
@@ -195,10 +210,64 @@ services:
         if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_skill_task_instance' AND column_name='definition_sha256'")" = "0" ]; then
           mysql -hyudao-mysql -uroot ruoyi-vue-pro < /migration-69.sql
         fi
+        mysql -hyudao-mysql -uroot ruoyi-vue-pro < /migration-93.sql
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_skill_task_instance' AND column_name='approval_scope_definition_closure_sha256'")" = "0" ]; then
+          mysql -hyudao-mysql -uroot ruoyi-vue-pro < /migration-107.sql
+        fi
+        mysql -hyudao-mysql -uroot ruoyi-vue-pro < /migration-108.sql
+        mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-112.sql
     volumes:
       - ../../../yudao-cloud/sql/cloudmold/V20260718_67__durable_skill_task_executor.sql:/migration-67.sql:ro
       - ../../../yudao-cloud/cloudmold-module-skill-task/cloudmold-module-skill-task-server/src/main/resources/db/migration/V20260719_68__durable_skill_task_composition.sql:/migration-68.sql:ro
       - ../../../yudao-cloud/cloudmold-module-skill-task/cloudmold-module-skill-task-server/src/main/resources/db/migration/V20260719_69__skill_task_terminal_proof.sql:/migration-69.sql:ro
+      - ../../../yudao-cloud/cloudmold-module-skill-task/cloudmold-module-skill-task-server/src/main/resources/db/migration/V20260725_93__skill_task_one_time_execution_permit.sql:/migration-93.sql:ro
+      - ../../../yudao-cloud/cloudmold-module-skill-task/cloudmold-module-skill-task-server/src/main/resources/db/migration/V20260726_107__skill_task_child_approval_definition_scope.sql:/migration-107.sql:ro
+      - ../../../yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/resources/db/migration/V20260726_108__ai_operations_temporal_schedule.sql:/migration-108.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260726_112__dewu_agent_approval_operating_principal.sql:/migration-112.sql:ro
+    networks:
+      - yudao_network
+
+  # Development Temporal authority. Production deploys temporalio/server with
+  # independently managed persistence; auto-setup is intentionally local-only.
+  temporal:
+    profiles: [ "agent" ]
+    image: temporalio/auto-setup:1.29.6
+    container_name: cloudmold-temporal
+    restart: unless-stopped
+    depends_on:
+      yudao-mysql:
+        condition: service_healthy
+    environment:
+      DB: mysql8
+      DB_PORT: "3306"
+      MYSQL_USER: root
+      MYSQL_PWD: "123456"
+      MYSQL_SEEDS: yudao-mysql
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/docker.yaml
+    ports:
+      - "127.0.0.1:7233:7233"
+    healthcheck:
+      test: [ "CMD-SHELL", "temporal operator cluster health --address temporal:7233 >/dev/null 2>&1" ]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+    networks:
+      - yudao_network
+
+  temporal-ui:
+    profiles: [ "agent" ]
+    image: temporalio/ui:2.52.1
+    container_name: cloudmold-temporal-ui
+    restart: unless-stopped
+    depends_on:
+      temporal:
+        condition: service_healthy
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://127.0.0.1:5666
+    ports:
+      - "127.0.0.1:8233:8080"
     networks:
       - yudao_network
 
@@ -213,8 +282,6 @@ services:
     restart: unless-stopped
     depends_on:
       yudao-nacos:
-        condition: service_healthy
-      yudao-provider:
         condition: service_healthy
       cloudmold-skill-task-migrator:
         condition: service_completed_successfully

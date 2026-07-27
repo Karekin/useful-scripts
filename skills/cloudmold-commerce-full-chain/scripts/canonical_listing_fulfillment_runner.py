@@ -165,12 +165,18 @@ def inventory_payload(run_id: str, index: int, operation: str, sku_id: str,
 
 
 def place_from_listing_payload(run_id: str, index: int, sku_id: str, listing_id: str,
-                               listing_offer_id: str) -> dict:
+                               listing_offer_id: str, address_ref: str | None = None,
+                               address_snapshot_version: int = 1,
+                               destination_region_code: str = "310000") -> dict:
     return {
         "operation": "PLACE_FROM_LISTING",
         **metadata(run_id, index, "order", "PLACE_FROM_LISTING"),
         "runId": run_id,
         "buyerId": f"internal-buyer:{run_id}",
+        "addressRef": address_ref or str(uuid.uuid5(
+            uuid.NAMESPACE_URL, f"cloudmold:{run_id}:address:snapshot")),
+        "addressSnapshotVersion": address_snapshot_version,
+        "destinationRegionCode": destination_region_code,
         "items": [{
             "canonicalSkuId": sku_id,
             "quantity": QUANTITY,

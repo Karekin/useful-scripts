@@ -500,7 +500,9 @@ def execute_forward_to_completed(recorder: CheckpointRecorder, args, manifest: d
         "TEST_FIXTURE", args.run_id, "fixture-line", f"FIXTURE-{args.run_id}"))
     validate_inventory(receive, ("10.000000", "0.000000", "10.000000", 1), "RECEIVE")
 
-    place = place_from_listing_payload(args.run_id, 8, sku_id, listing_id, offer_id)
+    place = place_from_listing_payload(
+        args.run_id, 8, sku_id, listing_id, offer_id,
+        args.address_ref, args.address_snapshot_version, args.destination_region_code)
     if args.benefit_mode != "none":
         place["items"][0]["lineKey"] = "line-1"
         place["discountAmountMinor"] = GOVERNED_DISCOUNT_MINOR
@@ -687,7 +689,8 @@ def execute_multi_line_forward_to_completed(recorder: CheckpointRecorder, args,
     offer_by_sku = {value["canonicalSkuId"]: value["listingOfferId"]
                     for value in listing["offers"]}
     place = place_from_listing_payload(
-        args.run_id, 9, sku_ids[0], listing_id, offer_by_sku[sku_ids[0]])
+        args.run_id, 9, sku_ids[0], listing_id, offer_by_sku[sku_ids[0]],
+        args.address_ref, args.address_snapshot_version, args.destination_region_code)
     place["items"] = [
         {
             "canonicalSkuId": sku_id,

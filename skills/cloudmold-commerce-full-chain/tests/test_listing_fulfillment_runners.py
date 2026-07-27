@@ -68,9 +68,22 @@ class ListingFulfillmentRunnerUnitTest(unittest.TestCase):
         }])
         order = HAPPY.place_from_listing_payload("runner01", 8, "sku-1", "listing-1", "offer-1")
         self.assertEqual(order["operation"], "PLACE_FROM_LISTING")
+        self.assertEqual(
+            order["addressRef"],
+            "f2bd3897-1242-55bc-81ba-e2933993b501",
+        )
+        self.assertEqual(order["addressSnapshotVersion"], 1)
+        self.assertEqual(order["destinationRegionCode"], "310000")
         self.assertEqual(order["items"][0]["listingId"], "listing-1")
         self.assertEqual(order["items"][0]["listingOfferId"], "offer-1")
         self.assertEqual(order["items"][0]["unitPriceMinor"], 19900)
+        supplied = HAPPY.place_from_listing_payload(
+            "runner01", 8, "sku-1", "listing-1", "offer-1",
+            "7cd6ea25-4319-49a5-84d8-493ee3386acd", 3, "440300",
+        )
+        self.assertEqual(supplied["addressRef"], "7cd6ea25-4319-49a5-84d8-493ee3386acd")
+        self.assertEqual(supplied["addressSnapshotVersion"], 3)
+        self.assertEqual(supplied["destinationRegionCode"], "440300")
 
     def test_listing_publication_start_is_never_after_safe_local_test_cutoff(self):
         listing = HAPPY.listing_create_payload("ycan-001", 1, "sku-1", "spu-1")

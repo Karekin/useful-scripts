@@ -641,6 +641,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--master-ledger", default=os.getenv("CLOUDMOLD_MASTER_LEDGER"))
     parser.add_argument("--warehouse-id")
     parser.add_argument("--owner-id", default="internal-company")
+    parser.add_argument("--address-ref", default=os.getenv("CLOUDMOLD_ADDRESS_REF"))
+    parser.add_argument("--address-snapshot-version", type=int, default=int(os.getenv(
+        "CLOUDMOLD_ADDRESS_SNAPSHOT_VERSION", "1")))
+    parser.add_argument("--destination-region-code", default=os.getenv(
+        "CLOUDMOLD_DESTINATION_REGION_CODE", "310000"))
     parser.add_argument("--timeout", type=int, default=20)
     parser.add_argument("--saga-timeout", type=float, default=120)
     parser.add_argument("--poll-interval", type=float, default=1)
@@ -667,6 +672,15 @@ def main() -> int:
         if args.mode == "execute" and args.flow_mode == "full":
             require(bool(source_evidence),
                     "full execute requires --catalog-ledger from an ACTIVE same-tenant Catalog run")
+            try:
+                uuid.UUID(args.address_ref or "")
+            except ValueError as exc:
+                raise ScenarioError(
+                    "full execute requires --address-ref from an owned App address snapshot") from exc
+            require(args.address_snapshot_version > 0,
+                    "address snapshot version must be positive")
+            require(bool(re.fullmatch(r"[0-9]{6}", args.destination_region_code)),
+                    "destination region code must contain exactly 6 digits")
         if args.mode == "plan":
             result = {
                 "scenario": SCENARIO_NAME,

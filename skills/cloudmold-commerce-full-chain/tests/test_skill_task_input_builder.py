@@ -51,15 +51,52 @@ class SkillTaskInputBuilderTest(unittest.TestCase):
         return json.loads(path.read_text(encoding="utf-8"))
 
     def test_builds_all_fixed_child_inputs_with_replaceable_identity_paths(self):
-        value = BUILDER.build_input("ai0719r3a01", "1", "3", "2026-07-19T00:00:00Z")
+        address_ref = "11111111-1111-4111-8111-111111111111"
+        value = BUILDER.build_input(
+            "ai0719r3a01", "1", "3", "2026-07-19T00:00:00Z", address_ref)
 
         self.assertEqual(len(value["catalog"]["definitions"]), 6)
-        self.assertEqual(len(value["catalog"]["lifecycle"]), 10)
+        self.assertEqual(len(value["catalog"]["lifecycle"]), 16)
+        self.assertEqual(
+            {definition["sizeGroupCode"] for definition in value["catalog"]["definitions"]},
+            {"WOMEN_TOP_3695125F"},
+        )
+        self.assertEqual(
+            {definition["colorCode"] for definition in value["catalog"]["definitions"]},
+            {"BLACK_3695125F", "WHITE_3695125F"},
+        )
+        next_catalog = BUILDER.build_catalog("ai0719r3a02")
+        self.assertNotEqual(
+            value["catalog"]["definitions"][0]["sizeGroupCode"],
+            next_catalog["definitions"][0]["sizeGroupCode"],
+        )
+        self.assertEqual(
+            [command["entityType"] for command in value["catalog"]["lifecycle"]],
+            [
+                "STYLE", "SPU", "SPU", "SIZE_GROUP",
+                "SIZE", "SIZE", "SIZE", "COLOR", "COLOR",
+                "SKU", "SKU", "SKU", "SKU", "SKU", "SKU", "SPU",
+            ],
+        )
         self.assertEqual(len(value["projection"]["plans"]), 6)
         self.assertEqual(len(value["master"]["merchantCommands"]), 6)
+        self.assertEqual(len(value["master"]["warehouseCommands"]), 7)
+        self.assertEqual(
+            [command["operation"] for command in value["master"]["warehouseCommands"]],
+            [
+                "DEFINE_WAREHOUSE",
+                "CHANGE_WAREHOUSE_STATUS",
+                "DEFINE_ZONE",
+                "CHANGE_ZONE_STATUS",
+                "DEFINE_LOCATION",
+                "CHANGE_LOCATION_STATUS",
+                "LINK_SOURCE",
+            ],
+        )
         self.assertEqual(len(value["aftersale"]["commands"]), 25)
         self.assertIn("publisherRef", value["aftersale"]["commands"][5])
         self.assertIn("listingId", value["aftersale"]["commands"][7]["items"][0])
+        self.assertEqual(value["aftersale"]["commands"][7]["addressRef"], address_ref)
         self.assertIn("reservationId", value["aftersale"]["commands"][12]["items"][0])
         self.assertIn("listingOfferId", value["readback"]["listing"]["validation"])
         self.assertEqual(value["runIds"]["readback"], "ai0719r3a01-readback")
@@ -111,7 +148,17 @@ class SkillTaskInputBuilderTest(unittest.TestCase):
 
     def test_rejects_run_ids_outside_the_governed_shape(self):
         with self.assertRaisesRegex(ValueError, "6-20 characters"):
-            BUILDER.build_input("bad id", "1", "3", "2026-07-19T00:00:00Z")
+            BUILDER.build_input(
+                "bad id", "1", "3", "2026-07-19T00:00:00Z",
+                "11111111-1111-4111-8111-111111111111")
+
+    def test_rejects_missing_or_non_uuid_address_snapshot_reference(self):
+        for address_ref in (None, "", "generated-address"):
+            with self.subTest(address_ref=address_ref):
+                with self.assertRaisesRegex(ValueError, "owned App address snapshot"):
+                    BUILDER.build_input(
+                        "ai0719r3a01", "1", "3", "2026-07-19T00:00:00Z",
+                        address_ref)
 
 
 if __name__ == "__main__":

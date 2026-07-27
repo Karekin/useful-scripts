@@ -191,6 +191,14 @@ def record_child(ledger: AtomicRunLedger, domain: str, command: list[str]) -> di
     return result
 
 
+def stable_child_ledger(domain: str, run_id: str, result: dict,
+                        run_root: Path | None = None) -> str:
+    root = run_root or Path(os.environ.get(
+        "CLOUDMOLD_RUN_DIR", str(Path.home() / ".cloudmold" / "runs")))
+    canonical = root / domain / run_id / "ledger.json"
+    return str(canonical) if canonical.is_file() else result["ledger"]
+
+
 def scenario_plan() -> list[str]:
     return [
         "atomically create the parent run ledger before any child or model write",
@@ -257,23 +265,25 @@ def execute(args: argparse.Namespace, manifest: dict) -> dict:
         catalog = record_child(ledger, "catalog", [
             sys.executable, str(CATALOG_RUNNER), *child_common(args, run_ids["catalog"])
         ])
+        catalog_ledger = stable_child_ledger("catalog", run_ids["catalog"], catalog)
         projection = record_child(ledger, "projection", [
             sys.executable, str(PROJECTION_RUNNER), *child_common(args, run_ids["projection"]),
-            "--catalog-ledger", catalog["ledger"],
+            "--catalog-ledger", catalog_ledger,
         ])
         master = record_child(ledger, "master", [
             sys.executable, str(MASTER_RUNNER), *child_common(args, run_ids["master"]),
             "--system-admin-source-id", args.system_admin_source_id,
             "--erp-warehouse-source-id", args.erp_warehouse_source_id,
-            "--catalog-ledger", catalog["ledger"],
+            "--catalog-ledger", catalog_ledger,
             "--listing-mode", "defer",
         ])
+        master_ledger = stable_child_ledger("merchant-warehouse", run_ids["master"], master)
         aftersales = record_child(ledger, "aftersales", [
             sys.executable, str(AFTERSALES_RUNNER), *child_common(args, run_ids["aftersales"]),
             "--workspace", args.workspace,
             "--endpoint-manifest", args.endpoint_manifest,
-            "--catalog-ledger", catalog["ledger"],
-            "--master-ledger", master["ledger"],
+            "--catalog-ledger", catalog_ledger,
+            "--master-ledger", master_ledger,
             "--saga-timeout", str(args.saga_timeout),
             "--poll-interval", str(args.poll_interval),
         ])

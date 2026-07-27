@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import re
 import sys
+import uuid
 
 from canonical_aftersales_runner import aftersales_payload
 from canonical_catalog_runner import build_payloads as build_catalog_payloads, scenario_identity
@@ -22,7 +23,7 @@ from canonical_listing_fulfillment_runner import (
     place_from_listing_payload,
     transition_payload,
 )
-from canonical_merchant_warehouse_runner import merchant_command, scenario_context
+from canonical_merchant_warehouse_runner import base_command, merchant_command, scenario_context
 
 
 RUN_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{5,19}$")
@@ -32,12 +33,19 @@ QUANTITY = "2.000000"
 
 def build_catalog(run_id: str) -> dict:
     definitions = build_catalog_payloads(run_id)
+    namespace = hashlib.sha256(run_id.encode()).hexdigest()[:8].upper()
+    for definition in definitions:
+        definition["colorCode"] = f"{definition['colorCode']}_{namespace}"
+        definition["sizeGroupCode"] = f"{definition['sizeGroupCode']}_{namespace}"
     correlation_id = definitions[0]["correlationId"]
     occurred_at = scenario_identity(run_id)[2]
     specs = [
         ("STYLE", "ACTIVATE", 1),
         ("SPU", "SUBMIT", 1),
         ("SPU", "APPROVE", 2),
+        ("SIZE_GROUP", "ACTIVATE", 1),
+        *(("SIZE", "ACTIVATE", 1) for _ in range(3)),
+        *(("COLOR", "ACTIVATE", 1) for _ in range(2)),
         *(("SKU", "ACTIVATE", 1) for _ in range(6)),
         ("SPU", "ACTIVATE", 3),
     ]
@@ -82,6 +90,81 @@ def build_master(run_id: str, system_admin_source_id: str,
         merchant_command("ACTIVATE_SHOP", run_id, 6, correlation_id, occurred_at,
                          shopId=PLACEHOLDER_ID, expectedVersion=1),
     ]
+    warehouse_commands = [
+        {
+            **base_command("DEFINE_WAREHOUSE", run_id, 1, correlation_id, occurred_at),
+            "warehouse": {
+                "warehouseCode": "CM-" + digest[:12].upper(),
+                "name": f"Y-Shopping durable warehouse {run_id}",
+                "warehouseType": "FULFILLMENT",
+                "timezone": "Asia/Shanghai",
+            },
+        },
+        {
+            **base_command("CHANGE_WAREHOUSE_STATUS", run_id, 2, correlation_id, occurred_at),
+            "warehouse": {
+                "warehouseId": PLACEHOLDER_ID,
+                "status": "ACTIVE",
+                "expectedVersion": 1,
+            },
+        },
+        {
+            **base_command("DEFINE_ZONE", run_id, 3, correlation_id, occurred_at),
+            "zone": {
+                "warehouseId": PLACEHOLDER_ID,
+                "zoneCode": "PICK-01",
+                "name": "Pick zone 01",
+                "zoneType": "PICKING",
+            },
+        },
+        {
+            **base_command("CHANGE_ZONE_STATUS", run_id, 4, correlation_id, occurred_at),
+            "zone": {
+                "zoneId": PLACEHOLDER_ID,
+                "status": "ACTIVE",
+                "expectedVersion": 1,
+            },
+        },
+        {
+            **base_command("DEFINE_LOCATION", run_id, 5, correlation_id, occurred_at),
+            "location": {
+                "warehouseId": PLACEHOLDER_ID,
+                "zoneId": PLACEHOLDER_ID,
+                "locationCode": "A01-R01-B01-L01",
+                "name": "A01 R01 B01 L01",
+                "locationType": "PICK_FACE",
+                "aisleCode": "A01",
+                "rackCode": "R01",
+                "bayCode": "B01",
+                "levelCode": "L01",
+                "allowItemMixing": False,
+                "allowLotMixing": False,
+                "capacityQuantity": "1000",
+                "capacityUomCode": "PCS",
+            },
+        },
+        {
+            **base_command("CHANGE_LOCATION_STATUS", run_id, 6, correlation_id, occurred_at),
+            "location": {
+                "locationId": PLACEHOLDER_ID,
+                "status": "ACTIVE",
+                "expectedVersion": 1,
+            },
+        },
+        {
+            **base_command("LINK_SOURCE", run_id, 7, correlation_id, occurred_at),
+            "sourceMapping": {
+                "sourceSystem": "ERP",
+                "sourceType": "WAREHOUSE",
+                "sourceId": erp_warehouse_source_id,
+                "targetType": "WAREHOUSE",
+                "warehouseId": PLACEHOLDER_ID,
+                "validFrom": occurred_at.isoformat().replace("+00:00", "Z"),
+                "verificationRef":
+                    f"erp_warehouse:{erp_warehouse_source_id}:skill-task:{run_id}",
+            },
+        },
+    ]
     return {
         "erpWarehouseSourceId": erp_warehouse_source_id,
         "identityReference": {
@@ -90,6 +173,7 @@ def build_master(run_id: str, system_admin_source_id: str,
             "sourceId": system_admin_source_id,
         },
         "merchantCommands": commands,
+        "warehouseCommands": warehouse_commands,
         "warehouseReference": {
             "sourceSystem": "ERP",
             "sourceType": "WAREHOUSE",
@@ -99,7 +183,7 @@ def build_master(run_id: str, system_admin_source_id: str,
     }
 
 
-def build_aftersale(run_id: str) -> dict:
+def build_aftersale(run_id: str, address_ref: str) -> dict:
     listing = listing_create_payload(
         run_id, 1, PLACEHOLDER_ID, PLACEHOLDER_ID,
         PLACEHOLDER_ID, PLACEHOLDER_ID, PLACEHOLDER_ID)
@@ -117,7 +201,8 @@ def build_aftersale(run_id: str) -> dict:
         inventory_payload(run_id, 7, "RECEIVE", PLACEHOLDER_ID, PLACEHOLDER_ID,
                           PLACEHOLDER_ID, "10.000000", "TEST_FIXTURE", run_id,
                           "fixture-line", f"FIXTURE-{run_id}"),
-        place_from_listing_payload(run_id, 8, PLACEHOLDER_ID, PLACEHOLDER_ID, PLACEHOLDER_ID),
+        place_from_listing_payload(
+            run_id, 8, PLACEHOLDER_ID, PLACEHOLDER_ID, PLACEHOLDER_ID, address_ref),
         inventory_payload(run_id, 9, "RESERVE", PLACEHOLDER_ID, PLACEHOLDER_ID,
                           PLACEHOLDER_ID, QUANTITY, "TRADE_ORDER", PLACEHOLDER_ID,
                           PLACEHOLDER_ID, f"ORDER-{run_id}"),
@@ -214,7 +299,8 @@ def build_readback(erp_warehouse_source_id: str, eligibility_at: str) -> dict:
 
 
 def build_input(base_run_id: str, system_admin_source_id: str,
-                erp_warehouse_source_id: str, eligibility_at: str) -> dict:
+                erp_warehouse_source_id: str, eligibility_at: str,
+                address_ref: str | None) -> dict:
     if not RUN_ID_PATTERN.fullmatch(base_run_id):
         raise ValueError("run-id must be 6-20 characters using letters, digits, dot, underscore, or dash")
     run_ids = {
@@ -226,6 +312,11 @@ def build_input(base_run_id: str, system_admin_source_id: str,
     }
     if any(len(value) > 32 for value in run_ids.values()):
         raise ValueError("run-id is too long after durable child suffixes are added")
+    try:
+        normalized_address_ref = str(uuid.UUID(address_ref or ""))
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise ValueError(
+            "address-ref must identify an owned App address snapshot") from exc
     return {
         "runIds": run_ids,
         "catalog": build_catalog(run_ids["catalog"]),
@@ -235,7 +326,7 @@ def build_input(base_run_id: str, system_admin_source_id: str,
         ]},
         "master": build_master(run_ids["master"], system_admin_source_id,
                                erp_warehouse_source_id, eligibility_at),
-        "aftersale": build_aftersale(run_ids["aftersale"]),
+        "aftersale": build_aftersale(run_ids["aftersale"], normalized_address_ref),
         "readback": build_readback(erp_warehouse_source_id, eligibility_at),
     }
 
@@ -246,6 +337,11 @@ def main() -> int:
     parser.add_argument("--system-admin-source-id", required=True)
     parser.add_argument("--erp-warehouse-source-id", required=True)
     parser.add_argument(
+        "--address-ref",
+        required=True,
+        help="Owned App address snapshot reference used by the canonical order",
+    )
+    parser.add_argument(
         "--eligibility-at",
         default=os.getenv("CLOUDMOLD_ELIGIBILITY_AT", "2026-07-19T00:00:00Z"),
     )
@@ -253,7 +349,8 @@ def main() -> int:
     args = parser.parse_args()
     try:
         value = build_input(args.run_id, args.system_admin_source_id,
-                            args.erp_warehouse_source_id, args.eligibility_at)
+                            args.erp_warehouse_source_id, args.eligibility_at,
+                            args.address_ref)
     except ValueError as exc:
         print(json.dumps({"status": "failed", "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2

@@ -504,6 +504,19 @@ class AfterSalesRunnerUnitTest(unittest.TestCase):
         self.assertEqual(VERTICAL.parse_lakehouse_capabilities(usage),
                          set(VERTICAL.REQUIRED_LAKEHOUSE_COMMANDS))
 
+    def test_vertical_recovery_keeps_first_canonical_child_ledger(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            canonical = root / "catalog" / "vertical01-cat" / "ledger.json"
+            canonical.parent.mkdir(parents=True)
+            canonical.write_text("{}", encoding="utf-8")
+            replay = canonical.parent / "replay-ledger-20260726T000000Z.json"
+            self.assertEqual(
+                VERTICAL.stable_child_ledger(
+                    "catalog", "vertical01-cat", {"ledger": str(replay)}, root),
+                str(canonical),
+            )
+
     def test_aftersales_master_ledger_is_required_and_identity_complete(self):
         with self.assertRaisesRegex(CORE.ScenarioError, "requires --master-ledger"):
             RUNNER.load_master_identity(None, 1)
