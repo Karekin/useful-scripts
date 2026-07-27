@@ -1,0 +1,14 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.commerce.product-to-listing.v1",
+  "workflow_id": "workflow.cloudmold.commerce.product-to-listing.v1",
+  "name": "cloudmold-product-to-listing",
+  "version": "1.0.0",
+  "owner": "cloudmold-commerce",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R3",
+  "ui_dependency": "none",
+  "transport": "dubbo",
+  "status": "active",
+  "entrypoints": {}
+}
