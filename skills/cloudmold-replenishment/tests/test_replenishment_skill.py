@@ -16,7 +16,7 @@ class ReplenishmentSkillDefinitionTest(unittest.TestCase):
         self.assertEqual(len(definition["steps"]), 1)
         step = definition["steps"][0]
         self.assertEqual(step["step_code"], "convert_replenishment")
-        self.assertIs(step["approval_required"], False)
+        self.assertIs(step["approval_required"], True)
         self.assertEqual(
             step["capability_id"],
             "capability.cloudmold.supplyplanning.supply-planning-command.execute.sig-1ca9b1370b9e.v1",

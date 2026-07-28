@@ -5,7 +5,8 @@
 This governed skill converts an already approved replenishment recommendation into a real downstream
 draft document. It is intentionally narrow:
 
-- It does **not** run BPM approval.
+- It does **not** start a second BPM process; it consumes the approval proof issued by the enclosing
+  Temporal approval gate.
 - It does **not** wait for supplier confirmation, ASN, receipt, or putaway.
 - It does **not** claim that procurement, inbound, or shelving is complete.
 
