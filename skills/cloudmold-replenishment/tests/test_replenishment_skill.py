@@ -19,8 +19,9 @@ class ReplenishmentSkillDefinitionTest(unittest.TestCase):
         self.assertIs(step["approval_required"], False)
         self.assertEqual(
             step["capability_id"],
-            "capability.cloudmold.supply-planning.supply-planning-command.execute.v1",
+            "capability.cloudmold.supplyplanning.supply-planning-command.execute.sig-1ca9b1370b9e.v1",
         )
+        self.assertEqual(step["arguments"][1], "$input.actorPrincipalId")
 
     def test_wait_events_truthfully_stop_at_prepare(self):
         wait_events = json.loads((ROOT / "references" / "wait-events.json").read_text(encoding="utf-8"))

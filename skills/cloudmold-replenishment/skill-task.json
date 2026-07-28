@@ -8,7 +8,7 @@
     {
       "step_code": "convert_replenishment",
       "step_order": 1,
-      "capability_id": "capability.cloudmold.supply-planning.supply-planning-command.execute.v1",
+      "capability_id": "capability.cloudmold.supplyplanning.supply-planning-command.execute.sig-1ca9b1370b9e.v1",
       "operation_type": "WRITE",
       "approval_required": false,
       "idempotency_binding": {
@@ -22,7 +22,8 @@
             "operation": "CONVERT_REPLENISHMENT",
             "idempotencyKey": "$task.stepIdempotencyKey"
           }
-        }
+        },
+        "$input.actorPrincipalId"
       ]
     }
   ]

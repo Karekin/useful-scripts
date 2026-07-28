@@ -23,7 +23,8 @@ Those concerns belong to:
 ## Input contract
 
 The caller must provide one `CONVERT_REPLENISHMENT` command whose recommendation has already been
-approved by the upstream business policy.
+approved by the upstream business policy, plus the active governed `actorPrincipalId` that attests
+the conversion.
 
 The command is submitted to the canonical supply-planning command surface and must include:
 
