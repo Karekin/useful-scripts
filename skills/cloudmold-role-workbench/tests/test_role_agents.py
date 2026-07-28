@@ -53,6 +53,8 @@ class RoleAgentContractTest(unittest.TestCase):
             self.assertIn(role["display_name"], request["soul"])
             self.assertIn("真实运营岗位", request["soul"])
             self.assertIn("请你确认", request["soul"])
+            self.assertIn("cloudmold.deerflow-decision/v1", request["soul"])
+            self.assertIn("不得生成 tenant", request["soul"])
 
     def test_shared_skill_fails_closed_until_role_policy_is_attached(self):
         skill_text = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
