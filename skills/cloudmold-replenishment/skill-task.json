@@ -1,0 +1,29 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.supply-planning.prepare.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R2",
+  "max_attempts": 3,
+  "steps": [
+    {
+      "step_code": "convert_replenishment",
+      "step_order": 1,
+      "capability_id": "capability.cloudmold.supply-planning.supply-planning-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": false,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.command",
+          "$overrides": {
+            "operation": "CONVERT_REPLENISHMENT",
+            "idempotencyKey": "$task.stepIdempotencyKey"
+          }
+        }
+      ]
+    }
+  ]
+}

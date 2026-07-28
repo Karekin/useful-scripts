@@ -1,0 +1,31 @@
+{
+  "schema_version": "cloudmold.replenishment.wait-events/v1",
+  "skill_id": "skill.cloudmold.supply-planning.prepare.v1",
+  "skill_version": "1.0.0",
+  "declared_scope": "post-conversion downstream waits",
+  "events": [
+    {
+      "targetType": "PURCHASE_REQUEST",
+      "documentType": "PURCHASE_ORDER",
+      "currentDocumentStatus": "PREPARE",
+      "nextWaitingEventCode": "SUPPLIER_CONFIRMATION",
+      "nextWaitingEventLabel": "等待供应商确认采购单",
+      "followOnEvents": [
+        "ASN_CREATED",
+        "WAREHOUSE_RECEIPT_COMPLETED",
+        "PUTAWAY_COMPLETED"
+      ]
+    },
+    {
+      "targetType": "TRANSFER_REQUEST",
+      "documentType": "MOVEMENT_ORDER",
+      "currentDocumentStatus": "PREPARE",
+      "nextWaitingEventCode": "TRANSFER_OUTBOUND",
+      "nextWaitingEventLabel": "等待调拨出库",
+      "followOnEvents": [
+        "TRANSFER_RECEIPT_COMPLETED",
+        "PUTAWAY_COMPLETED"
+      ]
+    }
+  ]
+}
