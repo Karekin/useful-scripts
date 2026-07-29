@@ -1,0 +1,342 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.partner-marketing.kol-media-operations.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "partner-marketing-operations",
+  "max_attempts": 3,
+  "steps": [
+    {
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_product_launch",
+      "step_order": 1,
+      "child_skill_id": "skill.cloudmold.commerce.product-to-listing.v1",
+      "child_skill_version": "1.1.0",
+      "arguments": {"$object": "$input.product", "$overrides": {}}
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_product_launch",
+      "step_order": 2,
+      "arguments": ["$steps.submit_product_launch.result.childTaskId"]
+    },
+    {
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_placement_campaign",
+      "step_order": 3,
+      "child_skill_id": "skill.cloudmold.engagement.promotion-campaign-operations.v1",
+      "child_skill_version": "1.0.0",
+      "arguments": {"$object": "$input.campaign", "$overrides": {
+        "/campaignCommand/sourceId": "$input.partnerMarketingCommands.0.candidateCase.caseCode"
+      }}
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_placement_campaign",
+      "step_order": 4,
+      "arguments": ["$steps.submit_placement_campaign.result.childTaskId"]
+    },
+    {
+      "step_code": "open_candidate_case",
+      "step_order": 5,
+      "capability_id": "capability.cloudmold.partnermarketing.partner-marketing-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.partnerMarketingCommands.0", "$overrides": {
+        "runId": "$task.runId",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "/candidateCase/creatorPrincipalId": "$input.operatorPrincipalId",
+        "actorPrincipalId": "$input.operatorPrincipalId"
+      }}]
+    },
+    {
+      "step_code": "qualify_candidate",
+      "step_order": 6,
+      "capability_id": "capability.cloudmold.partnermarketing.partner-marketing-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.partnerMarketingCommands.1", "$overrides": {
+        "runId": "$task.runId",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "actorPrincipalId": "$input.operatorPrincipalId",
+        "/qualification/caseId": "$steps.open_candidate_case.result.caseId",
+        "/qualification/expectedVersion": "$steps.open_candidate_case.result.aggregateVersion"
+      }}]
+    },
+    {
+      "step_code": "start_outreach",
+      "step_order": 7,
+      "capability_id": "capability.cloudmold.partnermarketing.partner-marketing-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.partnerMarketingCommands.2", "$overrides": {
+        "runId": "$task.runId",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "actorPrincipalId": "$input.operatorPrincipalId",
+        "/outreach/caseId": "$steps.open_candidate_case.result.caseId",
+        "/outreach/expectedVersion": "$steps.qualify_candidate.result.aggregateVersion"
+      }}]
+    },
+    {
+      "step_code": "submit_brief",
+      "step_order": 8,
+      "capability_id": "capability.cloudmold.partnermarketing.partner-marketing-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.partnerMarketingCommands.3", "$overrides": {
+        "runId": "$task.runId",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "actorPrincipalId": "$input.operatorPrincipalId",
+        "/brief/caseId": "$steps.open_candidate_case.result.caseId",
+        "/brief/expectedVersion": "$steps.start_outreach.result.aggregateVersion",
+        "/brief/campaignId": "$steps.wait_placement_campaign.result.outputs.campaign_activate.aggregateId",
+        "/brief/listingId": "$steps.wait_product_launch.result.outputs.listing_create.listingId"
+      }}]
+    },
+    {
+      "step_code": "approve_brief",
+      "step_order": 9,
+      "capability_id": "capability.cloudmold.partnermarketing.partner-marketing-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.partnerMarketingCommands.4", "$overrides": {
+        "runId": "$task.runId",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "actorPrincipalId": "$input.independentReviewerPrincipalId",
+        "/brief/caseId": "$steps.open_candidate_case.result.caseId",
+        "/brief/expectedVersion": "$steps.submit_brief.result.aggregateVersion"
+      }}]
+    },
+    {
+      "step_code": "community_create",
+      "step_order": 10,
+      "capability_id": "capability.cloudmold.engagement.engagement-command.create-community-content.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.communityCommands.0", "$overrides": {
+        "runId": "$task.runId",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "authorPrincipalId": "$input.operatorPrincipalId",
+        "canonicalSpuId": "$steps.wait_product_launch.result.outputs.wait_catalog.outputs.define_1.canonicalSpuId",
+        "canonicalSkuId": "$steps.wait_product_launch.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+        "listingId": "$steps.wait_product_launch.result.outputs.listing_create.listingId",
+        "listingOfferId": "$steps.wait_product_launch.result.outputs.listing_create.offers.0.listingOfferId"
+      }}]
+    },
+    {
+      "step_code": "community_submit",
+      "step_order": 11,
+      "capability_id": "capability.cloudmold.engagement.engagement-command.transition-community-content.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.communityCommands.1", "$overrides": {
+        "runId": "$task.runId",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "contentId": "$steps.community_create.result.aggregateId",
+        "actorPrincipalId": "$input.operatorPrincipalId",
+        "expectedVersion": 1
+      }}]
+    },
+    {
+      "step_code": "submit_content",
+      "step_order": 12,
+      "capability_id": "capability.cloudmold.partnermarketing.partner-marketing-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.partnerMarketingCommands.5", "$overrides": {
+        "runId": "$task.runId",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "actorPrincipalId": "$input.operatorPrincipalId",
+        "/content/caseId": "$steps.open_candidate_case.result.caseId",
+        "/content/expectedVersion": "$steps.approve_brief.result.aggregateVersion"
+      }}]
+    },
+    {
+      "step_code": "approve_content",
+      "step_order": 13,
+      "capability_id": "capability.cloudmold.partnermarketing.partner-marketing-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.partnerMarketingCommands.6", "$overrides": {
+        "runId": "$task.runId",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "actorPrincipalId": "$input.independentReviewerPrincipalId",
+        "/content/caseId": "$steps.open_candidate_case.result.caseId",
+        "/content/expectedVersion": "$steps.submit_content.result.aggregateVersion"
+      }}]
+    },
+    {
+      "step_code": "community_publish",
+      "step_order": 14,
+      "capability_id": "capability.cloudmold.engagement.engagement-command.transition-community-content.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.communityCommands.2", "$overrides": {
+        "runId": "$task.runId",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "contentId": "$steps.community_create.result.aggregateId",
+        "actorPrincipalId": "$input.independentReviewerPrincipalId",
+        "expectedVersion": 2
+      }}]
+    },
+    {
+      "step_code": "verify_publication_disclosure",
+      "step_order": 15,
+      "capability_id": "capability.cloudmold.partnermarketing.partner-marketing-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.partnerMarketingCommands.7", "$overrides": {
+        "runId": "$task.runId",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "actorPrincipalId": "$input.independentReviewerPrincipalId",
+        "/publication/caseId": "$steps.open_candidate_case.result.caseId",
+        "/publication/expectedVersion": "$steps.approve_content.result.aggregateVersion",
+        "/publication/externalPublishRef": "$steps.community_create.result.aggregateId"
+      }}]
+    },
+    {
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_consumer_validation",
+      "step_order": 16,
+      "child_skill_id": "skill.cloudmold.consumer.shopping-journey.v1",
+      "child_skill_version": "1.0.0",
+      "arguments": {"$object": "$input.consumer", "$overrides": {
+        "listingId": "$steps.wait_product_launch.result.outputs.listing_create.listingId",
+        "/behaviorCommands/4/canonicalSpuId": "$steps.wait_product_launch.result.outputs.wait_catalog.outputs.define_1.canonicalSpuId",
+        "/behaviorCommands/4/skuId": "$steps.wait_product_launch.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+        "/behaviorCommands/4/listingId": "$steps.wait_product_launch.result.outputs.listing_create.listingId",
+        "/behaviorCommands/4/listingOfferId": "$steps.wait_product_launch.result.outputs.listing_create.offers.0.listingOfferId",
+        "/behaviorCommands/5/canonicalSpuId": "$steps.wait_product_launch.result.outputs.wait_catalog.outputs.define_1.canonicalSpuId",
+        "/behaviorCommands/5/skuId": "$steps.wait_product_launch.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+        "/behaviorCommands/5/listingId": "$steps.wait_product_launch.result.outputs.listing_create.listingId",
+        "/behaviorCommands/5/listingOfferId": "$steps.wait_product_launch.result.outputs.listing_create.offers.0.listingOfferId",
+        "/favoriteCommand/canonicalSpuId": "$steps.wait_product_launch.result.outputs.wait_catalog.outputs.define_1.canonicalSpuId",
+        "/behaviorCommands/6/canonicalSpuId": "$steps.wait_product_launch.result.outputs.wait_catalog.outputs.define_1.canonicalSpuId",
+        "/behaviorCommands/6/skuId": "$steps.wait_product_launch.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+        "/behaviorCommands/6/listingId": "$steps.wait_product_launch.result.outputs.listing_create.listingId",
+        "/behaviorCommands/6/listingOfferId": "$steps.wait_product_launch.result.outputs.listing_create.offers.0.listingOfferId",
+        "/behaviorCommands/7/canonicalSpuId": "$steps.wait_product_launch.result.outputs.wait_catalog.outputs.define_1.canonicalSpuId",
+        "/behaviorCommands/7/skuId": "$steps.wait_product_launch.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+        "/behaviorCommands/7/listingId": "$steps.wait_product_launch.result.outputs.listing_create.listingId",
+        "/behaviorCommands/7/listingOfferId": "$steps.wait_product_launch.result.outputs.listing_create.offers.0.listingOfferId",
+        "/commands/0/ownerId": "$steps.wait_product_launch.result.outputs.wait_master.outputs.merchant_approve.merchantId",
+        "/commands/0/canonicalSkuId": "$steps.wait_product_launch.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+        "/commands/0/warehouseId": "$steps.wait_product_launch.result.outputs.wait_master.outputs.warehouse_network.warehouseId",
+        "/commands/1/items/0/canonicalSkuId": "$steps.wait_product_launch.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+        "/commands/1/items/0/listingId": "$steps.wait_product_launch.result.outputs.listing_create.listingId",
+        "/commands/1/items/0/listingOfferId": "$steps.wait_product_launch.result.outputs.listing_create.offers.0.listingOfferId",
+        "/commands/2/ownerId": "$steps.wait_product_launch.result.outputs.wait_master.outputs.merchant_approve.merchantId",
+        "/commands/2/canonicalSkuId": "$steps.wait_product_launch.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+        "/commands/2/warehouseId": "$steps.wait_product_launch.result.outputs.wait_master.outputs.warehouse_network.warehouseId",
+        "/commands/6/sellerId": "$steps.wait_product_launch.result.outputs.wait_master.outputs.merchant_approve.merchantId",
+        "/commands/6/warehouseId": "$steps.wait_product_launch.result.outputs.wait_master.outputs.warehouse_network.warehouseId",
+        "/commands/6/items/0/canonicalSkuId": "$steps.wait_product_launch.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+        "/commands/7/ownerId": "$steps.wait_product_launch.result.outputs.wait_master.outputs.merchant_approve.merchantId",
+        "/commands/7/canonicalSkuId": "$steps.wait_product_launch.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+        "/commands/7/warehouseId": "$steps.wait_product_launch.result.outputs.wait_master.outputs.warehouse_network.warehouseId",
+        "/customerServiceCommands/3/assignedAgentPrincipalId": "$input.operatorPrincipalId",
+        "/communityCommands/0/canonicalSpuId": "$steps.wait_product_launch.result.outputs.wait_catalog.outputs.define_1.canonicalSpuId",
+        "/communityCommands/0/canonicalSkuId": "$steps.wait_product_launch.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+        "/communityCommands/0/listingId": "$steps.wait_product_launch.result.outputs.listing_create.listingId",
+        "/communityCommands/0/listingOfferId": "$steps.wait_product_launch.result.outputs.listing_create.offers.0.listingOfferId",
+        "/communityCommands/2/actorPrincipalId": "$input.operatorPrincipalId"
+      }}
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_consumer_validation",
+      "step_order": 17,
+      "arguments": ["$steps.submit_consumer_validation.result.childTaskId"]
+    },
+    {
+      "step_code": "reconcile_attribution",
+      "step_order": 18,
+      "capability_id": "capability.cloudmold.partnermarketing.partner-marketing-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.partnerMarketingCommands.8", "$overrides": {
+        "runId": "$task.runId",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "actorPrincipalId": "$input.operatorPrincipalId",
+        "/attribution/caseId": "$steps.open_candidate_case.result.caseId",
+        "/attribution/expectedVersion": "$steps.verify_publication_disclosure.result.aggregateVersion",
+        "/attribution/attributedOrderId": "$steps.wait_consumer_validation.result.outputs.order_place.orderId",
+        "/attribution/attributedPaymentId": "$steps.wait_consumer_validation.result.outputs.payment_capture.paymentId"
+      }}]
+    },
+    {
+      "step_code": "approve_settlement",
+      "step_order": 19,
+      "capability_id": "capability.cloudmold.partnermarketing.partner-marketing-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.partnerMarketingCommands.9", "$overrides": {
+        "runId": "$task.runId",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "actorPrincipalId": "$input.independentReviewerPrincipalId",
+        "/settlementApproval/caseId": "$steps.open_candidate_case.result.caseId",
+        "/settlementApproval/expectedVersion": "$steps.reconcile_attribution.result.aggregateVersion"
+      }}]
+    },
+    {
+      "step_code": "mark_settlement_paid",
+      "step_order": 20,
+      "capability_id": "capability.cloudmold.partnermarketing.partner-marketing-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.partnerMarketingCommands.10", "$overrides": {
+        "runId": "$task.runId",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "actorPrincipalId": "$input.financePrincipalId",
+        "/settlementPayment/caseId": "$steps.open_candidate_case.result.caseId",
+        "/settlementPayment/expectedVersion": "$steps.approve_settlement.result.aggregateVersion"
+      }}]
+    },
+    {
+      "step_code": "close_case",
+      "step_order": 21,
+      "capability_id": "capability.cloudmold.partnermarketing.partner-marketing-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.partnerMarketingCommands.11", "$overrides": {
+        "runId": "$task.runId",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "actorPrincipalId": "$input.operatorPrincipalId",
+        "/caseClose/caseId": "$steps.open_candidate_case.result.caseId",
+        "/caseClose/expectedVersion": "$steps.mark_settlement_paid.result.aggregateVersion"
+      }}]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "verify_partner_marketing_closed",
+      "step_order": 22,
+      "capability_id": "capability.cloudmold.partnermarketing.partner-marketing-query.get-workflow.v1",
+      "operation_type": "READ",
+      "poll_interval_seconds": 2,
+      "wait_success": {
+        "/status": "SUCCEEDED",
+        "/currentStatus": "CLOSED",
+        "/terminal": true,
+        "/aggregateVersion": 12
+      },
+      "wait_failure": {"/status": ["FAILED"]},
+      "arguments": ["$steps.open_candidate_case.result.caseId"]
+    }
+  ]
+}

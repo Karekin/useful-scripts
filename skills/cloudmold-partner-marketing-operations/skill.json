@@ -1,0 +1,29 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.partner-marketing.kol-media-operations.v1",
+  "workflow_id": "workflow.cloudmold.partner-marketing.kol-media-operations.v1",
+  "name": "cloudmold-partner-marketing-operations",
+  "version": "1.0.0",
+  "owner": "cloudmold-partner-marketing",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R3",
+  "ui_dependency": "none",
+  "transport": "dubbo",
+  "status": "active",
+  "allowed_environments": [
+    "local",
+    "test",
+    "demo"
+  ],
+  "entrypoints": {
+    "task": "skill-task.json"
+  },
+  "evidence": [
+    "cloudmold_partner_marketing_case",
+    "cloudmold_listing",
+    "cloudmold_notification_campaign",
+    "cloudmold_engagement_community_content",
+    "cloudmold_order",
+    "cloudmold_payment"
+  ]
+}

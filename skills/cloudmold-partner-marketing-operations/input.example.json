@@ -1,0 +1,253 @@
+{
+  "operatorPrincipalId": "principal:partner-marketing-operator",
+  "independentReviewerPrincipalId": "principal:brand-risk-reviewer",
+  "financePrincipalId": "principal:finance-payer",
+  "runIds": {
+    "product": "pm260730162-demo-product",
+    "campaign": "pm260730162-demo-campaign",
+    "consumer": "pm260730162-demo-consumer",
+    "partnerMarketing": "pm260730162-demo-main"
+  },
+  "partnerMarketingCommands": [
+    {
+      "operation": "OPEN_CANDIDATE_CASE",
+      "correlationId": "11111111-1111-4111-8111-111111111111",
+      "runId": "pm260730162-demo-main",
+      "idempotencyKey": "pending-open-candidate-case",
+      "occurredAt": "2026-07-30T00:00:00Z",
+      "actorPrincipalId": "principal:partner-marketing-operator",
+      "candidateCase": {
+        "caseId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "caseCode": "AI-KOL-260730-001",
+        "creatorPrincipalId": "principal:partner-marketing-operator",
+        "candidateHandle": "@fitcreator_northamerica",
+        "platformCode": "INSTAGRAM",
+        "regionCode": "US",
+        "categoryCode": "APPAREL",
+        "reasonCode": "AI_DAILY_CREATOR_DISCOVERY"
+      }
+    },
+    {
+      "operation": "QUALIFY_CANDIDATE",
+      "correlationId": "11111111-1111-4111-8111-111111111111",
+      "runId": "pm260730162-demo-main",
+      "idempotencyKey": "pending-qualify-candidate",
+      "occurredAt": "2026-07-30T00:00:00Z",
+      "actorPrincipalId": "principal:partner-marketing-operator",
+      "qualification": {
+        "caseId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "expectedVersion": 1,
+        "riskLevel": "LOW",
+        "riskDecision": "PASS",
+        "riskEvidenceSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "qualificationNote": "历史内容、受众地区和品牌安全检查均通过",
+        "reasonCode": "AI_BRAND_AND_COMPLIANCE_SCREEN"
+      }
+    },
+    {
+      "operation": "START_OUTREACH",
+      "correlationId": "11111111-1111-4111-8111-111111111111",
+      "runId": "pm260730162-demo-main",
+      "idempotencyKey": "pending-start-outreach",
+      "occurredAt": "2026-07-30T00:00:00Z",
+      "actorPrincipalId": "principal:partner-marketing-operator",
+      "outreach": {
+        "caseId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "expectedVersion": 2,
+        "outreachChannelCode": "INSTAGRAM_DM",
+        "outreachExternalRef": "outreach:pm260730162-demo",
+        "reasonCode": "AI_CREATOR_OUTREACH"
+      }
+    },
+    {
+      "operation": "SUBMIT_BRIEF",
+      "correlationId": "11111111-1111-4111-8111-111111111111",
+      "runId": "pm260730162-demo-main",
+      "idempotencyKey": "pending-submit-brief",
+      "occurredAt": "2026-07-30T00:00:00Z",
+      "actorPrincipalId": "principal:partner-marketing-operator",
+      "brief": {
+        "caseId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "expectedVersion": 3,
+        "campaignId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        "listingId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        "cooperationModel": "FIXED_FEE",
+        "budgetAmountMinor": 10000,
+        "currencyCode": "CNY",
+        "briefSummary": "夏季新品开箱、尺码体验、广告披露与站内追踪链接",
+        "briefEvidenceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "reasonCode": "AI_CREATOR_BRIEF_SUBMIT"
+      }
+    },
+    {
+      "operation": "APPROVE_BRIEF",
+      "correlationId": "11111111-1111-4111-8111-111111111111",
+      "runId": "pm260730162-demo-main",
+      "idempotencyKey": "pending-approve-brief",
+      "occurredAt": "2026-07-30T00:00:00Z",
+      "actorPrincipalId": "principal:brand-risk-reviewer",
+      "brief": {
+        "caseId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "expectedVersion": 4,
+        "approvalEvidenceSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "reasonCode": "AI_BRIEF_APPROVED"
+      }
+    },
+    {
+      "operation": "SUBMIT_CONTENT",
+      "correlationId": "11111111-1111-4111-8111-111111111111",
+      "runId": "pm260730162-demo-main",
+      "idempotencyKey": "pending-submit-content",
+      "occurredAt": "2026-07-30T00:00:00Z",
+      "actorPrincipalId": "principal:partner-marketing-operator",
+      "content": {
+        "caseId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "expectedVersion": 5,
+        "contentSummary": "本地化新品体验视频，包含材质、尺码、穿搭和广告披露",
+        "contentEvidenceSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "reasonCode": "AI_CREATOR_CONTENT_SUBMIT"
+      }
+    },
+    {
+      "operation": "APPROVE_CONTENT",
+      "correlationId": "11111111-1111-4111-8111-111111111111",
+      "runId": "pm260730162-demo-main",
+      "idempotencyKey": "pending-approve-content",
+      "occurredAt": "2026-07-30T00:00:00Z",
+      "actorPrincipalId": "principal:brand-risk-reviewer",
+      "content": {
+        "caseId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "expectedVersion": 6,
+        "approvalEvidenceSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "reasonCode": "AI_CONTENT_BRAND_COMPLIANCE_APPROVED"
+      }
+    },
+    {
+      "operation": "VERIFY_PUBLICATION_DISCLOSURE",
+      "correlationId": "11111111-1111-4111-8111-111111111111",
+      "runId": "pm260730162-demo-main",
+      "idempotencyKey": "pending-verify-disclosure",
+      "occurredAt": "2026-07-30T00:00:00Z",
+      "actorPrincipalId": "principal:brand-risk-reviewer",
+      "publication": {
+        "caseId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "expectedVersion": 7,
+        "externalPublishRef": "publication:pm260730162-demo",
+        "externalPublishUrl": "https://creator.example/post/ai-kol-260730-001",
+        "disclosureLabel": "PAID_PARTNERSHIP",
+        "publishEvidenceSha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "reasonCode": "AI_DISCLOSURE_VERIFIED"
+      }
+    },
+    {
+      "operation": "RECONCILE_ATTRIBUTION",
+      "correlationId": "11111111-1111-4111-8111-111111111111",
+      "runId": "pm260730162-demo-main",
+      "idempotencyKey": "pending-reconcile-attribution",
+      "occurredAt": "2026-07-30T00:00:00Z",
+      "actorPrincipalId": "principal:partner-marketing-operator",
+      "attribution": {
+        "caseId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "expectedVersion": 8,
+        "attributedOrderCount": 1,
+        "attributedOrderId": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+        "attributedPaymentId": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+        "attributionSourceRef": "tracking:pm260730162-demo",
+        "grossSettlementAmountMinor": 10000,
+        "platformFeeAmountMinor": 0,
+        "taxWithholdingAmountMinor": 1000,
+        "netPayableAmountMinor": 9000,
+        "attributionEvidenceSha256": "1212121212121212121212121212121212121212121212121212121212121212",
+        "reasonCode": "AI_ATTRIBUTION_RECONCILED"
+      }
+    },
+    {
+      "operation": "APPROVE_SETTLEMENT",
+      "correlationId": "11111111-1111-4111-8111-111111111111",
+      "runId": "pm260730162-demo-main",
+      "idempotencyKey": "pending-approve-settlement",
+      "occurredAt": "2026-07-30T00:00:00Z",
+      "actorPrincipalId": "principal:brand-risk-reviewer",
+      "settlementApproval": {
+        "caseId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "expectedVersion": 9,
+        "approvedNetPayableAmountMinor": 9000,
+        "approvalEvidenceSha256": "3434343434343434343434343434343434343434343434343434343434343434",
+        "reasonCode": "AI_SETTLEMENT_APPROVED"
+      }
+    },
+    {
+      "operation": "MARK_SETTLEMENT_PAID",
+      "correlationId": "11111111-1111-4111-8111-111111111111",
+      "runId": "pm260730162-demo-main",
+      "idempotencyKey": "pending-mark-settlement-paid",
+      "occurredAt": "2026-07-30T00:00:00Z",
+      "actorPrincipalId": "principal:finance-payer",
+      "settlementPayment": {
+        "caseId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "expectedVersion": 10,
+        "paidNetPayableAmountMinor": 9000,
+        "settlementReference": "settlement:pm260730162-demo",
+        "paymentEvidenceSha256": "5656565656565656565656565656565656565656565656565656565656565656",
+        "reasonCode": "AI_SETTLEMENT_PAID"
+      }
+    },
+    {
+      "operation": "CLOSE_CASE",
+      "correlationId": "11111111-1111-4111-8111-111111111111",
+      "runId": "pm260730162-demo-main",
+      "idempotencyKey": "pending-close-case",
+      "occurredAt": "2026-07-30T00:00:00Z",
+      "actorPrincipalId": "principal:partner-marketing-operator",
+      "caseClose": {
+        "caseId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "expectedVersion": 11,
+        "closureEvidenceSha256": "7878787878787878787878787878787878787878787878787878787878787878",
+        "reasonCode": "AI_PARTNER_MARKETING_CLOSED"
+      }
+    }
+  ],
+  "communityCommands": [
+    {
+      "idempotencyKey": "pending-create-community-content",
+      "runId": "pm260730162-demo-main",
+      "contentId": "99999999-9999-4999-8999-999999999999",
+      "contentType": "POST",
+      "bodyRef": "restricted:creator_content_pm260730162_demo",
+      "bodyKeyId": "synthetic-key-v1",
+      "bodyIv": [1,2,3,4,5,6,7,8,9,10,11,12],
+      "bodyCiphertext": [11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26],
+      "bodyDigestSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "canonicalSpuId": "00000000-0000-0000-0000-000000000000",
+      "canonicalSkuId": "00000000-0000-0000-0000-000000000000",
+      "listingId": "00000000-0000-0000-0000-000000000000",
+      "listingOfferId": "00000000-0000-0000-0000-000000000000",
+      "desiredStatus": "DRAFT",
+      "correlationId": "11111111-1111-4111-8111-111111111111",
+      "occurredAt": "2026-07-30T00:00:00Z"
+    },
+    {
+      "idempotencyKey": "pending-submit-community-content",
+      "runId": "pm260730162-demo-main",
+      "contentId": "99999999-9999-4999-8999-999999999999",
+      "actorPrincipalId": "principal:partner-marketing-operator",
+      "desiredStatus": "PENDING_MODERATION",
+      "reasonCode": "BRAND_COMPLIANCE_REVIEW",
+      "correlationId": "11111111-1111-4111-8111-111111111111",
+      "occurredAt": "2026-07-30T00:00:00Z"
+    },
+    {
+      "idempotencyKey": "pending-publish-community-content",
+      "runId": "pm260730162-demo-main",
+      "contentId": "99999999-9999-4999-8999-999999999999",
+      "actorPrincipalId": "principal:brand-risk-reviewer",
+      "desiredStatus": "PUBLISHED",
+      "reasonCode": "AI_MODERATION_PASSED",
+      "correlationId": "11111111-1111-4111-8111-111111111111",
+      "occurredAt": "2026-07-30T00:00:00Z"
+    }
+  ],
+  "product": {"generatedBy": "RotatingBusinessScenarioInputFactory"},
+  "campaign": {"generatedBy": "RotatingBusinessScenarioInputFactory"},
+  "consumer": {"generatedBy": "RotatingBusinessScenarioInputFactory"}
+}
