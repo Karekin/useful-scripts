@@ -1,0 +1,24 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.commerce.order-to-cash-readback.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R1",
+  "workflow_level": "INTERNAL_SUBFLOW",
+  "max_attempts": 5,
+  "steps": [
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "inspect_order_to_cash",
+      "step_order": 1,
+      "capability_id": "capability.cloudmold.order.commerce-workflow-query.inspect-order-to-cash.v1",
+      "poll_interval_seconds": 30,
+      "wait_success": {
+        "/status": "SUCCEEDED"
+      },
+      "wait_failure": {
+        "/status": ["FAILED", "COMPENSATED", "MANUAL_REVIEW"]
+      },
+      "arguments": ["$input.orderId"]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.growth.experiment-lifecycle.v1",
+  "workflow_id": "workflow.cloudmold.growth.experiment-lifecycle.v1",
+  "name": "cloudmold-growth-experiment-lifecycle",
+  "version": "1.0.0",
+  "owner": "cloudmold-promotion",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R2",
+  "ui_dependency": "none",
+  "allowed_environments": ["local", "test", "demo"],
+  "entrypoints": {
+    "task": "skill-task.json"
+  },
+  "evidence": [
+    "cloudmold_skill_task_instance",
+    "cloudmold_skill_task_step",
+    "cloudmold_promotion_campaign",
+    "cloudmold_promotion_growth_experiment",
+    "cloudmold_promotion_growth_experiment_exposure",
+    "cloudmold_promotion_growth_experiment_metric_snapshot"
+  ]
+}

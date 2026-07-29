@@ -1,0 +1,19 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.customer-service.resolution-lifecycle.v1",
+  "workflow_id": "workflow.cloudmold.customer-service.resolution-lifecycle.v1",
+  "name": "cloudmold-customer-service-lifecycle",
+  "version": "1.0.0",
+  "owner": "cloudmold-customer-service",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R2",
+  "ui_dependency": "none",
+  "allowed_environments": ["local", "test", "demo"],
+  "entrypoints": {"task": "skill-task.json"},
+  "evidence": [
+    "cloudmold_skill_task_instance",
+    "cloudmold_customer_service_ticket",
+    "cloudmold_customer_service_message",
+    "cloudmold_customer_service_feedback"
+  ]
+}

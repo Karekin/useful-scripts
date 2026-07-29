@@ -1,0 +1,22 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.merchant.onboarding-lifecycle.v1",
+  "workflow_id": "workflow.cloudmold.merchant.onboarding-lifecycle.v1",
+  "name": "cloudmold-merchant-onboarding-lifecycle",
+  "version": "1.0.0",
+  "owner": "cloudmold-merchant",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R3",
+  "ui_dependency": "none",
+  "allowed_environments": ["local", "test", "demo"],
+  "entrypoints": {
+    "task": "skill-task.json"
+  },
+  "evidence": [
+    "cloudmold_skill_task_instance",
+    "cloudmold_skill_task_step",
+    "cloudmold_merchant_onboarding_application",
+    "cloudmold_merchant_account",
+    "cloudmold_merchant_shop"
+  ]
+}

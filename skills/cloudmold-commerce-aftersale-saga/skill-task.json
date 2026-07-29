@@ -3,6 +3,8 @@
   "skill_id": "skill.cloudmold.commerce.aftersale-saga.v1",
   "skill_version": "1.2.0",
   "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "aftersales-operator",
   "max_attempts": 3,
   "steps": [
     {"step_code":"listing_create","step_order":1,"capability_id":"capability.cloudmold.listing.listing-command.execute.v1","operation_type":"WRITE","approval_required":true,"idempotency_binding":{"argument_index":0,"json_pointer":"/idempotencyKey"},"arguments":[{"$object":"$input.commands.0","$overrides":{"idempotencyKey":"$task.stepIdempotencyKey"}}]},

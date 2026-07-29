@@ -3,11 +3,22 @@
   "skill_id": "skill.cloudmold.supply-planning.prepare.v1",
   "skill_version": "1.0.0",
   "risk_level": "R2",
+  "workflow_level": "INTERNAL_SUBFLOW",
   "max_attempts": 3,
   "steps": [
     {
-      "step_code": "convert_replenishment",
+      "step_code": "resolve_execution_proposal",
       "step_order": 1,
+      "capability_id": "capability.cloudmold.supplyplanning.supply-planning-query.require-ready-replenishment-execution-proposal.v1",
+      "operation_type": "READ",
+      "approval_required": false,
+      "arguments": [
+        "$input.proposalId"
+      ]
+    },
+    {
+      "step_code": "convert_replenishment",
+      "step_order": 2,
       "capability_id": "capability.cloudmold.supplyplanning.supply-planning-command.execute.sig-1ca9b1370b9e.v1",
       "operation_type": "WRITE",
       "approval_required": true,
@@ -17,13 +28,30 @@
       },
       "arguments": [
         {
-          "$object": "$input.command",
-          "$overrides": {
-            "operation": "CONVERT_REPLENISHMENT",
-            "idempotencyKey": "$task.stepIdempotencyKey"
+          "operation": "CONVERT_REPLENISHMENT",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$task.runId",
+          "correlationId": "$input.proposalId",
+          "occurredAt": "$input.occurredAt",
+          "replenishmentConversion": {
+            "conversionId": "$input.conversionId",
+            "recommendationId": "$steps.resolve_execution_proposal.result.recommendationId",
+            "expectedVersion": "$steps.resolve_execution_proposal.result.expectedRecommendationVersion",
+            "targetType": "$steps.resolve_execution_proposal.result.targetType",
+            "mappingEvidenceSha256": "$steps.resolve_execution_proposal.result.mappingEvidenceSha256",
+            "supplierId": "$steps.resolve_execution_proposal.result.supplierId",
+            "accountId": "$steps.resolve_execution_proposal.result.accountId",
+            "erpProductId": "$steps.resolve_execution_proposal.result.erpProductId",
+            "erpProductUnitId": "$steps.resolve_execution_proposal.result.erpProductUnitId",
+            "unitCostMinor": "$steps.resolve_execution_proposal.result.unitCostMinor",
+            "taxPercent": "$steps.resolve_execution_proposal.result.taxPercent",
+            "sourceWarehouseId": "$steps.resolve_execution_proposal.result.sourceWarehouseId",
+            "targetWarehouseId": "$steps.resolve_execution_proposal.result.targetWarehouseId",
+            "wmsSkuId": "$steps.resolve_execution_proposal.result.wmsSkuId",
+            "convertedByPrincipalId": "$steps.resolve_execution_proposal.result.proposedByPrincipalId"
           }
         },
-        "$input.actorPrincipalId"
+        "$steps.resolve_execution_proposal.result.proposedByPrincipalId"
       ]
     }
   ]

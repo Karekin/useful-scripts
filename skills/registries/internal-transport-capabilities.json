@@ -103,6 +103,36 @@
       "arguments": ["payload"],
       "write": true
     },
+    "POST /admin-api/cloudmold/supplier-sourcing/command": {
+      "capability_id": "capability.cloudmold.supplier.supplier-sourcing-command.execute.sig-64f1778a42c3.v1",
+      "arguments": ["payload", "actorPrincipalId"],
+      "write": true
+    },
+    "POST /admin-api/cloudmold/procurement/command": {
+      "capability_id": "capability.cloudmold.procurement.procurement-command.execute.sig-b366ae5e9a17.v1",
+      "arguments": ["payload", "actorPrincipalId"],
+      "write": true
+    },
+    "POST /admin-api/cloudmold/engagement/notifications/campaigns/save": {
+      "capability_id": "capability.cloudmold.engagement.engagement-command.save-notification-campaign.v1",
+      "arguments": ["payload"],
+      "write": true
+    },
+    "POST /admin-api/cloudmold/engagement/notifications/deliveries": {
+      "capability_id": "capability.cloudmold.engagement.engagement-command.create-notification-delivery.v1",
+      "arguments": ["payload"],
+      "write": true
+    },
+    "POST /admin-api/cloudmold/engagement/notifications/deliveries/attempts": {
+      "capability_id": "capability.cloudmold.engagement.engagement-command.record-notification-attempt.v1",
+      "arguments": ["payload"],
+      "write": true
+    },
+    "POST /admin-api/cloudmold/engagement/notifications/deliveries/receipts": {
+      "capability_id": "capability.cloudmold.engagement.engagement-command.record-notification-receipt.v1",
+      "arguments": ["payload"],
+      "write": true
+    },
     "POST /admin-api/cloudmold/fulfillment/command": {
       "capability_id": "capability.cloudmold.fulfillment.fulfillment-command.execute.v1",
       "arguments": ["payload"],

@@ -1,0 +1,1 @@
+{"schema_version":"cloudmold.skill/v1","skill_id":"skill.cloudmold.consumer.shopping-journey.v1","workflow_id":"workflow.cloudmold.consumer.shopping-journey.v1","name":"cloudmold-consumer-shopping-journey","version":"1.0.0","owner":"cloudmold-consumer-operations","authority":"canonical-cloudmold","risk_level":"R3","ui_dependency":"none","transport":"dubbo","status":"active"}

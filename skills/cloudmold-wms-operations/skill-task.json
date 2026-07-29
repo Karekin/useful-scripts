@@ -1,0 +1,323 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.wms.operations.v1",
+  "skill_version": "1.1.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "warehouse-operations",
+  "max_attempts": 3,
+  "steps": [
+    {
+      "step_code": "validate_merchant_shop",
+      "step_order": 1,
+      "capability_id": "capability.cloudmold.merchant.merchant-reference-validation.require-active-reference.v1",
+      "operation_type": "READ",
+      "approval_required": false,
+      "arguments": ["$input.authority.reference"]
+    },
+    {
+      "step_code": "authorize_owner",
+      "step_order": 2,
+      "capability_id": "capability.cloudmold.merchant.merchant-operator-authorization.require-authorized-operator.v1",
+      "operation_type": "READ",
+      "approval_required": false,
+      "arguments": ["$input.authority.operator"]
+    },
+    {
+      "step_code": "create_wms_merchant",
+      "step_order": 3,
+      "capability_id": "capability.cloudmold.integration.yudao-wms-command.create-merchant.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "code": "$input.merchant.code",
+        "name": "$input.merchant.name",
+        "type": "$input.merchant.type",
+        "level": "$input.merchant.level",
+        "address": "$input.merchant.address",
+        "mobile": "$input.merchant.mobile",
+        "contact": "$input.merchant.contact",
+        "email": "$input.merchant.email",
+        "remark": "$input.merchant.remark"
+      }]
+    },
+    {
+      "step_code": "create_source_warehouse",
+      "step_order": 4,
+      "capability_id": "capability.cloudmold.integration.yudao-wms-command.create-warehouse.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "code": "$input.sourceWarehouse.code",
+        "name": "$input.sourceWarehouse.name",
+        "sort": "$input.sourceWarehouse.sort",
+        "remark": "$input.sourceWarehouse.remark"
+      }]
+    },
+    {
+      "step_code": "create_target_warehouse",
+      "step_order": 5,
+      "capability_id": "capability.cloudmold.integration.yudao-wms-command.create-warehouse.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "code": "$input.targetWarehouse.code",
+        "name": "$input.targetWarehouse.name",
+        "sort": "$input.targetWarehouse.sort",
+        "remark": "$input.targetWarehouse.remark"
+      }]
+    },
+    {
+      "step_code": "create_item_category",
+      "step_order": 6,
+      "capability_id": "capability.cloudmold.integration.yudao-wms-command.create-item-category.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "parentId": "$input.category.parentId",
+        "code": "$input.category.code",
+        "name": "$input.category.name",
+        "sort": "$input.category.sort",
+        "status": "$input.category.status"
+      }]
+    },
+    {
+      "step_code": "create_item",
+      "step_order": 7,
+      "capability_id": "capability.cloudmold.integration.yudao-wms-command.create-item.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "code": "$input.item.code",
+        "name": "$input.item.name",
+        "categoryId": "$steps.create_item_category.result",
+        "unit": "$input.item.unit",
+        "remark": "$input.item.remark",
+        "skus": "$input.item.skus"
+      }]
+    },
+    {
+      "step_code": "resolve_sku",
+      "step_order": 8,
+      "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-wms-item-sku.v1",
+      "operation_type": "READ",
+      "approval_required": false,
+      "arguments": ["$steps.create_item.result"]
+    },
+    {
+      "step_code": "create_receipt",
+      "step_order": 9,
+      "capability_id": "capability.cloudmold.integration.yudao-wms-command.create-receipt-order.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "no": "$input.receipt.no",
+        "type": 101,
+        "orderTime": "$input.receipt.orderTime",
+        "bizOrderNo": "$input.receipt.bizOrderNo",
+        "merchantId": "$steps.create_wms_merchant.result",
+        "remark": "$input.receipt.remark",
+        "warehouseId": "$steps.create_source_warehouse.result",
+        "details": [{
+          "skuId": "$steps.resolve_sku.result.skuId",
+          "quantity": "$input.quantities.receipt",
+          "price": 39.8,
+          "totalPrice": "$input.quantities.receiptTotalPrice"
+        }]
+      }]
+    },
+    {
+      "step_code": "complete_receipt",
+      "step_order": 10,
+      "capability_id": "capability.cloudmold.integration.yudao-wms-command.complete-receipt-order.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "documentId": "$steps.create_receipt.result"
+      }]
+    },
+    {
+      "step_code": "verify_receipt",
+      "step_order": 11,
+      "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-receipt-order.v1",
+      "operation_type": "READ",
+      "approval_required": false,
+      "arguments": ["$steps.create_receipt.result"]
+    },
+    {
+      "step_code": "verify_source_inventory",
+      "step_order": 12,
+      "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-wms-inventory.v1",
+      "operation_type": "READ",
+      "approval_required": false,
+      "arguments": ["$steps.create_source_warehouse.result", "$steps.resolve_sku.result.skuId"]
+    },
+    {
+      "step_code": "create_movement",
+      "step_order": 13,
+      "capability_id": "capability.cloudmold.integration.yudao-wms-command.create-movement-order.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "no": "$input.movement.no",
+        "orderTime": "$input.movement.orderTime",
+        "remark": "$input.movement.remark",
+        "sourceWarehouseId": "$steps.create_source_warehouse.result",
+        "targetWarehouseId": "$steps.create_target_warehouse.result",
+        "details": [{
+          "skuId": "$steps.resolve_sku.result.skuId",
+          "quantity": "$input.quantities.movement",
+          "price": 39.8,
+          "totalPrice": "$input.quantities.movementTotalPrice"
+        }]
+      }]
+    },
+    {
+      "step_code": "complete_movement",
+      "step_order": 14,
+      "capability_id": "capability.cloudmold.integration.yudao-wms-command.complete-movement-order.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "documentId": "$steps.create_movement.result"
+      }]
+    },
+    {
+      "step_code": "verify_movement",
+      "step_order": 15,
+      "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-movement-order.v1",
+      "operation_type": "READ",
+      "approval_required": false,
+      "arguments": ["$steps.create_movement.result"]
+    },
+    {
+      "step_code": "verify_target_inventory",
+      "step_order": 16,
+      "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-wms-inventory.v1",
+      "operation_type": "READ",
+      "approval_required": false,
+      "arguments": ["$steps.create_target_warehouse.result", "$steps.resolve_sku.result.skuId"]
+    },
+    {
+      "step_code": "create_shipment",
+      "step_order": 17,
+      "capability_id": "capability.cloudmold.integration.yudao-wms-command.create-shipment-order.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "no": "$input.shipment.no",
+        "type": 201,
+        "orderTime": "$input.shipment.orderTime",
+        "bizOrderNo": "$input.shipment.bizOrderNo",
+        "merchantId": "$steps.create_wms_merchant.result",
+        "remark": "$input.shipment.remark",
+        "warehouseId": "$steps.create_target_warehouse.result",
+        "details": [{
+          "skuId": "$steps.resolve_sku.result.skuId",
+          "quantity": "$input.quantities.shipment",
+          "price": 39.8,
+          "totalPrice": "$input.quantities.shipmentTotalPrice"
+        }]
+      }]
+    },
+    {
+      "step_code": "complete_shipment",
+      "step_order": 18,
+      "capability_id": "capability.cloudmold.integration.yudao-wms-command.complete-shipment-order.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "documentId": "$steps.create_shipment.result"
+      }]
+    },
+    {
+      "step_code": "verify_shipment",
+      "step_order": 19,
+      "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-shipment-order.v1",
+      "operation_type": "READ",
+      "approval_required": false,
+      "arguments": ["$steps.create_shipment.result"]
+    },
+    {
+      "step_code": "create_inventory_check",
+      "step_order": 20,
+      "capability_id": "capability.cloudmold.integration.yudao-wms-command.create-check-order.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "no": "$input.check.no",
+        "orderTime": "$input.check.orderTime",
+        "remark": "$input.check.remark",
+        "warehouseId": "$steps.create_target_warehouse.result",
+        "details": [{
+          "skuId": "$steps.resolve_sku.result.skuId",
+          "inventoryId": "$steps.verify_target_inventory.result.inventoryId",
+          "receiptTime": "$input.check.receiptTime",
+          "quantity": "$input.quantities.check",
+          "checkQuantity": "$input.quantities.check",
+          "price": 39.8
+        }]
+      }]
+    },
+    {
+      "step_code": "complete_inventory_check",
+      "step_order": 21,
+      "capability_id": "capability.cloudmold.integration.yudao-wms-command.complete-check-order.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "documentId": "$steps.create_inventory_check.result"
+      }]
+    },
+    {
+      "step_code": "verify_inventory_check",
+      "step_order": 22,
+      "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-check-order.v1",
+      "operation_type": "READ",
+      "approval_required": false,
+      "arguments": ["$steps.create_inventory_check.result"]
+    },
+    {
+      "step_code": "verify_final_source_inventory",
+      "step_order": 23,
+      "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-wms-inventory.v1",
+      "operation_type": "READ",
+      "approval_required": false,
+      "arguments": ["$steps.create_source_warehouse.result", "$steps.resolve_sku.result.skuId"]
+    },
+    {
+      "step_code": "verify_final_target_inventory",
+      "step_order": 24,
+      "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-wms-inventory.v1",
+      "operation_type": "READ",
+      "approval_required": false,
+      "arguments": ["$steps.create_target_warehouse.result", "$steps.resolve_sku.result.skuId"]
+    }
+  ]
+}

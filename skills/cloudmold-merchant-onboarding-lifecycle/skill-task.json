@@ -1,0 +1,158 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.merchant.onboarding-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "merchant-onboarding-operator",
+  "max_attempts": 3,
+  "steps": [
+    {
+      "step_code": "merchant_draft",
+      "step_order": 1,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.draftCommand",
+          "$overrides": {
+            "operation": "CREATE_ONBOARDING_DRAFT",
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "merchant_submit",
+      "step_order": 2,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "SUBMIT_ONBOARDING",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$task.runId",
+          "applicationId": "$steps.merchant_draft.result.applicationId",
+          "expectedVersion": "$steps.merchant_draft.result.applicationVersion",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.occurredAt"
+        }
+      ]
+    },
+    {
+      "step_code": "merchant_review",
+      "step_order": 3,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "START_ONBOARDING_REVIEW",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$task.runId",
+          "applicationId": "$steps.merchant_draft.result.applicationId",
+          "expectedVersion": "$steps.merchant_submit.result.applicationVersion",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.occurredAt"
+        }
+      ]
+    },
+    {
+      "step_code": "merchant_approve",
+      "step_order": 4,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "APPROVE_ONBOARDING",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$task.runId",
+          "applicationId": "$steps.merchant_draft.result.applicationId",
+          "expectedVersion": "$steps.merchant_review.result.applicationVersion",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.occurredAt"
+        }
+      ]
+    },
+    {
+      "step_code": "merchant_activate",
+      "step_order": 5,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "ACTIVATE_MERCHANT",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$task.runId",
+          "merchantId": "$steps.merchant_approve.result.merchantId",
+          "expectedVersion": "$steps.merchant_approve.result.merchantVersion",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.occurredAt"
+        }
+      ]
+    },
+    {
+      "step_code": "shop_activate",
+      "step_order": 6,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "ACTIVATE_SHOP",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$task.runId",
+          "shopId": "$steps.merchant_approve.result.shopId",
+          "expectedVersion": "$steps.merchant_approve.result.shopVersion",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.occurredAt"
+        }
+      ]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "merchant_terminal_readback",
+      "step_order": 7,
+      "capability_id": "capability.cloudmold.merchant.merchant-onboarding-workflow-query.inspect.v1",
+      "poll_interval_seconds": 10,
+      "wait_success": {
+        "/status": "SUCCEEDED"
+      },
+      "wait_failure": {
+        "/status": ["FAILED"]
+      },
+      "arguments": [
+        "$steps.merchant_draft.result.applicationId"
+      ]
+    }
+  ]
+}

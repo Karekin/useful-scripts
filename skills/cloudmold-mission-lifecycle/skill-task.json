@@ -1,0 +1,38 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.agentcontrol.mission-lifecycle-stockout.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "INTERNAL_SUBFLOW",
+  "max_attempts": 5,
+  "steps": [
+    {
+      "step_code": "start_stockout_mission",
+      "step_order": 1,
+      "capability_id": "capability.cloudmold.agentcontrol.mission-lifecycle-workflow-command.start-stockout-mission.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input",
+          "$overrides": {
+            "idempotencyKey": "$task.stepIdempotencyKey"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "inspect_stockout_mission",
+      "step_order": 2,
+      "capability_id": "capability.cloudmold.agentcontrol.mission-lifecycle-workflow-query.inspect.v1",
+      "operation_type": "READ",
+      "arguments": [
+        "$steps.start_stockout_mission.result.missionId"
+      ]
+    }
+  ]
+}

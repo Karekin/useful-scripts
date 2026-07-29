@@ -43,6 +43,7 @@ class ProductToListingSkillDefinitionTest(unittest.TestCase):
             "listing_business",
             "listing_risk",
             "listing_publish",
+            "listing_channel_receipt",
             "listing_terminal_readback",
         ]
         self.assertEqual([step["step_code"] for step in self.definition["steps"]], expected_codes)
@@ -81,6 +82,18 @@ class ProductToListingSkillDefinitionTest(unittest.TestCase):
                     {"listingId": "", "expectedVersion": 0, "idempotencyKey": "placeholder"},
                     {"listingId": "", "expectedVersion": 0, "publisherRef": "", "idempotencyKey": "placeholder"},
                 ]
+            },
+            "listingReceipt": {
+                "idempotencyKey": "placeholder",
+                "listingId": "placeholder",
+                "expectedVersion": 6,
+                "outcome": "CONFIRMED_PUBLISHED",
+                "channelListingId": "internal-channel:sample",
+                "channelStatus": "ONLINE",
+                "confirmedAt": "2026-07-27T12:00:00Z",
+                "evidenceRef": "synthetic:yshopping-internal:sample",
+                "correlationId": "00000000-0000-0000-0000-000000000000",
+                "occurredAt": "2026-07-27T12:00:00Z",
             },
             "readback": {"listingId": "placeholder"},
         }

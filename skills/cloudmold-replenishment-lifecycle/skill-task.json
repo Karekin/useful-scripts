@@ -1,0 +1,71 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.supply.replenishment-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "replenishment-operator",
+  "max_attempts": 3,
+  "steps": [
+    {
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_supplier_sourcing",
+      "step_order": 1,
+      "child_skill_id": "skill.cloudmold.supplier.sourcing-lifecycle.v1",
+      "child_skill_version": "1.0.0",
+      "child_run_id": "$input.runIds.sourcing",
+      "arguments": {"$object": "$input.sourcing", "$overrides": {}}
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_supplier_sourcing",
+      "step_order": 2,
+      "poll_interval_seconds": 2,
+      "arguments": ["$steps.submit_supplier_sourcing.result.childTaskId"]
+    },
+    {
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_purchase_order",
+      "step_order": 3,
+      "child_skill_id": "skill.cloudmold.procurement.order-lifecycle.v1",
+      "child_skill_version": "1.0.0",
+      "child_run_id": "$input.runIds.procurement",
+      "arguments": {
+        "$object": "$input.procurement",
+        "$overrides": {
+          "/purchaseOrder/supplierRef": "$steps.wait_supplier_sourcing.result.outputs.supplier_award.supplierId",
+          "/purchaseOrder/sourceBusinessRef": "$steps.wait_supplier_sourcing.result.outputs.supplier_award.sourcingCaseId"
+        }
+      }
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_purchase_order",
+      "step_order": 4,
+      "poll_interval_seconds": 2,
+      "arguments": ["$steps.submit_purchase_order.result.childTaskId"]
+    },
+    {
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_physical_warehouse_cycle",
+      "step_order": 5,
+      "child_skill_id": "skill.cloudmold.wms.operations.v1",
+      "child_skill_version": "1.1.0",
+      "child_run_id": "$input.runIds.warehouse",
+      "arguments": {
+        "$object": "$input.warehouse",
+        "$overrides": {
+          "/receipt/bizOrderNo": "$input.procurement.purchaseOrder.orderCode",
+          "/receipt/remark": "$input.replenishmentReceiptRemark"
+        }
+      }
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_physical_warehouse_cycle",
+      "step_order": 6,
+      "poll_interval_seconds": 2,
+      "arguments": ["$steps.submit_physical_warehouse_cycle.result.childTaskId"]
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "scenarios": [
+    {
+      "scenarioCode": "WMS_TRANSFER_SELLABLE_A01_TO_RUNTIME",
+      "canonicalSkuId": "46179679-fc2e-4e06-ba32-a6e1bb61aee4",
+      "canonicalWarehouseId": "62d10000-0000-4000-8000-000000000001",
+      "mappingEvidenceSha256": "fd97495cf122db183bd85d8647c435b76d4dfe7f47a6e098e29692e6788d971a",
+      "targetType": "TRANSFER_REQUEST",
+      "sourceWarehouseId": 99150105,
+      "targetWarehouseId": 99150107,
+      "wmsSkuId": 2,
+      "uomCode": "PCS",
+      "forecastQuantity": "86",
+      "safetyStockQuantity": "24",
+      "onHandQuantity": "18",
+      "inboundQuantity": "8",
+      "capacityQuantity": "260",
+      "minimumOrderQuantity": "6",
+      "sourceReserveQuantity": "6",
+      "maxTransferFraction": "0.25",
+      "unitCostMinor": 10000,
+      "budgetAmountMinor": 1200000
+    },
+    {
+      "scenarioCode": "WMS_TRANSFER_RUNTIME_TO_SELLABLE_A01",
+      "canonicalSkuId": "46179679-fc2e-4e06-ba32-a6e1bb61aee4",
+      "canonicalWarehouseId": "62d10000-0000-4000-8000-000000000001",
+      "mappingEvidenceSha256": "abe53694884f902237202cdc9c4fdb7e8497bdc1944fc5fd4ec8c9bf1a04ccd5",
+      "targetType": "TRANSFER_REQUEST",
+      "sourceWarehouseId": 99150107,
+      "targetWarehouseId": 99150105,
+      "wmsSkuId": 2,
+      "uomCode": "PCS",
+      "forecastQuantity": "74",
+      "safetyStockQuantity": "20",
+      "onHandQuantity": "16",
+      "inboundQuantity": "6",
+      "capacityQuantity": "240",
+      "minimumOrderQuantity": "6",
+      "sourceReserveQuantity": "6",
+      "maxTransferFraction": "0.25",
+      "unitCostMinor": 10000,
+      "budgetAmountMinor": 1000000
+    }
+  ]
+}

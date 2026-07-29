@@ -95,6 +95,22 @@
       "owner": "cloudmold-commerce"
     },
     {
+      "skill_id": "skill.cloudmold.consumer.shopping-journey.v1",
+      "path": "cloudmold-consumer-shopping-journey",
+      "manifest": "cloudmold-consumer-shopping-journey/skill.json",
+      "task_definition": "cloudmold-consumer-shopping-journey/skill-task.json",
+      "status": "active",
+      "owner": "cloudmold-consumer-operations"
+    },
+    {
+      "skill_id": "skill.cloudmold.commerce.autonomous-day.v1",
+      "path": "cloudmold-autonomous-commerce-day",
+      "manifest": "cloudmold-autonomous-commerce-day/skill.json",
+      "task_definition": "cloudmold-autonomous-commerce-day/skill-task.json",
+      "status": "active",
+      "owner": "cloudmold-business-operations"
+    },
+    {
       "skill_id": "skill.cloudmold.cross-channel.local-demo.v1",
       "path": "cloudmold-cross-channel-local-demo",
       "manifest": "cloudmold-cross-channel-local-demo/skill.json",

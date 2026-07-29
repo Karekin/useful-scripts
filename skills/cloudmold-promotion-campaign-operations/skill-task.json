@@ -1,0 +1,179 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.engagement.promotion-campaign-operations.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R2",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "campaign-operations",
+  "max_attempts": 5,
+  "steps": [
+    {
+      "step_code": "campaign_activate",
+      "step_order": 1,
+      "capability_id": "capability.cloudmold.engagement.engagement-command.save-notification-campaign.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.campaignCommand",
+          "$overrides": {
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId",
+            "desiredStatus": "ACTIVE"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "delivery_queue",
+      "step_order": 2,
+      "capability_id": "capability.cloudmold.engagement.engagement-command.create-notification-delivery.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.deliveryCommand",
+          "$overrides": {
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "provider_send",
+      "step_order": 3,
+      "capability_id": "capability.cloudmold.engagement.engagement-command.record-notification-attempt.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.attemptCommand",
+          "$overrides": {
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId",
+            "expectedVersion": "$steps.delivery_queue.result.aggregateVersion",
+            "outcome": "ACCEPTED"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "delivery_receipt",
+      "step_order": 4,
+      "capability_id": "capability.cloudmold.engagement.engagement-command.record-notification-receipt.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.deliveredReceiptCommand",
+          "$overrides": {
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId",
+            "expectedVersion": "$steps.provider_send.result.aggregateVersion",
+            "receiptStatus": "DELIVERED"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "open_receipt",
+      "step_order": 5,
+      "capability_id": "capability.cloudmold.engagement.engagement-command.record-notification-receipt.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.openedReceiptCommand",
+          "$overrides": {
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId",
+            "expectedVersion": "$steps.delivery_receipt.result.aggregateVersion",
+            "receiptStatus": "OPENED"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "click_receipt",
+      "step_order": 6,
+      "capability_id": "capability.cloudmold.engagement.engagement-command.record-notification-receipt.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.clickedReceiptCommand",
+          "$overrides": {
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId",
+            "expectedVersion": "$steps.open_receipt.result.aggregateVersion",
+            "receiptStatus": "CLICKED"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "campaign_complete",
+      "step_order": 7,
+      "capability_id": "capability.cloudmold.engagement.engagement-command.save-notification-campaign.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.campaignCommand",
+          "$overrides": {
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId",
+            "desiredStatus": "COMPLETED",
+            "expectedVersion": "$steps.campaign_activate.result.aggregateVersion"
+          }
+        }
+      ]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "campaign_terminal_readback",
+      "step_order": 8,
+      "capability_id": "capability.cloudmold.engagement.marketing-growth-workflow-query.inspect-campaign-lifecycle.v1",
+      "poll_interval_seconds": 10,
+      "wait_success": {
+        "/status": "SUCCEEDED"
+      },
+      "wait_failure": {
+        "/status": ["FAILED"]
+      },
+      "arguments": [
+        "$input.campaignCommand.campaignId",
+        "$input.deliveryCommand.deliveryId"
+      ]
+    }
+  ]
+}

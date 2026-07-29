@@ -1,0 +1,25 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.warehouse.inbound-readback.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R1",
+  "workflow_level": "INTERNAL_SUBFLOW",
+  "max_attempts": 5,
+  "steps": [
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "inspect_warehouse_inbound",
+      "step_order": 1,
+      "capability_id": "capability.cloudmold.warehouse.inbound-query.require-inbound-stage.v1",
+      "poll_interval_seconds": 30,
+      "wait_success": {
+        "/putawayStatus": "COMPLETED",
+        "/terminal": true
+      },
+      "wait_failure": {
+        "/asnStatus": ["CANCELLED"]
+      },
+      "arguments": ["$input.recommendationId"]
+    }
+  ]
+}

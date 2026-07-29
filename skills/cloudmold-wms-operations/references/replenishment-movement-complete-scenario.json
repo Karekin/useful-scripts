@@ -1,0 +1,113 @@
+{
+  "flowId": "workflow.cloudmold.wms.replenishment-movement-complete.v1",
+  "requiredInputs": ["authority", "documentAction", "inventory"],
+  "steps": [
+    {
+      "id": "validate-merchant-shop",
+      "capabilityId": "capability.cloudmold.merchant.merchant-reference-validation.require-active-reference.v1",
+      "write": false,
+      "arguments": ["$input.authority.reference"],
+      "expect": {
+        "result.merchantStatus": "ACTIVE",
+        "result.shopStatus": "ACTIVE"
+      }
+    },
+    {
+      "id": "authorize-owner",
+      "capabilityId": "capability.cloudmold.merchant.merchant-operator-authorization.require-authorized-operator.v1",
+      "write": false,
+      "arguments": ["$input.authority.operator"],
+      "expect": {
+        "result.roleCode": "OWNER",
+        "result.assignmentStatus": "ACTIVE"
+      }
+    },
+    {
+      "id": "read-draft",
+      "capabilityId": "capability.cloudmold.integration.yudao-legacy-operations-query.get-movement-order.v1",
+      "write": false,
+      "arguments": ["$input.documentAction.documentId"],
+      "expect": {
+        "result.sourceSystem": "WMS",
+        "result.documentType": "MOVEMENT_ORDER",
+        "result.status": 0
+      }
+    },
+    {
+      "id": "read-source-before",
+      "capabilityId": "capability.cloudmold.integration.yudao-legacy-operations-query.get-wms-inventory.v1",
+      "write": false,
+      "arguments": [
+        "$input.inventory.sourceWarehouseId",
+        "$input.inventory.wmsSkuId"
+      ],
+      "expect": {
+        "result.quantity": "$input.inventory.sourceBefore"
+      }
+    },
+    {
+      "id": "read-target-before",
+      "capabilityId": "capability.cloudmold.integration.yudao-legacy-operations-query.get-wms-inventory.v1",
+      "write": false,
+      "arguments": [
+        "$input.inventory.targetWarehouseId",
+        "$input.inventory.wmsSkuId"
+      ],
+      "expect": {
+        "result.quantity": "$input.inventory.targetBefore"
+      }
+    },
+    {
+      "id": "complete",
+      "capabilityId": "capability.cloudmold.integration.yudao-wms-command.complete-movement-order.v1",
+      "write": true,
+      "arguments": [
+        {
+          "idempotencyKey": "$idempotency.key",
+          "documentId": "$input.documentAction.documentId",
+          "expectedCurrentStatus": 0,
+          "expectedDocumentVersion": null
+        }
+      ],
+      "expect": {
+        "result.success": true,
+        "result.snapshot.status": 4
+      }
+    },
+    {
+      "id": "assert-document",
+      "capabilityId": "capability.cloudmold.integration.yudao-legacy-operations-query.get-movement-order.v1",
+      "write": false,
+      "arguments": ["$input.documentAction.documentId"],
+      "expect": {
+        "result.sourceSystem": "WMS",
+        "result.documentType": "MOVEMENT_ORDER",
+        "result.status": 4
+      }
+    },
+    {
+      "id": "assert-source-after",
+      "capabilityId": "capability.cloudmold.integration.yudao-legacy-operations-query.get-wms-inventory.v1",
+      "write": false,
+      "arguments": [
+        "$input.inventory.sourceWarehouseId",
+        "$input.inventory.wmsSkuId"
+      ],
+      "expect": {
+        "result.quantity": "$input.inventory.sourceAfter"
+      }
+    },
+    {
+      "id": "assert-target-after",
+      "capabilityId": "capability.cloudmold.integration.yudao-legacy-operations-query.get-wms-inventory.v1",
+      "write": false,
+      "arguments": [
+        "$input.inventory.targetWarehouseId",
+        "$input.inventory.wmsSkuId"
+      ],
+      "expect": {
+        "result.quantity": "$input.inventory.targetAfter"
+      }
+    }
+  ]
+}

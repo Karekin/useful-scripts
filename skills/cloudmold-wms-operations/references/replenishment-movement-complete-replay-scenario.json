@@ -1,0 +1,100 @@
+{
+  "flowId": "workflow.cloudmold.wms.replenishment-movement-complete-replay.v1",
+  "requiredInputs": ["authority", "documentAction", "inventory"],
+  "steps": [
+    {
+      "id": "validate-merchant-shop",
+      "capabilityId": "capability.cloudmold.merchant.merchant-reference-validation.require-active-reference.v1",
+      "write": false,
+      "arguments": ["$input.authority.reference"],
+      "expect": {
+        "result.merchantStatus": "ACTIVE",
+        "result.shopStatus": "ACTIVE"
+      }
+    },
+    {
+      "id": "authorize-owner",
+      "capabilityId": "capability.cloudmold.merchant.merchant-operator-authorization.require-authorized-operator.v1",
+      "write": false,
+      "arguments": ["$input.authority.operator"],
+      "expect": {
+        "result.roleCode": "OWNER",
+        "result.assignmentStatus": "ACTIVE"
+      }
+    },
+    {
+      "id": "read-finished-before-replay",
+      "capabilityId": "capability.cloudmold.integration.yudao-legacy-operations-query.get-movement-order.v1",
+      "write": false,
+      "arguments": ["$input.documentAction.documentId"],
+      "expect": {
+        "result.status": 4
+      }
+    },
+    {
+      "id": "read-source-before-replay",
+      "capabilityId": "capability.cloudmold.integration.yudao-legacy-operations-query.get-wms-inventory.v1",
+      "write": false,
+      "arguments": [
+        "$input.inventory.sourceWarehouseId",
+        "$input.inventory.wmsSkuId"
+      ],
+      "expect": {
+        "result.quantity": "$input.inventory.sourceAfter"
+      }
+    },
+    {
+      "id": "read-target-before-replay",
+      "capabilityId": "capability.cloudmold.integration.yudao-legacy-operations-query.get-wms-inventory.v1",
+      "write": false,
+      "arguments": [
+        "$input.inventory.targetWarehouseId",
+        "$input.inventory.wmsSkuId"
+      ],
+      "expect": {
+        "result.quantity": "$input.inventory.targetAfter"
+      }
+    },
+    {
+      "id": "replay-complete",
+      "capabilityId": "capability.cloudmold.integration.yudao-wms-command.complete-movement-order.v1",
+      "write": true,
+      "arguments": [
+        {
+          "idempotencyKey": "$idempotency.key",
+          "documentId": "$input.documentAction.documentId",
+          "expectedCurrentStatus": 0,
+          "expectedDocumentVersion": null
+        }
+      ],
+      "expect": {
+        "result.success": true,
+        "result.snapshot.status": 4
+      }
+    },
+    {
+      "id": "assert-source-unchanged",
+      "capabilityId": "capability.cloudmold.integration.yudao-legacy-operations-query.get-wms-inventory.v1",
+      "write": false,
+      "arguments": [
+        "$input.inventory.sourceWarehouseId",
+        "$input.inventory.wmsSkuId"
+      ],
+      "expect": {
+        "result.quantity": "$input.inventory.sourceAfter"
+      }
+    },
+    {
+      "id": "assert-target-unchanged",
+      "capabilityId": "capability.cloudmold.integration.yudao-legacy-operations-query.get-wms-inventory.v1",
+      "write": false,
+      "arguments": [
+        "$input.inventory.targetWarehouseId",
+        "$input.inventory.wmsSkuId"
+      ],
+      "expect": {
+        "result.quantity": "$input.inventory.targetAfter"
+      }
+    }
+  ]
+}

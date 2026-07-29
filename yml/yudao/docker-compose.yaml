@@ -143,6 +143,9 @@ services:
       # Agent Control adapter remains fail-closed unless explicitly enabled.
       CLOUDMOLD_AGENT_APPROVAL_WORKFLOW_ENABLED: ${CLOUDMOLD_AGENT_APPROVAL_WORKFLOW_ENABLED:-false}
       CLOUDMOLD_AI_OPERATIONS_TEMPORAL_ENABLED: ${CLOUDMOLD_AI_OPERATIONS_TEMPORAL_ENABLED:-false}
+      CLOUDMOLD_AI_OPERATIONS_TEMPORAL_SEED_ENABLED: ${CLOUDMOLD_AI_OPERATIONS_TEMPORAL_ENABLED:-false}
+      CLOUDMOLD_AI_OPERATIONS_TEMPORAL_SEED_TENANTS: ${CLOUDMOLD_AI_OPERATIONS_TEMPORAL_SEED_TENANTS:-162}
+      CLOUDMOLD_AI_OPERATIONS_SYNTHETIC_CONSUMER_MEMBER_USER_ID: ${CLOUDMOLD_AI_OPERATIONS_SYNTHETIC_CONSUMER_MEMBER_USER_ID:-286}
       CLOUDMOLD_TEMPORAL_TARGET: temporal:7233
       CLOUDMOLD_TEMPORAL_NAMESPACE: default
       CLOUDMOLD_TEMPORAL_TASK_QUEUE: cloudmold-ai-operations
@@ -153,6 +156,9 @@ services:
       # Keep the governed Compose data plane isolated from developer-local
       # providers that may register the same interfaces with another secret.
       CLOUDMOLD_RPC_GROUP: cloudmold-compose-internal
+      CLOUDMOLD_ANALYTICS_LIVE_QUERY_ENABLED: "true"
+      CLOUDMOLD_ANALYTICS_STAR_ROCKS_JDBC_URL: jdbc:mysql://yshopping-starrocks:9030/yshopping_ads?useSSL=false&allowPublicKeyRetrieval=true&connectTimeout=5000&socketTimeout=45000
+      CLOUDMOLD_ANALYTICS_STAR_ROCKS_USERNAME: root
       CLOUDMOLD_DUBBO_REGISTRY: nacos://yudao-nacos:8848
       CLOUDMOLD_DUBBO_REGISTRY_GROUP: CLOUDMOLD_DUBBO
       # The 得物 V1 demo listings are published on the consumer YSHOPPING channel.
@@ -216,6 +222,35 @@ services:
         fi
         mysql -hyudao-mysql -uroot ruoyi-vue-pro < /migration-108.sql
         mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-112.sql
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_replenishment_conversion' AND column_name='source_system'")" = "0" ]; then
+          mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-113.sql
+        fi
+        mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-114.sql
+        mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-115.sql
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_ai_ops_temporal_run_binding' AND column_name='business_reference_id'")" = "0" ]; then
+          mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-116.sql
+        fi
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.check_constraints WHERE constraint_schema='ruoyi-vue-pro' AND constraint_name='ck_cm_inv_v3_command_type' AND check_clause LIKE '%INTRANSIT_ADD%'")" = "0" ]; then
+          mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-117.sql
+        fi
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_asn'")" = "0" ]; then
+          mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-118.sql
+        fi
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_ai_ops_temporal_schedule' AND column_name='input_strategy'")" = "0" ]; then
+          mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-119.sql
+        fi
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_event_outbox' AND index_name='idx_outbox_ai_ops_discovery'")" = "0" ]; then
+          mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-120.sql
+        fi
+        mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-121.sql
+        mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-122.sql
+        mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-123.sql
+        mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-124.sql
+        mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-125.sql
+        mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-126.sql
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_replenishment_execution_proposal'")" = "0" ]; then
+          mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-127.sql
+        fi
     volumes:
       - ../../../yudao-cloud/sql/cloudmold/V20260718_67__durable_skill_task_executor.sql:/migration-67.sql:ro
       - ../../../yudao-cloud/cloudmold-module-skill-task/cloudmold-module-skill-task-server/src/main/resources/db/migration/V20260719_68__durable_skill_task_composition.sql:/migration-68.sql:ro
@@ -224,6 +259,21 @@ services:
       - ../../../yudao-cloud/cloudmold-module-skill-task/cloudmold-module-skill-task-server/src/main/resources/db/migration/V20260726_107__skill_task_child_approval_definition_scope.sql:/migration-107.sql:ro
       - ../../../yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/resources/db/migration/V20260726_108__ai_operations_temporal_schedule.sql:/migration-108.sql:ro
       - ../../../yudao-cloud/sql/cloudmold/V20260726_112__dewu_agent_approval_operating_principal.sql:/migration-112.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260727_113__replenishment_execution_tracking.sql:/migration-113.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260727_114__canonical_procurement_first_slice.sql:/migration-114.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260727_115__canonical_fulfillment_exception.sql:/migration-115.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260729_116__temporal_run_binding_business_reference.sql:/migration-116.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260729_117__inventory_v3_intransit_and_quality_release_commands.sql:/migration-117.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260729_118__canonical_inbound_asn_receipt_putaway.sql:/migration-118.sql:ro
+      - ../../../yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/resources/db/migration/V20260729_119__managed_workflow_daily_automation.sql:/migration-119.sql:ro
+      - ../../../yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/resources/db/migration/V20260729_120__ai_operations_outbox_discovery.sql:/migration-120.sql:ro
+      - ../../../yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/resources/db/migration/V20260729_121__ai_operations_daily_dispatch_observation.sql:/migration-121.sql:ro
+      - ../../../yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/resources/db/migration/V20260729_122__automation_candidate_event_provenance.sql:/migration-122.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260729_123__canonical_supplier_sourcing.sql:/migration-123.sql:ro
+      - ../../../yudao-cloud/cloudmold-module-finance/cloudmold-module-finance-server/src/main/resources/db/migration/V20260729_124__canonical_finance_close.sql:/migration-124.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260729_125__canonical_growth_experiment.sql:/migration-125.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260729_126__community_content_moderation_status_width.sql:/migration-126.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260729_127__replenishment_execution_proposal.sql:/migration-127.sql:ro
     networks:
       - yudao_network
 
@@ -293,6 +343,9 @@ services:
       CLOUDMOLD_SKILL_WORKER_ENABLED: ${CLOUDMOLD_SKILL_WORKER_ENABLED:-true}
       CLOUDMOLD_SKILL_TASK_APPROVAL_HMAC_SECRET: ${CLOUDMOLD_SKILL_TASK_APPROVAL_HMAC_SECRET:-}
       CLOUDMOLD_RPC_GROUP: cloudmold-compose-internal
+      # Cross-domain KPI reads query the governed StarRocks role mart and can
+      # legitimately take longer than ordinary OLTP capability calls.
+      CLOUDMOLD_RPC_TIMEOUT_MILLIS: "45000"
       CLOUDMOLD_DUBBO_REGISTRY: nacos://yudao-nacos:8848
       CLOUDMOLD_DUBBO_REGISTRY_GROUP: CLOUDMOLD_DUBBO
       JAVA_OPTS: -Xms192m -Xmx512m -Dfile.encoding=UTF-8 -Ddubbo.application.migration.step=FORCE_INTERFACE -Ddubbo.application.serialize-check-status=STRICT -Ddubbo.application.check-serializable=false -Ddubbo.hessian.allowNonSerializable=true

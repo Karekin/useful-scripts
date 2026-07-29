@@ -1,0 +1,271 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.supplier.sourcing-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "supplier-sourcing-operator",
+  "max_attempts": 5,
+  "steps": [
+    {
+      "step_code": "supplier_a_register",
+      "step_order": 1,
+      "capability_id": "capability.cloudmold.supplier.supplier-sourcing-command.execute.sig-64f1778a42c3.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "operation": "REGISTER_SUPPLIER",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "runId": "$task.runId",
+        "correlationId": "$input.correlationId",
+        "occurredAt": "$input.occurredAt",
+        "supplier": "$input.supplierA"
+      }, "$input.actorPrincipalId"]
+    },
+    {
+      "step_code": "supplier_a_submit",
+      "step_order": 2,
+      "capability_id": "capability.cloudmold.supplier.supplier-sourcing-command.execute.sig-64f1778a42c3.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "operation": "SUBMIT_ADMISSION",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "runId": "$task.runId",
+        "correlationId": "$input.correlationId",
+        "occurredAt": "$input.occurredAt",
+        "admission": {
+          "$object": "$input.admissionA",
+          "$overrides": {
+            "supplierId": "$steps.supplier_a_register.result.supplierId",
+            "expectedVersion": "$steps.supplier_a_register.result.aggregateVersion"
+          }
+        }
+      }, "$input.actorPrincipalId"]
+    },
+    {
+      "step_code": "supplier_a_approve",
+      "step_order": 3,
+      "capability_id": "capability.cloudmold.supplier.supplier-sourcing-command.execute.sig-64f1778a42c3.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "operation": "APPROVE_ADMISSION",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "runId": "$task.runId",
+        "correlationId": "$input.correlationId",
+        "occurredAt": "$input.occurredAt",
+        "admission": {
+          "supplierId": "$steps.supplier_a_register.result.supplierId",
+          "expectedVersion": "$steps.supplier_a_submit.result.aggregateVersion",
+          "reasonCode": "AI_SOURCING_APPROVED"
+        }
+      }, "$input.actorPrincipalId"]
+    },
+    {
+      "step_code": "supplier_b_register",
+      "step_order": 4,
+      "capability_id": "capability.cloudmold.supplier.supplier-sourcing-command.execute.sig-64f1778a42c3.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "operation": "REGISTER_SUPPLIER",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "runId": "$task.runId",
+        "correlationId": "$input.correlationId",
+        "occurredAt": "$input.occurredAt",
+        "supplier": "$input.supplierB"
+      }, "$input.actorPrincipalId"]
+    },
+    {
+      "step_code": "supplier_b_submit",
+      "step_order": 5,
+      "capability_id": "capability.cloudmold.supplier.supplier-sourcing-command.execute.sig-64f1778a42c3.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "operation": "SUBMIT_ADMISSION",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "runId": "$task.runId",
+        "correlationId": "$input.correlationId",
+        "occurredAt": "$input.occurredAt",
+        "admission": {
+          "$object": "$input.admissionB",
+          "$overrides": {
+            "supplierId": "$steps.supplier_b_register.result.supplierId",
+            "expectedVersion": "$steps.supplier_b_register.result.aggregateVersion"
+          }
+        }
+      }, "$input.actorPrincipalId"]
+    },
+    {
+      "step_code": "supplier_b_approve",
+      "step_order": 6,
+      "capability_id": "capability.cloudmold.supplier.supplier-sourcing-command.execute.sig-64f1778a42c3.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "operation": "APPROVE_ADMISSION",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "runId": "$task.runId",
+        "correlationId": "$input.correlationId",
+        "occurredAt": "$input.occurredAt",
+        "admission": {
+          "supplierId": "$steps.supplier_b_register.result.supplierId",
+          "expectedVersion": "$steps.supplier_b_submit.result.aggregateVersion",
+          "reasonCode": "AI_SOURCING_APPROVED"
+        }
+      }, "$input.actorPrincipalId"]
+    },
+    {
+      "step_code": "rfq_create",
+      "step_order": 7,
+      "capability_id": "capability.cloudmold.supplier.supplier-sourcing-command.execute.sig-64f1778a42c3.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "operation": "CREATE_RFQ",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "runId": "$task.runId",
+        "correlationId": "$input.correlationId",
+        "occurredAt": "$input.occurredAt",
+        "sourcingCase": "$input.sourcingCase"
+      }, "$input.actorPrincipalId"]
+    },
+    {
+      "step_code": "quote_a_submit",
+      "step_order": 8,
+      "capability_id": "capability.cloudmold.supplier.supplier-sourcing-command.execute.sig-64f1778a42c3.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "operation": "SUBMIT_QUOTE",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "runId": "$task.runId",
+        "correlationId": "$input.correlationId",
+        "occurredAt": "$input.occurredAt",
+        "quote": {
+          "$object": "$input.quoteA",
+          "$overrides": {
+            "sourcingCaseId": "$steps.rfq_create.result.sourcingCaseId",
+            "supplierId": "$steps.supplier_a_register.result.supplierId",
+            "expectedCaseVersion": "$steps.rfq_create.result.aggregateVersion"
+          }
+        }
+      }, "$input.actorPrincipalId"]
+    },
+    {
+      "step_code": "quote_b_submit",
+      "step_order": 9,
+      "capability_id": "capability.cloudmold.supplier.supplier-sourcing-command.execute.sig-64f1778a42c3.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "operation": "SUBMIT_QUOTE",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "runId": "$task.runId",
+        "correlationId": "$input.correlationId",
+        "occurredAt": "$input.occurredAt",
+        "quote": {
+          "$object": "$input.quoteB",
+          "$overrides": {
+            "sourcingCaseId": "$steps.rfq_create.result.sourcingCaseId",
+            "supplierId": "$steps.supplier_b_register.result.supplierId",
+            "expectedCaseVersion": "$steps.quote_a_submit.result.aggregateVersion"
+          }
+        }
+      }, "$input.actorPrincipalId"]
+    },
+    {
+      "step_code": "sample_a_evaluate",
+      "step_order": 10,
+      "capability_id": "capability.cloudmold.supplier.supplier-sourcing-command.execute.sig-64f1778a42c3.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "operation": "RECORD_SAMPLE_EVALUATION",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "runId": "$task.runId",
+        "correlationId": "$input.correlationId",
+        "occurredAt": "$input.occurredAt",
+        "sampleEvaluation": {
+          "$object": "$input.sampleA",
+          "$overrides": {
+            "sourcingCaseId": "$steps.rfq_create.result.sourcingCaseId",
+            "supplierId": "$steps.supplier_a_register.result.supplierId",
+            "quoteId": "$steps.quote_a_submit.result.quoteId",
+            "expectedCaseVersion": "$steps.quote_b_submit.result.aggregateVersion"
+          }
+        }
+      }, "$input.actorPrincipalId"]
+    },
+    {
+      "step_code": "sample_b_evaluate",
+      "step_order": 11,
+      "capability_id": "capability.cloudmold.supplier.supplier-sourcing-command.execute.sig-64f1778a42c3.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "operation": "RECORD_SAMPLE_EVALUATION",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "runId": "$task.runId",
+        "correlationId": "$input.correlationId",
+        "occurredAt": "$input.occurredAt",
+        "sampleEvaluation": {
+          "$object": "$input.sampleB",
+          "$overrides": {
+            "sourcingCaseId": "$steps.rfq_create.result.sourcingCaseId",
+            "supplierId": "$steps.supplier_b_register.result.supplierId",
+            "quoteId": "$steps.quote_b_submit.result.quoteId",
+            "expectedCaseVersion": "$steps.sample_a_evaluate.result.aggregateVersion"
+          }
+        }
+      }, "$input.actorPrincipalId"]
+    },
+    {
+      "step_code": "supplier_award",
+      "step_order": 12,
+      "capability_id": "capability.cloudmold.supplier.supplier-sourcing-command.execute.sig-64f1778a42c3.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "operation": "AWARD_SUPPLIER",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "runId": "$task.runId",
+        "correlationId": "$input.correlationId",
+        "occurredAt": "$input.occurredAt",
+        "award": {
+          "$object": "$input.award",
+          "$overrides": {
+            "sourcingCaseId": "$steps.rfq_create.result.sourcingCaseId",
+            "supplierId": "$steps.supplier_a_register.result.supplierId",
+            "quoteId": "$steps.quote_a_submit.result.quoteId",
+            "expectedCaseVersion": "$steps.sample_b_evaluate.result.aggregateVersion"
+          }
+        }
+      }, "$input.actorPrincipalId"]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "sourcing_terminal_readback",
+      "step_order": 13,
+      "capability_id": "capability.cloudmold.supplier.supplier-sourcing-query.require-decision.v1",
+      "poll_interval_seconds": 10,
+      "wait_success": {"/status": "AWARDED"},
+      "wait_failure": {"/status": ["CANCELLED"]},
+      "arguments": ["$steps.rfq_create.result.sourcingCaseId"]
+    }
+  ]
+}
