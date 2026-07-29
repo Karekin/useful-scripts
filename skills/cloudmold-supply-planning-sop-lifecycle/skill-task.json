@@ -1,0 +1,384 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.supply-planning.sop-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "supply-planning-manager",
+  "max_attempts": 3,
+  "steps": [
+    {
+      "step_code": "create_forecast",
+      "step_order": 1,
+      "capability_id": "capability.cloudmold.supplyplanning.supply-planning-command.execute.sig-1ca9b1370b9e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "CREATE_FORECAST",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$input.runId",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.occurredAt",
+          "forecast": "$input.forecast"
+        },
+        "$input.actorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "publish_forecast",
+      "step_order": 2,
+      "capability_id": "capability.cloudmold.supplyplanning.supply-planning-command.execute.sig-1ca9b1370b9e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "PUBLISH_FORECAST",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$input.runId",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.occurredAt",
+          "forecast": {
+            "forecastId": "$steps.create_forecast.result.aggregateId",
+            "expectedVersion": "$steps.create_forecast.result.aggregateVersion"
+          }
+        },
+        "$input.actorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "evaluate_forecast",
+      "step_order": 3,
+      "capability_id": "capability.cloudmold.supplyplanning.supply-planning-command.execute.sig-1ca9b1370b9e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "EVALUATE_FORECAST",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$input.runId",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.occurredAt",
+          "forecastEvaluation": {
+            "$object": "$input.forecastEvaluation",
+            "$overrides": {
+              "/forecastId": "$steps.create_forecast.result.aggregateId"
+            }
+          }
+        },
+        "$input.actorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "create_supply_plan",
+      "step_order": 4,
+      "capability_id": "capability.cloudmold.supplyplanning.supply-planning-command.execute.sig-1ca9b1370b9e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "CREATE_SUPPLY_PLAN",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$input.runId",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.occurredAt",
+          "supplyPlan": {
+            "$object": "$input.supplyPlan",
+            "$overrides": {
+              "/demandForecastId": "$steps.create_forecast.result.aggregateId"
+            }
+          }
+        },
+        "$input.actorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "evaluate_lean_scenario",
+      "step_order": 5,
+      "capability_id": "capability.cloudmold.supplyplanning.supply-planning-command.execute.sig-1ca9b1370b9e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "EVALUATE_PLAN_SCENARIO",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$input.runId",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.occurredAt",
+          "planScenario": {
+            "$object": "$input.scenarios.lean",
+            "$overrides": {
+              "/planId": "$steps.create_supply_plan.result.aggregateId"
+            }
+          }
+        },
+        "$input.actorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "evaluate_resilient_scenario",
+      "step_order": 6,
+      "capability_id": "capability.cloudmold.supplyplanning.supply-planning-command.execute.sig-1ca9b1370b9e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "EVALUATE_PLAN_SCENARIO",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$input.runId",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.occurredAt",
+          "planScenario": {
+            "$object": "$input.scenarios.resilient",
+            "$overrides": {
+              "/planId": "$steps.create_supply_plan.result.aggregateId"
+            }
+          }
+        },
+        "$input.actorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "recommend_plan_scenario",
+      "step_order": 7,
+      "capability_id": "capability.cloudmold.supplyplanning.supply-planning-command.execute.sig-1ca9b1370b9e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECOMMEND_PLAN_SCENARIO",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$input.runId",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.occurredAt",
+          "scenarioRecommendation": {
+            "$object": "$input.scenarioRecommendation",
+            "$overrides": {
+              "/planId": "$steps.create_supply_plan.result.aggregateId",
+              "/candidateScenarioIds/0": "$steps.evaluate_lean_scenario.result.aggregateId",
+              "/candidateScenarioIds/1": "$steps.evaluate_resilient_scenario.result.aggregateId"
+            }
+          }
+        },
+        "$input.actorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "select_recommended_scenario",
+      "step_order": 8,
+      "capability_id": "capability.cloudmold.supplyplanning.supply-planning-command.execute.sig-1ca9b1370b9e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "SELECT_PLAN_SCENARIO",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$input.runId",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.occurredAt",
+          "planScenario": {
+            "scenarioId": "$steps.recommend_plan_scenario.result.businessObjectId",
+            "expectedVersion": 1,
+            "selectedByPrincipalId": "$input.actorPrincipalId"
+          }
+        },
+        "$input.actorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "approve_supply_plan",
+      "step_order": 9,
+      "capability_id": "capability.cloudmold.supplyplanning.supply-planning-command.execute.sig-1ca9b1370b9e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "APPROVE_SUPPLY_PLAN",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$input.runId",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.occurredAt",
+          "supplyPlan": {
+            "planId": "$steps.create_supply_plan.result.aggregateId",
+            "expectedVersion": "$steps.create_supply_plan.result.aggregateVersion",
+            "approverPrincipalId": "$input.actorPrincipalId"
+          }
+        },
+        "$input.actorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "release_supply_plan",
+      "step_order": 10,
+      "capability_id": "capability.cloudmold.supplyplanning.supply-planning-command.execute.sig-1ca9b1370b9e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RELEASE_SUPPLY_PLAN",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$input.runId",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.occurredAt",
+          "supplyPlan": {
+            "planId": "$steps.create_supply_plan.result.aggregateId",
+            "expectedVersion": "$steps.approve_supply_plan.result.aggregateVersion",
+            "releasePrincipalId": "$input.actorPrincipalId"
+          }
+        },
+        "$input.actorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "approve_replenishment",
+      "step_order": 11,
+      "capability_id": "capability.cloudmold.supplyplanning.supply-planning-command.execute.sig-1ca9b1370b9e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "DECIDE_REPLENISHMENT",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$input.runId",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.occurredAt",
+          "replenishment": {
+            "recommendationId": "$steps.release_supply_plan.result.businessObjectId",
+            "expectedVersion": 1,
+            "decision": "APPROVED",
+            "decisionPrincipalId": "$input.actorPrincipalId"
+          }
+        },
+        "$input.actorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "propose_transfer_execution",
+      "step_order": 12,
+      "capability_id": "capability.cloudmold.supplyplanning.supply-planning-command.execute.sig-1ca9b1370b9e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "PROPOSE_REPLENISHMENT_EXECUTION",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$input.runId",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.occurredAt",
+          "replenishmentExecutionProposal": {
+            "$object": "$input.executionProposal",
+            "$overrides": {
+              "/recommendationId": "$steps.release_supply_plan.result.businessObjectId",
+              "/expectedRecommendationVersion": "$steps.approve_replenishment.result.aggregateVersion",
+              "/proposedByPrincipalId": "$input.actorPrincipalId"
+            }
+          }
+        },
+        "$input.actorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "convert_to_transfer_draft",
+      "step_order": 13,
+      "capability_id": "capability.cloudmold.supplyplanning.supply-planning-command.execute.sig-1ca9b1370b9e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "CONVERT_REPLENISHMENT",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "runId": "$input.runId",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.occurredAt",
+          "replenishmentConversion": {
+            "conversionId": "$input.conversionId",
+            "recommendationId": "$steps.release_supply_plan.result.businessObjectId",
+            "expectedVersion": "$steps.approve_replenishment.result.aggregateVersion",
+            "targetType": "$input.executionProposal.targetType",
+            "mappingEvidenceSha256": "$input.executionProposal.mappingEvidenceSha256",
+            "sourceWarehouseId": "$input.executionProposal.sourceWarehouseId",
+            "targetWarehouseId": "$input.executionProposal.targetWarehouseId",
+            "wmsSkuId": "$input.executionProposal.wmsSkuId",
+            "convertedByPrincipalId": "$input.actorPrincipalId"
+          }
+        },
+        "$input.actorPrincipalId"
+      ]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "verify_transfer_draft",
+      "step_order": 14,
+      "capability_id": "capability.cloudmold.supplyplanning.supply-planning-query.require-replenishment-business-stage.v1",
+      "operation_type": "READ",
+      "approval_required": false,
+      "arguments": [
+        "$steps.release_supply_plan.result.businessObjectId"
+      ],
+      "wait_success": {
+        "/recommendationStatus": "CONVERTED",
+        "/targetType": "TRANSFER_REQUEST",
+        "/projectionDocumentStatus": "PREPARE"
+      },
+      "wait_failure": {
+        "/projectionDocumentStatus": [
+          "CANCELED",
+          "FAILED"
+        ]
+      },
+      "poll_interval_seconds": 2
+    }
+  ]
+}
