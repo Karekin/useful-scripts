@@ -1,0 +1,316 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.quality.inspection-recall-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "quality-operations",
+  "max_attempts": 3,
+  "steps": [
+    {
+      "step_code": "link_primary_inspector",
+      "step_order": 1,
+      "capability_id": "capability.cloudmold.identity.identity-command.link-source.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.primaryInspectorIdentityCommand",
+        "$overrides": {"idempotencyKey": "$task.stepIdempotencyKey"}
+      }]
+    },
+    {
+      "step_code": "link_independent_reviewer",
+      "step_order": 2,
+      "capability_id": "capability.cloudmold.identity.identity-command.link-source.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.independentReviewerIdentityCommand",
+        "$overrides": {"idempotencyKey": "$task.stepIdempotencyKey"}
+      }]
+    },
+    {
+      "step_code": "create_quality_standard",
+      "step_order": 3,
+      "capability_id": "capability.cloudmold.quality.quality-command.execute.sig-4bd92dbcbb2e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.commands.0",
+        "$overrides": {"idempotencyKey": "$task.stepIdempotencyKey"}
+      }, "$input.managerPrincipalId"]
+    },
+    {
+      "step_code": "publish_quality_standard",
+      "step_order": 4,
+      "capability_id": "capability.cloudmold.quality.quality-command.execute.sig-4bd92dbcbb2e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.commands.1",
+        "$overrides": {
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "/standard/standardId": "$steps.create_quality_standard.result.aggregateId"
+        }
+      }, "$steps.link_independent_reviewer.result.principalId"]
+    },
+    {
+      "step_code": "certify_primary_inspector",
+      "step_order": 5,
+      "capability_id": "capability.cloudmold.quality.quality-command.execute.sig-4bd92dbcbb2e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.commands.2",
+        "$overrides": {
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "/certification/standardId": "$steps.create_quality_standard.result.aggregateId",
+          "/certification/authenticatorPrincipalId": "$steps.link_primary_inspector.result.principalId"
+        }
+      }, "$input.managerPrincipalId"]
+    },
+    {
+      "step_code": "certify_independent_reviewer",
+      "step_order": 6,
+      "capability_id": "capability.cloudmold.quality.quality-command.execute.sig-4bd92dbcbb2e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.commands.3",
+        "$overrides": {
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "/certification/standardId": "$steps.create_quality_standard.result.aggregateId",
+          "/certification/authenticatorPrincipalId": "$steps.link_independent_reviewer.result.principalId"
+        }
+      }, "$input.managerPrincipalId"]
+    },
+    {
+      "step_code": "register_inspection_lot",
+      "step_order": 7,
+      "capability_id": "capability.cloudmold.inventory.inventory-lot-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.lotCommand",
+        "$overrides": {"idempotencyKey": "$task.stepIdempotencyKey"}
+      }]
+    },
+    {
+      "step_code": "receive_inspection_stock",
+      "step_order": 8,
+      "capability_id": "capability.cloudmold.inventory.inventory-v3-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.stockCommand",
+        "$overrides": {
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "lotId": "$steps.register_inspection_lot.result.lotId"
+        }
+      }]
+    },
+    {
+      "step_code": "create_inspection_task",
+      "step_order": 9,
+      "capability_id": "capability.cloudmold.quality.quality-command.execute.sig-4bd92dbcbb2e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.commands.4",
+        "$overrides": {
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "/inspectionTask/standardId": "$steps.create_quality_standard.result.aggregateId",
+          "/inspectionTask/lotId": "$steps.register_inspection_lot.result.lotId"
+        }
+      }, "$input.managerPrincipalId"]
+    },
+    {
+      "step_code": "assign_primary_inspector",
+      "step_order": 10,
+      "capability_id": "capability.cloudmold.quality.quality-command.execute.sig-4bd92dbcbb2e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.commands.5",
+        "$overrides": {
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "/inspectionTask/taskId": "$steps.create_inspection_task.result.aggregateId",
+          "/inspectionTask/authenticatorPrincipalId": "$steps.link_primary_inspector.result.principalId"
+        }
+      }, "$input.managerPrincipalId"]
+    },
+    {
+      "step_code": "start_inspection",
+      "step_order": 11,
+      "capability_id": "capability.cloudmold.quality.quality-command.execute.sig-4bd92dbcbb2e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.commands.6",
+        "$overrides": {
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "/inspectionTask/taskId": "$steps.create_inspection_task.result.aggregateId"
+        }
+      }, "$steps.link_primary_inspector.result.principalId"]
+    },
+    {
+      "step_code": "record_failed_inspection",
+      "step_order": 12,
+      "capability_id": "capability.cloudmold.quality.quality-command.execute.sig-4bd92dbcbb2e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.commands.7",
+        "$overrides": {
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "/inspectionTask/taskId": "$steps.create_inspection_task.result.aggregateId"
+        }
+      }, "$steps.link_primary_inspector.result.principalId"]
+    },
+    {
+      "step_code": "request_independent_recheck",
+      "step_order": 13,
+      "capability_id": "capability.cloudmold.quality.quality-command.execute.sig-4bd92dbcbb2e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.commands.8",
+        "$overrides": {
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "/inspectionTask/taskId": "$steps.create_inspection_task.result.aggregateId",
+          "/inspectionTask/secondaryAuthenticatorPrincipalId": "$steps.link_independent_reviewer.result.principalId"
+        }
+      }, "$steps.link_primary_inspector.result.principalId"]
+    },
+    {
+      "step_code": "confirm_failed_recheck",
+      "step_order": 14,
+      "capability_id": "capability.cloudmold.quality.quality-command.execute.sig-4bd92dbcbb2e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.commands.9",
+        "$overrides": {
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "/inspectionTask/taskId": "$steps.create_inspection_task.result.aggregateId"
+        }
+      }, "$steps.link_independent_reviewer.result.principalId"]
+    },
+    {
+      "step_code": "complete_inspection",
+      "step_order": 15,
+      "capability_id": "capability.cloudmold.quality.quality-command.execute.sig-4bd92dbcbb2e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.commands.10",
+        "$overrides": {
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "/inspectionTask/taskId": "$steps.create_inspection_task.result.aggregateId"
+        }
+      }, "$steps.link_independent_reviewer.result.principalId"]
+    },
+    {
+      "step_code": "open_capa",
+      "step_order": 16,
+      "capability_id": "capability.cloudmold.quality.quality-command.execute.sig-4bd92dbcbb2e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.commands.11",
+        "$overrides": {
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "/capa/inspectionTaskId": "$steps.create_inspection_task.result.aggregateId",
+          "/capa/ownerPrincipalId": "$input.managerPrincipalId"
+        }
+      }, "$input.managerPrincipalId"]
+    },
+    {
+      "step_code": "verify_capa",
+      "step_order": 17,
+      "capability_id": "capability.cloudmold.quality.quality-command.execute.sig-4bd92dbcbb2e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.commands.12",
+        "$overrides": {
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "/capa/capaId": "$steps.open_capa.result.aggregateId"
+        }
+      }, "$input.managerPrincipalId"]
+    },
+    {
+      "step_code": "open_batch_recall",
+      "step_order": 18,
+      "capability_id": "capability.cloudmold.quality.quality-command.execute.sig-4bd92dbcbb2e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.commands.13",
+        "$overrides": {
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "/recallAction/inspectionTaskId": "$steps.create_inspection_task.result.aggregateId",
+          "/recallAction/ownerPrincipalId": "$input.managerPrincipalId"
+        }
+      }, "$input.managerPrincipalId"]
+    },
+    {
+      "step_code": "acknowledge_batch_recall",
+      "step_order": 19,
+      "capability_id": "capability.cloudmold.quality.quality-command.execute.sig-4bd92dbcbb2e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.commands.14",
+        "$overrides": {
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "/recallAction/recallActionId": "$steps.open_batch_recall.result.aggregateId"
+        }
+      }, "$input.managerPrincipalId"]
+    },
+    {
+      "step_code": "resolve_batch_recall",
+      "step_order": 20,
+      "capability_id": "capability.cloudmold.quality.quality-command.execute.sig-4bd92dbcbb2e.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "$object": "$input.commands.15",
+        "$overrides": {
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "/recallAction/recallActionId": "$steps.open_batch_recall.result.aggregateId"
+        }
+      }, "$input.managerPrincipalId"]
+    },
+    {
+      "step_code": "verify_quality_recall_closed",
+      "step_order": 21,
+      "step_kind": "WAIT_CAPABILITY",
+      "capability_id": "capability.cloudmold.quality.quality-recall-workflow-query.inspect.v1",
+      "poll_interval_seconds": 2,
+      "wait_success": {"/status": "SUCCEEDED"},
+      "wait_failure": {"/status": ["FAILED"]},
+      "arguments": ["$steps.open_batch_recall.result.aggregateId"]
+    }
+  ]
+}
