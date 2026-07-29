@@ -98,6 +98,9 @@ class SkillTaskInputBuilderTest(unittest.TestCase):
         self.assertIn("listingId", value["aftersale"]["commands"][7]["items"][0])
         self.assertEqual(value["aftersale"]["commands"][7]["addressRef"], address_ref)
         self.assertIn("reservationId", value["aftersale"]["commands"][12]["items"][0])
+        self.assertEqual(value["product"]["runIds"]["product"], "ai0719r3a01-product")
+        self.assertEqual(len(value["product"]["listing"]["commands"]), 6)
+        self.assertEqual(len(value["product"]["listing"]["commands"][0]["offers"]), 6)
         self.assertIn("listingOfferId", value["readback"]["listing"]["validation"])
         self.assertEqual(value["runIds"]["readback"], "ai0719r3a01-readback")
 
@@ -108,6 +111,10 @@ class SkillTaskInputBuilderTest(unittest.TestCase):
 
         definitions = {
             "cloudmold-commerce-full-chain": (value, full_chain_definition),
+            "cloudmold-product-to-listing": (
+                value["product"],
+                self._load_json(skill_root / "cloudmold-product-to-listing" / "skill-task.json"),
+            ),
             "cloudmold-commerce-catalog-matrix": (
                 value["catalog"],
                 self._load_json(skill_root / "cloudmold-commerce-catalog-matrix" / "skill-task.json"),
@@ -142,7 +149,7 @@ class SkillTaskInputBuilderTest(unittest.TestCase):
             {
                 definition["skill_id"]: definition["skill_version"]
                 for _, definition in definitions.values()
-                if definition["skill_id"] != full_chain_definition["skill_id"]
+                if definition["skill_id"] in child_versions
             },
         )
 

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import datetime as dt
 import hashlib
 import json
@@ -275,6 +276,45 @@ def build_aftersale(run_id: str, address_ref: str) -> dict:
     return {"commands": commands}
 
 
+def build_product(base_run_id: str, catalog: dict, master: dict,
+                  aftersale: dict) -> dict:
+    occurred_at = catalog["definitions"][0]["occurredAt"]
+    product_run_id = f"{base_run_id}-product"
+    listing_commands = copy.deepcopy(aftersale["commands"][:6])
+    source_offer = listing_commands[0]["offers"][0]
+    listing_commands[0]["offers"] = [
+        {
+            **source_offer,
+            "externalOfferId": f"internal-offer:{base_run_id}:{index}",
+        }
+        for index in range(1, 7)
+    ]
+    return {
+        "runIds": {
+            "product": product_run_id,
+            "catalog": f"{base_run_id}-cat",
+            "master": f"{base_run_id}-master",
+        },
+        "catalog": catalog,
+        "master": master,
+        "listing": {"commands": listing_commands},
+        "listingReceipt": {
+            "idempotencyKey": f"{base_run_id}-channel-receipt",
+            "listingId": PLACEHOLDER_ID,
+            "expectedVersion": 6,
+            "outcome": "CONFIRMED_PUBLISHED",
+            "channelListingId": f"internal-channel:{base_run_id}",
+            "channelStatus": "ONLINE",
+            "confirmedAt": occurred_at,
+            "evidenceRef": f"synthetic:yshopping-internal:{base_run_id}",
+            "correlationId": str(uuid.uuid5(
+                uuid.NAMESPACE_URL, f"{base_run_id}:channel-confirmation")),
+            "occurredAt": occurred_at,
+        },
+        "readback": {"listingId": PLACEHOLDER_ID},
+    }
+
+
 def build_readback(erp_warehouse_source_id: str, eligibility_at: str) -> dict:
     return {
         "authority": {
@@ -312,6 +352,7 @@ def build_input(base_run_id: str, system_admin_source_id: str,
     if not RUN_ID_PATTERN.fullmatch(base_run_id):
         raise ValueError("run-id must be 6-20 characters using letters, digits, dot, underscore, or dash")
     run_ids = {
+        "product": f"{base_run_id}-product",
         "catalog": f"{base_run_id}-cat",
         "projection": f"{base_run_id}-proj",
         "master": f"{base_run_id}-master",
@@ -325,16 +366,20 @@ def build_input(base_run_id: str, system_admin_source_id: str,
     except (ValueError, TypeError, AttributeError) as exc:
         raise ValueError(
             "address-ref must identify an owned App address snapshot") from exc
+    catalog = build_catalog(run_ids["catalog"])
+    master = build_master(run_ids["master"], system_admin_source_id,
+                          erp_warehouse_source_id, eligibility_at)
+    aftersale = build_aftersale(run_ids["aftersale"], normalized_address_ref)
     return {
         "runIds": run_ids,
-        "catalog": build_catalog(run_ids["catalog"]),
+        "product": build_product(base_run_id, catalog, master, aftersale),
+        "catalog": catalog,
         "projection": {"plans": [
             {"canonicalSkuId": PLACEHOLDER_ID, "targets": ["MALL", "ERP", "WMS"]}
             for _ in range(6)
         ]},
-        "master": build_master(run_ids["master"], system_admin_source_id,
-                               erp_warehouse_source_id, eligibility_at),
-        "aftersale": build_aftersale(run_ids["aftersale"], normalized_address_ref),
+        "master": master,
+        "aftersale": aftersale,
         "readback": build_readback(erp_warehouse_source_id, eligibility_at),
     }
 

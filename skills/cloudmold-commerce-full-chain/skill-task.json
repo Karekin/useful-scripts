@@ -1,26 +1,26 @@
 {
   "schema_version": "cloudmold.skill-task-definition/v1",
   "skill_id": "skill.cloudmold.commerce.full-chain-hsf.v1",
-  "skill_version": "1.2.2",
+  "skill_version": "1.3.0",
   "risk_level": "R3",
   "workflow_level": "INTERNAL_SUBFLOW",
   "max_attempts": 3,
   "steps": [
     {
       "step_kind": "SUBMIT_CHILD",
-      "step_code": "submit_catalog",
+      "step_code": "submit_product",
       "step_order": 1,
-      "child_skill_id": "skill.cloudmold.commerce.catalog-matrix.v1",
-      "child_skill_version": "1.2.0",
-      "child_run_id": "$input.runIds.catalog",
-      "arguments": {"$object": "$input.catalog", "$overrides": {}}
+      "child_skill_id": "skill.cloudmold.commerce.product-to-listing.v1",
+      "child_skill_version": "1.1.0",
+      "child_run_id": "$input.product.runIds.product",
+      "arguments": {"$object": "$input.product", "$overrides": {}}
     },
     {
       "step_kind": "WAIT_CHILD",
-      "step_code": "wait_catalog",
+      "step_code": "wait_product",
       "step_order": 2,
       "poll_interval_seconds": 2,
-      "arguments": ["$steps.submit_catalog.result.childTaskId"]
+      "arguments": ["$steps.submit_product.result.childTaskId"]
     },
     {
       "step_kind": "SUBMIT_CHILD",
@@ -32,12 +32,12 @@
       "arguments": {
         "$object": "$input.projection",
         "$overrides": {
-          "/plans/0/canonicalSkuId": "$steps.wait_catalog.result.outputs.define_1.canonicalSkuId",
-          "/plans/1/canonicalSkuId": "$steps.wait_catalog.result.outputs.define_2.canonicalSkuId",
-          "/plans/2/canonicalSkuId": "$steps.wait_catalog.result.outputs.define_3.canonicalSkuId",
-          "/plans/3/canonicalSkuId": "$steps.wait_catalog.result.outputs.define_4.canonicalSkuId",
-          "/plans/4/canonicalSkuId": "$steps.wait_catalog.result.outputs.define_5.canonicalSkuId",
-          "/plans/5/canonicalSkuId": "$steps.wait_catalog.result.outputs.define_6.canonicalSkuId"
+          "/plans/0/canonicalSkuId": "$steps.wait_product.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/plans/1/canonicalSkuId": "$steps.wait_product.result.outputs.wait_catalog.outputs.define_2.canonicalSkuId",
+          "/plans/2/canonicalSkuId": "$steps.wait_product.result.outputs.wait_catalog.outputs.define_3.canonicalSkuId",
+          "/plans/3/canonicalSkuId": "$steps.wait_product.result.outputs.wait_catalog.outputs.define_4.canonicalSkuId",
+          "/plans/4/canonicalSkuId": "$steps.wait_product.result.outputs.wait_catalog.outputs.define_5.canonicalSkuId",
+          "/plans/5/canonicalSkuId": "$steps.wait_product.result.outputs.wait_catalog.outputs.define_6.canonicalSkuId"
         }
       }
     },
@@ -50,77 +50,57 @@
     },
     {
       "step_kind": "SUBMIT_CHILD",
-      "step_code": "submit_master",
-      "step_order": 5,
-      "child_skill_id": "skill.cloudmold.commerce.reuse-ready-master.v1",
-      "child_skill_version": "1.3.0",
-      "child_run_id": "$input.runIds.master",
-      "arguments": {"$object": "$input.master", "$overrides": {}}
-    },
-    {
-      "step_kind": "WAIT_CHILD",
-      "step_code": "wait_master",
-      "step_order": 6,
-      "poll_interval_seconds": 2,
-      "arguments": ["$steps.submit_master.result.childTaskId"]
-    },
-    {
-      "step_kind": "SUBMIT_CHILD",
       "step_code": "submit_aftersale",
-      "step_order": 7,
+      "step_order": 5,
       "child_skill_id": "skill.cloudmold.commerce.aftersale-saga.v1",
-      "child_skill_version": "1.3.0",
+      "child_skill_version": "1.4.0",
       "child_run_id": "$input.runIds.aftersale",
       "arguments": {
         "$object": "$input.aftersale",
         "$overrides": {
-          "/commands/0/merchantId": "$steps.wait_master.result.outputs.merchant_approve.merchantId",
-          "/commands/0/shopId": "$steps.wait_master.result.outputs.merchant_approve.shopId",
-          "/commands/0/canonicalSpuId": "$steps.wait_catalog.result.outputs.define_1.canonicalSpuId",
-          "/commands/0/publisherRef": "$steps.wait_master.result.outputs.principal.principalId",
-          "/commands/0/offers/0/canonicalSkuId": "$steps.wait_catalog.result.outputs.define_1.canonicalSkuId",
-          "/commands/5/publisherRef": "$steps.wait_master.result.outputs.principal.principalId",
-          "/commands/6/ownerId": "$steps.wait_master.result.outputs.merchant_approve.merchantId",
-          "/commands/6/canonicalSkuId": "$steps.wait_catalog.result.outputs.define_1.canonicalSkuId",
-          "/commands/6/warehouseId": "$steps.wait_master.result.outputs.warehouse_network.warehouseId",
-          "/commands/7/items/0/canonicalSkuId": "$steps.wait_catalog.result.outputs.define_1.canonicalSkuId",
-          "/commands/8/ownerId": "$steps.wait_master.result.outputs.merchant_approve.merchantId",
-          "/commands/8/canonicalSkuId": "$steps.wait_catalog.result.outputs.define_1.canonicalSkuId",
-          "/commands/8/warehouseId": "$steps.wait_master.result.outputs.warehouse_network.warehouseId",
-          "/commands/12/sellerId": "$steps.wait_master.result.outputs.merchant_approve.merchantId",
-          "/commands/12/warehouseId": "$steps.wait_master.result.outputs.warehouse_network.warehouseId",
-          "/commands/12/items/0/canonicalSkuId": "$steps.wait_catalog.result.outputs.define_1.canonicalSkuId",
-          "/commands/13/ownerId": "$steps.wait_master.result.outputs.merchant_approve.merchantId",
-          "/commands/13/canonicalSkuId": "$steps.wait_catalog.result.outputs.define_1.canonicalSkuId",
-          "/commands/13/warehouseId": "$steps.wait_master.result.outputs.warehouse_network.warehouseId"
+          "/commands/6/ownerId": "$steps.wait_product.result.outputs.wait_master.outputs.merchant_approve.merchantId",
+          "/commands/6/canonicalSkuId": "$steps.wait_product.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/commands/6/warehouseId": "$steps.wait_product.result.outputs.wait_master.outputs.warehouse_network.warehouseId",
+          "/commands/7/items/0/canonicalSkuId": "$steps.wait_product.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/commands/7/items/0/listingId": "$steps.wait_product.result.outputs.listing_create.listingId",
+          "/commands/7/items/0/listingOfferId": "$steps.wait_product.result.outputs.listing_create.offers.0.listingOfferId",
+          "/commands/8/ownerId": "$steps.wait_product.result.outputs.wait_master.outputs.merchant_approve.merchantId",
+          "/commands/8/canonicalSkuId": "$steps.wait_product.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/commands/8/warehouseId": "$steps.wait_product.result.outputs.wait_master.outputs.warehouse_network.warehouseId",
+          "/commands/12/sellerId": "$steps.wait_product.result.outputs.wait_master.outputs.merchant_approve.merchantId",
+          "/commands/12/warehouseId": "$steps.wait_product.result.outputs.wait_master.outputs.warehouse_network.warehouseId",
+          "/commands/12/items/0/canonicalSkuId": "$steps.wait_product.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/commands/13/ownerId": "$steps.wait_product.result.outputs.wait_master.outputs.merchant_approve.merchantId",
+          "/commands/13/canonicalSkuId": "$steps.wait_product.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/commands/13/warehouseId": "$steps.wait_product.result.outputs.wait_master.outputs.warehouse_network.warehouseId"
         }
       }
     },
     {
       "step_kind": "WAIT_CHILD",
       "step_code": "wait_aftersale",
-      "step_order": 8,
+      "step_order": 6,
       "poll_interval_seconds": 2,
       "arguments": ["$steps.submit_aftersale.result.childTaskId"]
     },
     {
       "step_kind": "SUBMIT_CHILD",
       "step_code": "submit_readback",
-      "step_order": 9,
+      "step_order": 7,
       "child_skill_id": "skill.cloudmold.commerce.terminal-readback.v1",
       "child_skill_version": "1.2.0",
       "child_run_id": "$input.runIds.readback",
       "arguments": {
         "$object": "$input.readback",
         "$overrides": {
-          "/authority/reference/merchantId": "$steps.wait_master.result.outputs.merchant_approve.merchantId",
-          "/authority/reference/shopId": "$steps.wait_master.result.outputs.merchant_approve.shopId",
-          "/authority/operator/principalId": "$steps.wait_master.result.outputs.principal.principalId",
-          "/product/skuId": "$steps.wait_catalog.result.outputs.define_1.canonicalSkuId",
-          "/product/spuId": "$steps.wait_catalog.result.outputs.define_1.canonicalSpuId",
-          "/listing/validation/canonicalSkuId": "$steps.wait_catalog.result.outputs.define_1.canonicalSkuId",
-          "/listing/validation/listingId": "$steps.wait_aftersale.result.outputs.listing_create.listingId",
-          "/listing/validation/listingOfferId": "$steps.wait_aftersale.result.outputs.listing_create.offers.0.listingOfferId",
+          "/authority/reference/merchantId": "$steps.wait_product.result.outputs.wait_master.outputs.merchant_approve.merchantId",
+          "/authority/reference/shopId": "$steps.wait_product.result.outputs.wait_master.outputs.merchant_approve.shopId",
+          "/authority/operator/principalId": "$steps.wait_product.result.outputs.wait_master.outputs.principal.principalId",
+          "/product/skuId": "$steps.wait_product.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/product/spuId": "$steps.wait_product.result.outputs.wait_catalog.outputs.define_1.canonicalSpuId",
+          "/listing/validation/canonicalSkuId": "$steps.wait_product.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/listing/validation/listingId": "$steps.wait_product.result.outputs.listing_create.listingId",
+          "/listing/validation/listingOfferId": "$steps.wait_product.result.outputs.listing_create.offers.0.listingOfferId",
           "/order/orderId": "$steps.wait_aftersale.result.outputs.order_place.orderId",
           "/order/orderItemId": "$steps.wait_aftersale.result.outputs.order_place.items.0.orderItemId",
           "/payment/paymentId": "$steps.wait_aftersale.result.outputs.payment_capture.paymentId",
@@ -128,15 +108,15 @@
           "/fulfillment/shipmentId": "$steps.wait_aftersale.result.outputs.fulfillment_ship.shipmentId",
           "/aftersale/afterSaleId": "$steps.wait_aftersale.result.outputs.aftersale_request.afterSaleId",
           "/aftersale/returnFulfillmentId": "$steps.wait_aftersale.result.outputs.aftersale_approve.returnFulfillmentId",
-          "/warehouse/warehouseId": "$steps.wait_master.result.outputs.warehouse_network.warehouseId",
-          "/warehouse/locationId": "$steps.wait_master.result.outputs.warehouse_network.locationId"
+          "/warehouse/warehouseId": "$steps.wait_product.result.outputs.wait_master.outputs.warehouse_network.warehouseId",
+          "/warehouse/locationId": "$steps.wait_product.result.outputs.wait_master.outputs.warehouse_network.locationId"
         }
       }
     },
     {
       "step_kind": "WAIT_CHILD",
       "step_code": "wait_readback",
-      "step_order": 10,
+      "step_order": 8,
       "poll_interval_seconds": 2,
       "arguments": ["$steps.submit_readback.result.childTaskId"]
     }
