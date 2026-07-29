@@ -93,7 +93,7 @@ class SkillTaskInputBuilderTest(unittest.TestCase):
                 "LINK_SOURCE",
             ],
         )
-        self.assertEqual(len(value["aftersale"]["commands"]), 25)
+        self.assertEqual(len(value["aftersale"]["commands"]), 26)
         self.assertIn("publisherRef", value["aftersale"]["commands"][5])
         self.assertIn("listingId", value["aftersale"]["commands"][7]["items"][0])
         self.assertEqual(value["aftersale"]["commands"][7]["addressRef"], address_ref)

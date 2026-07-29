@@ -260,8 +260,16 @@ def build_aftersale(run_id: str, address_ref: str) -> dict:
             run_id, 24, "RECEIVE_RETURN", "return-in-transit", afterSaleId=PLACEHOLDER_ID,
             expectedVersion=2, receiverId=f"warehouse-receiver:{run_id}"),
         aftersales_payload(
-            run_id, 25, "ACCEPT_INSPECTION", "return-received", afterSaleId=PLACEHOLDER_ID,
-            expectedVersion=2, inspectorId=f"quality-inspector:{run_id}",
+            run_id, 25, "ASSESS_DISPOSITION", "return-received", afterSaleId=PLACEHOLDER_ID,
+            expectedVersion=2, assessorId=f"ai-return-assessor:{run_id}",
+            packagingScore=96, appearanceScore=95, functionScore=98,
+            safetyRisk=False, counterfeitRisk=False,
+            estimatedResaleValueMinor=39800, estimatedRecoveryCostMinor=1000,
+            inspectionEvidenceRef=f"restricted:return-inspection:{run_id}"),
+        aftersales_payload(
+            run_id, 26, "ACCEPT_INSPECTION", "disposition-assessed", afterSaleId=PLACEHOLDER_ID,
+            expectedVersion=2, dispositionAssessmentId=PLACEHOLDER_ID,
+            dispositionCode="RESTOCK", inspectorId=f"warehouse-inspector:{run_id}",
             qualityStatus="QUALIFIED"),
     ])
     return {"commands": commands}
