@@ -254,6 +254,9 @@ services:
         if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_crossborder_case'")" = "0" ]; then
           mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-128.sql
         fi
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_bonded_customs_case'")" = "0" ]; then
+          mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-129.sql
+        fi
     volumes:
       - ../../../yudao-cloud/sql/cloudmold/V20260718_67__durable_skill_task_executor.sql:/migration-67.sql:ro
       - ../../../yudao-cloud/cloudmold-module-skill-task/cloudmold-module-skill-task-server/src/main/resources/db/migration/V20260719_68__durable_skill_task_composition.sql:/migration-68.sql:ro
@@ -278,6 +281,7 @@ services:
       - ../../../yudao-cloud/sql/cloudmold/V20260729_126__community_content_moderation_status_width.sql:/migration-126.sql:ro
       - ../../../yudao-cloud/sql/cloudmold/V20260729_127__replenishment_execution_proposal.sql:/migration-127.sql:ro
       - ../../../yudao-cloud/sql/cloudmold/V20260729_128__canonical_crossborder_direct_mail_v1.sql:/migration-128.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260730_129__canonical_bonded_customs_lifecycle_v1.sql:/migration-129.sql:ro
     networks:
       - yudao_network
 
