@@ -1,0 +1,354 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.crossborder.fulfillment-compliance-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "crossborder-operations",
+  "max_attempts": 3,
+  "steps": [
+    {
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_paid_in_transit_order",
+      "step_order": 1,
+      "child_skill_id": "skill.cloudmold.consumer.in-transit-order-scenario.v1",
+      "child_skill_version": "1.0.0",
+      "child_run_id": "$input.inTransitRunId",
+      "arguments": {
+        "$object": "$input.consumer",
+        "$overrides": {}
+      }
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_paid_in_transit_order",
+      "step_order": 2,
+      "poll_interval_seconds": 2,
+      "arguments": [
+        "$steps.submit_paid_in_transit_order.result.childTaskId"
+      ]
+    },
+    {
+      "step_code": "create_crossborder_case",
+      "step_order": 3,
+      "capability_id": "capability.cloudmold.crossborder.cross-border-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.commands.0",
+          "$overrides": {
+            "/orderId": "$steps.wait_paid_in_transit_order.result.outputs.order_place.orderId",
+            "/fulfillmentId": "$steps.wait_paid_in_transit_order.result.outputs.fulfillment_create.fulfillmentId",
+            "/idempotencyKey": "$task.stepIdempotencyKey",
+            "/runId": "$task.runId"
+          }
+        },
+        "$input.operatorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "assess_trade_compliance",
+      "step_order": 4,
+      "capability_id": "capability.cloudmold.crossborder.cross-border-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.commands.1",
+          "$overrides": {
+            "/caseId": "$steps.create_crossborder_case.result.caseId",
+            "/expectedVersion": 1,
+            "/idempotencyKey": "$task.stepIdempotencyKey",
+            "/runId": "$task.runId"
+          }
+        },
+        "$input.operatorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "select_ai_recommended_route",
+      "step_order": 5,
+      "capability_id": "capability.cloudmold.crossborder.cross-border-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.commands.2",
+          "$overrides": {
+            "/caseId": "$steps.create_crossborder_case.result.caseId",
+            "/expectedVersion": 2,
+            "/idempotencyKey": "$task.stepIdempotencyKey",
+            "/runId": "$task.runId"
+          }
+        },
+        "$input.operatorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "approve_compliance_plan",
+      "step_order": 6,
+      "capability_id": "capability.cloudmold.crossborder.cross-border-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.commands.3",
+          "$overrides": {
+            "/caseId": "$steps.create_crossborder_case.result.caseId",
+            "/expectedVersion": 3,
+            "/approvalRef": "$task.approvalEvidenceRef",
+            "/idempotencyKey": "$task.stepIdempotencyKey",
+            "/runId": "$task.runId"
+          }
+        },
+        "$input.operatorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "assemble_customs_declaration",
+      "step_order": 7,
+      "capability_id": "capability.cloudmold.crossborder.cross-border-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.commands.4",
+          "$overrides": {
+            "/caseId": "$steps.create_crossborder_case.result.caseId",
+            "/expectedVersion": 4,
+            "/idempotencyKey": "$task.stepIdempotencyKey",
+            "/runId": "$task.runId"
+          }
+        },
+        "$input.operatorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "validate_order_payment_logistics",
+      "step_order": 8,
+      "capability_id": "capability.cloudmold.crossborder.cross-border-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.commands.5",
+          "$overrides": {
+            "/caseId": "$steps.create_crossborder_case.result.caseId",
+            "/expectedVersion": 5,
+            "/idempotencyKey": "$task.stepIdempotencyKey",
+            "/runId": "$task.runId"
+          }
+        },
+        "$input.operatorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "book_international_carrier",
+      "step_order": 9,
+      "capability_id": "capability.cloudmold.crossborder.cross-border-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.commands.6",
+          "$overrides": {
+            "/caseId": "$steps.create_crossborder_case.result.caseId",
+            "/expectedVersion": 6,
+            "/idempotencyKey": "$task.stepIdempotencyKey",
+            "/runId": "$task.runId"
+          }
+        },
+        "$input.operatorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "record_carrier_label",
+      "step_order": 10,
+      "capability_id": "capability.cloudmold.crossborder.cross-border-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.commands.7",
+          "$overrides": {
+            "/caseId": "$steps.create_crossborder_case.result.caseId",
+            "/expectedVersion": 7,
+            "/idempotencyKey": "$task.stepIdempotencyKey",
+            "/runId": "$task.runId"
+          }
+        },
+        "$input.operatorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "handover_export_shipment",
+      "step_order": 11,
+      "capability_id": "capability.cloudmold.crossborder.cross-border-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.commands.8",
+          "$overrides": {
+            "/caseId": "$steps.create_crossborder_case.result.caseId",
+            "/expectedVersion": 8,
+            "/idempotencyKey": "$task.stepIdempotencyKey",
+            "/runId": "$task.runId"
+          }
+        },
+        "$input.operatorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "submit_customs_declaration",
+      "step_order": 12,
+      "capability_id": "capability.cloudmold.crossborder.cross-border-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.commands.9",
+          "$overrides": {
+            "/caseId": "$steps.create_crossborder_case.result.caseId",
+            "/expectedVersion": 9,
+            "/approvalRef": "$task.approvalEvidenceRef",
+            "/idempotencyKey": "$task.stepIdempotencyKey",
+            "/runId": "$task.runId"
+          }
+        },
+        "$input.operatorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "record_customs_release",
+      "step_order": 13,
+      "capability_id": "capability.cloudmold.crossborder.cross-border-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.commands.10",
+          "$overrides": {
+            "/caseId": "$steps.create_crossborder_case.result.caseId",
+            "/expectedVersion": 10,
+            "/idempotencyKey": "$task.stepIdempotencyKey",
+            "/runId": "$task.runId"
+          }
+        },
+        "$input.operatorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "record_last_mile_delivery",
+      "step_order": 14,
+      "capability_id": "capability.cloudmold.crossborder.cross-border-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.commands.11",
+          "$overrides": {
+            "/caseId": "$steps.create_crossborder_case.result.caseId",
+            "/expectedVersion": 11,
+            "/idempotencyKey": "$task.stepIdempotencyKey",
+            "/runId": "$task.runId"
+          }
+        },
+        "$input.operatorPrincipalId"
+      ]
+    },
+    {
+      "step_code": "close_crossborder_case",
+      "step_order": 15,
+      "capability_id": "capability.cloudmold.crossborder.cross-border-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.commands.12",
+          "$overrides": {
+            "/caseId": "$steps.create_crossborder_case.result.caseId",
+            "/expectedVersion": 12,
+            "/idempotencyKey": "$task.stepIdempotencyKey",
+            "/runId": "$task.runId"
+          }
+        },
+        "$input.operatorPrincipalId"
+      ]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "verify_crossborder_case_closed",
+      "step_order": 16,
+      "capability_id": "capability.cloudmold.crossborder.cross-border-query.get.v1",
+      "operation_type": "READ",
+      "poll_interval_seconds": 2,
+      "wait_success": {
+        "/status": "CLOSED",
+        "/customsStatus": "RELEASED",
+        "/deliveryStatus": "DELIVERED"
+      },
+      "wait_failure": {
+        "/status": [
+          "FAILED"
+        ]
+      },
+      "arguments": [
+        "$steps.create_crossborder_case.result.caseId"
+      ]
+    }
+  ]
+}
