@@ -1,0 +1,233 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.fulfillment.exception-resolution-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "logistics-operations",
+  "max_attempts": 3,
+  "steps": [
+    {
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_in_transit_order",
+      "step_order": 1,
+      "child_skill_id": "skill.cloudmold.consumer.in-transit-order-scenario.v1",
+      "child_skill_version": "1.0.0",
+      "child_run_id": "$input.inTransitRunId",
+      "arguments": {
+        "$object": "$input.consumer",
+        "$overrides": {}
+      }
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_in_transit_order",
+      "step_order": 2,
+      "poll_interval_seconds": 2,
+      "arguments": [
+        "$steps.submit_in_transit_order.result.childTaskId"
+      ]
+    },
+    {
+      "step_code": "open_exception",
+      "step_order": 3,
+      "capability_id": "capability.cloudmold.fulfillment.fulfillment-exception-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.exceptionCommands.0",
+          "$overrides": {
+            "fulfillmentId": "$steps.wait_in_transit_order.result.outputs.fulfillment_create.fulfillmentId",
+            "orderId": "$steps.wait_in_transit_order.result.outputs.order_place.orderId",
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "plan_response",
+      "step_order": 4,
+      "capability_id": "capability.cloudmold.fulfillment.fulfillment-exception-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.exceptionCommands.1",
+          "$overrides": {
+            "exceptionId": "$steps.open_exception.result.exceptionId",
+            "expectedVersion": 1,
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "record_approval",
+      "step_order": 5,
+      "capability_id": "capability.cloudmold.fulfillment.fulfillment-exception-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.exceptionCommands.2",
+          "$overrides": {
+            "exceptionId": "$steps.open_exception.result.exceptionId",
+            "expectedVersion": 2,
+            "approvalRef": "$task.approvalEvidenceRef",
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "start_response",
+      "step_order": 6,
+      "capability_id": "capability.cloudmold.fulfillment.fulfillment-exception-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.exceptionCommands.3",
+          "$overrides": {
+            "exceptionId": "$steps.open_exception.result.exceptionId",
+            "expectedVersion": 3,
+            "approvalRef": "$task.approvalEvidenceRef",
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "resolve_exception",
+      "step_order": 7,
+      "capability_id": "capability.cloudmold.fulfillment.fulfillment-exception-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.exceptionCommands.4",
+          "$overrides": {
+            "exceptionId": "$steps.open_exception.result.exceptionId",
+            "expectedVersion": 4,
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "deliver_recovered_shipment",
+      "step_order": 8,
+      "capability_id": "capability.cloudmold.fulfillment.fulfillment-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.consumer.commands.11",
+          "$overrides": {
+            "fulfillmentId": "$steps.wait_in_transit_order.result.outputs.fulfillment_create.fulfillmentId",
+            "expectedVersion": 3,
+            "idempotencyKey": "$task.stepIdempotencyKey"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "complete_recovered_order",
+      "step_order": 9,
+      "capability_id": "capability.cloudmold.order.order-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.consumer.commands.12",
+          "$overrides": {
+            "orderId": "$steps.wait_in_transit_order.result.outputs.order_place.orderId",
+            "expectedVersion": 4,
+            "idempotencyKey": "$task.stepIdempotencyKey"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "close_exception",
+      "step_order": 10,
+      "capability_id": "capability.cloudmold.fulfillment.fulfillment-exception-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.exceptionCommands.5",
+          "$overrides": {
+            "exceptionId": "$steps.open_exception.result.exceptionId",
+            "expectedVersion": 5,
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "verify_exception_closed",
+      "step_order": 11,
+      "capability_id": "capability.cloudmold.fulfillment.fulfillment-exception-query.get.v1",
+      "operation_type": "READ",
+      "poll_interval_seconds": 2,
+      "wait_success": {
+        "/status": "CLOSED"
+      },
+      "wait_failure": {},
+      "arguments": [
+        "$steps.open_exception.result.exceptionId"
+      ]
+    },
+    {
+      "step_code": "verify_delivery_completed",
+      "step_order": 12,
+      "capability_id": "capability.cloudmold.fulfillment.fulfillment-shipment-validation.require-delivered.v1",
+      "operation_type": "READ",
+      "arguments": [
+        "$steps.wait_in_transit_order.result.outputs.order_place.orderId",
+        "$steps.wait_in_transit_order.result.outputs.fulfillment_create.fulfillmentId"
+      ]
+    }
+  ]
+}
