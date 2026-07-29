@@ -1,0 +1,31 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.commerce.category-daily-operations.v1",
+  "workflow_id": "workflow.cloudmold.commerce.category-daily-operations.v1",
+  "name": "cloudmold-category-daily-operations",
+  "version": "1.0.0",
+  "owner": "cloudmold-commerce",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R3",
+  "ui_dependency": "none",
+  "transport": "dubbo",
+  "status": "active",
+  "allowed_environments": [
+    "local",
+    "test",
+    "demo"
+  ],
+  "entrypoints": {
+    "task": "skill-task.json"
+  },
+  "evidence": [
+    "cloudmold_operations_alert",
+    "cloudmold_catalog_sku",
+    "cloudmold_listing",
+    "cloudmold_promotion_growth_experiment",
+    "cloudmold_notification_campaign",
+    "cloudmold_commerce_behavior_session",
+    "cloudmold_order",
+    "cloudmold_payment"
+  ]
+}
