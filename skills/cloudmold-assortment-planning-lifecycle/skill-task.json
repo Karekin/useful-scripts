@@ -1,0 +1,158 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.catalog.assortment-planning-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "assortment-manager",
+  "max_attempts": 3,
+  "steps": [
+    {
+      "step_code": "create_wave",
+      "step_order": 1,
+      "capability_id": "capability.cloudmold.catalog.assortment-planning-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.0", "$overrides": {
+        "/runId": "$task.runId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "add_entry_candidate",
+      "step_order": 2,
+      "capability_id": "capability.cloudmold.catalog.assortment-planning-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.1", "$overrides": {
+        "/runId": "$task.runId",
+        "/idempotencyKey": "$task.stepIdempotencyKey",
+        "/candidate/expectedWaveVersion": "$steps.create_wave.result.aggregateVersion"
+      }}]
+    },
+    {
+      "step_code": "evaluate_entry_candidate",
+      "step_order": 3,
+      "capability_id": "capability.cloudmold.catalog.assortment-planning-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.2", "$overrides": {
+        "/runId": "$task.runId",
+        "/idempotencyKey": "$task.stepIdempotencyKey",
+        "/evaluation/expectedWaveVersion": "$steps.add_entry_candidate.result.aggregateVersion"
+      }}]
+    },
+    {
+      "step_code": "add_core_candidate",
+      "step_order": 4,
+      "capability_id": "capability.cloudmold.catalog.assortment-planning-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.3", "$overrides": {
+        "/runId": "$task.runId",
+        "/idempotencyKey": "$task.stepIdempotencyKey",
+        "/candidate/expectedWaveVersion": "$steps.evaluate_entry_candidate.result.aggregateVersion"
+      }}]
+    },
+    {
+      "step_code": "evaluate_core_candidate",
+      "step_order": 5,
+      "capability_id": "capability.cloudmold.catalog.assortment-planning-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.4", "$overrides": {
+        "/runId": "$task.runId",
+        "/idempotencyKey": "$task.stepIdempotencyKey",
+        "/evaluation/expectedWaveVersion": "$steps.add_core_candidate.result.aggregateVersion"
+      }}]
+    },
+    {
+      "step_code": "add_premium_candidate",
+      "step_order": 6,
+      "capability_id": "capability.cloudmold.catalog.assortment-planning-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.5", "$overrides": {
+        "/runId": "$task.runId",
+        "/idempotencyKey": "$task.stepIdempotencyKey",
+        "/candidate/expectedWaveVersion": "$steps.evaluate_core_candidate.result.aggregateVersion"
+      }}]
+    },
+    {
+      "step_code": "evaluate_premium_candidate",
+      "step_order": 7,
+      "capability_id": "capability.cloudmold.catalog.assortment-planning-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.6", "$overrides": {
+        "/runId": "$task.runId",
+        "/idempotencyKey": "$task.stepIdempotencyKey",
+        "/evaluation/expectedWaveVersion": "$steps.add_premium_candidate.result.aggregateVersion"
+      }}]
+    },
+    {
+      "step_code": "select_portfolio",
+      "step_order": 8,
+      "capability_id": "capability.cloudmold.catalog.assortment-planning-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.7", "$overrides": {
+        "/runId": "$task.runId",
+        "/idempotencyKey": "$task.stepIdempotencyKey",
+        "/portfolio/expectedWaveVersion": "$steps.evaluate_premium_candidate.result.aggregateVersion"
+      }}]
+    },
+    {
+      "step_code": "approve_wave",
+      "step_order": 9,
+      "capability_id": "capability.cloudmold.catalog.assortment-planning-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.8", "$overrides": {
+        "/runId": "$task.runId",
+        "/idempotencyKey": "$task.stepIdempotencyKey",
+        "/approval/expectedWaveVersion": "$steps.select_portfolio.result.aggregateVersion",
+        "/approval/approvalRef": "$task.approvalEvidenceRef"
+      }}]
+    },
+    {
+      "step_code": "publish_wave",
+      "step_order": 10,
+      "capability_id": "capability.cloudmold.catalog.assortment-planning-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.9", "$overrides": {
+        "/runId": "$task.runId",
+        "/idempotencyKey": "$task.stepIdempotencyKey",
+        "/publication/expectedWaveVersion": "$steps.approve_wave.result.aggregateVersion"
+      }}]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "verify_wave_published",
+      "step_order": 11,
+      "capability_id": "capability.cloudmold.catalog.assortment-planning-query.get-workflow.v1",
+      "operation_type": "READ",
+      "poll_interval_seconds": 2,
+      "wait_success": {
+        "/status": "PUBLISHED",
+        "/aggregateVersion": 10,
+        "/terminal": true
+      },
+      "wait_failure": {
+        "/status": ["CANCELLED", "REJECTED", "FAILED"]
+      },
+      "arguments": ["$input.waveId"]
+    }
+  ]
+}
