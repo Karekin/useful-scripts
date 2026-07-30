@@ -1,0 +1,145 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.mes.production-execution-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "production-supervisor",
+  "max_attempts": 3,
+  "steps": [
+    {
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_production_readiness",
+      "step_order": 1,
+      "child_skill_id": "skill.cloudmold.mes.production-readiness.v1",
+      "child_skill_version": "1.0.0",
+      "child_run_id": "$input.runIds.readiness",
+      "arguments": {"$object": "$input.readiness", "$overrides": {}}
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_production_readiness",
+      "step_order": 2,
+      "poll_interval_seconds": 2,
+      "arguments": ["$steps.submit_production_readiness.result.childTaskId"]
+    },
+    {
+      "step_code": "create_work_order",
+      "step_order": 3,
+      "capability_id": "capability.cloudmold.integration.yudao-mes-command.create-work-order.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.workOrder", "$overrides": {
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "productId": "$steps.wait_production_readiness.result.outputs.create_item"
+      }}]
+    },
+    {
+      "step_code": "confirm_work_order",
+      "step_order": 4,
+      "capability_id": "capability.cloudmold.integration.yudao-mes-command.confirm-work-order.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.documentAction", "$overrides": {
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "documentId": "$steps.create_work_order.result"
+      }}]
+    },
+    {
+      "step_code": "create_production_task",
+      "step_order": 5,
+      "capability_id": "capability.cloudmold.integration.yudao-mes-command.create-task.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.task", "$overrides": {
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "workOrderId": "$steps.create_work_order.result",
+        "workstationId": "$steps.wait_production_readiness.result.outputs.create_workstation",
+        "routeId": "$steps.wait_production_readiness.result.outputs.create_route",
+        "processId": "$steps.wait_production_readiness.result.outputs.create_process",
+        "itemId": "$steps.wait_production_readiness.result.outputs.create_item"
+      }}]
+    },
+    {
+      "step_code": "record_production_feedback",
+      "step_order": 6,
+      "capability_id": "capability.cloudmold.integration.yudao-mes-command.create-feedback.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.feedback", "$overrides": {
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "workOrderId": "$steps.create_work_order.result",
+        "taskId": "$steps.create_production_task.result",
+        "workstationId": "$steps.wait_production_readiness.result.outputs.create_workstation",
+        "routeId": "$steps.wait_production_readiness.result.outputs.create_route",
+        "processId": "$steps.wait_production_readiness.result.outputs.create_process",
+        "itemId": "$steps.wait_production_readiness.result.outputs.create_item",
+        "feedbackUserId": "$input.operatorUserId",
+        "approveUserId": "$input.reviewerUserId"
+      }}]
+    },
+    {
+      "step_code": "submit_production_feedback",
+      "step_order": 7,
+      "capability_id": "capability.cloudmold.integration.yudao-mes-command.submit-feedback.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.documentAction", "$overrides": {
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "documentId": "$steps.record_production_feedback.result"
+      }}]
+    },
+    {
+      "step_code": "approve_production_feedback",
+      "step_order": 8,
+      "capability_id": "capability.cloudmold.integration.yudao-mes-command.approve-feedback.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.documentAction", "$overrides": {
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "documentId": "$steps.record_production_feedback.result"
+      }}]
+    },
+    {
+      "step_code": "finish_work_order",
+      "step_order": 9,
+      "capability_id": "capability.cloudmold.integration.yudao-mes-command.finish-work-order.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.documentAction", "$overrides": {
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "documentId": "$steps.create_work_order.result"
+      }}]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "verify_production_closed_loop",
+      "step_order": 10,
+      "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-mes-production-execution.v1",
+      "operation_type": "READ",
+      "poll_interval_seconds": 2,
+      "wait_success": {
+        "/workOrderStatus": 2,
+        "/taskStatus": 4,
+        "/feedbackStatus": 4,
+        "/produceStatus": 4,
+        "/closedLoop": true
+      },
+      "wait_failure": {
+        "/closedLoop": [false]
+      },
+      "arguments": [
+        "$steps.create_work_order.result",
+        "$steps.create_production_task.result",
+        "$steps.record_production_feedback.result"
+      ]
+    }
+  ]
+}

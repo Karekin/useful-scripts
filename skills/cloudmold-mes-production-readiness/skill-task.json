@@ -1,0 +1,116 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.mes.production-readiness.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R2",
+  "workflow_level": "INTERNAL_SUBFLOW",
+  "max_attempts": 3,
+  "steps": [
+    {
+      "step_code": "create_unit_measure",
+      "step_order": 1,
+      "capability_id": "capability.cloudmold.integration.yudao-mes-command.create-unit-measure.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.unitMeasure", "$overrides": {
+        "idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "create_item_type",
+      "step_order": 2,
+      "capability_id": "capability.cloudmold.integration.yudao-mes-command.create-item-type.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.itemType", "$overrides": {
+        "idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "create_item",
+      "step_order": 3,
+      "capability_id": "capability.cloudmold.integration.yudao-mes-command.create-item.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.item", "$overrides": {
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "unitMeasureId": "$steps.create_unit_measure.result",
+        "itemTypeId": "$steps.create_item_type.result"
+      }}]
+    },
+    {
+      "step_code": "create_workshop",
+      "step_order": 4,
+      "capability_id": "capability.cloudmold.integration.yudao-mes-command.create-workshop.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.workshop", "$overrides": {
+        "idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "create_process",
+      "step_order": 5,
+      "capability_id": "capability.cloudmold.integration.yudao-mes-command.create-process.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.process", "$overrides": {
+        "idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "create_workstation",
+      "step_order": 6,
+      "capability_id": "capability.cloudmold.integration.yudao-mes-command.create-workstation.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.workstation", "$overrides": {
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "workshopId": "$steps.create_workshop.result",
+        "processId": "$steps.create_process.result"
+      }}]
+    },
+    {
+      "step_code": "create_route",
+      "step_order": 7,
+      "capability_id": "capability.cloudmold.integration.yudao-mes-command.create-route.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.route", "$overrides": {
+        "idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "create_route_process",
+      "step_order": 8,
+      "capability_id": "capability.cloudmold.integration.yudao-mes-command.create-route-process.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.routeProcess", "$overrides": {
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "routeId": "$steps.create_route.result",
+        "processId": "$steps.create_process.result"
+      }}]
+    },
+    {
+      "step_code": "enable_route",
+      "step_order": 9,
+      "capability_id": "capability.cloudmold.integration.yudao-mes-command.set-route-status.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.routeStatus", "$overrides": {
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "routeId": "$steps.create_route.result"
+      }}]
+    }
+  ]
+}

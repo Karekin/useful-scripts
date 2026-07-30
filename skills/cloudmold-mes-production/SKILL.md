@@ -5,6 +5,8 @@ description: Create MES unit, product category, product projection, work order, 
 
 # CloudMold MES Production
 
+> Deprecated as a managed business role. Use `cloudmold-mes-production-execution-lifecycle` for daily Temporal orchestration, fresh occurrence data, production feedback, qualified receipt, and terminal business evidence. This skill remains only as a compatibility/demo utility and must not receive an independent daily Schedule.
+
 Plan with `python3 ../../scripts/yudao_dubbo_flow.py plan --scenario references/scenario.json`. Input contains an `authority` Merchant/Shop/OWNER tuple validated through Dubbo before writing. The Skill creates the MES unit, product category and product projection itself, then passes only the returned MES product ID to the work-order capability. It never asks a frontend or caller to manufacture an internal MES ID.
 
 Execute only in local/test with skill ID `skill.cloudmold.mes.production.v1`, `references/hsf-full-chain-input.json`, and `--write-approved`. The current v2 scenario proves autonomous master-data creation plus the work-order lifecycle. A production-grade MES release additionally requires routing/task scheduling, material issue/receipt, quality, capacity, and produced-quantity evidence; those remain explicit follow-on graph nodes rather than being hidden behind this lifecycle result.
