@@ -1,15 +1,99 @@
 {
   "schema_version": "cloudmold.skill-task-definition/v1",
   "skill_id": "skill.cloudmold.commerce.order-cancellation-operational.v1",
-  "skill_version": "1.0.0",
+  "skill_version": "1.1.0",
   "risk_level": "R3",
   "workflow_level": "BUSINESS_ROLE",
   "owner_role": "order-exception-operator",
   "max_attempts": 3,
   "steps": [
     {
-      "step_code": "start_order_cancellation",
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_paid_unshipped_order",
       "step_order": 1,
+      "child_skill_id": "skill.cloudmold.consumer.paid-unshipped-order-scenario.v1",
+      "child_skill_version": "1.0.0",
+      "child_run_id": "$input.runIds.orderScenario",
+      "arguments": {
+        "$object": "$input.orderScenario",
+        "$overrides": {}
+      }
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_paid_unshipped_order",
+      "step_order": 2,
+      "poll_interval_seconds": 2,
+      "arguments": [
+        "$steps.submit_paid_unshipped_order.result.childTaskId"
+      ]
+    },
+    {
+      "step_code": "open_cancellation_case",
+      "step_order": 3,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.operationsCommands.0",
+          "$overrides": {
+            "/runId": "$task.runId",
+            "/alert/sourceRef": "$steps.wait_paid_unshipped_order.result.outputs.order_place.orderId",
+            "/idempotencyKey": "$task.stepIdempotencyKey"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "notice_cancellation_case",
+      "step_order": 4,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.operationsCommands.1",
+          "$overrides": {
+            "/runId": "$task.runId",
+            "/alert/alertId": "$steps.open_cancellation_case.result.aggregateId",
+            "/idempotencyKey": "$task.stepIdempotencyKey"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "claim_cancellation_case",
+      "step_order": 5,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.operationsCommands.2",
+          "$overrides": {
+            "/runId": "$task.runId",
+            "/alert/alertId": "$steps.open_cancellation_case.result.aggregateId",
+            "/idempotencyKey": "$task.stepIdempotencyKey"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "start_order_cancellation",
+      "step_order": 6,
       "capability_id": "capability.cloudmold.order.order-cancellation-saga-command.execute.v1",
       "operation_type": "WRITE",
       "approval_required": true,
@@ -19,30 +103,92 @@
       },
       "arguments": [
         {
-          "operation": "START",
-          "cancellationMode": "$input.cancellationMode",
-          "responsibilityParty": "$input.responsibilityParty",
-          "responsibilityCode": "$input.responsibilityCode",
-          "idempotencyKey": "$task.stepIdempotencyKey",
-          "runId": "$task.runId",
-          "orderId": "$input.orderId",
-          "reason": "$input.reason",
-          "correlationId": "$input.correlationId",
-          "occurredAt": "$input.occurredAt"
+          "$object": "$input.cancellation",
+          "$overrides": {
+            "/runId": "$task.runId",
+            "/orderId": "$steps.wait_paid_unshipped_order.result.outputs.order_place.orderId",
+            "/idempotencyKey": "$task.stepIdempotencyKey"
+          }
         }
       ]
     },
     {
       "step_kind": "WAIT_CAPABILITY",
       "step_code": "wait_order_cancellation",
-      "step_order": 2,
+      "step_order": 7,
       "capability_id": "capability.cloudmold.order.commerce-workflow-query.inspect-order-cancellation.v1",
-      "poll_interval_seconds": 30,
+      "poll_interval_seconds": 2,
       "wait_success": {
         "/status": "SUCCEEDED"
       },
       "wait_failure": {
-        "/status": ["MANUAL_REVIEW", "FAILED"]
+        "/status": [
+          "MANUAL_REVIEW",
+          "FAILED"
+        ]
+      },
+      "arguments": [
+        "$steps.start_order_cancellation.result.sagaId"
+      ]
+    },
+    {
+      "step_code": "resolve_cancellation_case",
+      "step_order": 8,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.operationsCommands.3",
+          "$overrides": {
+            "/runId": "$task.runId",
+            "/alert/alertId": "$steps.open_cancellation_case.result.aggregateId",
+            "/idempotencyKey": "$task.stepIdempotencyKey"
+          }
+        }
+      ]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "verify_cancellation_case_resolved",
+      "step_order": 9,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-query.get-alert.v1",
+      "operation_type": "READ",
+      "poll_interval_seconds": 2,
+      "wait_success": {
+        "/status": "RESOLVED",
+        "/aggregateVersion": 4
+      },
+      "wait_failure": {
+        "/status": [
+          "INVALID",
+          "CLOSED_NO_ACTION"
+        ]
+      },
+      "arguments": [
+        "$steps.open_cancellation_case.result.aggregateId"
+      ]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "verify_order_cancellation_closed_loop",
+      "step_order": 10,
+      "capability_id": "capability.cloudmold.order.commerce-workflow-query.inspect-order-cancellation.v1",
+      "operation_type": "READ",
+      "poll_interval_seconds": 2,
+      "wait_success": {
+        "/status": "SUCCEEDED",
+        "/terminal": true
+      },
+      "wait_failure": {
+        "/status": [
+          "MANUAL_REVIEW",
+          "FAILED"
+        ]
       },
       "arguments": [
         "$steps.start_order_cancellation.result.sagaId"

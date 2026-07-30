@@ -3,7 +3,7 @@
   "skill_id": "skill.cloudmold.commerce.order-cancellation-operational.v1",
   "workflow_id": "workflow.cloudmold.commerce.order-cancellation-operational.v1",
   "name": "cloudmold-order-cancellation-operational",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "owner": "cloudmold-commerce",
   "authority": "canonical-cloudmold",
   "risk_level": "R3",
@@ -16,6 +16,11 @@
     "cloudmold_skill_task_instance",
     "cloudmold_skill_task_step",
     "cloudmold_skill_task_history",
-    "cloudmold_order_cancellation_saga"
+    "cloudmold_order_cancellation_saga",
+    "cloudmold_operations_alert",
+    "cloudmold_order",
+    "cloudmold_payment",
+    "cloudmold_fulfillment",
+    "cloudmold_inventory_reservation"
   ]
 }
