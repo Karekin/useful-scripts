@@ -1,3 +1,14 @@
+---
+name: cloudmold-autonomous-commerce-day
+description: Run the governed daily operations-control loop across CloudMold commerce roles and verify every child workflow reaches an auditable terminal state.
+metadata:
+  cloudmold:
+    schema_version: 1
+    business_units: [dewu]
+    domain: operations
+    role: operations-control
+---
+
 # Autonomous Commerce Day
 
 Runs a real operations-control role loop rather than a composition-only shell.

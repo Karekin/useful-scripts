@@ -1,0 +1,146 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.supply.warehouse-admission-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "supply-chain-operator",
+  "max_attempts": 3,
+  "steps": [
+    {
+      "step_code": "open_warehouse_admission_case",
+      "step_order": 1,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.operationsCommands.0", "$overrides": {
+        "/runId": "$task.runId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "notice_warehouse_admission_case",
+      "step_order": 2,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.operationsCommands.1", "$overrides": {
+        "/runId": "$task.runId",
+        "/alert/alertId": "$steps.open_warehouse_admission_case.result.aggregateId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "claim_warehouse_admission_case",
+      "step_order": 3,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.operationsCommands.2", "$overrides": {
+        "/runId": "$task.runId",
+        "/alert/alertId": "$steps.open_warehouse_admission_case.result.aggregateId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "verify_quality_first_admission_gate",
+      "step_order": 4,
+      "capability_id": "capability.cloudmold.quality.quality-consumer-evidence.get-latest-by-sku.v1",
+      "operation_type": "READ",
+      "poll_interval_seconds": 2,
+      "wait_success": {
+        "/status": "VERIFIED",
+        "/inspectionStatus": "COMPLETED",
+        "/decision": "PASS"
+      },
+      "wait_failure": {
+        "/status": ["REJECTED", "RECALLED"]
+      },
+      "arguments": ["$input.canonicalSkuId"]
+    },
+    {
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_bd_merchant_onboarding",
+      "step_order": 5,
+      "child_skill_id": "skill.cloudmold.merchant.onboarding-lifecycle.v1",
+      "child_skill_version": "1.0.0",
+      "child_run_id": "$input.runIds.merchant",
+      "arguments": {"$object": "$input.merchant", "$overrides": {}}
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_bd_merchant_onboarding",
+      "step_order": 6,
+      "poll_interval_seconds": 2,
+      "arguments": ["$steps.submit_bd_merchant_onboarding.result.childTaskId"]
+    },
+    {
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_platform_warehouse_fulfillment",
+      "step_order": 7,
+      "child_skill_id": "skill.cloudmold.supply.replenishment-lifecycle.v1",
+      "child_skill_version": "1.1.0",
+      "child_run_id": "$input.runIds.replenishment",
+      "arguments": {
+        "$object": "$input.replenishment",
+        "$overrides": {
+          "/warehouse/authority/reference/merchantId": "$steps.wait_bd_merchant_onboarding.result.outputs.merchant_approve.merchantId",
+          "/warehouse/authority/reference/shopId": "$steps.wait_bd_merchant_onboarding.result.outputs.merchant_approve.shopId",
+          "/warehouse/authority/operator/merchantId": "$steps.wait_bd_merchant_onboarding.result.outputs.merchant_approve.merchantId",
+          "/warehouse/authority/operator/shopId": "$steps.wait_bd_merchant_onboarding.result.outputs.merchant_approve.shopId"
+        }
+      }
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_platform_warehouse_fulfillment",
+      "step_order": 8,
+      "poll_interval_seconds": 2,
+      "arguments": ["$steps.submit_platform_warehouse_fulfillment.result.childTaskId"]
+    },
+    {
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_quality_traffic_activation",
+      "step_order": 9,
+      "child_skill_id": "skill.cloudmold.engagement.promotion-campaign-operations.v1",
+      "child_skill_version": "1.0.0",
+      "child_run_id": "$input.runIds.traffic",
+      "arguments": {"$object": "$input.traffic", "$overrides": {}}
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_quality_traffic_activation",
+      "step_order": 10,
+      "poll_interval_seconds": 2,
+      "arguments": ["$steps.submit_quality_traffic_activation.result.childTaskId"]
+    },
+    {
+      "step_code": "resolve_warehouse_admission_case",
+      "step_order": 11,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.operationsCommands.3", "$overrides": {
+        "/runId": "$task.runId",
+        "/alert/alertId": "$steps.open_warehouse_admission_case.result.aggregateId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "verify_warehouse_admission_resolved",
+      "step_order": 12,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-query.get-alert.v1",
+      "operation_type": "READ",
+      "poll_interval_seconds": 2,
+      "wait_success": {"/status": "RESOLVED", "/aggregateVersion": 4},
+      "wait_failure": {"/status": ["INVALID", "CLOSED_NO_ACTION"]},
+      "arguments": ["$steps.open_warehouse_admission_case.result.aggregateId"]
+    }
+  ]
+}

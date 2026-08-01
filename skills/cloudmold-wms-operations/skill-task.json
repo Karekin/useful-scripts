@@ -44,8 +44,34 @@
       }]
     },
     {
-      "step_code": "create_source_warehouse",
+      "step_code": "link_wms_merchant_source",
       "step_order": 4,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "operation": "LINK_SOURCE",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "runId": "$task.runId",
+        "sourceSystem": "CLOUDMOLD_AI",
+        "traceId": "$task.runId",
+        "sourceReference": {
+          "sourceSystem": "WMS",
+          "sourceType": "MERCHANT",
+          "sourceId": "$steps.create_wms_merchant.result"
+        },
+        "targetType": "MERCHANT",
+        "targetId": "$input.authority.reference.merchantId",
+        "validFrom": "$input.occurredAt",
+        "verificationRef": "evidence:wms/merchant-link",
+        "migrationRunId": "$task.runId",
+        "occurredAt": "$input.occurredAt"
+      }]
+    },
+    {
+      "step_code": "create_source_warehouse",
+      "step_order": 5,
       "capability_id": "capability.cloudmold.integration.yudao-wms-command.create-warehouse.v1",
       "operation_type": "WRITE",
       "approval_required": true,
@@ -60,7 +86,7 @@
     },
     {
       "step_code": "create_target_warehouse",
-      "step_order": 5,
+      "step_order": 6,
       "capability_id": "capability.cloudmold.integration.yudao-wms-command.create-warehouse.v1",
       "operation_type": "WRITE",
       "approval_required": true,
@@ -74,8 +100,54 @@
       }]
     },
     {
+      "step_code": "link_source_warehouse",
+      "step_order": 7,
+      "capability_id": "capability.cloudmold.warehouse.warehouse-network-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "operation": "LINK_SOURCE",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "correlationId": "$input.correlationId",
+        "occurredAt": "$input.occurredAt",
+        "sourceMapping": {
+          "sourceSystem": "WMS",
+          "sourceType": "WAREHOUSE",
+          "sourceId": "$steps.create_source_warehouse.result",
+          "targetType": "WAREHOUSE",
+          "warehouseId": "$input.canonicalWarehouseId",
+          "validFrom": "$input.occurredAt",
+          "verificationRef": "evidence:wms/source-warehouse-link"
+        }
+      }]
+    },
+    {
+      "step_code": "link_target_warehouse",
+      "step_order": 8,
+      "capability_id": "capability.cloudmold.warehouse.warehouse-network-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{
+        "operation": "LINK_SOURCE",
+        "idempotencyKey": "$task.stepIdempotencyKey",
+        "correlationId": "$input.correlationId",
+        "occurredAt": "$input.occurredAt",
+        "sourceMapping": {
+          "sourceSystem": "WMS",
+          "sourceType": "WAREHOUSE",
+          "sourceId": "$steps.create_target_warehouse.result",
+          "targetType": "WAREHOUSE",
+          "warehouseId": "$input.canonicalWarehouseId",
+          "validFrom": "$input.occurredAt",
+          "verificationRef": "evidence:wms/target-warehouse-link"
+        }
+      }]
+    },
+    {
       "step_code": "create_item_category",
-      "step_order": 6,
+      "step_order": 9,
       "capability_id": "capability.cloudmold.integration.yudao-wms-command.create-item-category.v1",
       "operation_type": "WRITE",
       "approval_required": true,
@@ -91,7 +163,7 @@
     },
     {
       "step_code": "create_item",
-      "step_order": 7,
+      "step_order": 10,
       "capability_id": "capability.cloudmold.integration.yudao-wms-command.create-item.v1",
       "operation_type": "WRITE",
       "approval_required": true,
@@ -108,7 +180,7 @@
     },
     {
       "step_code": "resolve_sku",
-      "step_order": 8,
+      "step_order": 11,
       "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-wms-item-sku.v1",
       "operation_type": "READ",
       "approval_required": false,
@@ -116,7 +188,7 @@
     },
     {
       "step_code": "create_receipt",
-      "step_order": 9,
+      "step_order": 12,
       "capability_id": "capability.cloudmold.integration.yudao-wms-command.create-receipt-order.v1",
       "operation_type": "WRITE",
       "approval_required": true,
@@ -140,7 +212,7 @@
     },
     {
       "step_code": "complete_receipt",
-      "step_order": 10,
+      "step_order": 13,
       "capability_id": "capability.cloudmold.integration.yudao-wms-command.complete-receipt-order.v1",
       "operation_type": "WRITE",
       "approval_required": true,
@@ -152,7 +224,7 @@
     },
     {
       "step_code": "verify_receipt",
-      "step_order": 11,
+      "step_order": 14,
       "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-receipt-order.v1",
       "operation_type": "READ",
       "approval_required": false,
@@ -160,7 +232,7 @@
     },
     {
       "step_code": "verify_source_inventory",
-      "step_order": 12,
+      "step_order": 15,
       "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-wms-inventory.v1",
       "operation_type": "READ",
       "approval_required": false,
@@ -168,7 +240,7 @@
     },
     {
       "step_code": "create_movement",
-      "step_order": 13,
+      "step_order": 16,
       "capability_id": "capability.cloudmold.integration.yudao-wms-command.create-movement-order.v1",
       "operation_type": "WRITE",
       "approval_required": true,
@@ -190,7 +262,7 @@
     },
     {
       "step_code": "complete_movement",
-      "step_order": 14,
+      "step_order": 17,
       "capability_id": "capability.cloudmold.integration.yudao-wms-command.complete-movement-order.v1",
       "operation_type": "WRITE",
       "approval_required": true,
@@ -202,7 +274,7 @@
     },
     {
       "step_code": "verify_movement",
-      "step_order": 15,
+      "step_order": 18,
       "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-movement-order.v1",
       "operation_type": "READ",
       "approval_required": false,
@@ -210,7 +282,7 @@
     },
     {
       "step_code": "verify_target_inventory",
-      "step_order": 16,
+      "step_order": 19,
       "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-wms-inventory.v1",
       "operation_type": "READ",
       "approval_required": false,
@@ -218,7 +290,7 @@
     },
     {
       "step_code": "create_shipment",
-      "step_order": 17,
+      "step_order": 20,
       "capability_id": "capability.cloudmold.integration.yudao-wms-command.create-shipment-order.v1",
       "operation_type": "WRITE",
       "approval_required": true,
@@ -242,7 +314,7 @@
     },
     {
       "step_code": "complete_shipment",
-      "step_order": 18,
+      "step_order": 21,
       "capability_id": "capability.cloudmold.integration.yudao-wms-command.complete-shipment-order.v1",
       "operation_type": "WRITE",
       "approval_required": true,
@@ -254,7 +326,7 @@
     },
     {
       "step_code": "verify_shipment",
-      "step_order": 19,
+      "step_order": 22,
       "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-shipment-order.v1",
       "operation_type": "READ",
       "approval_required": false,
@@ -262,7 +334,7 @@
     },
     {
       "step_code": "create_inventory_check",
-      "step_order": 20,
+      "step_order": 23,
       "capability_id": "capability.cloudmold.integration.yudao-wms-command.create-check-order.v1",
       "operation_type": "WRITE",
       "approval_required": true,
@@ -285,7 +357,7 @@
     },
     {
       "step_code": "complete_inventory_check",
-      "step_order": 21,
+      "step_order": 24,
       "capability_id": "capability.cloudmold.integration.yudao-wms-command.complete-check-order.v1",
       "operation_type": "WRITE",
       "approval_required": true,
@@ -297,7 +369,7 @@
     },
     {
       "step_code": "verify_inventory_check",
-      "step_order": 22,
+      "step_order": 25,
       "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-check-order.v1",
       "operation_type": "READ",
       "approval_required": false,
@@ -305,7 +377,7 @@
     },
     {
       "step_code": "verify_final_source_inventory",
-      "step_order": 23,
+      "step_order": 26,
       "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-wms-inventory.v1",
       "operation_type": "READ",
       "approval_required": false,
@@ -313,7 +385,7 @@
     },
     {
       "step_code": "verify_final_target_inventory",
-      "step_order": 24,
+      "step_order": 27,
       "capability_id": "capability.cloudmold.integration.yudao-legacy-operations-query.get-wms-inventory.v1",
       "operation_type": "READ",
       "approval_required": false,

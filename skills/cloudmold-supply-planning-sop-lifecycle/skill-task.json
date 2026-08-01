@@ -351,6 +351,7 @@
             "sourceWarehouseId": "$input.executionProposal.sourceWarehouseId",
             "targetWarehouseId": "$input.executionProposal.targetWarehouseId",
             "wmsSkuId": "$input.executionProposal.wmsSkuId",
+            "unitCostMinor": "$input.executionProposal.unitCostMinor",
             "convertedByPrincipalId": "$input.actorPrincipalId"
           }
         },

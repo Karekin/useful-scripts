@@ -116,8 +116,8 @@
       "capability_id": "capability.cloudmold.customerservice.customer-service-query.get-ticket.v1",
       "operation_type": "READ",
       "poll_interval_seconds": 2,
-      "wait_success": {"/status": "CLOSED"},
-      "wait_failure": {"/status": ["FAILED", "CANCELLED"]},
+      "wait_success": {"/ticketStatus": "CLOSED"},
+      "wait_failure": {"/ticketStatus": ["FAILED", "CANCELLED"]},
       "arguments": ["$steps.ticket_create.result.ticketId"]
     }
   ]

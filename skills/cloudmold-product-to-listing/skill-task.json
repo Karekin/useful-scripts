@@ -69,6 +69,7 @@
             "/offers/3/canonicalSkuId": "$steps.wait_catalog.result.outputs.define_4.canonicalSkuId",
             "/offers/4/canonicalSkuId": "$steps.wait_catalog.result.outputs.define_5.canonicalSkuId",
             "/offers/5/canonicalSkuId": "$steps.wait_catalog.result.outputs.define_6.canonicalSkuId",
+            "runId": "$task.runId",
             "idempotencyKey": "$task.stepIdempotencyKey"
           }
         }
@@ -90,6 +91,7 @@
           "$overrides": {
             "listingId": "$steps.listing_create.result.listingId",
             "expectedVersion": 1,
+            "runId": "$task.runId",
             "idempotencyKey": "$task.stepIdempotencyKey"
           }
         }
@@ -111,6 +113,7 @@
           "$overrides": {
             "listingId": "$steps.listing_create.result.listingId",
             "expectedVersion": 2,
+            "runId": "$task.runId",
             "idempotencyKey": "$task.stepIdempotencyKey"
           }
         }
@@ -132,6 +135,7 @@
           "$overrides": {
             "listingId": "$steps.listing_create.result.listingId",
             "expectedVersion": 3,
+            "runId": "$task.runId",
             "idempotencyKey": "$task.stepIdempotencyKey"
           }
         }
@@ -153,6 +157,7 @@
           "$overrides": {
             "listingId": "$steps.listing_create.result.listingId",
             "expectedVersion": 4,
+            "runId": "$task.runId",
             "idempotencyKey": "$task.stepIdempotencyKey"
           }
         }
@@ -175,6 +180,7 @@
             "listingId": "$steps.listing_create.result.listingId",
             "expectedVersion": 5,
             "publisherRef": "$steps.wait_master.result.outputs.principal.principalId",
+            "runId": "$task.runId",
             "idempotencyKey": "$task.stepIdempotencyKey"
           }
         }

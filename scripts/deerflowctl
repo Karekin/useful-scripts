@@ -5,7 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 USEFUL_SCRIPTS_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DEPLOYMENT_DIR="$USEFUL_SCRIPTS_ROOT/yml/deer-flow"
 DEER_FLOW_REPO="${DEER_FLOW_REPO:-$(cd "$USEFUL_SCRIPTS_ROOT/.." && pwd)/deer-flow}"
-DEER_FLOW_EXPECTED_VERSION="${DEER_FLOW_EXPECTED_VERSION:-v2.0.0}"
+DEER_FLOW_EXPECTED_REF="${DEER_FLOW_EXPECTED_REF:-feature/cloudmold-agent-operations}"
+DEER_FLOW_EXPECTED_COMMIT="${DEER_FLOW_EXPECTED_COMMIT:-93917bb3b147b925728d8caa76b2d3659cbfa91c}"
 DEER_FLOW_EXPECTED_MODEL_NAME="${DEER_FLOW_EXPECTED_MODEL_NAME:-glm-5-2}"
 DEER_FLOW_RUNTIME_DIR="${DEER_FLOW_RUNTIME_DIR:-$DEPLOYMENT_DIR/runtime}"
 DEER_FLOW_MODEL_KEY_FILE="${DEER_FLOW_MODEL_KEY_FILE:-$DEER_FLOW_RUNTIME_DIR/zhipu-api-key}"
@@ -18,7 +19,9 @@ export DEER_FLOW_CONFIG_PATH="$DEPLOYMENT_DIR/config.cloudmold.yaml"
 export DEER_FLOW_EXTENSIONS_CONFIG_PATH="$DEPLOYMENT_DIR/extensions_config.cloudmold.json"
 export DEER_FLOW_REPO_ROOT="$DEER_FLOW_REPO"
 export CLOUDMOLD_SKILLS_PATH="$USEFUL_SCRIPTS_ROOT/skills"
-export PORT="${DEER_FLOW_BIND_ADDRESS:-127.0.0.1}:${DEER_FLOW_PORT:-2026}"
+export BIND_HOST="${DEER_FLOW_BIND_ADDRESS:-127.0.0.1}"
+export PORT="${DEER_FLOW_PORT:-2026}"
+DEER_FLOW_BASE_URL="http://${BIND_HOST}:${PORT}"
 
 DOCKER_COMPOSE_BIN="${DOCKER_COMPOSE_BIN:-$(command -v docker-compose || true)}"
 test -n "$DOCKER_COMPOSE_BIN" || {
@@ -40,9 +43,9 @@ fail() {
 
 check_repository() {
   test -f "$DEER_FLOW_REPO/Makefile" || fail "DeerFlow repository not found: $DEER_FLOW_REPO"
-  local actual_version
-  actual_version="$(git -C "$DEER_FLOW_REPO" describe --tags --exact-match 2>/dev/null || true)"
-  test "$actual_version" = "$DEER_FLOW_EXPECTED_VERSION" || fail "expected $DEER_FLOW_EXPECTED_VERSION, found ${actual_version:-unversioned}"
+  local actual_commit
+  actual_commit="$(git -C "$DEER_FLOW_REPO" rev-parse HEAD)"
+  test "$actual_commit" = "$DEER_FLOW_EXPECTED_COMMIT" || fail "expected $DEER_FLOW_EXPECTED_REF@$DEER_FLOW_EXPECTED_COMMIT, found $actual_commit"
 }
 
 ensure_runtime_files() {
@@ -57,6 +60,9 @@ ensure_runtime_files() {
   if test ! -f "$DEER_FLOW_HOME/.internal-auth-token"; then
     openssl rand -hex 32 > "$DEER_FLOW_HOME/.internal-auth-token"
   fi
+  if test ! -f "$DEER_FLOW_HOME/.skill-catalog-auth-token"; then
+    openssl rand -hex 32 > "$DEER_FLOW_HOME/.skill-catalog-auth-token"
+  fi
   if test ! -f "$DEER_FLOW_HOME/.admin-email"; then
     printf 'agent-admin@cloudmold.cn\n' > "$DEER_FLOW_HOME/.admin-email"
   fi
@@ -67,6 +73,8 @@ ensure_runtime_files() {
   BETTER_AUTH_SECRET="$(<"$DEER_FLOW_HOME/.better-auth-secret")"
   export DEER_FLOW_INTERNAL_AUTH_TOKEN
   DEER_FLOW_INTERNAL_AUTH_TOKEN="$(<"$DEER_FLOW_HOME/.internal-auth-token")"
+  export DEER_FLOW_SKILL_CATALOG_AUTH_TOKEN
+  DEER_FLOW_SKILL_CATALOG_AUTH_TOKEN="$(<"$DEER_FLOW_HOME/.skill-catalog-auth-token")"
 
   if test ! -f "$DEER_FLOW_REPO/.env"; then
     cp "$DEER_FLOW_REPO/.env.example" "$DEER_FLOW_REPO/.env"
@@ -99,16 +107,16 @@ load_mcp_credentials() {
 wait_for_gateway() {
   local attempt
   for attempt in $(seq 1 60); do
-    if curl --silent --fail --max-time 2 "http://${PORT}/health" >/dev/null; then
+    if curl --silent --fail --max-time 2 "$DEER_FLOW_BASE_URL/health" >/dev/null; then
       return
     fi
     sleep 1
   done
-  fail "Gateway did not become healthy at http://${PORT}/health"
+  fail "Gateway did not become healthy at $DEER_FLOW_BASE_URL/health"
 }
 
 bootstrap_admin() {
-  local base_url="http://${PORT}"
+  local base_url="$DEER_FLOW_BASE_URL"
   local admin_email admin_password setup_status
   admin_email="$(<"$DEER_FLOW_HOME/.admin-email")"
   admin_password="$(<"$DEER_FLOW_HOME/.admin-password")"
@@ -140,6 +148,7 @@ validate() {
   test -f "$DEER_FLOW_CONFIG_PATH" || fail "missing $DEER_FLOW_CONFIG_PATH"
   test -f "$DEER_FLOW_EXTENSIONS_CONFIG_PATH" || fail "missing $DEER_FLOW_EXTENSIONS_CONFIG_PATH"
   test -f "$CLOUDMOLD_SKILLS_PATH/registry.json" || fail "CloudMold Skill registry is missing"
+  test -f "$CLOUDMOLD_SKILLS_PATH/business-taxonomy.json" || fail "CloudMold Skill business taxonomy is missing"
   command -v docker >/dev/null || fail "docker is not installed"
   docker info >/dev/null || fail "docker daemon is unavailable"
   ensure_runtime_files
@@ -149,7 +158,7 @@ validate() {
 case "${1:-status}" in
   doctor)
     validate
-    printf 'DeerFlow %s deployment configuration is valid.\n' "$DEER_FLOW_EXPECTED_VERSION"
+    printf 'DeerFlow %s@%s deployment configuration is valid.\n' "$DEER_FLOW_EXPECTED_REF" "$DEER_FLOW_EXPECTED_COMMIT"
     ;;
   build)
     validate
@@ -163,7 +172,7 @@ case "${1:-status}" in
     test -n "${OPENAI_BASE_URL:-}" || fail "OPENAI_BASE_URL is required for agent execution"
     # Recreate services so model-provider environment changes cannot leave a
     # healthy-looking container on stale credentials or endpoint settings.
-    "${compose[@]}" up --build --force-recreate -d --remove-orphans frontend gateway nginx
+    "${compose[@]}" up --build --pull "${DEER_FLOW_PULL_POLICY:-never}" --force-recreate -d --remove-orphans frontend gateway nginx
     wait_for_gateway
     bootstrap_admin
     "${compose[@]}" ps
@@ -182,7 +191,7 @@ case "${1:-status}" in
     load_model_credentials
     load_mcp_credentials
     validate
-    "${compose[@]}" up --build --force-recreate -d --remove-orphans frontend gateway nginx
+    "${compose[@]}" up --build --pull "${DEER_FLOW_PULL_POLICY:-never}" --force-recreate -d --remove-orphans frontend gateway nginx
     wait_for_gateway
     bootstrap_admin
     ;;
@@ -194,15 +203,19 @@ case "${1:-status}" in
     validate
     wait_for_gateway
     bootstrap_admin
-    skills_json="$(curl --silent --fail --max-time 10 --cookie "$DEER_FLOW_HOME/.admin-cookie-jar" "http://${PORT}/api/skills")"
-    models_json="$(curl --silent --fail --max-time 10 --cookie "$DEER_FLOW_HOME/.admin-cookie-jar" "http://${PORT}/api/models")"
-    mcp_json="$(curl --silent --fail --max-time 10 --cookie "$DEER_FLOW_HOME/.admin-cookie-jar" "http://${PORT}/api/mcp/config")"
+    skills_json="$(curl --silent --fail --max-time 10 --cookie "$DEER_FLOW_HOME/.admin-cookie-jar" "$DEER_FLOW_BASE_URL/api/skills")"
+    business_catalog_json="$(curl --silent --fail --max-time 10 --header "X-DeerFlow-Skill-Catalog-Token: $DEER_FLOW_SKILL_CATALOG_AUTH_TOKEN" "$DEER_FLOW_BASE_URL/api/skills/business-catalog")"
+    models_json="$(curl --silent --fail --max-time 10 --cookie "$DEER_FLOW_HOME/.admin-cookie-jar" "$DEER_FLOW_BASE_URL/api/models")"
+    mcp_json="$(curl --silent --fail --max-time 10 --cookie "$DEER_FLOW_HOME/.admin-cookie-jar" "$DEER_FLOW_BASE_URL/api/mcp/config")"
     [[ "$skills_json" != *'"skills":[]'* ]] || fail "DeerFlow discovered no Skills"
+    [[ "$business_catalog_json" == *'"missing_skill_names":[]'* ]] || fail "DeerFlow business catalog has missing role Skills"
+    [[ "$business_catalog_json" == *'"code":"dewu"'* ]] || fail "DeerFlow business catalog is missing 得物"
+    [[ "$business_catalog_json" == *'"code":"fashion88"'* ]] || fail "DeerFlow business catalog is missing Fashion88"
     [[ "$models_json" == *'"models":['* ]] || fail "DeerFlow model catalog is unavailable"
     [[ "$models_json" == *"\"name\":\"$DEER_FLOW_EXPECTED_MODEL_NAME\""* ]] || fail "expected model $DEER_FLOW_EXPECTED_MODEL_NAME is unavailable"
     [[ "$mcp_json" == *'"cloudmold-hsf"'* ]] || fail "CloudMold HSF MCP server is not registered"
     curl --silent --fail --max-time 5 "http://127.0.0.1:49090/health" >/dev/null || fail "CloudMold HSF MCP server is unavailable"
-    printf 'DeerFlow health, authentication, Skill discovery, model catalog, and HSF MCP registration checks passed.\n'
+    printf 'DeerFlow health, authentication, business Skill catalog, model catalog, and HSF MCP registration checks passed.\n'
     ;;
   logs)
     validate

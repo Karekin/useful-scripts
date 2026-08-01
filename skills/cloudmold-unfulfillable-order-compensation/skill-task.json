@@ -1,0 +1,244 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.customer-experience.unfulfillable-order-compensation-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "consumer-compensation-operator",
+  "max_attempts": 3,
+  "steps": [
+    {
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_order_cancellation",
+      "step_order": 1,
+      "child_skill_id": "skill.cloudmold.commerce.order-cancellation-operational.v1",
+      "child_skill_version": "1.1.0",
+      "child_run_id": "$input.runIds.orderCancellation",
+      "arguments": {"$object": "$input.orderCancellation", "$overrides": {}}
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_order_cancellation",
+      "step_order": 2,
+      "poll_interval_seconds": 2,
+      "arguments": ["$steps.submit_order_cancellation.result.childTaskId"]
+    },
+    {
+      "step_code": "open_compensation_case",
+      "step_order": 3,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.operationsCommands.0", "$overrides": {
+        "/runId": "$task.runId",
+        "/alert/sourceRef": "$steps.wait_order_cancellation.result.outputs.wait_paid_unshipped_order.outputs.order_place.orderId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "notice_compensation_case",
+      "step_order": 4,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.operationsCommands.1", "$overrides": {
+        "/runId": "$task.runId",
+        "/alert/alertId": "$steps.open_compensation_case.result.aggregateId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "claim_compensation_case",
+      "step_order": 5,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.operationsCommands.2", "$overrides": {
+        "/runId": "$task.runId",
+        "/alert/alertId": "$steps.open_compensation_case.result.aggregateId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "ticket_create",
+      "step_order": 6,
+      "capability_id": "capability.cloudmold.customerservice.customer-service-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.ticketCommands.0", "$overrides": {
+        "customerPrincipalId": "$steps.wait_order_cancellation.result.outputs.wait_paid_unshipped_order.outputs.consumer_principal.principalId",
+        "idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "ticket_link_order",
+      "step_order": 7,
+      "capability_id": "capability.cloudmold.customerservice.customer-service-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.ticketCommands.1", "$overrides": {
+        "ticketId": "$steps.ticket_create.result.ticketId",
+        "referenceId": "$steps.wait_order_cancellation.result.outputs.wait_paid_unshipped_order.outputs.order_place.orderId",
+        "expectedVersion": 1,
+        "idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "ticket_notify_consumer",
+      "step_order": 8,
+      "capability_id": "capability.cloudmold.customerservice.customer-service-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.ticketCommands.2", "$overrides": {
+        "ticketId": "$steps.ticket_create.result.ticketId",
+        "expectedVersion": 1,
+        "idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "ticket_assign_agent",
+      "step_order": 9,
+      "capability_id": "capability.cloudmold.customerservice.customer-service-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.ticketCommands.3", "$overrides": {
+        "ticketId": "$steps.ticket_create.result.ticketId",
+        "expectedVersion": 1,
+        "idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "ticket_start_processing",
+      "step_order": 10,
+      "capability_id": "capability.cloudmold.customerservice.customer-service-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.ticketCommands.4", "$overrides": {
+        "ticketId": "$steps.ticket_create.result.ticketId",
+        "expectedVersion": 2,
+        "idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "ticket_resolve",
+      "step_order": 11,
+      "capability_id": "capability.cloudmold.customerservice.customer-service-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.ticketCommands.5", "$overrides": {
+        "ticketId": "$steps.ticket_create.result.ticketId",
+        "expectedVersion": 3,
+        "idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "ticket_responsibility_decision",
+      "step_order": 12,
+      "capability_id": "capability.cloudmold.customerservice.customer-service-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.ticketCommands.6", "$overrides": {
+        "ticketId": "$steps.ticket_create.result.ticketId",
+        "expectedVersion": 4,
+        "idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "ticket_request_compensation",
+      "step_order": 13,
+      "capability_id": "capability.cloudmold.customerservice.customer-service-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.ticketCommands.7", "$overrides": {
+        "ticketId": "$steps.ticket_create.result.ticketId",
+        "expectedVersion": 4,
+        "idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "ticket_approve_compensation",
+      "step_order": 14,
+      "capability_id": "capability.cloudmold.customerservice.customer-service-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.ticketCommands.8", "$overrides": {
+        "claimId": "$steps.ticket_request_compensation.result.claimId",
+        "expectedVersion": 1,
+        "idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "ticket_pay_compensation",
+      "step_order": 15,
+      "capability_id": "capability.cloudmold.customerservice.customer-service-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.ticketCommands.9", "$overrides": {
+        "claimId": "$steps.ticket_request_compensation.result.claimId",
+        "expectedVersion": 2,
+        "idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "ticket_close",
+      "step_order": 16,
+      "capability_id": "capability.cloudmold.customerservice.customer-service-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.ticketCommands.10", "$overrides": {
+        "ticketId": "$steps.ticket_create.result.ticketId",
+        "expectedVersion": 4,
+        "idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "resolve_compensation_case",
+      "step_order": 17,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.operationsCommands.3", "$overrides": {
+        "/runId": "$task.runId",
+        "/alert/alertId": "$steps.open_compensation_case.result.aggregateId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "verify_compensation_case",
+      "step_order": 18,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-query.get-alert.v1",
+      "operation_type": "READ",
+      "poll_interval_seconds": 2,
+      "wait_success": {"/status": "RESOLVED", "/aggregateVersion": 4},
+      "wait_failure": {"/status": ["INVALID", "CLOSED_NO_ACTION"]},
+      "arguments": ["$steps.open_compensation_case.result.aggregateId"]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "verify_compensation_ticket",
+      "step_order": 19,
+      "capability_id": "capability.cloudmold.customerservice.customer-service-query.get-ticket.v1",
+      "operation_type": "READ",
+      "poll_interval_seconds": 2,
+      "wait_success": {"/ticketStatus": "CLOSED"},
+      "wait_failure": {"/ticketStatus": ["FAILED", "CANCELLED"]},
+      "arguments": ["$steps.ticket_create.result.ticketId"]
+    }
+  ]
+}

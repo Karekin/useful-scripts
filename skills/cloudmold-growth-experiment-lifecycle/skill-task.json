@@ -134,8 +134,1169 @@
       ]
     },
     {
-      "step_code": "control_metric",
+      "step_code": "control_exposure_02",
       "step_order": 7,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure02"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_03",
+      "step_order": 8,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure03"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_04",
+      "step_order": 9,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure04"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_05",
+      "step_order": 10,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure05"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_06",
+      "step_order": 11,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure06"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_07",
+      "step_order": 12,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure07"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_08",
+      "step_order": 13,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure08"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_09",
+      "step_order": 14,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure09"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_10",
+      "step_order": 15,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure10"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_11",
+      "step_order": 16,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure11"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_12",
+      "step_order": 17,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure12"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_13",
+      "step_order": 18,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure13"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_14",
+      "step_order": 19,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure14"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_15",
+      "step_order": 20,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure15"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_16",
+      "step_order": 21,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure16"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_17",
+      "step_order": 22,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure17"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_18",
+      "step_order": 23,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure18"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_19",
+      "step_order": 24,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure19"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_20",
+      "step_order": 25,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure20"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_21",
+      "step_order": 26,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure21"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_22",
+      "step_order": 27,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure22"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_23",
+      "step_order": 28,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure23"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_24",
+      "step_order": 29,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure24"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_25",
+      "step_order": 30,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure25"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_26",
+      "step_order": 31,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure26"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_27",
+      "step_order": 32,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure27"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_28",
+      "step_order": 33,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure28"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_29",
+      "step_order": 34,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure29"
+        }
+      ]
+    },
+    {
+      "step_code": "control_exposure_30",
+      "step_order": 35,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.controlExposure30"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_02",
+      "step_order": 36,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure02"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_03",
+      "step_order": 37,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure03"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_04",
+      "step_order": 38,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure04"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_05",
+      "step_order": 39,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure05"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_06",
+      "step_order": 40,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure06"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_07",
+      "step_order": 41,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure07"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_08",
+      "step_order": 42,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure08"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_09",
+      "step_order": 43,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure09"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_10",
+      "step_order": 44,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure10"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_11",
+      "step_order": 45,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure11"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_12",
+      "step_order": 46,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure12"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_13",
+      "step_order": 47,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure13"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_14",
+      "step_order": 48,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure14"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_15",
+      "step_order": 49,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure15"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_16",
+      "step_order": 50,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure16"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_17",
+      "step_order": 51,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure17"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_18",
+      "step_order": 52,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure18"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_19",
+      "step_order": 53,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure19"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_20",
+      "step_order": 54,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure20"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_21",
+      "step_order": 55,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure21"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_22",
+      "step_order": 56,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure22"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_23",
+      "step_order": 57,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure23"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_24",
+      "step_order": 58,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure24"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_25",
+      "step_order": 59,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure25"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_26",
+      "step_order": 60,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure26"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_27",
+      "step_order": 61,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure27"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_28",
+      "step_order": 62,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure28"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_29",
+      "step_order": 63,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure29"
+        }
+      ]
+    },
+    {
+      "step_code": "treatment_exposure_30",
+      "step_order": 64,
+      "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "operation": "RECORD_GROWTH_EXPERIMENT_EXPOSURE",
+          "idempotencyKey": "$task.stepIdempotencyKey",
+          "correlationId": "$input.correlationId",
+          "occurredAt": "$input.runningAt",
+          "growthExperimentExposure": "$input.treatmentExposure30"
+        }
+      ]
+    },
+
+    {
+      "step_code": "control_metric",
+      "step_order": 65,
       "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
       "operation_type": "WRITE",
       "approval_required": true,
@@ -155,7 +1316,7 @@
     },
     {
       "step_code": "treatment_metric",
-      "step_order": 8,
+      "step_order": 66,
       "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
       "operation_type": "WRITE",
       "approval_required": true,
@@ -175,7 +1336,7 @@
     },
     {
       "step_code": "experiment_conclude",
-      "step_order": 9,
+      "step_order": 67,
       "capability_id": "capability.cloudmold.promotion.promotion-command.execute.v1",
       "operation_type": "WRITE",
       "approval_required": true,
@@ -201,7 +1362,7 @@
     {
       "step_kind": "WAIT_CAPABILITY",
       "step_code": "experiment_terminal_readback",
-      "step_order": 10,
+      "step_order": 68,
       "capability_id": "capability.cloudmold.engagement.marketing-growth-workflow-query.inspect-growth-experiment.v1",
       "poll_interval_seconds": 10,
       "wait_success": {

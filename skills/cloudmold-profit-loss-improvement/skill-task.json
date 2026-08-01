@@ -1,0 +1,80 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.finance.profit-loss-improvement-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "profit-loss-operator",
+  "max_attempts": 3,
+  "steps": [
+    {
+      "step_code": "inspect_weekly_profit_loss",
+      "step_order": 1,
+      "capability_id": "capability.cloudmold.operationsintelligence.weekly-business-review-workflow-query.inspect-weekly.v1",
+      "operation_type": "READ",
+      "arguments": []
+    },
+    {
+      "step_code": "open_profit_loss_case",
+      "step_order": 2,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.operationsCommands.0", "$overrides": {
+        "/runId": "$task.runId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "notice_profit_loss_case",
+      "step_order": 3,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.operationsCommands.1", "$overrides": {
+        "/runId": "$task.runId",
+        "/alert/alertId": "$steps.open_profit_loss_case.result.aggregateId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "claim_profit_loss_case",
+      "step_order": 4,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.operationsCommands.2", "$overrides": {
+        "/runId": "$task.runId",
+        "/alert/alertId": "$steps.open_profit_loss_case.result.aggregateId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "resolve_profit_loss_case",
+      "step_order": 5,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.operationsCommands.3", "$overrides": {
+        "/runId": "$task.runId",
+        "/alert/alertId": "$steps.open_profit_loss_case.result.aggregateId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "verify_profit_loss_case",
+      "step_order": 6,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-query.get-alert.v1",
+      "operation_type": "READ",
+      "poll_interval_seconds": 2,
+      "wait_success": {"/status": "RESOLVED", "/aggregateVersion": 4},
+      "wait_failure": {"/status": ["INVALID", "CLOSED_NO_ACTION"]},
+      "arguments": ["$steps.open_profit_loss_case.result.aggregateId"]
+    }
+  ]
+}

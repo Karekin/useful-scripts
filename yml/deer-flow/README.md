@@ -1,6 +1,7 @@
 # CloudMold DeerFlow control plane
 
-This directory deploys the official DeerFlow `v2.0.0` release as CloudMold's
+This directory deploys the official DeerFlow base plus the pinned CloudMold
+`feature/cloudmold-agent-operations` branch as CloudMold's
 AI control plane. DeerFlow selects and coordinates Skills; it does not replace
 the durable CloudMold Skill Task Executor, Dubbo/HSF domain services, Saga,
 Outbox, CDC, or lakehouse reconciliation.
@@ -16,13 +17,19 @@ Outbox, CDC, or lakehouse reconciliation.
 - Use an isolated Docker client configuration for public images so a blocked
   desktop credential helper cannot stall deployment or expose registry auth.
 - Mount `useful-scripts/skills` read-only at DeerFlow's required
-  `/app/skills/public` category path; the authoritative catalog stays flat and
-  is not copied or rewritten for DeerFlow.
+  `/app/skills/public` category path; `business-taxonomy.json` supplies the
+  business-unit → domain → role hierarchy while package paths stay flat and
+  compatible with existing SkillTask references.
 - Persist the unified SQLite database and run events under the ignored
   `runtime/home` directory.
 - Keep the generated local administrator password and cookie jar in the same
   ignored directory with mode `0600`; `deerflowctl up` initializes or logs in
   the local administrator without printing credentials.
+- The Yudao provider mounts the ignored `.skill-catalog-auth-token` as a Docker
+  secret. DeerFlow accepts that audience-limited credential only for the two
+  read-only岗位能力 routes; Yudao never receives the Gateway-wide internal
+  token, and the browser receives neither credential. Rotate it by recreating
+  both DeerFlow and Yudao services.
 - Keep Skill self-evolution write APIs disabled until the CloudMold approval and
   audit boundary is implemented. The custom-agent management API is enabled for
   the authenticated, localhost-only development control plane; do not expose
@@ -30,8 +37,9 @@ Outbox, CDC, or lakehouse reconciliation.
 
 ## Operations
 
-The official repository must exist at `../deer-flow` and be checked out at
-tag `v2.0.0` (`7e7f0410797693cf882594555ba414e0361d4c6f`).
+The deployment repository must exist at `../deer-flow` and be checked out at
+the exact commit recorded by `DEER_FLOW_EXPECTED_COMMIT`. The default pin is
+`feature/cloudmold-agent-operations@93917bb3b147b925728d8caa76b2d3659cbfa91c`.
 
 ```bash
 scripts/deerflowctl doctor
@@ -51,7 +59,7 @@ testing. This precedence prevents unrelated shell-wide `OPENAI_*` variables
 from silently keeping DeerFlow on a stale provider.
 
 Rollback is deterministic: run `scripts/deerflowctl down`, check out the prior
-tag in the external DeerFlow repository, update `DEER_FLOW_EXPECTED_VERSION`,
+commit in the external DeerFlow repository, update `DEER_FLOW_EXPECTED_COMMIT`,
 then rebuild. Preserve `runtime/home` to retain task history, or copy it before
 a database migration.
 

@@ -119,6 +119,7 @@ services:
       - -c
       - >-
         export CLOUDMOLD_RPC_SHARED_SECRET="$$(</run/secrets/cloudmold_rpc_shared_secret)";
+        export CLOUDMOLD_DEER_FLOW_CATALOG_TOKEN="$$(</run/secrets/deer_flow_skill_catalog_token)";
         exec java $${JAVA_OPTS} -jar app.jar --spring.profiles.active=local
         --yudao.captcha.enable=$${YUDAO_CAPTCHA_ENABLE}
         --cloudmold.agent-control.enabled=$${CLOUDMOLD_AGENT_CONTROL_ENABLED}
@@ -149,6 +150,7 @@ services:
       CLOUDMOLD_TEMPORAL_TARGET: temporal:7233
       CLOUDMOLD_TEMPORAL_NAMESPACE: default
       CLOUDMOLD_TEMPORAL_TASK_QUEUE: cloudmold-ai-operations
+      CLOUDMOLD_DEER_FLOW_BASE_URL: ${CLOUDMOLD_DEER_FLOW_BASE_URL:-http://host.docker.internal:2026}
       YUDAO_WEB_ADMIN_UI_URL: ${YUDAO_WEB_ADMIN_UI_URL:-http://127.0.0.1:5666/#}
       # The issuer and durable executor must share the same externally supplied
       # approval authority secret. Empty configuration keeps issuance fail-closed.
@@ -176,6 +178,7 @@ services:
       JAVA_OPTS: -Xms512m -Xmx1536m -Dfile.encoding=UTF-8 -Djava.security.egd=file:/dev/./urandom -Ddubbo.application.serialize-check-status=STRICT -Ddubbo.application.check-serializable=false -Ddubbo.hessian.allowNonSerializable=true
     secrets:
       - cloudmold_rpc_shared_secret
+      - deer_flow_skill_catalog_token
     ports:
       - "127.0.0.1:48080:48080"
       - "127.0.0.1:20880:20880"
@@ -647,6 +650,8 @@ secrets:
     file: ${CLOUDMOLD_RPC_SECRET_FILE:-./data/secrets/cloudmold-rpc-shared-secret}
   cloudmold_mcp_bearer_token:
     file: ${CLOUDMOLD_MCP_TOKEN_FILE:-./data/secrets/cloudmold-mcp-bearer-token}
+  deer_flow_skill_catalog_token:
+    file: ${DEER_FLOW_SKILL_CATALOG_TOKEN_FILE:-../deer-flow/runtime/home/.skill-catalog-auth-token}
 
 networks:
   yudao_network:

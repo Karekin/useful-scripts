@@ -1,0 +1,209 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.commerce.product-management-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "product-operations",
+  "max_attempts": 3,
+  "steps": [
+    {
+      "step_code": "open_product_management_case",
+      "step_order": 1,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.operationsCommands.0", "$overrides": {
+        "/runId": "$task.runId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "notice_product_management_case",
+      "step_order": 2,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.operationsCommands.1", "$overrides": {
+        "/runId": "$task.runId",
+        "/alert/alertId": "$steps.open_product_management_case.result.aggregateId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "claim_product_management_case",
+      "step_order": 3,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.operationsCommands.2", "$overrides": {
+        "/runId": "$task.runId",
+        "/alert/alertId": "$steps.open_product_management_case.result.aggregateId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_supply_pool_assortment",
+      "step_order": 4,
+      "child_skill_id": "skill.cloudmold.catalog.assortment-planning-lifecycle.v1",
+      "child_skill_version": "1.0.1",
+      "child_run_id": "$input.runIds.assortment",
+      "arguments": {"$object": "$input.assortment", "$overrides": {}}
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_supply_pool_assortment",
+      "step_order": 5,
+      "poll_interval_seconds": 2,
+      "arguments": ["$steps.submit_supply_pool_assortment.result.childTaskId"]
+    },
+    {
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_platform_store_listing",
+      "step_order": 6,
+      "child_skill_id": "skill.cloudmold.commerce.product-to-listing.v1",
+      "child_skill_version": "1.1.0",
+      "child_run_id": "$input.runIds.product",
+      "arguments": {"$object": "$input.product", "$overrides": {}}
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_platform_store_listing",
+      "step_order": 7,
+      "poll_interval_seconds": 2,
+      "arguments": ["$steps.submit_platform_store_listing.result.childTaskId"]
+    },
+    {
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_mystery_sample_purchase",
+      "step_order": 8,
+      "child_skill_id": "skill.cloudmold.consumer.shopping-journey.v1",
+      "child_skill_version": "1.1.1",
+      "child_run_id": "$input.runIds.mysteryPurchase",
+      "arguments": {
+        "$object": "$input.mysteryPurchase",
+        "$overrides": {
+          "listingId": "$steps.wait_platform_store_listing.result.outputs.listing_create.listingId",
+          "/behaviorCommands/4/canonicalSpuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSpuId",
+          "/behaviorCommands/4/skuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/behaviorCommands/4/listingId": "$steps.wait_platform_store_listing.result.outputs.listing_create.listingId",
+          "/behaviorCommands/4/listingOfferId": "$steps.wait_platform_store_listing.result.outputs.listing_create.offers.0.listingOfferId",
+          "/behaviorCommands/5/canonicalSpuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSpuId",
+          "/behaviorCommands/5/skuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/behaviorCommands/5/listingId": "$steps.wait_platform_store_listing.result.outputs.listing_create.listingId",
+          "/behaviorCommands/5/listingOfferId": "$steps.wait_platform_store_listing.result.outputs.listing_create.offers.0.listingOfferId",
+          "/favoriteCommand/canonicalSpuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSpuId",
+          "/behaviorCommands/6/canonicalSpuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSpuId",
+          "/behaviorCommands/6/skuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/behaviorCommands/6/listingId": "$steps.wait_platform_store_listing.result.outputs.listing_create.listingId",
+          "/behaviorCommands/6/listingOfferId": "$steps.wait_platform_store_listing.result.outputs.listing_create.offers.0.listingOfferId",
+          "/behaviorCommands/7/canonicalSpuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSpuId",
+          "/behaviorCommands/7/skuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/behaviorCommands/7/listingId": "$steps.wait_platform_store_listing.result.outputs.listing_create.listingId",
+          "/behaviorCommands/7/listingOfferId": "$steps.wait_platform_store_listing.result.outputs.listing_create.offers.0.listingOfferId",
+          "/commands/0/ownerId": "$steps.wait_platform_store_listing.result.outputs.wait_master.outputs.merchant_approve.merchantId",
+          "/commands/0/canonicalSkuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/commands/0/warehouseId": "$steps.wait_platform_store_listing.result.outputs.wait_master.outputs.warehouse_network.warehouseId",
+          "/commands/1/items/0/canonicalSkuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/commands/1/items/0/listingId": "$steps.wait_platform_store_listing.result.outputs.listing_create.listingId",
+          "/commands/1/items/0/listingOfferId": "$steps.wait_platform_store_listing.result.outputs.listing_create.offers.0.listingOfferId",
+          "/commands/2/ownerId": "$steps.wait_platform_store_listing.result.outputs.wait_master.outputs.merchant_approve.merchantId",
+          "/commands/2/canonicalSkuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/commands/2/warehouseId": "$steps.wait_platform_store_listing.result.outputs.wait_master.outputs.warehouse_network.warehouseId",
+          "/commands/6/sellerId": "$steps.wait_platform_store_listing.result.outputs.wait_master.outputs.merchant_approve.merchantId",
+          "/commands/6/warehouseId": "$steps.wait_platform_store_listing.result.outputs.wait_master.outputs.warehouse_network.warehouseId",
+          "/commands/6/items/0/canonicalSkuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/commands/7/ownerId": "$steps.wait_platform_store_listing.result.outputs.wait_master.outputs.merchant_approve.merchantId",
+          "/commands/7/canonicalSkuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/commands/7/warehouseId": "$steps.wait_platform_store_listing.result.outputs.wait_master.outputs.warehouse_network.warehouseId",
+          "/customerServiceCommands/3/assignedAgentPrincipalId": "$steps.wait_platform_store_listing.result.outputs.wait_master.outputs.principal.principalId",
+          "/communityCommands/0/canonicalSpuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSpuId",
+          "/communityCommands/0/canonicalSkuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/communityCommands/0/listingId": "$steps.wait_platform_store_listing.result.outputs.listing_create.listingId",
+          "/communityCommands/0/listingOfferId": "$steps.wait_platform_store_listing.result.outputs.listing_create.offers.0.listingOfferId",
+          "/communityCommands/2/actorPrincipalId": "$steps.wait_platform_store_listing.result.outputs.wait_master.outputs.principal.principalId"
+        }
+      }
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_mystery_sample_purchase",
+      "step_order": 9,
+      "poll_interval_seconds": 2,
+      "arguments": ["$steps.submit_mystery_sample_purchase.result.childTaskId"]
+    },
+    {
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_mystery_buyer_quality",
+      "step_order": 10,
+      "child_skill_id": "skill.cloudmold.quality.mystery-buyer-sample-verification.v1",
+      "child_skill_version": "1.0.0",
+      "child_run_id": "$input.runIds.quality",
+      "arguments": {
+        "$object": "$input.quality",
+        "$overrides": {
+          "/canonicalSkuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/lotCommand/ownerId": "$steps.wait_platform_store_listing.result.outputs.wait_master.outputs.merchant_approve.merchantId",
+          "/lotCommand/canonicalSkuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/stockCommand/ownerId": "$steps.wait_platform_store_listing.result.outputs.wait_master.outputs.merchant_approve.merchantId",
+          "/stockCommand/canonicalSkuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/stockCommand/warehouseId": "$steps.wait_platform_store_listing.result.outputs.wait_master.outputs.warehouse_network.warehouseId",
+          "/stockCommand/locationId": "$steps.wait_platform_store_listing.result.outputs.wait_master.outputs.warehouse_network.locationId",
+          "/commands/0/standard/applicableSkuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId",
+          "/commands/3/inspectionTask/canonicalSkuId": "$steps.wait_platform_store_listing.result.outputs.wait_catalog.outputs.define_1.canonicalSkuId"
+        }
+      }
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_mystery_buyer_quality",
+      "step_order": 11,
+      "poll_interval_seconds": 2,
+      "arguments": ["$steps.submit_mystery_buyer_quality.result.childTaskId"]
+    },
+    {
+      "step_kind": "SUBMIT_CHILD",
+      "step_code": "submit_new_product_incubation",
+      "step_order": 12,
+      "child_skill_id": "skill.cloudmold.engagement.promotion-campaign-operations.v1",
+      "child_skill_version": "1.0.0",
+      "child_run_id": "$input.runIds.campaign",
+      "arguments": {"$object": "$input.campaign", "$overrides": {}}
+    },
+    {
+      "step_kind": "WAIT_CHILD",
+      "step_code": "wait_new_product_incubation",
+      "step_order": 13,
+      "poll_interval_seconds": 2,
+      "arguments": ["$steps.submit_new_product_incubation.result.childTaskId"]
+    },
+    {
+      "step_code": "resolve_product_management_case",
+      "step_order": 14,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.operationsCommands.3", "$overrides": {
+        "/runId": "$task.runId",
+        "/alert/alertId": "$steps.open_product_management_case.result.aggregateId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "verify_product_management_resolved",
+      "step_order": 15,
+      "capability_id": "capability.cloudmold.operationsintelligence.operations-intelligence-query.get-alert.v1",
+      "operation_type": "READ",
+      "poll_interval_seconds": 2,
+      "wait_success": {"/status": "RESOLVED", "/aggregateVersion": 4},
+      "wait_failure": {"/status": ["INVALID", "CLOSED_NO_ACTION"]},
+      "arguments": ["$steps.open_product_management_case.result.aggregateId"]
+    }
+  ]
+}

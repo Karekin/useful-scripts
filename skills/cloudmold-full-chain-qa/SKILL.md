@@ -30,9 +30,13 @@ Print the test layers, commands, evidence paths, and side-effect policy. It perf
 
 ### Inspect
 
+Set `CLOUDMOLD_WORKSPACE` to the checked-out CloudMold workspace before running
+the commands below. Do not encode a developer-specific host path in this Skill.
+
 ```bash
+export CLOUDMOLD_WORKSPACE='<cloudmold-workspace>'
 python3 scripts/flow_coverage_audit.py \
-  --workspace /Users/karekin/Downloads/coding/project/CloudMold \
+  --workspace "$CLOUDMOLD_WORKSPACE" \
   --output-dir ~/.cloudmold/runs/full-chain-qa/<run-id>/static
 ```
 
@@ -48,7 +52,7 @@ Start the local backend and Vben frontend first. Then provide credentials throug
 export CLOUDMOLD_QA_USERNAME=admin
 export CLOUDMOLD_QA_PASSWORD='<local-test-password>'
 node scripts/ui_runtime_coverage.mjs \
-  --ui-root /Users/karekin/Downloads/coding/project/CloudMold/yudao-ui-admin-vben \
+  --ui-root "$CLOUDMOLD_WORKSPACE/yudao-ui-admin-vben" \
   --base-url http://127.0.0.1:5666 \
   --tenant-id 1 \
   --scenario references/scenarios/business-ui-flow-coverage-v1.json \
@@ -61,7 +65,7 @@ The runner logs in through the normal UI, visits only declared read pages, recor
 
 ```bash
 python3 scripts/full_chain_qa_runner.py execute \
-  --workspace /Users/karekin/Downloads/coding/project/CloudMold \
+  --workspace "$CLOUDMOLD_WORKSPACE" \
   --run-id <run-id> \
   --canonical-run-id <retained-canonical-run-id> \
   --base-url http://127.0.0.1:5666 \

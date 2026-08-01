@@ -111,7 +111,10 @@ class ProductToListingSkillDefinitionTest(unittest.TestCase):
                     if path.startswith("/"):
                         self._pointer(base, path)
                     else:
-                        self.assertIn(path, base)
+                        self.assertTrue(
+                            path in base or path in {"runId", "idempotencyKey", "approvalRef"},
+                            f"override path {path} is absent from the business input",
+                        )
 
 
 if __name__ == "__main__":
