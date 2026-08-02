@@ -53,7 +53,7 @@ class SkillBusinessTaxonomyTest(unittest.TestCase):
             if definition.get("workflow_level") == "BUSINESS_ROLE":
                 definitions.append((path, definition))
 
-        self.assertEqual(35, len(definitions))
+        self.assertEqual(36, len(definitions))
         for task_path, definition in definitions:
             role_code = definition["owner_role"]
             with self.subTest(role_code=role_code):

@@ -23,6 +23,7 @@
   ],
   "roles": [
     {"code": "merchant-experience-operator", "name": "商家体验运营", "domain_code": "merchant", "order": 10},
+    {"code": "merchant-managed-growth-operator", "name": "托管商家成长运营", "domain_code": "merchant", "order": 20},
     {"code": "merchant-onboarding-operator", "name": "商家入驻运营", "domain_code": "merchant-acquisition", "order": 10},
     {"code": "supplier-sourcing-operator", "name": "供应商寻源运营", "domain_code": "merchant-acquisition", "order": 20},
     {"code": "assortment-manager", "name": "选品与波段企划经理", "domain_code": "product", "order": 10},
@@ -76,6 +77,7 @@
     {"business_unit_code": "dewu", "role_code": "logistics-operations", "skill_name": "cloudmold-fulfillment-exception-lifecycle"},
     {"business_unit_code": "dewu", "role_code": "logistics-settlement-operator", "skill_name": "cloudmold-logistics-service-settlement"},
     {"business_unit_code": "dewu", "role_code": "merchant-experience-operator", "skill_name": "cloudmold-merchant-experience-rectification"},
+    {"business_unit_code": "dewu", "role_code": "merchant-managed-growth-operator", "skill_name": "cloudmold-merchant-managed-growth-lifecycle"},
     {"business_unit_code": "dewu", "role_code": "merchant-onboarding-operator", "skill_name": "cloudmold-merchant-onboarding-lifecycle"},
     {"business_unit_code": "dewu", "role_code": "merchant-settlement-operator", "skill_name": "cloudmold-merchant-service-fee-settlement"},
     {"business_unit_code": "dewu", "role_code": "operations-control", "skill_name": "cloudmold-autonomous-commerce-day"},

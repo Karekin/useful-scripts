@@ -1,0 +1,22 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.merchant.managed-growth-lifecycle.v1",
+  "workflow_id": "workflow.cloudmold.merchant.managed-growth-lifecycle.v1",
+  "name": "cloudmold-merchant-managed-growth-lifecycle",
+  "version": "1.0.0",
+  "owner": "cloudmold-merchant",
+  "authority": "manual-evidence-gated",
+  "risk_level": "R3",
+  "ui_dependency": "none",
+  "allowed_environments": ["local", "test", "demo"],
+  "entrypoints": {
+    "task": "skill-task.json"
+  },
+  "evidence": [
+    "cloudmold_skill_task_instance",
+    "cloudmold_skill_task_step",
+    "merchant managed admission workflow readback",
+    "merchant AI diagnostic / factory inspection / final review references",
+    "operator-provided lifecycle evidence package"
+  ]
+}

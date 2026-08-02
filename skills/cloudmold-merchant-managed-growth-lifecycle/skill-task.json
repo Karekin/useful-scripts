@@ -1,0 +1,334 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.merchant.managed-growth-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "merchant-managed-growth-operator",
+  "max_attempts": 3,
+  "steps": [
+    {
+      "step_code": "open_managed_admission",
+      "step_order": 1,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.admissionOpenCommand",
+          "$overrides": {
+            "operation": "OPEN_MANAGED_ADMISSION",
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "record_managed_attribution",
+      "step_order": 2,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.attributionCommand",
+          "$overrides": {
+            "operation": "RECORD_MANAGED_ATTRIBUTION",
+            "admissionId": "$steps.open_managed_admission.result.admissionId",
+            "expectedVersion": "$steps.open_managed_admission.result.admissionVersion",
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "submit_managed_evidence_package",
+      "step_order": 3,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.evidencePackageCommand",
+          "$overrides": {
+            "operation": "SUBMIT_MANAGED_EVIDENCE_PACKAGE",
+            "admissionId": "$steps.record_managed_attribution.result.admissionId",
+            "expectedVersion": "$steps.record_managed_attribution.result.admissionVersion",
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "propose_ai_diagnostic",
+      "step_order": 4,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.aiDiagnosticProposalCommand",
+          "$overrides": {
+            "operation": "PROPOSE_AI_DIAGNOSTIC",
+            "admissionId": "$steps.submit_managed_evidence_package.result.admissionId",
+            "expectedVersion": "$steps.submit_managed_evidence_package.result.admissionVersion",
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "accept_ai_diagnostic",
+      "step_order": 5,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.aiDiagnosticAcceptCommand",
+          "$overrides": {
+            "operation": "ACCEPT_AI_DIAGNOSTIC",
+            "admissionId": "$steps.propose_ai_diagnostic.result.admissionId",
+            "diagnosticId": "$steps.propose_ai_diagnostic.result.diagnosticId",
+            "expectedVersion": "$steps.propose_ai_diagnostic.result.diagnosticVersion",
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "create_factory_inspection_task",
+      "step_order": 6,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.inspectionCreateCommand",
+          "$overrides": {
+            "operation": "CREATE_FACTORY_INSPECTION_TASK",
+            "admissionId": "$steps.accept_ai_diagnostic.result.admissionId",
+            "expectedVersion": "$steps.accept_ai_diagnostic.result.admissionVersion",
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "claim_factory_inspection_task",
+      "step_order": 7,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.inspectionClaimCommand",
+          "$overrides": {
+            "operation": "CLAIM_FACTORY_INSPECTION_TASK",
+            "admissionId": "$steps.create_factory_inspection_task.result.admissionId",
+            "inspectionTaskId": "$steps.create_factory_inspection_task.result.inspectionTaskId",
+            "expectedVersion": "$steps.create_factory_inspection_task.result.inspectionTaskVersion",
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "schedule_factory_inspection_task",
+      "step_order": 8,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.inspectionScheduleCommand",
+          "$overrides": {
+            "operation": "SCHEDULE_FACTORY_INSPECTION_TASK",
+            "admissionId": "$steps.claim_factory_inspection_task.result.admissionId",
+            "inspectionTaskId": "$steps.claim_factory_inspection_task.result.inspectionTaskId",
+            "expectedVersion": "$steps.claim_factory_inspection_task.result.inspectionTaskVersion",
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "submit_factory_inspection",
+      "step_order": 9,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.inspectionSubmitCommand",
+          "$overrides": {
+            "operation": "SUBMIT_FACTORY_INSPECTION",
+            "admissionId": "$steps.schedule_factory_inspection_task.result.admissionId",
+            "inspectionTaskId": "$steps.schedule_factory_inspection_task.result.inspectionTaskId",
+            "expectedVersion": "$steps.schedule_factory_inspection_task.result.inspectionTaskVersion",
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "submit_factory_first_review",
+      "step_order": 10,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.inspectionFirstReviewCommand",
+          "$overrides": {
+            "operation": "SUBMIT_FACTORY_FIRST_REVIEW",
+            "admissionId": "$steps.submit_factory_inspection.result.admissionId",
+            "inspectionTaskId": "$steps.submit_factory_inspection.result.inspectionTaskId",
+            "expectedVersion": "$steps.submit_factory_inspection.result.inspectionTaskVersion",
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "submit_factory_final_review",
+      "step_order": 11,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.inspectionFinalReviewCommand",
+          "$overrides": {
+            "operation": "SUBMIT_FACTORY_FINAL_REVIEW",
+            "admissionId": "$steps.submit_factory_first_review.result.admissionId",
+            "inspectionTaskId": "$steps.submit_factory_first_review.result.inspectionTaskId",
+            "expectedVersion": "$steps.submit_factory_first_review.result.inspectionTaskVersion",
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "complete_factory_inspection_task",
+      "step_order": 12,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.inspectionCompleteCommand",
+          "$overrides": {
+            "operation": "COMPLETE_FACTORY_INSPECTION_TASK",
+            "admissionId": "$steps.submit_factory_final_review.result.admissionId",
+            "inspectionTaskId": "$steps.submit_factory_final_review.result.inspectionTaskId",
+            "expectedVersion": "$steps.submit_factory_final_review.result.inspectionTaskVersion",
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_code": "record_managed_final_review",
+      "step_order": 13,
+      "capability_id": "capability.cloudmold.merchant.merchant-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {
+        "argument_index": 0,
+        "json_pointer": "/idempotencyKey"
+      },
+      "arguments": [
+        {
+          "$object": "$input.managedFinalReviewCommand",
+          "$overrides": {
+            "operation": "RECORD_MANAGED_FINAL_REVIEW",
+            "admissionId": "$steps.complete_factory_inspection_task.result.admissionId",
+            "expectedVersion": "$steps.complete_factory_inspection_task.result.admissionVersion",
+            "idempotencyKey": "$task.stepIdempotencyKey",
+            "runId": "$task.runId"
+          }
+        }
+      ]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "verify_managed_growth_terminal",
+      "step_order": 14,
+      "capability_id": "capability.cloudmold.merchant.merchant-managed-admission-workflow-query.inspect.v1",
+      "operation_type": "READ",
+      "poll_interval_seconds": 2,
+      "wait_success": {
+        "/status": "SUCCEEDED"
+      },
+      "wait_failure": {
+        "/status": [
+          "FAILED"
+        ]
+      },
+      "arguments": [
+        "$steps.open_managed_admission.result.applicationId"
+      ]
+    }
+  ]
+}

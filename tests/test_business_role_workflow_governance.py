@@ -24,6 +24,7 @@ EXPECTED_OWNER_ROLES = {
     "logistics-operations",
     "logistics-settlement-operator",
     "merchant-experience-operator",
+    "merchant-managed-growth-operator",
     "merchant-onboarding-operator",
     "merchant-settlement-operator",
     "operations-control",
@@ -86,7 +87,7 @@ class BusinessRoleWorkflowGovernanceTest(unittest.TestCase):
         definitions = business_role_definitions()
         owner_roles = [definition.get("owner_role") for definition in definitions]
 
-        self.assertEqual(35, len(definitions))
+        self.assertEqual(36, len(definitions))
         self.assertEqual(EXPECTED_OWNER_ROLES, set(owner_roles))
         self.assertEqual(len(owner_roles), len(set(owner_roles)))
 
