@@ -492,6 +492,63 @@ services:
         max-size: "50m"
         max-file: "2"
 
+  # Local/demo supply-chain operations conductor. It only creates candidates
+  # for governed Temporal workflows and submits decisions through the MCP
+  # reviewer; it never writes business tables directly.
+  cloudmold-supply-chain-ai-automation:
+    profiles: [ "agent" ]
+    build:
+      context: ./supply-chain-ai-automation
+    image: cloudmold/supply-chain-ai-automation:local
+    container_name: cloudmold-supply-chain-ai-automation
+    restart: unless-stopped
+    depends_on:
+      yudao-mysql:
+        condition: service_healthy
+      yudao-provider:
+        condition: service_healthy
+      cloudmold-skill-task-executor:
+        condition: service_healthy
+      cloudmold-hsf-mcp-server:
+        condition: service_healthy
+    environment:
+      CLOUDMOLD_ADMIN_API_URL: http://yudao-provider:48080/admin-api
+      CLOUDMOLD_MCP_URL: http://cloudmold-hsf-mcp-server:49090/mcp
+      CLOUDMOLD_MCP_TOKEN_FILE: /run/secrets/cloudmold_mcp_bearer_token
+      CLOUDMOLD_MYSQL_HOST: yudao-mysql
+      CLOUDMOLD_MYSQL_USER: root
+      CLOUDMOLD_MYSQL_PASSWORD: "123456"
+      CLOUDMOLD_MYSQL_DATABASE: ruoyi-vue-pro
+      CLOUDMOLD_MYSQL_SSL_CA: /run/certs/yudao-mysql-ca.pem
+      CLOUDMOLD_MYSQL_SSL_MODE: VERIFY_CA
+      CLOUDMOLD_AUTOMATION_TENANT_ID: ${CLOUDMOLD_AI_OPERATIONS_TEMPORAL_SEED_TENANTS:-162}
+      CLOUDMOLD_AUTOMATION_APPROVER_IDS: 227,228,229
+      CLOUDMOLD_AUTOMATION_APPROVAL_LIMIT: "60"
+      CLOUDMOLD_SKILL_ROOT: /app/skills
+    secrets:
+      - cloudmold_mcp_bearer_token
+    volumes:
+      - ../../skills:/app/skills:ro
+      - ../../scripts:/app/scripts:ro
+      - ./data/mysql/ca.pem:/run/certs/yudao-mysql-ca.pem:ro
+    command:
+      - /bin/sh
+      - -c
+      - >-
+        while true; do
+          python /app/scripts/seed_supply_chain_operations.py --round-size 4 || true;
+          sleep 35;
+          python /app/scripts/supply_chain_ai_autoreviewer.py || true;
+          sleep 565;
+        done
+    networks:
+      - yudao_network
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+
   yudao-redis:
     image: redis:6.2
     container_name: yudao-redis

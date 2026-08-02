@@ -1,0 +1,38 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.warehouse.stock-transfer-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "inventory-transfer-operator",
+  "max_attempts": 5,
+  "steps": [
+    {
+      "step_code": "create_approved_transfer_request", "step_order": 1,
+      "capability_id": "capability.cloudmold.warehouse.stock-transfer-command.execute.v1",
+      "operation_type": "WRITE", "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.0", "$overrides": {"/idempotencyKey": "$task.stepIdempotencyKey"}}]
+    },
+    {
+      "step_code": "complete_outbound_batch", "step_order": 2,
+      "capability_id": "capability.cloudmold.warehouse.stock-transfer-command.execute.v1",
+      "operation_type": "WRITE", "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.1", "$overrides": {"/idempotencyKey": "$task.stepIdempotencyKey", "/orderId": "$steps.create_approved_transfer_request.result.orderId"}}]
+    },
+    {
+      "step_code": "complete_receipt_batch", "step_order": 3,
+      "capability_id": "capability.cloudmold.warehouse.stock-transfer-command.execute.v1",
+      "operation_type": "WRITE", "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.2", "$overrides": {"/idempotencyKey": "$task.stepIdempotencyKey", "/orderId": "$steps.create_approved_transfer_request.result.orderId"}}]
+    },
+    {
+      "step_code": "verify_completed_transfer", "step_order": 4,
+      "capability_id": "capability.cloudmold.warehouse.stock-transfer-query.require-by-source-business.v1",
+      "operation_type": "READ", "approval_required": false,
+      "arguments": ["$input.commands.0.sourceBusinessType", "$input.commands.0.sourceBusinessRef"]
+    }
+  ]
+}

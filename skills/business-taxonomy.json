@@ -98,6 +98,7 @@
     {"business_unit_code": "dewu", "role_code": "procure-to-pay-operator", "skill_name": "cloudmold-procurement-receipt-accounting-lifecycle"},
     {"business_unit_code": "dewu", "role_code": "inventory-count-controller", "skill_name": "cloudmold-stock-count-lifecycle"},
     {"business_unit_code": "dewu", "role_code": "inventory-transfer-operator", "skill_name": "cloudmold-stock-transfer-lifecycle"},
+    {"business_unit_code": "dewu", "role_code": "inventory-transfer-operator", "skill_name": "cloudmold-warehouse-stock-transfer-lifecycle"},
     {"business_unit_code": "dewu", "role_code": "inventory-scrap-operator", "skill_name": "cloudmold-inventory-scrap-lifecycle"},
     {"business_unit_code": "dewu", "role_code": "inventory-control-manager", "skill_name": "cloudmold-inventory-control-evidence-lifecycle"},
     {"business_unit_code": "dewu", "role_code": "supplier-return-operator", "skill_name": "cloudmold-supplier-return-lifecycle"},
