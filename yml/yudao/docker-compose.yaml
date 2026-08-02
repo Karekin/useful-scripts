@@ -143,9 +143,13 @@ services:
       # The BPM dependency is packaged through the isolated Maven profile. Its
       # Agent Control adapter remains fail-closed unless explicitly enabled.
       CLOUDMOLD_AGENT_APPROVAL_WORKFLOW_ENABLED: ${CLOUDMOLD_AGENT_APPROVAL_WORKFLOW_ENABLED:-false}
+      CLOUDMOLD_AGENT_CONTROL_APPROVAL_WORKFLOW_AI_REVIEWER_OR_SIGN_ENABLED: ${CLOUDMOLD_AGENT_CONTROL_APPROVAL_WORKFLOW_AI_REVIEWER_OR_SIGN_ENABLED:-false}
+      CLOUDMOLD_AGENT_CONTROL_APPROVAL_WORKFLOW_AI_REVIEWER_USER_IDS: ${CLOUDMOLD_AGENT_CONTROL_APPROVAL_WORKFLOW_AI_REVIEWER_USER_IDS:-}
+      CLOUDMOLD_AGENT_CONTROL_APPROVAL_WORKFLOW_AI_REVIEW_ALLOWED_RISK_LEVELS: ${CLOUDMOLD_AGENT_CONTROL_APPROVAL_WORKFLOW_AI_REVIEW_ALLOWED_RISK_LEVELS:-}
       CLOUDMOLD_AI_OPERATIONS_TEMPORAL_ENABLED: ${CLOUDMOLD_AI_OPERATIONS_TEMPORAL_ENABLED:-false}
       CLOUDMOLD_AI_OPERATIONS_TEMPORAL_SEED_ENABLED: ${CLOUDMOLD_AI_OPERATIONS_TEMPORAL_ENABLED:-false}
       CLOUDMOLD_AI_OPERATIONS_TEMPORAL_SEED_TENANTS: ${CLOUDMOLD_AI_OPERATIONS_TEMPORAL_SEED_TENANTS:-162}
+      CLOUDMOLD_AI_OPERATIONS_TEMPORAL_SEED_OPERATOR_ID: ${CLOUDMOLD_AI_OPERATIONS_TEMPORAL_SEED_OPERATOR_ID:-225}
       CLOUDMOLD_AI_OPERATIONS_SYNTHETIC_CONSUMER_MEMBER_USER_ID: ${CLOUDMOLD_AI_OPERATIONS_SYNTHETIC_CONSUMER_MEMBER_USER_ID:-286}
       CLOUDMOLD_TEMPORAL_TARGET: temporal:7233
       CLOUDMOLD_TEMPORAL_NAMESPACE: default
@@ -251,6 +255,16 @@ services:
         mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-124.sql
         mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-125.sql
         mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-126.sql
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_ai_ops_workflow_registry_pointer'")" = "0" ]; then
+          mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-workflow-registry-123.sql
+        fi
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_ai_ops_workflow_registry_pointer' AND column_name='kill_switch_enabled'")" = "0" ]; then
+          mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-workflow-registry-124.sql
+        fi
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_ai_ops_workflow_evidence_operation'")" = "0" ]; then
+          mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-workflow-registry-125.sql
+        fi
+        mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-workflow-registry-126.sql
         if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_replenishment_execution_proposal'")" = "0" ]; then
           mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-127.sql
         fi
@@ -267,6 +281,15 @@ services:
           mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-131.sql
         fi
         mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-132.sql
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_assortment_planning_operation'")" = "0" ]; then
+          mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-133.sql
+        fi
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_merchant_managed_admission'")" = "0" ]; then
+          mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-134.sql
+        fi
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_merchant_grade_decision'")" = "0" ]; then
+          mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-135.sql
+        fi
     volumes:
       - ../../../yudao-cloud/sql/cloudmold/V20260718_67__durable_skill_task_executor.sql:/migration-67.sql:ro
       - ../../../yudao-cloud/cloudmold-module-skill-task/cloudmold-module-skill-task-server/src/main/resources/db/migration/V20260719_68__durable_skill_task_composition.sql:/migration-68.sql:ro
@@ -289,12 +312,19 @@ services:
       - ../../../yudao-cloud/cloudmold-module-finance/cloudmold-module-finance-server/src/main/resources/db/migration/V20260729_124__canonical_finance_close.sql:/migration-124.sql:ro
       - ../../../yudao-cloud/sql/cloudmold/V20260729_125__canonical_growth_experiment.sql:/migration-125.sql:ro
       - ../../../yudao-cloud/sql/cloudmold/V20260729_126__community_content_moderation_status_width.sql:/migration-126.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260801_123__workflow_proposal_registry.sql:/migration-workflow-registry-123.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260801_124__workflow_registry_evaluation_release.sql:/migration-workflow-registry-124.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260801_125__workflow_evidence_feedback.sql:/migration-workflow-registry-125.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260801_126__skill_task_registry_lineage.sql:/migration-workflow-registry-126.sql:ro
       - ../../../yudao-cloud/sql/cloudmold/V20260729_127__replenishment_execution_proposal.sql:/migration-127.sql:ro
       - ../../../yudao-cloud/sql/cloudmold/V20260729_128__canonical_crossborder_direct_mail_v1.sql:/migration-128.sql:ro
       - ../../../yudao-cloud/sql/cloudmold/V20260730_129__canonical_bonded_customs_lifecycle_v1.sql:/migration-129.sql:ro
       - ../../../yudao-cloud/sql/cloudmold/V20260730_130__canonical_partner_marketing_first_slice.sql:/migration-130.sql:ro
       - ../../../yudao-cloud/sql/cloudmold/V20260730_131__return_disposition_and_scrap_closure.sql:/migration-131.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260730_133__canonical_assortment_planning_lifecycle.sql:/migration-133.sql:ro
       - ../../../yudao-cloud/sql/cloudmold/V20260730_132__mes_production_execution_foundation.sql:/migration-132.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260802_134__canonical_merchant_managed_admission.sql:/migration-134.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260802_135__merchant_managed_growth_and_exit.sql:/migration-135.sql:ro
     networks:
       - yudao_network
 
