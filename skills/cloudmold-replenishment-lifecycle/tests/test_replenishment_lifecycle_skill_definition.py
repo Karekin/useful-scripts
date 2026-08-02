@@ -22,8 +22,8 @@ class ReplenishmentLifecycleSkillDefinitionTest(unittest.TestCase):
                 "open_replenishment_day",
                 "notice_replenishment_day",
                 "claim_replenishment_day",
-                "submit_supplier_sourcing",
-                "wait_supplier_sourcing",
+                "submit_procurement_sourcing",
+                "wait_procurement_sourcing",
                 "submit_purchase_order",
                 "wait_purchase_order",
                 "submit_physical_warehouse_cycle",
@@ -70,7 +70,7 @@ class ReplenishmentLifecycleSkillDefinitionTest(unittest.TestCase):
         }
         self.assertLess(
             orders["claim_replenishment_day"],
-            orders["submit_supplier_sourcing"],
+            orders["submit_procurement_sourcing"],
         )
         self.assertGreater(
             orders["resolve_replenishment_day"],

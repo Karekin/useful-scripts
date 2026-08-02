@@ -1,77 +1,152 @@
 {
   "schema_version": "cloudmold.skill-task-definition/v1",
   "skill_id": "skill.cloudmold.procurement.order-lifecycle.v1",
-  "skill_version": "1.0.0",
+  "skill_version": "1.1.0",
   "risk_level": "R3",
   "workflow_level": "BUSINESS_ROLE",
   "owner_role": "procurement-order-operator",
   "max_attempts": 5,
   "steps": [
     {
-      "step_code": "purchase_order_create",
+      "step_code": "award_release",
       "step_order": 1,
-      "capability_id": "capability.cloudmold.procurement.procurement-command.execute.sig-b366ae5e9a17.v1",
+      "capability_id": "capability.cloudmold.procurement.award-release-command.release-approved-award.v1",
       "operation_type": "WRITE",
       "approval_required": true,
       "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
-      "arguments": [{
-        "operation": "CREATE_PURCHASE_ORDER",
-        "idempotencyKey": "$task.stepIdempotencyKey",
-        "runId": "$task.runId",
-        "correlationId": "$input.correlationId",
-        "occurredAt": "$input.occurredAt",
-        "purchaseOrder": "$input.purchaseOrder"
-      }, "$input.actorPrincipalId"]
+      "arguments": [{"$object": "$input.awardRelease.command", "$overrides": {
+        "/idempotencyKey": "$task.stepIdempotencyKey", "/runId": "$task.runId"
+      }}, "$input.awardRelease.actorPrincipalId"]
     },
     {
-      "step_code": "purchase_order_dispatch",
+      "step_code": "purchase_order_a_submit",
       "step_order": 2,
-      "capability_id": "capability.cloudmold.procurement.procurement-command.execute.sig-b366ae5e9a17.v1",
+      "capability_id": "capability.cloudmold.procurement.procurement-command.execute.v1",
       "operation_type": "WRITE",
       "approval_required": true,
       "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
-      "arguments": [{
-        "operation": "DISPATCH_PURCHASE_ORDER",
-        "idempotencyKey": "$task.stepIdempotencyKey",
-        "runId": "$task.runId",
-        "correlationId": "$input.correlationId",
-        "occurredAt": "$input.occurredAt",
-        "purchaseOrder": {
-          "orderId": "$steps.purchase_order_create.result.aggregateId",
-          "expectedVersion": "$steps.purchase_order_create.result.aggregateVersion",
-          "reasonCode": "AI_PROCUREMENT_APPROVED"
-        }
-      }, "$input.actorPrincipalId"]
+      "arguments": [{"$object": "$input.purchaseOrders.0.commands.0.command", "$overrides": {
+        "/idempotencyKey": "$task.stepIdempotencyKey", "/runId": "$task.runId",
+        "/purchaseOrder/orderId": "$steps.award_release.result.purchaseOrders.0.orderId",
+        "/purchaseOrder/expectedVersion": "$steps.award_release.result.purchaseOrders.0.version"
+      }}, "$input.purchaseOrders.0.commands.0.actorPrincipalId"]
     },
     {
-      "step_code": "supplier_confirm_order",
+      "step_code": "purchase_order_a_approve",
       "step_order": 3,
-      "capability_id": "capability.cloudmold.procurement.procurement-command.execute.sig-b366ae5e9a17.v1",
+      "capability_id": "capability.cloudmold.procurement.procurement-command.execute.v1",
       "operation_type": "WRITE",
       "approval_required": true,
       "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
-      "arguments": [{
-        "operation": "SUPPLIER_CONFIRM_PURCHASE_ORDER",
-        "idempotencyKey": "$task.stepIdempotencyKey",
-        "runId": "$task.runId",
-        "correlationId": "$input.correlationId",
-        "occurredAt": "$input.occurredAt",
-        "purchaseOrder": {
-          "orderId": "$steps.purchase_order_create.result.aggregateId",
-          "expectedVersion": "$steps.purchase_order_dispatch.result.aggregateVersion",
-          "reasonCode": "SUPPLIER_ACKNOWLEDGED"
-        }
-      }, "$input.actorPrincipalId"]
+      "arguments": [{"$object": "$input.purchaseOrders.0.commands.1.command", "$overrides": {
+        "/idempotencyKey": "$task.stepIdempotencyKey", "/runId": "$task.runId",
+        "/purchaseOrder/orderId": "$steps.purchase_order_a_submit.result.aggregateId",
+        "/purchaseOrder/expectedVersion": "$steps.purchase_order_a_submit.result.aggregateVersion"
+      }}, "$input.purchaseOrders.0.commands.1.actorPrincipalId"]
     },
     {
-      "step_kind": "WAIT_CAPABILITY",
-      "step_code": "procurement_terminal_readback",
+      "step_code": "purchase_order_a_release",
       "step_order": 4,
-      "capability_id": "capability.cloudmold.procurement.procurement-query.require-current.v1",
-      "poll_interval_seconds": 10,
-      "wait_success": {"/status": "SUPPLIER_CONFIRMED"},
-      "wait_failure": {"/status": ["CANCELLED"]},
-      "arguments": ["$steps.purchase_order_create.result.aggregateId"]
+      "capability_id": "capability.cloudmold.procurement.procurement-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.purchaseOrders.0.commands.2.command", "$overrides": {
+        "/idempotencyKey": "$task.stepIdempotencyKey", "/runId": "$task.runId",
+        "/purchaseOrder/orderId": "$steps.purchase_order_a_approve.result.aggregateId",
+        "/purchaseOrder/expectedVersion": "$steps.purchase_order_a_approve.result.aggregateVersion"
+      }}, "$input.purchaseOrders.0.commands.2.actorPrincipalId"]
+    },
+    {
+      "step_code": "purchase_order_a_dispatch",
+      "step_order": 5,
+      "capability_id": "capability.cloudmold.procurement.procurement-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.purchaseOrders.0.commands.3.command", "$overrides": {
+        "/idempotencyKey": "$task.stepIdempotencyKey", "/runId": "$task.runId",
+        "/purchaseOrder/orderId": "$steps.purchase_order_a_release.result.aggregateId",
+        "/purchaseOrder/expectedVersion": "$steps.purchase_order_a_release.result.aggregateVersion"
+      }}, "$input.purchaseOrders.0.commands.3.actorPrincipalId"]
+    },
+    {
+      "step_code": "purchase_order_a_supplier_confirm",
+      "step_order": 6,
+      "capability_id": "capability.cloudmold.procurement.procurement-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.purchaseOrders.0.commands.4.command", "$overrides": {
+        "/idempotencyKey": "$task.stepIdempotencyKey", "/runId": "$task.runId",
+        "/purchaseOrder/orderId": "$steps.purchase_order_a_dispatch.result.aggregateId",
+        "/purchaseOrder/expectedVersion": "$steps.purchase_order_a_dispatch.result.aggregateVersion"
+      }}, "$input.purchaseOrders.0.commands.4.actorPrincipalId"]
+    },
+    {
+      "step_code": "purchase_order_b_submit",
+      "step_order": 7,
+      "capability_id": "capability.cloudmold.procurement.procurement-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.purchaseOrders.1.commands.0.command", "$overrides": {
+        "/idempotencyKey": "$task.stepIdempotencyKey", "/runId": "$task.runId",
+        "/purchaseOrder/orderId": "$steps.award_release.result.purchaseOrders.1.orderId",
+        "/purchaseOrder/expectedVersion": "$steps.award_release.result.purchaseOrders.1.version"
+      }}, "$input.purchaseOrders.1.commands.0.actorPrincipalId"]
+    },
+    {
+      "step_code": "purchase_order_b_approve",
+      "step_order": 8,
+      "capability_id": "capability.cloudmold.procurement.procurement-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.purchaseOrders.1.commands.1.command", "$overrides": {
+        "/idempotencyKey": "$task.stepIdempotencyKey", "/runId": "$task.runId",
+        "/purchaseOrder/orderId": "$steps.purchase_order_b_submit.result.aggregateId",
+        "/purchaseOrder/expectedVersion": "$steps.purchase_order_b_submit.result.aggregateVersion"
+      }}, "$input.purchaseOrders.1.commands.1.actorPrincipalId"]
+    },
+    {
+      "step_code": "purchase_order_b_release",
+      "step_order": 9,
+      "capability_id": "capability.cloudmold.procurement.procurement-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.purchaseOrders.1.commands.2.command", "$overrides": {
+        "/idempotencyKey": "$task.stepIdempotencyKey", "/runId": "$task.runId",
+        "/purchaseOrder/orderId": "$steps.purchase_order_b_approve.result.aggregateId",
+        "/purchaseOrder/expectedVersion": "$steps.purchase_order_b_approve.result.aggregateVersion"
+      }}, "$input.purchaseOrders.1.commands.2.actorPrincipalId"]
+    },
+    {
+      "step_code": "purchase_order_b_dispatch",
+      "step_order": 10,
+      "capability_id": "capability.cloudmold.procurement.procurement-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.purchaseOrders.1.commands.3.command", "$overrides": {
+        "/idempotencyKey": "$task.stepIdempotencyKey", "/runId": "$task.runId",
+        "/purchaseOrder/orderId": "$steps.purchase_order_b_release.result.aggregateId",
+        "/purchaseOrder/expectedVersion": "$steps.purchase_order_b_release.result.aggregateVersion"
+      }}, "$input.purchaseOrders.1.commands.3.actorPrincipalId"]
+    },
+    {
+      "step_code": "purchase_order_b_supplier_confirm",
+      "step_order": 11,
+      "capability_id": "capability.cloudmold.procurement.procurement-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.purchaseOrders.1.commands.4.command", "$overrides": {
+        "/idempotencyKey": "$task.stepIdempotencyKey", "/runId": "$task.runId",
+        "/purchaseOrder/orderId": "$steps.purchase_order_b_dispatch.result.aggregateId",
+        "/purchaseOrder/expectedVersion": "$steps.purchase_order_b_dispatch.result.aggregateVersion"
+      }}, "$input.purchaseOrders.1.commands.4.actorPrincipalId"]
     }
   ]
 }

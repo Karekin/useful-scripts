@@ -6,8 +6,7 @@
     {"code": "cloudmold-shared", "name": "CloudMold 共享平台", "status": "ACTIVE", "order": 90}
   ],
   "domains": [
-    {"code": "merchant", "name": "商家域", "order": 10},
-    {"code": "merchant-acquisition", "name": "招商域", "order": 20},
+    {"code": "merchant", "name": "商家经营域", "order": 10},
     {"code": "product", "name": "商品域", "order": 30},
     {"code": "pricing", "name": "价格域", "order": 40},
     {"code": "supply-chain", "name": "供应链域", "order": 50},
@@ -22,15 +21,15 @@
     {"code": "platform", "name": "平台与工程域", "order": 900}
   ],
   "roles": [
-    {"code": "merchant-experience-operator", "name": "商家体验运营", "domain_code": "merchant", "order": 10},
+    {"code": "merchant-onboarding-operator", "name": "商家入驻运营", "domain_code": "merchant", "order": 10},
     {"code": "merchant-managed-growth-operator", "name": "托管商家成长运营", "domain_code": "merchant", "order": 20},
-    {"code": "merchant-onboarding-operator", "name": "商家入驻运营", "domain_code": "merchant-acquisition", "order": 10},
-    {"code": "supplier-sourcing-operator", "name": "供应商寻源运营", "domain_code": "merchant-acquisition", "order": 20},
+    {"code": "merchant-experience-operator", "name": "商家体验运营", "domain_code": "merchant", "order": 30},
     {"code": "assortment-manager", "name": "选品与波段企划经理", "domain_code": "product", "order": 10},
     {"code": "category-operations", "name": "品类运营", "domain_code": "product", "order": 20},
     {"code": "product-operations", "name": "商品运营", "domain_code": "product", "order": 30},
     {"code": "product-listing-operator", "name": "商品铺品运营", "domain_code": "product", "order": 40},
     {"code": "pricing-revenue-operator", "name": "定价与收益运营", "domain_code": "pricing", "order": 10},
+    {"code": "procurement-sourcing-operator", "name": "采购寻源运营", "domain_code": "supply-chain", "order": 5},
     {"code": "supply-planning-manager", "name": "需求计划经理", "domain_code": "supply-chain", "order": 10},
     {"code": "replenishment-operator", "name": "补货运营", "domain_code": "supply-chain", "order": 20},
     {"code": "procurement-order-operator", "name": "采购订单运营", "domain_code": "supply-chain", "order": 30},
@@ -92,7 +91,7 @@
     {"business_unit_code": "dewu", "role_code": "quality-operations", "skill_name": "cloudmold-quality-inspection-recall-lifecycle"},
     {"business_unit_code": "dewu", "role_code": "replenishment-operator", "skill_name": "cloudmold-replenishment-lifecycle"},
     {"business_unit_code": "dewu", "role_code": "risk-operations", "skill_name": "cloudmold-risk-dispute-resolution"},
-    {"business_unit_code": "dewu", "role_code": "supplier-sourcing-operator", "skill_name": "cloudmold-supplier-sourcing-lifecycle"},
+    {"business_unit_code": "dewu", "role_code": "procurement-sourcing-operator", "skill_name": "cloudmold-procurement-sourcing-lifecycle"},
     {"business_unit_code": "dewu", "role_code": "supply-chain-operator", "skill_name": "cloudmold-warehouse-admission-lifecycle"},
     {"business_unit_code": "dewu", "role_code": "supply-planning-manager", "skill_name": "cloudmold-supply-planning-sop-lifecycle"},
     {"business_unit_code": "dewu", "role_code": "synthetic-consumer", "skill_name": "cloudmold-consumer-shopping-journey"},

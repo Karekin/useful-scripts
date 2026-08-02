@@ -12,7 +12,8 @@
   "entrypoints": {"task": "skill-task.json"},
   "evidence": [
     "cloudmold_skill_task_instance",
-    "cloudmold_supplier_sourcing_case",
+    "cloudmold_procurement_sourcing_event",
+    "cloudmold_procurement_award",
     "cloudmold_procurement_order",
     "cloudmold_operations_alert",
     "wms_receipt_order",

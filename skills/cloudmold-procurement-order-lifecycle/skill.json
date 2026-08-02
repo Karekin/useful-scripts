@@ -3,7 +3,7 @@
   "skill_id": "skill.cloudmold.procurement.order-lifecycle.v1",
   "workflow_id": "workflow.cloudmold.procurement.order-lifecycle.v1",
   "name": "cloudmold-procurement-order-lifecycle",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "owner": "cloudmold-procurement",
   "authority": "canonical-cloudmold",
   "risk_level": "R3",
@@ -13,6 +13,9 @@
   "evidence": [
     "cloudmold_skill_task_instance",
     "cloudmold_skill_task_step",
-    "cloudmold_procurement_order"
+    "cloudmold_procurement_order",
+    "cloudmold_procurement_order_item",
+    "cloudmold_procurement_order_delivery_schedule",
+    "cloudmold_procurement_order_award_source"
   ]
 }
