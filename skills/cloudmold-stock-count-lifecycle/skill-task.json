@@ -1,0 +1,19 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.inventory.stock-count-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "inventory-count-controller",
+  "max_attempts": 5,
+  "steps": [
+    {"step_code":"create_count","step_order":1,"capability_id":"capability.cloudmold.warehouse.stock-count-command.execute.v1","operation_type":"WRITE","approval_required":true,"idempotency_binding":{"argument_index":0,"json_pointer":"/idempotencyKey"},"arguments":[{"$object":"$input.commands.0","$overrides":{"/idempotencyKey":"$task.stepIdempotencyKey"}}]},
+    {"step_code":"submit_count","step_order":2,"capability_id":"capability.cloudmold.warehouse.stock-count-command.execute.v1","operation_type":"WRITE","approval_required":true,"idempotency_binding":{"argument_index":0,"json_pointer":"/idempotencyKey"},"arguments":[{"$object":"$input.commands.1","$overrides":{"/idempotencyKey":"$task.stepIdempotencyKey","/stockCountId":"$steps.create_count.result.stockCountId"}}]},
+    {"step_code":"start_counting","step_order":3,"capability_id":"capability.cloudmold.warehouse.stock-count-command.execute.v1","operation_type":"WRITE","approval_required":true,"idempotency_binding":{"argument_index":0,"json_pointer":"/idempotencyKey"},"arguments":[{"$object":"$input.commands.2","$overrides":{"/idempotencyKey":"$task.stepIdempotencyKey","/stockCountId":"$steps.submit_count.result.stockCountId"}}]},
+    {"step_code":"record_count_batch","step_order":4,"capability_id":"capability.cloudmold.warehouse.stock-count-command.execute.v1","operation_type":"WRITE","approval_required":true,"idempotency_binding":{"argument_index":0,"json_pointer":"/idempotencyKey"},"arguments":[{"$object":"$input.commands.3","$overrides":{"/idempotencyKey":"$task.stepIdempotencyKey","/stockCountId":"$steps.start_counting.result.stockCountId"}}]},
+    {"step_code":"approve_difference","step_order":5,"capability_id":"capability.cloudmold.warehouse.stock-count-command.execute.v1","operation_type":"WRITE","approval_required":true,"idempotency_binding":{"argument_index":0,"json_pointer":"/idempotencyKey"},"arguments":[{"$object":"$input.commands.4","$overrides":{"/idempotencyKey":"$task.stepIdempotencyKey","/stockCountId":"$steps.record_count_batch.result.stockCountId"}}]},
+    {"step_code":"adjust_inventory","step_order":6,"capability_id":"capability.cloudmold.warehouse.stock-count-command.execute.v1","operation_type":"WRITE","approval_required":true,"idempotency_binding":{"argument_index":0,"json_pointer":"/idempotencyKey"},"arguments":[{"$object":"$input.commands.5","$overrides":{"/idempotencyKey":"$task.stepIdempotencyKey","/stockCountId":"$steps.approve_difference.result.stockCountId"}}]},
+    {"step_code":"complete_count","step_order":7,"capability_id":"capability.cloudmold.warehouse.stock-count-command.execute.v1","operation_type":"WRITE","approval_required":true,"idempotency_binding":{"argument_index":0,"json_pointer":"/idempotencyKey"},"arguments":[{"$object":"$input.commands.6","$overrides":{"/idempotencyKey":"$task.stepIdempotencyKey","/stockCountId":"$steps.adjust_inventory.result.stockCountId"}}]},
+    {"step_code":"verify_count","step_order":8,"capability_id":"capability.cloudmold.warehouse.stock-count-query.require-by-stock-count-id.v1","operation_type":"READ","approval_required":false,"arguments":["$steps.complete_count.result.stockCountId"]}
+  ]
+}

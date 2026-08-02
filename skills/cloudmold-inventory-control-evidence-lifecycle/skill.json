@@ -1,0 +1,14 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.inventory.control-evidence-lifecycle.v1",
+  "workflow_id": "workflow.cloudmold.inventory.control-evidence-lifecycle.v1",
+  "name": "cloudmold-inventory-control-evidence-lifecycle",
+  "version": "1.0.0",
+  "owner": "cloudmold-supply-planning",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R2",
+  "ui_dependency": "none",
+  "allowed_environments": ["local", "test", "demo"],
+  "entrypoints": {"task": "skill-task.json"},
+  "evidence": ["cloudmold_safety_stock_policy", "cloudmold_safety_stock_policy_version", "cloudmold_inventory_health_snapshot", "cloudmold_inventory_aging_snapshot"]
+}

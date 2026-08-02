@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "cloudmold.horizontal-role-foundation/v1",
+  "roles": [
+    {
+      "ownerRole": "hr-organization-operator",
+      "displayName": "人力与组织运营",
+      "stage": "FOUNDATION_REQUIRED",
+      "authoritySources": ["HRIS", "排班系统", "LMS"],
+      "controlledArtifacts": ["用工需求工单", "排班异常工单", "培训到期提醒"],
+      "approvalBoundary": "录用、绩效、薪酬和劳动处分由 HR 与法定流程决定",
+      "prohibitedAutomation": ["自动录用", "自动绩效定级", "自动薪酬调整", "自动劳动处分"],
+      "exitCriteria": ["人员主数据最小化授权", "HR 责任人绑定", "劳动合规审批模板", "终态回读"]
+    },
+    {
+      "ownerRole": "legal-ip-operator",
+      "displayName": "法务与知识产权运营",
+      "stage": "FOUNDATION_REQUIRED",
+      "authoritySources": ["合同生命周期系统", "商标/IP 档案", "争议证据库"],
+      "controlledArtifacts": ["合同义务台账", "条款偏差草案", "证据包草稿"],
+      "approvalBoundary": "对外签约、法律意见、诉讼和和解决定由法务责任人作出",
+      "prohibitedAutomation": ["自动签约", "自动出具法律意见", "自动提起诉讼", "自动达成和解"],
+      "exitCriteria": ["合同与证据最小权限", "法务责任人绑定", "条款偏差人工复核", "签约终态回读"]
+    },
+    {
+      "ownerRole": "privacy-security-operator",
+      "displayName": "隐私与信息安全运营",
+      "stage": "FOUNDATION_REQUIRED",
+      "authoritySources": ["IAM", "SIEM", "数据分类与隐私请求系统"],
+      "controlledArtifacts": ["权限复核单", "访问异常工单", "安全演练工单"],
+      "approvalBoundary": "生产授权、密钥操作、数据披露和事件定级由安全责任人批准",
+      "prohibitedAutomation": ["自动授予生产权限", "自动导出密钥", "自动披露数据", "自动定级安全事件"],
+      "exitCriteria": ["最小权限数据视图", "安全责任人绑定", "双人复核模板", "安全事件终态回读"]
+    },
+    {
+      "ownerRole": "enterprise-platform-operator",
+      "displayName": "企业平台工程运营",
+      "stage": "FOUNDATION_REQUIRED",
+      "authoritySources": ["CMDB", "可观测性平台", "CI/CD 与变更系统"],
+      "controlledArtifacts": ["SLO 异常工单", "变更风险评审单", "灾备演练证据"],
+      "approvalBoundary": "生产变更、回滚和灾备切换由变更负责人批准",
+      "prohibitedAutomation": ["自动发布生产变更", "自动回滚", "自动灾备切换", "自动扩容收费资源"],
+      "exitCriteria": ["服务与变更对象绑定", "变更责任人绑定", "变更审批模板", "部署或演练终态回读"]
+    },
+    {
+      "ownerRole": "strategy-pmo-control-operator",
+      "displayName": "战略、PMO 与内控运营",
+      "stage": "FOUNDATION_REQUIRED",
+      "authoritySources": ["PPM", "预算系统", "内审整改台账"],
+      "controlledArtifacts": ["项目风险草案", "整改行动单", "预算情景草案"],
+      "approvalBoundary": "目标取舍、预算批准和独立审计结论由管理层或内审作出",
+      "prohibitedAutomation": ["自动批准预算", "自动调整公司目标", "自动关闭审计整改", "自动形成审计结论"],
+      "exitCriteria": ["项目与预算最小权限", "管理层或内审责任人绑定", "预算审批模板", "整改终态回读"]
+    }
+  ]
+}

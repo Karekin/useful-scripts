@@ -103,13 +103,13 @@
       "arguments": ["payload"],
       "write": true
     },
-    "POST /admin-api/cloudmold/supplier-sourcing/command": {
-      "capability_id": "capability.cloudmold.supplier.supplier-sourcing-command.execute.sig-64f1778a42c3.v1",
+    "POST /admin-api/cloudmold/procurement/sourcing/command": {
+      "capability_id": "capability.cloudmold.procurement.sourcing-command.execute.v1",
       "arguments": ["payload", "actorPrincipalId"],
       "write": true
     },
     "POST /admin-api/cloudmold/procurement/command": {
-      "capability_id": "capability.cloudmold.procurement.procurement-command.execute.sig-b366ae5e9a17.v1",
+      "capability_id": "capability.cloudmold.procurement.procurement-command.execute.v1",
       "arguments": ["payload", "actorPrincipalId"],
       "write": true
     },

@@ -1,0 +1,14 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.supplier.admission-lifecycle.v1",
+  "workflow_id": "workflow.cloudmold.supplier.admission-lifecycle.v1",
+  "name": "cloudmold-supplier-admission-lifecycle",
+  "version": "1.0.0",
+  "owner": "cloudmold-supplier-governance",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R3",
+  "ui_dependency": "none",
+  "allowed_environments": ["local", "test", "demo"],
+  "entrypoints": {"task": "skill-task.json"},
+  "evidence": ["cloudmold_supplier_profile", "cloudmold_supplier_profile_operation"]
+}

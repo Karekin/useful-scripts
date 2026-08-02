@@ -251,7 +251,6 @@ services:
         fi
         mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-121.sql
         mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-122.sql
-        mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-123.sql
         mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-124.sql
         mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-125.sql
         mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-126.sql
@@ -308,7 +307,6 @@ services:
       - ../../../yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/resources/db/migration/V20260729_120__ai_operations_outbox_discovery.sql:/migration-120.sql:ro
       - ../../../yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/resources/db/migration/V20260729_121__ai_operations_daily_dispatch_observation.sql:/migration-121.sql:ro
       - ../../../yudao-cloud/cloudmold-module-ai-operations/cloudmold-module-ai-operations-server/src/main/resources/db/migration/V20260729_122__automation_candidate_event_provenance.sql:/migration-122.sql:ro
-      - ../../../yudao-cloud/sql/cloudmold/V20260729_123__canonical_supplier_sourcing.sql:/migration-123.sql:ro
       - ../../../yudao-cloud/cloudmold-module-finance/cloudmold-module-finance-server/src/main/resources/db/migration/V20260729_124__canonical_finance_close.sql:/migration-124.sql:ro
       - ../../../yudao-cloud/sql/cloudmold/V20260729_125__canonical_growth_experiment.sql:/migration-125.sql:ro
       - ../../../yudao-cloud/sql/cloudmold/V20260729_126__community_content_moderation_status_width.sql:/migration-126.sql:ro

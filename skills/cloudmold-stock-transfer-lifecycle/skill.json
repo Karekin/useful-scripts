@@ -1,0 +1,14 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.inventory.stock-transfer-lifecycle.v1",
+  "workflow_id": "workflow.cloudmold.inventory.stock-transfer-lifecycle.v1",
+  "name": "cloudmold-stock-transfer-lifecycle",
+  "version": "1.0.0",
+  "owner": "cloudmold-inventory-control",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R2",
+  "ui_dependency": "none",
+  "allowed_environments": ["local", "test", "demo"],
+  "entrypoints": {"task": "skill-task.json"},
+  "evidence": ["cloudmold_inventory_stock_transfer", "cloudmold_inventory_stock_transfer_operation", "cloudmold_inventory_ledger_transaction_v3", "cloudmold_inventory_ledger_entry_v3"]
+}

@@ -1,0 +1,25 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.finance.supplier-invoice-finalization-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "accounts-payable-approver",
+  "max_attempts": 5,
+  "steps": [
+    {
+      "step_code": "approve_matched_invoice", "step_order": 1,
+      "capability_id": "capability.cloudmold.finance.supplier-invoice-command.approve.v1",
+      "operation_type": "WRITE", "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/envelope/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.0.command", "$overrides": {"/envelope/idempotencyKey": "$task.stepIdempotencyKey", "/envelope/runId": "$task.runId"}}, "$input.commands.0.actorPrincipalId"]
+    },
+    {
+      "step_code": "post_approved_invoice", "step_order": 2,
+      "capability_id": "capability.cloudmold.finance.supplier-invoice-command.post.v1",
+      "operation_type": "WRITE", "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/envelope/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.1.command", "$overrides": {"/envelope/idempotencyKey": "$task.stepIdempotencyKey", "/envelope/runId": "$task.runId", "/supplierInvoiceId": "$steps.approve_matched_invoice.result.aggregateId", "/expectedVersion": "$steps.approve_matched_invoice.result.aggregateVersion"}}, "$input.commands.1.actorPrincipalId"]
+    }
+  ]
+}

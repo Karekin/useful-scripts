@@ -9,6 +9,7 @@ SKILLS_ROOT = Path(__file__).resolve().parents[1] / "skills"
 
 EXPECTED_OWNER_ROLES = {
     "advertising-settlement-operator",
+    "accounts-payable-approver",
     "aftersales-operator",
     "assortment-manager",
     "bonded-customs-operations",
@@ -32,6 +33,14 @@ EXPECTED_OWNER_ROLES = {
     "partner-marketing-operations",
     "pricing-revenue-operator",
     "procurement-order-operator",
+    "procure-to-pay-operator",
+    "inventory-count-controller",
+    "inventory-transfer-operator",
+    "inventory-scrap-operator",
+    "inventory-control-manager",
+    "supplier-return-operator",
+    "supplier-return-accountant",
+    "supplier-governance",
     "product-listing-operator",
     "product-operations",
     "production-supervisor",
@@ -39,7 +48,7 @@ EXPECTED_OWNER_ROLES = {
     "quality-operations",
     "replenishment-operator",
     "risk-operations",
-    "supplier-sourcing-operator",
+    "procurement-sourcing-operator",
     "supply-chain-operator",
     "supply-planning-manager",
     "synthetic-consumer",
@@ -87,7 +96,7 @@ class BusinessRoleWorkflowGovernanceTest(unittest.TestCase):
         definitions = business_role_definitions()
         owner_roles = [definition.get("owner_role") for definition in definitions]
 
-        self.assertEqual(36, len(definitions))
+        self.assertEqual(45, len(definitions))
         self.assertEqual(EXPECTED_OWNER_ROLES, set(owner_roles))
         self.assertEqual(len(owner_roles), len(set(owner_roles)))
 

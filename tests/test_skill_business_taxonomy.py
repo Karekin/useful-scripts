@@ -36,10 +36,12 @@ class SkillBusinessTaxonomyTest(unittest.TestCase):
                 "pricing",
                 "user",
                 "experience",
-                "merchant-acquisition",
             }.issubset(domains)
         )
         self.assertTrue(all(role["domain_code"] in domains for role in roles.values()))
+        self.assertEqual("merchant", roles["merchant-onboarding-operator"]["domain_code"])
+        self.assertEqual("supply-chain", roles["procurement-sourcing-operator"]["domain_code"])
+        self.assertNotIn("merchant-acquisition", domains)
 
     def test_every_business_role_has_one_dewu_assignment_and_runnable_skill(self):
         assignments = self.taxonomy["skill_assignments"]
@@ -53,7 +55,7 @@ class SkillBusinessTaxonomyTest(unittest.TestCase):
             if definition.get("workflow_level") == "BUSINESS_ROLE":
                 definitions.append((path, definition))
 
-        self.assertEqual(36, len(definitions))
+        self.assertEqual(45, len(definitions))
         for task_path, definition in definitions:
             role_code = definition["owner_role"]
             with self.subTest(role_code=role_code):

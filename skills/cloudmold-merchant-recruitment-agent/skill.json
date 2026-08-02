@@ -1,0 +1,19 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.merchant.recruitment-agent.v1",
+  "workflow_id": "workflow.cloudmold.merchant.recruitment-agent.v1",
+  "name": "cloudmold-merchant-recruitment-agent",
+  "version": "1.0.0",
+  "owner": "cloudmold-merchant",
+  "authority": "manual-evidence-gated",
+  "risk_level": "R3",
+  "ui_dependency": "crm-rpa-integrations-pending",
+  "allowed_environments": ["local", "test", "demo"],
+  "evidence": [
+    "crm lead card and source batch",
+    "scoring model version and recommendation rationale",
+    "contact and group-operation audit trail",
+    "structured merchant recruitment note",
+    "merchant authorization, onboarding, and buyer-handoff references"
+  ]
+}

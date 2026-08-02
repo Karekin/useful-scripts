@@ -1,0 +1,14 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.inventory.scrap-lifecycle.v1",
+  "workflow_id": "workflow.cloudmold.inventory.scrap-lifecycle.v1",
+  "name": "cloudmold-inventory-scrap-lifecycle",
+  "version": "1.0.0",
+  "owner": "cloudmold-inventory-control",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R3",
+  "ui_dependency": "none",
+  "allowed_environments": ["local", "test", "demo"],
+  "entrypoints": {"task": "skill-task.json"},
+  "evidence": ["cloudmold_inventory_scrap_document", "cloudmold_inventory_scrap_line", "cloudmold_inventory_scrap_disposition_batch", "cloudmold_inventory_ledger_entry_v3"]
+}

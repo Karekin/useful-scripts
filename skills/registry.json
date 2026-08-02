@@ -24,6 +24,22 @@
       "owner": "cloudmold-catalog"
     },
     {
+      "skill_id": "skill.cloudmold.catalog.assortment-planning-lifecycle.v1",
+      "path": "cloudmold-assortment-planning-lifecycle",
+      "manifest": "cloudmold-assortment-planning-lifecycle/skill.json",
+      "task_definition": "cloudmold-assortment-planning-lifecycle/skill-task.json",
+      "status": "active",
+      "owner": "cloudmold-catalog"
+    },
+    {
+      "skill_id": "skill.cloudmold.catalog.category-management-lifecycle.v1",
+      "path": "cloudmold-category-management-lifecycle",
+      "manifest": "cloudmold-category-management-lifecycle/skill.json",
+      "task_definition": "cloudmold-category-management-lifecycle/skill-task.json",
+      "status": "partial",
+      "owner": "cloudmold-catalog"
+    },
+    {
       "skill_id": "skill.cloudmold.inventory.stockout-diagnosis.v1",
       "path": "cloudmold-inventory-stockout-diagnosis",
       "manifest": "cloudmold-inventory-stockout-diagnosis/skill.json",

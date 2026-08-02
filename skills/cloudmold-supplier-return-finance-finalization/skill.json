@@ -1,0 +1,14 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.finance.supplier-return-finalization-lifecycle.v1",
+  "workflow_id": "workflow.cloudmold.finance.supplier-return-finalization-lifecycle.v1",
+  "name": "cloudmold-supplier-return-finance-finalization",
+  "version": "1.0.0",
+  "owner": "cloudmold-accounts-payable",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R3",
+  "ui_dependency": "none",
+  "allowed_environments": ["local", "test", "demo"],
+  "entrypoints": {"task": "skill-task.json"},
+  "evidence": ["cloudmold_finance_supplier_debit_adjustment", "cloudmold_finance_ap_open_item", "cloudmold_finance_inventory_valuation_layer", "cloudmold_finance_journal_entry"]
+}

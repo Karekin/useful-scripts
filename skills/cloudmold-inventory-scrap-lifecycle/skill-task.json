@@ -1,0 +1,17 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.inventory.scrap-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "inventory-scrap-operator",
+  "max_attempts": 5,
+  "steps": [
+    {"step_code":"create_scrap","step_order":1,"capability_id":"capability.cloudmold.warehouse.inventory-scrap-command.execute.v1","operation_type":"WRITE","approval_required":true,"idempotency_binding":{"argument_index":0,"json_pointer":"/idempotencyKey"},"arguments":[{"$object":"$input.commands.0","$overrides":{"/idempotencyKey":"$task.stepIdempotencyKey"}}]},
+    {"step_code":"submit_scrap","step_order":2,"capability_id":"capability.cloudmold.warehouse.inventory-scrap-command.execute.v1","operation_type":"WRITE","approval_required":true,"idempotency_binding":{"argument_index":0,"json_pointer":"/idempotencyKey"},"arguments":[{"$object":"$input.commands.1","$overrides":{"/idempotencyKey":"$task.stepIdempotencyKey","/scrapId":"$steps.create_scrap.result.scrapId"}}]},
+    {"step_code":"approve_scrap","step_order":3,"capability_id":"capability.cloudmold.warehouse.inventory-scrap-command.execute.v1","operation_type":"WRITE","approval_required":true,"idempotency_binding":{"argument_index":0,"json_pointer":"/idempotencyKey"},"arguments":[{"$object":"$input.commands.2","$overrides":{"/idempotencyKey":"$task.stepIdempotencyKey","/scrapId":"$steps.submit_scrap.result.scrapId"}}]},
+    {"step_code":"record_disposition","step_order":4,"capability_id":"capability.cloudmold.warehouse.inventory-scrap-command.execute.v1","operation_type":"WRITE","approval_required":true,"idempotency_binding":{"argument_index":0,"json_pointer":"/idempotencyKey"},"arguments":[{"$object":"$input.commands.3","$overrides":{"/idempotencyKey":"$task.stepIdempotencyKey","/scrapId":"$steps.approve_scrap.result.scrapId"}}]},
+    {"step_code":"complete_scrap","step_order":5,"capability_id":"capability.cloudmold.warehouse.inventory-scrap-command.execute.v1","operation_type":"WRITE","approval_required":true,"idempotency_binding":{"argument_index":0,"json_pointer":"/idempotencyKey"},"arguments":[{"$object":"$input.commands.4","$overrides":{"/idempotencyKey":"$task.stepIdempotencyKey","/scrapId":"$steps.record_disposition.result.scrapId"}}]},
+    {"step_code":"verify_scrap","step_order":6,"capability_id":"capability.cloudmold.warehouse.inventory-scrap-query.require-by-scrap-id.v1","operation_type":"READ","approval_required":false,"arguments":["$steps.complete_scrap.result.scrapId"]}
+  ]
+}

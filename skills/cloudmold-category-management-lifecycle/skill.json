@@ -1,0 +1,22 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.catalog.category-management-lifecycle.v1",
+  "workflow_id": "workflow.cloudmold.catalog.category-management-lifecycle.v1",
+  "name": "cloudmold-category-management-lifecycle",
+  "version": "1.0.0",
+  "owner": "cloudmold-catalog",
+  "authority": "manual-evidence-gated",
+  "risk_level": "R3",
+  "ui_dependency": "none",
+  "status": "partial",
+  "allowed_environments": ["local", "test", "demo"],
+  "entrypoints": {
+    "documentation": "workflow-sop.json"
+  },
+  "evidence": [
+    "category scope and authority snapshot",
+    "category strategy and operating-target evidence package",
+    "approved cross-domain handoff references",
+    "category lifecycle readback and review record"
+  ]
+}

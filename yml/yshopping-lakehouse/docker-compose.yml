@@ -64,7 +64,9 @@ services:
     command: taskmanager
     depends_on:
       - jobmanager
-    network_mode: service:starrocks
+    # Keep the TaskManager on the JobManager namespace: after a StarRocks
+    # restart, this preserves the loopback RPC path used by Flink.
+    network_mode: service:jobmanager
     environment:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: 127.0.0.1

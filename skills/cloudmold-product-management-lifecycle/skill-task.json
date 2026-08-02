@@ -50,7 +50,7 @@
       "step_code": "submit_supply_pool_assortment",
       "step_order": 4,
       "child_skill_id": "skill.cloudmold.catalog.assortment-planning-lifecycle.v1",
-      "child_skill_version": "1.0.1",
+      "child_skill_version": "1.0.0",
       "child_run_id": "$input.runIds.assortment",
       "arguments": {"$object": "$input.assortment", "$overrides": {}}
     },
@@ -141,8 +141,8 @@
       "step_code": "submit_mystery_buyer_quality",
       "step_order": 10,
       "child_skill_id": "skill.cloudmold.quality.mystery-buyer-sample-verification.v1",
-      "child_skill_version": "1.0.0",
-      "child_run_id": "$input.runIds.quality",
+      "child_skill_version": "1.0.1",
+      "child_run_id": "$input.quality.traceId",
       "arguments": {
         "$object": "$input.quality",
         "$overrides": {

@@ -1,0 +1,14 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.inventory.stock-count-lifecycle.v1",
+  "workflow_id": "workflow.cloudmold.inventory.stock-count-lifecycle.v1",
+  "name": "cloudmold-stock-count-lifecycle",
+  "version": "1.0.0",
+  "owner": "cloudmold-inventory-control",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R3",
+  "ui_dependency": "none",
+  "allowed_environments": ["local", "test", "demo"],
+  "entrypoints": {"task": "skill-task.json"},
+  "evidence": ["cloudmold_stock_count", "cloudmold_stock_count_line", "cloudmold_stock_count_batch", "cloudmold_inventory_ledger_entry_v3"]
+}

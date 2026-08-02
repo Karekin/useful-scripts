@@ -1,0 +1,165 @@
+{
+  "schema_version": "cloudmold.workflow-sop/v1",
+  "skill_id": "skill.cloudmold.catalog.category-management-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "category-manager",
+  "execution_mode": "MANUAL_EVIDENCE_GATED",
+  "runnable": false,
+  "implementation_status": "SOP_ONLY_NO_CATEGORY_MANAGEMENT_EXECUTOR_CAPABILITY",
+  "max_attempts": 5,
+  "authority_boundary": {
+    "catalog_owns": [
+      "category tree",
+      "attribute templates",
+      "admission rules",
+      "operating targets",
+      "category strategy and lifecycle decision record"
+    ],
+    "catalog_does_not_own_or_write": [
+      "merchant facts",
+      "assortment-wave facts",
+      "listing facts",
+      "inventory facts",
+      "promotion facts",
+      "quality facts",
+      "supply-chain facts",
+      "BI facts"
+    ],
+    "cross_domain_access": "approved orchestration request plus read-only evidence/readback only"
+  },
+  "idempotency_policy": {
+    "decision_key": "tenantId + categoryId + strategyVersion + reviewPeriod + transition",
+    "version_policy": "Every decision cites the authoritative category/strategy version and preserves the previous decision record.",
+    "outbox_policy": "A future Catalog implementation must persist the approved transition and its versioned Outbox event in one transaction; this definition does not claim that capability exists."
+  },
+  "state_machine": {
+    "initial": "DRAFT",
+    "states": [
+      "DRAFT",
+      "SCOPE_APPROVED",
+      "DIAGNOSED",
+      "PORTFOLIO_DECIDED",
+      "HANDOFF_READY",
+      "MONITORING",
+      "REVIEWED",
+      "REMEDIATION",
+      "ACTIVE",
+      "EXITED"
+    ],
+    "terminal": ["ACTIVE", "EXITED"],
+    "failure_rule": "Missing, stale, contradictory, or unauthorized evidence leaves the case in its current non-terminal state; no AI output may create a business conclusion."
+  },
+  "steps": [
+    {
+      "step_kind": "MANUAL_EVIDENCE_GATE",
+      "step_code": "define_category_scope_and_targets",
+      "step_order": 1,
+      "state_from": "DRAFT",
+      "state_to": "SCOPE_APPROVED",
+      "responsible": "category-manager with Catalog data steward",
+      "required_inputs": ["tenant", "category reference", "category-tree version", "attribute-template version", "admission-rule version", "planning horizon", "operating targets"],
+      "required_evidence": ["authority snapshot", "target rationale", "owner and review cadence"],
+      "manual_approval_required": true,
+      "downstream_handoff": "None; this gate establishes the Catalog-owned scope only."
+    },
+    {
+      "step_kind": "MANUAL_EVIDENCE_GATE",
+      "step_code": "diagnose_category_and_identify_opportunities",
+      "step_order": 2,
+      "state_from": "SCOPE_APPROVED",
+      "state_to": "DIAGNOSED",
+      "responsible": "category-manager with finance/data reviewer",
+      "required_inputs": ["approved scope", "read-only demand, supply, quality, listing, inventory and promotion evidence", "evidence freshness window"],
+      "required_evidence": ["metric definitions", "source lineage", "gap and risk analysis", "uncertainty record"],
+      "manual_approval_required": true,
+      "downstream_handoff": "An approved opportunity brief may be supplied to assortment planning; it does not change any other domain fact."
+    },
+    {
+      "step_kind": "MANUAL_EVIDENCE_GATE",
+      "step_code": "decide_planning_and_supply_portfolio",
+      "step_order": 3,
+      "state_from": "DIAGNOSED",
+      "state_to": "PORTFOLIO_DECIDED",
+      "responsible": "category-manager with assortment manager and commercial approver",
+      "required_inputs": ["opportunity brief", "category strategy version", "capacity and risk constraints", "candidate portfolio alternatives", "versioned admission and priority rules"],
+      "required_evidence": ["trade-off record", "portfolio rationale", "admission/priority decision record", "approval reference"],
+      "manual_approval_required": true,
+      "downstream_handoff": "Creates an approved, versioned request for cloudmold-assortment-planning-lifecycle; it does not create or approve a wave itself."
+    },
+    {
+      "step_kind": "MANUAL_EVIDENCE_GATE",
+      "step_code": "approve_controlled_domain_handoffs",
+      "step_order": 4,
+      "state_from": "PORTFOLIO_DECIDED",
+      "state_to": "HANDOFF_READY",
+      "responsible": "category-manager with named domain owners",
+      "required_inputs": ["approved portfolio decision", "merchant, assortment, listing, inventory, promotion, quality and supply-chain handoff proposals"],
+      "required_evidence": ["recipient acceptance", "scope and deadline", "R3 approval reference", "idempotency decision key", "quality and fulfillment veto/escalation assessment"],
+      "manual_approval_required": true,
+      "downstream_handoff": "Each recipient must execute only through its own controlled capability; Catalog neither writes nor infers the resulting records."
+    },
+    {
+      "step_kind": "MANUAL_EVIDENCE_GATE",
+      "step_code": "monitor_execution_readbacks",
+      "step_order": 5,
+      "state_from": "HANDOFF_READY",
+      "state_to": "MONITORING",
+      "responsible": "category-manager",
+      "required_inputs": ["accepted handoff references", "review cadence", "read-only domain status and metric snapshots"],
+      "required_evidence": ["freshness check", "target-versus-actual record", "unresolved dependency list"],
+      "manual_approval_required": false,
+      "downstream_handoff": "Read-only monitoring only; operational remediation remains with the owning domain."
+    },
+    {
+      "step_kind": "MANUAL_EVIDENCE_GATE",
+      "step_code": "conduct_periodic_category_review",
+      "step_order": 6,
+      "state_from": "MONITORING",
+      "state_to": "REVIEWED",
+      "responsible": "category-manager with independent reviewer",
+      "required_inputs": ["review period", "approved targets", "read-only outcomes", "open-risk and customer/merchant impact evidence"],
+      "required_evidence": ["period comparison", "metric lineage", "decision options", "reviewer conclusion"],
+      "manual_approval_required": true,
+      "downstream_handoff": "The review may propose upgrade, maintain, downgrade, remediation, or exit; it cannot enact any of them automatically."
+    },
+    {
+      "step_kind": "MANUAL_EVIDENCE_GATE",
+      "step_code": "execute_approved_remediation",
+      "step_order": 7,
+      "state_from": "REVIEWED",
+      "state_to": "REMEDIATION",
+      "responsible": "category-manager and affected domain owner",
+      "required_inputs": ["approved corrective-action plan", "owner", "deadline", "prior evidence snapshot"],
+      "required_evidence": ["R3 approval", "remediation evidence", "independent recheck"],
+      "manual_approval_required": true,
+      "downstream_handoff": "Merchant, assortment, listing, inventory, promotion, quality and supply-chain remediation is requested through their respective governed flows and later read back."
+    },
+    {
+      "step_kind": "MANUAL_EVIDENCE_GATE",
+      "step_code": "approve_upgrade_or_maintain",
+      "step_order": 8,
+      "state_from": "REVIEWED",
+      "state_to": "ACTIVE",
+      "responsible": "authorized category approver",
+      "required_inputs": ["review conclusion", "rule version", "evidence package", "independent review"],
+      "required_evidence": ["human decision", "approval reference", "effective period"],
+      "manual_approval_required": true,
+      "downstream_handoff": "Publishes only the Catalog category strategy decision for controlled downstream consumption; entitlement, listing, inventory and promotion changes remain external requests."
+    },
+    {
+      "step_kind": "MANUAL_EVIDENCE_GATE",
+      "step_code": "approve_downgrade_or_exit",
+      "step_order": 9,
+      "state_from": ["REVIEWED", "REMEDIATION"],
+      "state_to": "EXITED",
+      "responsible": "authorized category approver with risk/compliance reviewer",
+      "required_inputs": ["failed or red-line evidence", "remediation history when applicable", "impact and rollback assessment"],
+      "required_evidence": ["human decision", "R3 approval", "notification and downstream request references", "immutable closure record"],
+      "manual_approval_required": true,
+      "downstream_handoff": "Requests controlled withdrawal or restriction from the owning domains; only their readbacks can confirm completion."
+    }
+  ],
+  "readback_requirement": "No runnable category-management query is registered. For local/test/demo, the operator records a read-only evidence bundle and verifies that every handoff reference resolves in its owning domain; production execution is out of scope."
+}

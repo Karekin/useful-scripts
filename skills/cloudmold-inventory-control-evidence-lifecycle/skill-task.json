@@ -1,0 +1,17 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.inventory.control-evidence-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R2",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "inventory-control-manager",
+  "max_attempts": 5,
+  "steps": [
+    {"step_code":"save_policy","step_order":1,"capability_id":"capability.cloudmold.supplyplanning.safety-stock-policy-command.execute.v1","operation_type":"WRITE","approval_required":true,"idempotency_binding":{"argument_index":0,"json_pointer":"/idempotencyKey"},"arguments":[{"$object":"$input.policy.commands.0","$overrides":{"/idempotencyKey":"$task.stepIdempotencyKey","/runId":"$task.runId"}},"$input.policy.actorPrincipalId"]},
+    {"step_code":"approve_policy","step_order":2,"capability_id":"capability.cloudmold.supplyplanning.safety-stock-policy-command.execute.v1","operation_type":"WRITE","approval_required":true,"idempotency_binding":{"argument_index":0,"json_pointer":"/idempotencyKey"},"arguments":[{"$object":"$input.policy.commands.1","$overrides":{"/idempotencyKey":"$task.stepIdempotencyKey","/runId":"$task.runId","/policy/policyId":"$steps.save_policy.result.aggregateId","/policy/expectedVersion":"$steps.save_policy.result.aggregateVersion"}},"$input.policy.actorPrincipalId"]},
+    {"step_code":"publish_policy","step_order":3,"capability_id":"capability.cloudmold.supplyplanning.safety-stock-policy-command.execute.v1","operation_type":"WRITE","approval_required":true,"idempotency_binding":{"argument_index":0,"json_pointer":"/idempotencyKey"},"arguments":[{"$object":"$input.policy.commands.2","$overrides":{"/idempotencyKey":"$task.stepIdempotencyKey","/runId":"$task.runId","/policy/policyId":"$steps.approve_policy.result.aggregateId","/policy/expectedVersion":"$steps.approve_policy.result.aggregateVersion"}},"$input.policy.actorPrincipalId"]},
+    {"step_code":"capture_health","step_order":4,"capability_id":"capability.cloudmold.supplyplanning.inventory-health-snapshot-command.capture.v1","operation_type":"WRITE","approval_required":true,"idempotency_binding":{"argument_index":0,"json_pointer":"/idempotencyKey"},"arguments":[{"$object":"$input.health.command","$overrides":{"/idempotencyKey":"$task.stepIdempotencyKey","/runId":"$task.runId","/snapshot/policyId":"$steps.publish_policy.result.aggregateId","/snapshot/policyVersionId":"$steps.publish_policy.result.policyVersionId"}},"$input.health.actorPrincipalId"]},
+    {"step_code":"capture_aging","step_order":5,"capability_id":"capability.cloudmold.inventory.inventory-aging-snapshot.capture.v1","operation_type":"WRITE","approval_required":true,"idempotency_binding":{"argument_index":0,"json_pointer":"/idempotencyKey"},"arguments":[{"$object":"$input.aging","$overrides":{"/idempotencyKey":"$task.stepIdempotencyKey"}}]},
+    {"step_code":"verify_aging","step_order":6,"capability_id":"capability.cloudmold.inventory.inventory-aging-snapshot-query.require-snapshot.v1","operation_type":"READ","approval_required":false,"arguments":["$steps.capture_aging.result.snapshotId"]}
+  ]
+}

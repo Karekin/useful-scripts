@@ -27,3 +27,4 @@ def test_product_management_is_a_governed_role_workflow():
     assert purchase_overrides["/favoriteCommand/canonicalSpuId"].endswith(
         ".canonicalSpuId"
     )
+    assert definition["steps"][9]["child_run_id"] == "$input.quality.traceId"

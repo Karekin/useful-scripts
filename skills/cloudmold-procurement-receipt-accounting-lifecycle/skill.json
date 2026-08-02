@@ -1,0 +1,21 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.procurement.receipt-accounting-lifecycle.v1",
+  "workflow_id": "workflow.cloudmold.procurement.receipt-accounting-lifecycle.v1",
+  "name": "cloudmold-procurement-receipt-accounting-lifecycle",
+  "version": "1.0.0",
+  "owner": "cloudmold-procure-to-pay",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R3",
+  "ui_dependency": "none",
+  "allowed_environments": ["local", "test", "demo"],
+  "entrypoints": {"task": "skill-task.json"},
+  "evidence": [
+    "cloudmold_procurement_receipt_inspection",
+    "cloudmold_inventory_ledger_entry_v3",
+    "cloudmold_finance_inventory_valuation_layer",
+    "cloudmold_finance_supplier_invoice",
+    "cloudmold_finance_ap_open_item",
+    "cloudmold_finance_journal_entry"
+  ]
+}

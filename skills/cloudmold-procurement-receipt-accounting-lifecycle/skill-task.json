@@ -1,0 +1,60 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.procurement.receipt-accounting-lifecycle.v1",
+  "skill_version": "1.0.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "procure-to-pay-operator",
+  "max_attempts": 5,
+  "steps": [
+    {
+      "step_code": "complete_quality_inspection", "step_order": 1,
+      "capability_id": "capability.cloudmold.quality.procurement-receipt-inspection-command.execute.sig-0b20d7c395f9.v1",
+      "operation_type": "WRITE", "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.qualityCompletion.command", "$overrides": {"/idempotencyKey": "$task.stepIdempotencyKey", "/runId": "$task.runId"}}, "$input.qualityCompletion.actorPrincipalId"]
+    },
+    {
+      "step_code": "post_qualified_receipt", "step_order": 2,
+      "capability_id": "capability.cloudmold.finance.p2p-evidence-ingestion.post-qualified-receipt.v1",
+      "operation_type": "WRITE", "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/envelope/idempotencyKey"},
+      "arguments": [{"$object": "$input.qualifiedReceipt.command", "$overrides": {"/envelope/idempotencyKey": "$task.stepIdempotencyKey", "/envelope/runId": "$task.runId"}}, "$input.qualifiedReceipt.actorPrincipalId"]
+    },
+    {
+      "step_code": "create_supplier_invoice", "step_order": 3,
+      "capability_id": "capability.cloudmold.finance.supplier-invoice-command.create.v1",
+      "operation_type": "WRITE", "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/envelope/idempotencyKey"},
+      "arguments": [{"$object": "$input.supplierInvoice.commands.0.command", "$overrides": {"/envelope/idempotencyKey": "$task.stepIdempotencyKey", "/envelope/runId": "$task.runId"}}, "$input.supplierInvoice.commands.0.actorPrincipalId"]
+    },
+    {
+      "step_code": "submit_supplier_invoice", "step_order": 4,
+      "capability_id": "capability.cloudmold.finance.supplier-invoice-command.submit.v1",
+      "operation_type": "WRITE", "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/envelope/idempotencyKey"},
+      "arguments": [{"$object": "$input.supplierInvoice.commands.1.command", "$overrides": {"/envelope/idempotencyKey": "$task.stepIdempotencyKey", "/envelope/runId": "$task.runId", "/supplierInvoiceId": "$steps.create_supplier_invoice.result.aggregateId", "/expectedVersion": "$steps.create_supplier_invoice.result.aggregateVersion"}}, "$input.supplierInvoice.commands.1.actorPrincipalId"]
+    },
+    {
+      "step_code": "match_supplier_invoice", "step_order": 5,
+      "capability_id": "capability.cloudmold.finance.supplier-invoice-command.run-three-way-match.v1",
+      "operation_type": "WRITE", "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/envelope/idempotencyKey"},
+      "arguments": [{"$object": "$input.supplierInvoice.commands.2.command", "$overrides": {"/envelope/idempotencyKey": "$task.stepIdempotencyKey", "/envelope/runId": "$task.runId", "/supplierInvoiceId": "$steps.create_supplier_invoice.result.aggregateId", "/expectedVersion": "$steps.submit_supplier_invoice.result.aggregateVersion"}}, "$input.supplierInvoice.commands.2.actorPrincipalId"]
+    },
+    {
+      "step_code": "approve_supplier_invoice", "step_order": 6,
+      "capability_id": "capability.cloudmold.finance.supplier-invoice-command.approve.v1",
+      "operation_type": "WRITE", "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/envelope/idempotencyKey"},
+      "arguments": [{"$object": "$input.supplierInvoice.commands.3.command", "$overrides": {"/envelope/idempotencyKey": "$task.stepIdempotencyKey", "/envelope/runId": "$task.runId", "/supplierInvoiceId": "$steps.create_supplier_invoice.result.aggregateId"}}, "$input.supplierInvoice.commands.3.actorPrincipalId"]
+    },
+    {
+      "step_code": "post_supplier_invoice", "step_order": 7,
+      "capability_id": "capability.cloudmold.finance.supplier-invoice-command.post.v1",
+      "operation_type": "WRITE", "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/envelope/idempotencyKey"},
+      "arguments": [{"$object": "$input.supplierInvoice.commands.4.command", "$overrides": {"/envelope/idempotencyKey": "$task.stepIdempotencyKey", "/envelope/runId": "$task.runId", "/supplierInvoiceId": "$steps.create_supplier_invoice.result.aggregateId", "/expectedVersion": "$steps.approve_supplier_invoice.result.aggregateVersion"}}, "$input.supplierInvoice.commands.4.actorPrincipalId"]
+    }
+  ]
+}
