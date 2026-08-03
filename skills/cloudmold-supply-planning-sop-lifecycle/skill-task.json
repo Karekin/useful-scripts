@@ -347,6 +347,8 @@
             "recommendationId": "$steps.release_supply_plan.result.businessObjectId",
             "expectedVersion": "$steps.approve_replenishment.result.aggregateVersion",
             "targetType": "$input.executionProposal.targetType",
+            "ownerType": "$input.executionProposal.ownerType",
+            "ownerId": "$input.executionProposal.ownerId",
             "mappingEvidenceSha256": "$input.executionProposal.mappingEvidenceSha256",
             "sourceWarehouseId": "$input.executionProposal.sourceWarehouseId",
             "targetWarehouseId": "$input.executionProposal.targetWarehouseId",
