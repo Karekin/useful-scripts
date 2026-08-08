@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/crm-follow-up-recorded-v1.schema.json",
+  "title": "crm.follow_up.recorded payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "follow_up_id",
+    "biz_type",
+    "biz_id",
+    "owner_principal_id",
+    "actor_principal_id",
+    "follow_up_type_code",
+    "occurred_at",
+    "content_token",
+    "attachment_count"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "follow_up_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "biz_type": {"type": "string", "enum": ["CUSTOMER", "LEAD", "CONTACT", "OPPORTUNITY"]},
+    "biz_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "customer_id": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "lead_id": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "contact_id": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "opportunity_id": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "owner_principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "actor_principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "follow_up_type_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$"},
+    "occurred_at": {"type": "string", "format": "date-time"},
+    "next_contact_at": {"type": ["string", "null"], "format": "date-time"},
+    "content_token": {
+      "type": "string",
+      "pattern": "^(?:sha256:[0-9a-f]{64}|restricted:[A-Za-z0-9][A-Za-z0-9._:-]{7,159})$"
+    },
+    "attachment_count": {"type": "integer", "minimum": 0}
+  }
+}

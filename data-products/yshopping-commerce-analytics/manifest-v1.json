@@ -3,7 +3,7 @@
   "data_product_id": "yshopping-commerce-analytics",
   "title": "Y-Shopping 电商经营数据产品",
   "owner": "CloudMold Data Platform",
-  "updated_at": "2026-07-18T23:15:00+08:00",
+  "updated_at": "2026-08-08T12:00:00+08:00",
   "privacy_class": "aggregated_non_pii",
   "canonical_paths": {
     "kpi_catalog": "kpis/ecommerce-kpi-catalog-v1.json",
@@ -18,12 +18,12 @@
     "governed_source_candidates": 719,
     "production_admission_ready_sources": 5,
     "strict_production_final_sources": 0,
-    "sql_models": 276,
+    "sql_models": 280,
     "model_layers": {
-      "ads": 63,
-      "dws": 63,
-      "dwd": 82,
-      "dim": 67,
+      "ads": 64,
+      "dws": 64,
+      "dwd": 83,
+      "dim": 68,
       "bootstrap": 1
     },
     "model_repository": "yml/yshopping-lakehouse/models",

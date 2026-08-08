@@ -62,9 +62,9 @@ class ModelCtlTest(unittest.TestCase):
             positions["models/dws/dws-canonical-paid-order-cancellation-saga-current.sql"],
         )
 
-    def test_models_extend_manifest_to_two_hundred_seventy_six_in_dependency_order(self):
+    def test_models_extend_manifest_to_two_hundred_eighty_in_dependency_order(self):
         order = MODEL.load_order()
-        self.assertEqual(len(order), 276)
+        self.assertEqual(len(order), 280)
         positions = {entry: index for index, entry in enumerate(order)}
         for dwd in (
             "models/dwd/dwd-legacy-pay-order-current.sql",
@@ -237,12 +237,23 @@ class ModelCtlTest(unittest.TestCase):
         metadata_dws = "models/dws/dws-canonical-metadata-current.sql"
         metadata_ads = "models/ads/ads-canonical-metadata-readiness.sql"
         service_dws = "models/dws/dws-canonical-customer-service-current.sql"
+        crm_dwd = "models/dwd/dwd-canonical-crm-event.sql"
+        crm_dim = "models/dim/dim-canonical-crm-current.sql"
+        crm_dws = "models/dws/dws-canonical-crm-current.sql"
+        crm_ads = "models/ads/ads-canonical-crm-readiness.sql"
         self.assertLess(positions["models/dwd/dwd-domain-event.sql"], positions[metadata_dwd])
         self.assertLess(positions[metadata_dwd], positions[metadata_dim])
         self.assertLess(positions[metadata_dim], positions[metadata_dws])
         self.assertLess(positions[metadata_dws], positions[metadata_ads])
         self.assertLess(positions["models/dwd/dwd-canonical-customer-service-event.sql"], positions[service_dws])
         self.assertLess(positions[service_dws], positions["models/ads/ads-ecommerce-role-metrics.sql"])
+        self.assertLess(positions["models/dwd/dwd-domain-event.sql"], positions[crm_dwd])
+        self.assertLess(positions[crm_dwd], positions[crm_dim])
+        self.assertLess(positions[crm_dim], positions[crm_dws])
+        self.assertLess(positions[crm_dws], positions[crm_ads])
+        self.assertLess(positions["models/dws/dws-canonical-customer-service-service-metrics-current.sql"],
+                        positions[crm_dws])
+        self.assertLess(positions[crm_ads], positions["models/ads/ads-ecommerce-role-metrics.sql"])
 
         benefit_application_dwd = "models/dwd/dwd-canonical-order-benefit-application-event.sql"
         benefit_allocation_dwd = "models/dwd/dwd-canonical-order-benefit-allocation-event.sql"

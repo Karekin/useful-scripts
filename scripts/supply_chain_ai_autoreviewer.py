@@ -22,13 +22,14 @@ MCP_URL = os.environ.get("CLOUDMOLD_MCP_URL", "http://127.0.0.1:49090")
 TOKEN_FILE = Path(os.environ.get(
     "CLOUDMOLD_MCP_TOKEN_FILE", "/run/secrets/cloudmold_mcp_bearer_token"))
 
-SUPPLY_CHAIN_ACTIONS = (
+GOVERNED_OPERATIONS_ACTIONS = (
     "procurement.sourcing-award", "purchase-order.dispatch", "procurement.receipt-accounting",
     "replenishment.end-to-end", "warehouse.physical-cycle", "warehouse.admission",
     "supply-planning.sop-release", "replenishment.convert", "supplier.return",
     "finance.supplier-return-finalization", "finance.supplier-invoice-finalization",
     "inventory.stock-count", "inventory.scrap", "inventory.policy-health-capture",
     "inventory.stock-transfer", "warehouse.stock-transfer", "supplier.admission",
+    "crm.sales-pipeline",
 )
 
 
@@ -61,7 +62,7 @@ def mysql(sql: str) -> list[str]:
 
 
 def pending_approval_ids(operator_id: int, limit: int) -> list[str]:
-    actions = ",".join("'" + action + "'" for action in SUPPLY_CHAIN_ACTIONS)
+    actions = ",".join("'" + action + "'" for action in GOVERNED_OPERATIONS_ACTIONS)
     rows = mysql(
         "SELECT DISTINCT a.approval_id FROM cloudmold_agent_approval a "
         "JOIN cloudmold_agent_approval_workflow_binding b "

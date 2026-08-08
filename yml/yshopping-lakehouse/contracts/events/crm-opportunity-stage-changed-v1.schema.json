@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/crm-opportunity-stage-changed-v1.schema.json",
+  "title": "crm.opportunity.stage_changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "opportunity_id",
+    "opportunity_code",
+    "customer_id",
+    "owner_principal_id",
+    "previous_stage_code",
+    "current_stage_code",
+    "previous_pipeline_status",
+    "current_pipeline_status",
+    "follow_up_status",
+    "expected_deal_at",
+    "total_amount_minor",
+    "currency_code",
+    "win_probability_basis_points",
+    "linked_contact_count",
+    "last_follow_up_at",
+    "next_contact_at"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "opportunity_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "opportunity_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "customer_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "owner_principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "previous_stage_code": {"type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]{0,63}$"},
+    "current_stage_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$"},
+    "previous_pipeline_status": {
+      "type": ["string", "null"],
+      "enum": [null, "OPEN", "WON", "LOST"]
+    },
+    "current_pipeline_status": {
+      "type": "string",
+      "enum": ["OPEN", "WON", "LOST"]
+    },
+    "follow_up_status": {"type": "boolean"},
+    "expected_deal_at": {"type": ["string", "null"], "format": "date-time"},
+    "total_amount_minor": {"type": "integer", "minimum": 0},
+    "currency_code": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "win_probability_basis_points": {"type": "integer", "minimum": 0, "maximum": 10000},
+    "linked_contact_count": {"type": "integer", "minimum": 0},
+    "last_follow_up_at": {"type": ["string", "null"], "format": "date-time"},
+    "next_contact_at": {"type": ["string", "null"], "format": "date-time"}
+  }
+}

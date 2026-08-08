@@ -1,0 +1,249 @@
+{
+  "schema_version": "cloudmold.skill-task-definition/v1",
+  "skill_id": "skill.cloudmold.crm.customer-sales-pipeline-lifecycle.v1",
+  "skill_version": "1.1.0",
+  "risk_level": "R3",
+  "workflow_level": "BUSINESS_ROLE",
+  "owner_role": "customer-sales-operator",
+  "max_attempts": 3,
+  "steps": [
+    {
+      "step_code": "create_lead",
+      "step_order": 1,
+      "capability_id": "capability.cloudmold.crm.crm-automation-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.0", "$overrides": {
+        "/runId": "$task.runId", "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "record_lead_follow_up",
+      "step_order": 2,
+      "capability_id": "capability.cloudmold.crm.crm-automation-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.1", "$overrides": {
+        "/runId": "$task.runId", "/followUp/subjectId": "$steps.create_lead.result.aggregateId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "qualify_lead",
+      "step_order": 3,
+      "capability_id": "capability.cloudmold.crm.crm-automation-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.2", "$overrides": {
+        "/runId": "$task.runId", "/lead/leadId": "$steps.create_lead.result.aggregateId",
+        "/lead/expectedVersion": 2, "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "create_customer",
+      "step_order": 4,
+      "capability_id": "capability.cloudmold.crm.crm-automation-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.3", "$overrides": {
+        "/runId": "$task.runId", "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "convert_lead",
+      "step_order": 5,
+      "capability_id": "capability.cloudmold.crm.crm-automation-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.4", "$overrides": {
+        "/runId": "$task.runId", "/lead/leadId": "$steps.create_lead.result.aggregateId",
+        "/lead/expectedVersion": 3, "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "create_primary_contact",
+      "step_order": 6,
+      "capability_id": "capability.cloudmold.crm.crm-automation-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.5", "$overrides": {
+        "/runId": "$task.runId", "/contact/customerId": "$steps.create_customer.result.aggregateId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "create_opportunity",
+      "step_order": 7,
+      "capability_id": "capability.cloudmold.crm.crm-automation-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.6", "$overrides": {
+        "/runId": "$task.runId", "/opportunity/customerId": "$steps.create_customer.result.aggregateId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "record_opportunity_follow_up",
+      "step_order": 8,
+      "capability_id": "capability.cloudmold.crm.crm-automation-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.7", "$overrides": {
+        "/runId": "$task.runId", "/followUp/subjectId": "$steps.create_opportunity.result.aggregateId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "advance_to_proposal",
+      "step_order": 9,
+      "capability_id": "capability.cloudmold.crm.crm-automation-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.8", "$overrides": {
+        "/runId": "$task.runId", "/opportunity/opportunityId": "$steps.create_opportunity.result.aggregateId",
+        "/opportunity/customerId": "$steps.create_customer.result.aggregateId",
+        "/opportunity/expectedVersion": 1, "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "advance_to_negotiation",
+      "step_order": 10,
+      "capability_id": "capability.cloudmold.crm.crm-automation-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.9", "$overrides": {
+        "/runId": "$task.runId", "/opportunity/opportunityId": "$steps.create_opportunity.result.aggregateId",
+        "/opportunity/customerId": "$steps.create_customer.result.aggregateId",
+        "/opportunity/expectedVersion": 2, "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "mark_opportunity_won",
+      "step_order": 11,
+      "capability_id": "capability.cloudmold.crm.crm-automation-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.commands.10", "$overrides": {
+        "/runId": "$task.runId", "/opportunity/opportunityId": "$steps.create_opportunity.result.aggregateId",
+        "/opportunity/customerId": "$steps.create_customer.result.aggregateId",
+        "/opportunity/expectedVersion": 3, "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "verify_won_opportunity",
+      "step_order": 12,
+      "capability_id": "capability.cloudmold.crm.crm-query.get-opportunities.v1",
+      "operation_type": "READ",
+      "poll_interval_seconds": 2,
+      "wait_success": {"/list/0/stage": "CLOSED_WON", "/list/0/version": 4},
+      "wait_failure": {"/list/0/stage": ["LOST", "ARCHIVED"]},
+      "arguments": [{"opportunityId": "$steps.create_opportunity.result.aggregateId", "pageNo": 1, "pageSize": 1}]
+    },
+    {
+      "step_code": "create_sales_contract_draft",
+      "step_order": 13,
+      "capability_id": "capability.cloudmold.crm.sales-contract-automation-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.salesContractCommands.0", "$overrides": {
+        "/runId": "$task.runId", "/customerId": "$steps.create_customer.result.aggregateId",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_code": "submit_sales_contract_approval",
+      "step_order": 14,
+      "capability_id": "capability.cloudmold.crm.sales-contract-automation-command.execute.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/idempotencyKey"},
+      "arguments": [{"$object": "$input.salesContractCommands.1", "$overrides": {
+        "/runId": "$task.runId",
+        "/salesContractId": "$steps.create_sales_contract_draft.result.salesContractId",
+        "/expectedVersion": "$steps.create_sales_contract_draft.result.version",
+        "/idempotencyKey": "$task.stepIdempotencyKey"
+      }}]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "verify_active_sales_contract",
+      "step_order": 15,
+      "capability_id": "capability.cloudmold.crm.sales-contract-query.get.v1",
+      "operation_type": "READ",
+      "poll_interval_seconds": 2,
+      "wait_success": {"/status": "ACTIVE", "/version": 3},
+      "wait_failure": {"/status": ["REJECTED", "CANCELLED"]},
+      "arguments": ["$steps.create_sales_contract_draft.result.salesContractId"]
+    },
+    {
+      "step_code": "register_receivable_plan",
+      "step_order": 16,
+      "capability_id": "capability.cloudmold.finance.receivables-automation-command.register-plan.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/envelope/idempotencyKey"},
+      "arguments": [{"$object": "$input.receivablesCommands.0", "$overrides": {
+        "/envelope/runId": "$task.runId", "/envelope/idempotencyKey": "$task.stepIdempotencyKey",
+        "/customerId": "$steps.create_customer.result.aggregateId",
+        "/salesContractId": "$steps.create_sales_contract_draft.result.salesContractId"
+      }}]
+    },
+    {
+      "step_code": "record_customer_receipt",
+      "step_order": 17,
+      "capability_id": "capability.cloudmold.finance.receivables-automation-command.record-receipt.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/envelope/idempotencyKey"},
+      "arguments": [{"$object": "$input.receivablesCommands.1", "$overrides": {
+        "/envelope/runId": "$task.runId", "/envelope/idempotencyKey": "$task.stepIdempotencyKey",
+        "/customerId": "$steps.create_customer.result.aggregateId",
+        "/salesContractId": "$steps.create_sales_contract_draft.result.salesContractId"
+      }}]
+    },
+    {
+      "step_code": "allocate_customer_receipt",
+      "step_order": 18,
+      "capability_id": "capability.cloudmold.finance.receivables-automation-command.allocate-receipt.v1",
+      "operation_type": "WRITE",
+      "approval_required": true,
+      "idempotency_binding": {"argument_index": 0, "json_pointer": "/envelope/idempotencyKey"},
+      "arguments": [{"$object": "$input.receivablesCommands.2", "$overrides": {
+        "/envelope/runId": "$task.runId", "/envelope/idempotencyKey": "$task.stepIdempotencyKey",
+        "/receiptId": "$steps.record_customer_receipt.result.receiptId",
+        "/expectedVersion": "$steps.record_customer_receipt.result.aggregateVersion",
+        "/allocations/0/receivablePlanId": "$steps.register_receivable_plan.result.receivablePlanId",
+        "/allocations/0/expectedPlanVersion": "$steps.register_receivable_plan.result.aggregateVersion"
+      }}]
+    },
+    {
+      "step_kind": "WAIT_CAPABILITY",
+      "step_code": "verify_receivables_settled",
+      "step_order": 19,
+      "capability_id": "capability.cloudmold.finance.receivables-query.summarize-by-sales-contract.v1",
+      "operation_type": "READ",
+      "poll_interval_seconds": 2,
+      "wait_success": {
+        "/0/receivablePlanAmountMinor": 3980000,
+        "/0/receivablePlanOutstandingMinor": 0,
+        "/0/receiptAmountMinor": 3980000,
+        "/0/receiptUnallocatedMinor": 0,
+        "/0/allocationAmountMinor": 3980000
+      },
+      "arguments": ["$steps.create_sales_contract_draft.result.salesContractId"]
+    }
+  ]
+}

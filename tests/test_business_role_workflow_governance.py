@@ -2,6 +2,7 @@
 
 import json
 import unittest
+from collections import Counter
 from pathlib import Path
 
 
@@ -18,6 +19,7 @@ EXPECTED_OWNER_ROLES = {
     "consumer-compensation-operator",
     "consumer-experience-operator",
     "crossborder-operations",
+    "customer-sales-operator",
     "customer-service-agent",
     "data-ai-operations",
     "finance-operations",
@@ -96,9 +98,16 @@ class BusinessRoleWorkflowGovernanceTest(unittest.TestCase):
         definitions = business_role_definitions()
         owner_roles = [definition.get("owner_role") for definition in definitions]
 
-        self.assertEqual(45, len(definitions))
+        self.assertEqual(47, len(definitions))
         self.assertEqual(EXPECTED_OWNER_ROLES, set(owner_roles))
-        self.assertEqual(len(owner_roles), len(set(owner_roles)))
+        self.assertEqual(
+            {"inventory-transfer-operator": 2},
+            {
+                role: count
+                for role, count in Counter(owner_roles).items()
+                if count > 1
+            },
+        )
 
     def test_business_role_writes_are_governed_and_child_flows_exist(self):
         definitions_by_skill_id = load_definitions()

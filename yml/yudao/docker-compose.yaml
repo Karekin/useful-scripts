@@ -146,6 +146,7 @@ services:
       CLOUDMOLD_AGENT_CONTROL_APPROVAL_WORKFLOW_AI_REVIEWER_OR_SIGN_ENABLED: ${CLOUDMOLD_AGENT_CONTROL_APPROVAL_WORKFLOW_AI_REVIEWER_OR_SIGN_ENABLED:-false}
       CLOUDMOLD_AGENT_CONTROL_APPROVAL_WORKFLOW_AI_REVIEWER_USER_IDS: ${CLOUDMOLD_AGENT_CONTROL_APPROVAL_WORKFLOW_AI_REVIEWER_USER_IDS:-}
       CLOUDMOLD_AGENT_CONTROL_APPROVAL_WORKFLOW_AI_REVIEW_ALLOWED_RISK_LEVELS: ${CLOUDMOLD_AGENT_CONTROL_APPROVAL_WORKFLOW_AI_REVIEW_ALLOWED_RISK_LEVELS:-}
+      CLOUDMOLD_CRM_SALES_CONTRACT_APPROVAL_REVIEWER_USER_IDS: ${CLOUDMOLD_CRM_SALES_CONTRACT_APPROVAL_REVIEWER_USER_IDS:-229}
       CLOUDMOLD_AI_OPERATIONS_TEMPORAL_ENABLED: ${CLOUDMOLD_AI_OPERATIONS_TEMPORAL_ENABLED:-false}
       CLOUDMOLD_AI_OPERATIONS_TEMPORAL_SEED_ENABLED: ${CLOUDMOLD_AI_OPERATIONS_TEMPORAL_ENABLED:-false}
       CLOUDMOLD_AI_OPERATIONS_TEMPORAL_SEED_TENANTS: ${CLOUDMOLD_AI_OPERATIONS_TEMPORAL_SEED_TENANTS:-162}
@@ -216,7 +217,9 @@ services:
       - /bin/sh
       - -ec
       - |
-        mysql -hyudao-mysql -uroot ruoyi-vue-pro < /migration-67.sql
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_skill_task_instance'")" = "0" ]; then
+          mysql -hyudao-mysql -uroot ruoyi-vue-pro < /migration-67.sql
+        fi
         if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_skill_task_step' AND column_name='step_kind'")" = "0" ]; then
           mysql -hyudao-mysql -uroot ruoyi-vue-pro < /migration-68.sql
         fi
@@ -229,7 +232,7 @@ services:
         fi
         mysql -hyudao-mysql -uroot ruoyi-vue-pro < /migration-108.sql
         mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-112.sql
-        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_replenishment_conversion' AND column_name='source_system'")" = "0" ]; then
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_replenishment_conversion' AND column_name='target_reference'")" = "1" ] && [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_replenishment_conversion' AND column_name='source_system'")" = "0" ]; then
           mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-113.sql
         fi
         mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-114.sql
@@ -289,6 +292,17 @@ services:
         if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_merchant_grade_decision'")" = "0" ]; then
           mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-135.sql
         fi
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_crm_customer'")" = "0" ]; then
+          mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-187.sql
+        fi
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_finance_receivable_plan'")" = "0" ]; then
+          mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-188.sql
+        fi
+        mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-189.sql
+        if [ "$(mysql -N -B -hyudao-mysql -uroot -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='ruoyi-vue-pro' AND table_name='cloudmold_sales_contract'")" = "0" ]; then
+          mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-190.sql
+        fi
+        mysql --default-character-set=utf8mb4 -hyudao-mysql -uroot ruoyi-vue-pro < /migration-191.sql
     volumes:
       - ../../../yudao-cloud/sql/cloudmold/V20260718_67__durable_skill_task_executor.sql:/migration-67.sql:ro
       - ../../../yudao-cloud/cloudmold-module-skill-task/cloudmold-module-skill-task-server/src/main/resources/db/migration/V20260719_68__durable_skill_task_composition.sql:/migration-68.sql:ro
@@ -323,6 +337,11 @@ services:
       - ../../../yudao-cloud/sql/cloudmold/V20260730_132__mes_production_execution_foundation.sql:/migration-132.sql:ro
       - ../../../yudao-cloud/sql/cloudmold/V20260802_134__canonical_merchant_managed_admission.sql:/migration-134.sql:ro
       - ../../../yudao-cloud/sql/cloudmold/V20260802_135__merchant_managed_growth_and_exit.sql:/migration-135.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260808_187__canonical_cloudmold_crm_core.sql:/migration-187.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260808_188__canonical_finance_receivables.sql:/migration-188.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260808_189__cloudmold_customer_sales_navigation.sql:/migration-189.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260808_190__canonical_crm_sales_contract.sql:/migration-190.sql:ro
+      - ../../../yudao-cloud/sql/cloudmold/V20260808_191__cloudmold_sales_contract_reviewer_role.sql:/migration-191.sql:ro
     networks:
       - yudao_network
 

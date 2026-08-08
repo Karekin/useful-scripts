@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/crm-lead-status-changed-v1.schema.json",
+  "title": "crm.lead.status_changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "lead_id",
+    "lead_code",
+    "owner_principal_id",
+    "previous_status",
+    "current_status",
+    "follow_up_status",
+    "source_code",
+    "industry_code",
+    "level_code",
+    "converted_customer_id",
+    "last_follow_up_at",
+    "next_contact_at"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "lead_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "lead_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "owner_principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "previous_status": {
+      "type": ["string", "null"],
+      "enum": [null, "NEW", "CONTACTED", "QUALIFIED", "DISQUALIFIED", "CONVERTED", "ARCHIVED"]
+    },
+    "current_status": {
+      "type": "string",
+      "enum": ["NEW", "CONTACTED", "QUALIFIED", "DISQUALIFIED", "CONVERTED", "ARCHIVED"]
+    },
+    "follow_up_status": {"type": "boolean"},
+    "source_code": {"type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]{0,63}$"},
+    "industry_code": {"type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]{0,63}$"},
+    "level_code": {"type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]{0,63}$"},
+    "converted_customer_id": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "last_follow_up_at": {"type": ["string", "null"], "format": "date-time"},
+    "next_contact_at": {"type": ["string", "null"], "format": "date-time"}
+  }
+}

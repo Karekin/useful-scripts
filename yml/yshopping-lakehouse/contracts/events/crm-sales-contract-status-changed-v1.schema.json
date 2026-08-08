@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/crm-sales-contract-status-changed-v1.schema.json",
+  "title": "crm.sales_contract.status_changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sales_contract_id",
+    "customer_id",
+    "status",
+    "currency_code",
+    "total_amount_minor",
+    "approval_process_instance_id"
+  ],
+  "properties": {
+    "sales_contract_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "contract_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "contract_name": {"type": "string", "minLength": 1, "maxLength": 255},
+    "customer_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "seller_merchant_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "seller_shop_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "seller_legal_entity_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "previous_status": {
+      "type": ["string", "null"],
+      "enum": [null, "DRAFT", "PENDING_APPROVAL", "ACTIVE", "REJECTED", "CANCELLED"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["DRAFT", "PENDING_APPROVAL", "ACTIVE", "REJECTED", "CANCELLED"]
+    },
+    "currency_code": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "total_amount_minor": {"type": "integer", "minimum": 1},
+    "effective_date": {"type": "string", "format": "date"},
+    "expires_on": {"type": ["string", "null"], "format": "date"},
+    "approval_process_instance_id": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "reason_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,127}$"},
+    "items": {
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sales_contract_item_id", "line_no", "canonical_sku_id", "item_name",
+          "uom_code", "quantity", "unit_price_minor", "line_amount_minor"
+        ],
+        "properties": {
+          "sales_contract_item_id": {"type": "string", "minLength": 1, "maxLength": 128},
+          "line_no": {"type": "integer", "minimum": 1},
+          "canonical_sku_id": {"type": "string", "minLength": 1, "maxLength": 128},
+          "item_name": {"type": "string", "minLength": 1, "maxLength": 255},
+          "uom_code": {"type": "string", "minLength": 1, "maxLength": 64},
+          "quantity": {"type": "string", "pattern": "^[0-9]+(?:\\.[0-9]{1,6})?$"},
+          "unit_price_minor": {"type": "integer", "minimum": 1},
+          "line_amount_minor": {"type": "integer", "minimum": 1}
+        }
+      }
+    }
+  }
+}

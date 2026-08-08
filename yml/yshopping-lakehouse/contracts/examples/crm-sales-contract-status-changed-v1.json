@@ -1,0 +1,26 @@
+{
+  "event_id": "96100000-0000-4000-8000-000000000101",
+  "event_type": "crm.sales_contract.status_changed",
+  "schema_version": 1,
+  "tenant_id": 1,
+  "aggregate_type": "sales_contract",
+  "aggregate_id": "contract-1001",
+  "aggregate_version": 4,
+  "event_sequence": 1,
+  "idempotency_key": "bpm:process-1001:2:crm.sales_contract.status_changed",
+  "correlation_id": "process-1001",
+  "causation_id": "task-1001",
+  "occurred_at": "2026-08-08T03:00:00.000Z",
+  "recorded_at": "2026-08-08T03:00:00.100Z",
+  "source_system": "cloudmold-crm",
+  "payload": {
+    "sales_contract_id": "contract-1001",
+    "customer_id": "crm-customer-1001",
+    "previous_status": "PENDING_APPROVAL",
+    "status": "ACTIVE",
+    "currency_code": "CNY",
+    "total_amount_minor": 350000,
+    "approval_process_instance_id": "process-1001",
+    "reason_code": "BPM_APPROVE"
+  }
+}

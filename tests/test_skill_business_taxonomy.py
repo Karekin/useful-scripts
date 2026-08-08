@@ -43,7 +43,7 @@ class SkillBusinessTaxonomyTest(unittest.TestCase):
         self.assertEqual("supply-chain", roles["procurement-sourcing-operator"]["domain_code"])
         self.assertNotIn("merchant-acquisition", domains)
 
-    def test_every_business_role_has_one_dewu_assignment_and_runnable_skill(self):
+    def test_every_business_workflow_has_one_dewu_assignment_and_runnable_skill(self):
         assignments = self.taxonomy["skill_assignments"]
         assignments_by_role = {}
         for assignment in assignments:
@@ -55,11 +55,15 @@ class SkillBusinessTaxonomyTest(unittest.TestCase):
             if definition.get("workflow_level") == "BUSINESS_ROLE":
                 definitions.append((path, definition))
 
-        self.assertEqual(45, len(definitions))
+        self.assertEqual(47, len(definitions))
         for task_path, definition in definitions:
             role_code = definition["owner_role"]
             with self.subTest(role_code=role_code):
-                matches = assignments_by_role.get(role_code, [])
+                matches = [
+                    assignment
+                    for assignment in assignments_by_role.get(role_code, [])
+                    if assignment["skill_name"] == task_path.parent.name
+                ]
                 self.assertEqual(1, len(matches))
                 assignment = matches[0]
                 self.assertEqual("dewu", assignment["business_unit_code"])

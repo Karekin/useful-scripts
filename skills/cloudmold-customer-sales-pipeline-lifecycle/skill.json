@@ -1,0 +1,27 @@
+{
+  "schema_version": "cloudmold.skill/v1",
+  "skill_id": "skill.cloudmold.crm.customer-sales-pipeline-lifecycle.v1",
+  "workflow_id": "workflow.cloudmold.crm.customer-sales-pipeline-lifecycle.v1",
+  "name": "cloudmold-customer-sales-pipeline-lifecycle",
+  "version": "1.1.0",
+  "owner": "cloudmold-crm",
+  "authority": "canonical-cloudmold",
+  "risk_level": "R3",
+  "ui_dependency": "none",
+  "allowed_environments": ["local", "test", "demo"],
+  "entrypoints": {"task": "skill-task.json"},
+  "evidence": [
+    "cloudmold_skill_task_instance",
+    "cloudmold_crm_lead",
+    "cloudmold_crm_customer",
+    "cloudmold_crm_contact",
+    "cloudmold_crm_opportunity",
+    "cloudmold_crm_follow_up",
+    "cloudmold_sales_contract",
+    "cloudmold_finance_receivable_plan",
+    "cloudmold_finance_receipt",
+    "cloudmold_finance_receipt_allocation",
+    "ACT_HI_PROCINST",
+    "cloudmold_outbox_event"
+  ]
+}

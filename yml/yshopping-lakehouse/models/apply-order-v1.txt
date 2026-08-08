@@ -53,6 +53,7 @@ models/dwd/dwd-canonical-engagement-event.sql
 models/dwd/dwd-canonical-engagement-reaction-event.sql
 models/dwd/dwd-canonical-customer-service-event.sql
 models/dwd/dwd-canonical-customer-service-buyer-feedback-event.sql
+models/dwd/dwd-canonical-crm-event.sql
 models/dwd/dwd-canonical-commerce-session-event.sql
 models/dwd/dwd-app-recommendation-decision-event.sql
 models/dwd/dwd-app-recommendation-item-event.sql
@@ -127,6 +128,7 @@ models/dim/dim-canonical-promotion-current.sql
 models/dim/dim-canonical-engagement-current.sql
 models/dim/dim-canonical-customer-service-current.sql
 models/dim/dim-canonical-customer-service-buyer-feedback-current.sql
+models/dim/dim-canonical-crm-current.sql
 models/dim/dim-canonical-commerce-session-current.sql
 models/dim/dim-app-recommendation-decision-current.sql
 models/dim/dim-app-cart-current.sql
@@ -192,6 +194,7 @@ models/dws/dws-app-cart-current.sql
 models/dws/dws-canonical-customer-service-current.sql
 models/dws/dws-canonical-customer-service-buyer-csat-current.sql
 models/dws/dws-canonical-customer-service-service-metrics-current.sql
+models/dws/dws-canonical-crm-current.sql
 models/dws/dws-canonical-ai-operations-current.sql
 models/dws/dws-canonical-operations-intelligence-current.sql
 models/dws/dws-canonical-token-platform-current.sql
@@ -245,6 +248,7 @@ models/ads/ads-canonical-engagement-readiness.sql
 models/ads/ads-canonical-customer-service-readiness.sql
 models/ads/ads-canonical-buyer-csat-readiness.sql
 models/ads/ads-canonical-customer-service-service-metrics-readiness.sql
+models/ads/ads-canonical-crm-readiness.sql
 models/ads/ads-canonical-ai-operations-readiness.sql
 models/ads/ads-canonical-operations-intelligence-readiness.sql
 models/ads/ads-canonical-token-platform-readiness.sql

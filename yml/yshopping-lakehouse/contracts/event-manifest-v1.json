@@ -203,6 +203,48 @@
       "payload_schema": "events/customer-service-claim-status-changed-v1.schema.json",
       "example": "examples/customer-service-claim-status-changed-v1.json"
     },
+    "crm.customer.status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "crm_customer",
+      "payload_schema": "events/crm-customer-status-changed-v1.schema.json",
+      "example": "examples/crm-customer-status-changed-v1.json"
+    },
+    "crm.customer.owner_changed": {
+      "schema_version": 1,
+      "aggregate_type": "crm_customer_owner_assignment",
+      "payload_schema": "events/crm-customer-owner-changed-v1.schema.json",
+      "example": "examples/crm-customer-owner-changed-v1.json"
+    },
+    "crm.lead.status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "crm_lead",
+      "payload_schema": "events/crm-lead-status-changed-v1.schema.json",
+      "example": "examples/crm-lead-status-changed-v1.json"
+    },
+    "crm.contact.status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "crm_contact",
+      "payload_schema": "events/crm-contact-status-changed-v1.schema.json",
+      "example": "examples/crm-contact-status-changed-v1.json"
+    },
+    "crm.opportunity.stage_changed": {
+      "schema_version": 1,
+      "aggregate_type": "crm_opportunity",
+      "payload_schema": "events/crm-opportunity-stage-changed-v1.schema.json",
+      "example": "examples/crm-opportunity-stage-changed-v1.json"
+    },
+    "crm.follow_up.recorded": {
+      "schema_version": 1,
+      "aggregate_type": "crm_follow_up_record",
+      "payload_schema": "events/crm-follow-up-recorded-v1.schema.json",
+      "example": "examples/crm-follow-up-recorded-v1.json"
+    },
+    "crm.sales_contract.status_changed": {
+      "schema_version": 1,
+      "aggregate_type": "sales_contract",
+      "payload_schema": "events/crm-sales-contract-status-changed-v1.schema.json",
+      "example": "examples/crm-sales-contract-status-changed-v1.json"
+    },
     "commerce.session.status_changed": {
       "schema_version": 1,
       "aggregate_type": "commerce_session",

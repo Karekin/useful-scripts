@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/crm-contact-status-changed-v1.schema.json",
+  "title": "crm.contact.status_changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "contact_id",
+    "contact_code",
+    "customer_id",
+    "owner_principal_id",
+    "previous_status",
+    "current_status",
+    "follow_up_status",
+    "master_decision_maker",
+    "post_code",
+    "parent_contact_id",
+    "last_follow_up_at",
+    "next_contact_at"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "contact_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "contact_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "customer_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "owner_principal_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "previous_status": {
+      "type": ["string", "null"],
+      "enum": [null, "ACTIVE", "DORMANT", "INVALID", "ARCHIVED"]
+    },
+    "current_status": {
+      "type": "string",
+      "enum": ["ACTIVE", "DORMANT", "INVALID", "ARCHIVED"]
+    },
+    "follow_up_status": {"type": "boolean"},
+    "master_decision_maker": {"type": "boolean"},
+    "post_code": {"type": ["string", "null"], "pattern": "^[A-Z][A-Z0-9_]{0,63}$"},
+    "parent_contact_id": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "last_follow_up_at": {"type": ["string", "null"], "format": "date-time"},
+    "next_contact_at": {"type": ["string", "null"], "format": "date-time"}
+  }
+}

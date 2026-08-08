@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cloudmold.local/contracts/crm-customer-owner-changed-v1.schema.json",
+  "title": "crm.customer.owner_changed payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "owner_change_id",
+    "customer_id",
+    "customer_code",
+    "previous_owner_principal_id",
+    "current_owner_principal_id",
+    "transferred_at",
+    "handover_reason_code",
+    "open_opportunity_count",
+    "open_pipeline_amount_minor",
+    "currency_code"
+  ],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1, "maxLength": 64},
+    "owner_change_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "customer_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+    "customer_code": {"type": "string", "minLength": 1, "maxLength": 64},
+    "previous_owner_principal_id": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "current_owner_principal_id": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "transferred_at": {"type": "string", "format": "date-time"},
+    "handover_reason_code": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]{0,63}$"},
+    "open_opportunity_count": {"type": "integer", "minimum": 0},
+    "open_pipeline_amount_minor": {"type": "integer", "minimum": 0},
+    "currency_code": {"type": ["string", "null"], "pattern": "^[A-Z]{3}$"}
+  }
+}
